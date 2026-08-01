@@ -35,6 +35,27 @@ mode_button_src_y = node_y + 20;
 mode_button_dst_x = node_x;
 mode_button_dst_y = node_y + 40;
 
+var _entry_for_validity = global.opcode_map[$ opcode_mnemonic];
+
+if (_entry_for_validity == undefined) {
+    slot_src_is_valid = false;
+    slot_dst_is_valid = false;
+} else {
+    if (_entry_for_validity.operand_count >= 1) {
+        var _src_flag = scr_addressing_mode_flag(addressing_mode_src);
+        slot_src_is_valid = (_src_flag & _entry_for_validity.src_modes) != 0;
+    } else {
+        slot_src_is_valid = true;
+    }
+
+    if (_entry_for_validity.operand_count >= 2) {
+        var _dst_flag = scr_addressing_mode_flag(addressing_mode_dst);
+        slot_dst_is_valid = (_dst_flag & _entry_for_validity.dst_modes) != 0;
+    } else {
+        slot_dst_is_valid = true;
+    }
+}
+
 var _entry_for_modes = global.opcode_map[$ opcode_mnemonic];
 
 if (_entry_for_modes != undefined) {

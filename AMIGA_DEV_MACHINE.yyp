@@ -9,9 +9,13 @@
     "name":"Default",
   },
   "defaultScriptType":1,
-  "Folders":[],
+  "Folders":[
+    {"$GMFolder":"","%Name":"Extensions","folderPath":"folders/Extensions.yy","name":"Extensions","resourceType":"GMFolder","resourceVersion":"2.0",},
+  ],
   "ForcedPrefabProjectReferences":[],
-  "IncludedFiles":[],
+  "IncludedFiles":[
+    {"$GMIncludedFile":"","%Name":"execute_shell_simple_ext.html","CopyToMask":-1,"filePath":"datafiles","name":"execute_shell_simple_ext.html","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
+  ],
   "isEcma":false,
   "LibraryEmitters":[],
   "MetaData":{
@@ -19,14 +23,15 @@
   },
   "name":"AMIGA_DEV_MACHINE",
   "resources":[
+    {"id":{"name":"execute_shell_simple_ext","path":"extensions/execute_shell_simple_ext/execute_shell_simple_ext.yy",},},
     {"id":{"name":"obj_amiga_manager","path":"objects/obj_amiga_manager/obj_amiga_manager.yy",},},
     {"id":{"name":"obj_opcode_node","path":"objects/obj_opcode_node/obj_opcode_node.yy",},},
     {"id":{"name":"obj_opcode_palette_item","path":"objects/obj_opcode_palette_item/obj_opcode_palette_item.yy",},},
     {"id":{"name":"Room1","path":"rooms/Room1/Room1.yy",},},
     {"id":{"name":"scr_addressing_mode_flag","path":"scripts/scr_addressing_mode_flag/scr_addressing_mode_flag.yy",},},
     {"id":{"name":"scr_addressing_mode_list_from_flags","path":"scripts/scr_addressing_mode_list_from_flags/scr_addressing_mode_list_from_flags.yy",},},
-    {"id":{"name":"scr_amiga_build_and_run","path":"scripts/scr_amiga_build_and_run/scr_amiga_build_and_run.yy",},},
-    {"id":{"name":"scr_build_adf","path":"scripts/scr_build_adf/scr_build_adf.yy",},},
+    {"id":{"name":"scr_amiga_start_adf_build","path":"scripts/scr_amiga_start_adf_build/scr_amiga_start_adf_build.yy",},},
+    {"id":{"name":"scr_amiga_start_build","path":"scripts/scr_amiga_start_build/scr_amiga_start_build.yy",},},
     {"id":{"name":"scr_cycle_addressing_mode","path":"scripts/scr_cycle_addressing_mode/scr_cycle_addressing_mode.yy",},},
     {"id":{"name":"scr_define_addressing_modes","path":"scripts/scr_define_addressing_modes/scr_define_addressing_modes.yy",},},
     {"id":{"name":"scr_define_opcodes_68k_part1","path":"scripts/scr_define_opcodes_68k_part1/scr_define_opcodes_68k_part1.yy",},},

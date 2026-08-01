@@ -1,9 +1,9 @@
 {
   "$GMScript":"v1",
-  "%Name":"scr_amiga_build_and_run",
+  "%Name":"scr_amiga_start_adf_build",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"scr_amiga_build_and_run",
+  "name":"scr_amiga_start_adf_build",
   "parent":{
     "name":"AMIGA_DEV_MACHINE",
     "path":"AMIGA_DEV_MACHINE.yyp",
