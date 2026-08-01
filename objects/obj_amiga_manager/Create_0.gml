@@ -23,7 +23,7 @@ global.canvas_bounds = {
 };
 
 // 4. Project/build state
-global.current_project_path = working_directory;
+global.current_project_path = "C:/AmigaDevMachine/build_output";
 global.current_volume_name = "AmigaDevDisk";
 global.current_chipset_mode = "AGA";
 
@@ -76,5 +76,5 @@ build_wait_timer = 0;
 build_timeout_frames = 600;
 
 global.vasm_path = "C:/Users/me/Downloads/vasmm68k_mot.exe";
-global.xdftool_path = "xdftool";
-global.fsuae_path = "fs-uae";
+global.xdftool_path = "C:/Users/me/AppData/Local/Python/pythoncore-3.14-64/Scripts/xdftool.exe";
+global.fsuae_path = "C:/Users/me/OneDrive/Documents/AMIGA/TheSettlers/fsuae/fs-uae.exe";
