@@ -90,10 +90,3 @@ if (_over_palette) {
 
 global.palette_hover_mnemonic = "";
 
-build_state = "idle";
-build_project_path = "";
-build_volume_name = "";
-build_exe_path = "";
-build_adf_path = "";
-build_wait_timer = 0;
-build_timeout_frames = 600;
