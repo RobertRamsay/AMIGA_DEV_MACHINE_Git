@@ -74,3 +74,7 @@ build_exe_path = "";
 build_adf_path = "";
 build_wait_timer = 0;
 build_timeout_frames = 600;
+
+global.vasm_path = "C:/Users/me/Downloads/vasmm68k_mot.exe";
+global.xdftool_path = "xdftool";
+global.fsuae_path = "fs-uae";

@@ -39,12 +39,21 @@ function scr_amiga_start_build(_node_array, _project_path, _chipset_mode) {
         return _result;
     }
 
-    var _asm_path = _project_path + "/build/main.s";
-    var _exe_path = _project_path + "/build/main.exe";
+    var _build_dir = _project_path + "/build";
+
+    if (!directory_exists(_build_dir)) {
+        directory_create(_build_dir);
+        show_debug_message("scr_amiga_start_build: created " + _build_dir);
+    }
+
+    var _asm_path = _build_dir + "/main.s";
+    var _exe_path = _build_dir + "/main.exe";
 
     var _file = file_text_open_write(_asm_path);
     file_text_write_string(_file, _asm_text);
     file_text_close(_file);
+
+    show_debug_message("scr_amiga_start_build: wrote " + _asm_path);
 
     // Delete any stale exe from a previous build — otherwise the poll loop
     // below would see the OLD file and think the NEW vasm run already finished
@@ -53,8 +62,9 @@ function scr_amiga_start_build(_node_array, _project_path, _chipset_mode) {
     }
 
     var _vasm_args = "-Fhunkexe -o \"" + _exe_path + "\" \"" + _asm_path + "\"";
-    execute_shell_simple("vasmm68k_mot", _vasm_args);
-
+    show_debug_message("scr_amiga_start_build: launching " + global.vasm_path + " " + _vasm_args);
+    execute_shell_simple(global.vasm_path, _vasm_args);
+	
     _result.success = true;
     _result.exe_path = _exe_path;
     return _result;

@@ -25,6 +25,7 @@ if (build_state == "waiting_for_asm") {
     build_wait_timer += 1;
 
     if (file_exists(build_exe_path)) {
+        show_debug_message("obj_amiga_manager: main.exe appeared after " + string(build_wait_timer) + " frames");
         build_adf_path = scr_amiga_start_adf_build(build_exe_path, build_project_path, build_volume_name);
         build_state = "waiting_for_adf";
         build_wait_timer = 0;
@@ -40,8 +41,9 @@ if (build_state == "waiting_for_adf") {
     build_wait_timer += 1;
 
     if (file_exists(build_adf_path)) {
+        show_debug_message("obj_amiga_manager: disk.adf appeared after " + string(build_wait_timer) + " frames — launching FS-UAE");
         var _uae_args = "--floppy_drive_0=\"" + build_adf_path + "\"";
-        execute_shell_simple("fs-uae", _uae_args);
+        execute_shell_simple(global.fsuae_path, _uae_args);
         build_state = "idle";
     } else {
         if (build_wait_timer > build_timeout_frames) {
