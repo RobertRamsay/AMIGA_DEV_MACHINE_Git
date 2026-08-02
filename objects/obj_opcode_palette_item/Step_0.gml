@@ -11,7 +11,14 @@ if (is_being_dragged) {
     if (mouse_check_button_released(mb_left)) {
         var _dropped_on_canvas = point_in_rectangle(mouse_x, mouse_y, global.canvas_bounds.left, global.canvas_bounds.top, global.canvas_bounds.right, global.canvas_bounds.bottom);
 
-         if (_dropped_on_canvas) {
+         if (_dropped_on_canvas && palette_mnemonic == "ORG") {
+            var _new_org = instance_create_layer(mouse_x, mouse_y, "Instances", obj_amiga_root_node);
+            _new_org.root_type = "ORG";
+            _new_org.node_x = scr_snap_to_grid(mouse_x, global.grid_size);
+            _new_org.node_y = scr_snap_to_grid(mouse_y, global.grid_size);
+        }
+
+        if (_dropped_on_canvas && palette_mnemonic != "ORG") {
             var _new_node = instance_create_layer(mouse_x, mouse_y, "Instances", obj_opcode_node);
             _new_node.node_x = scr_snap_to_grid(mouse_x, global.grid_size);
             _new_node.node_y = scr_snap_to_grid(mouse_y, global.grid_size);

@@ -5,6 +5,12 @@ node_y = 0;
 node_width = 160;
 node_height = 60;
 
+// Interaction state
+is_dragging = false;
+is_selected = false;
+drag_offset_x = 0;
+drag_offset_y = 0;
+
 is_connected = false;
 parent_uid = -1;
 
@@ -38,11 +44,7 @@ dst_validity_dot = {
     dot_x : 0,
     dot_y : 0
 };
-// Interaction state
-is_dragging = false;
-is_selected = false;
-drag_offset_x = 0;
-drag_offset_y = 0;
+
 
 // Visuals
 node_colour = c_green;
@@ -56,3 +58,7 @@ mode_button_src_x = 0;
 mode_button_src_y = 0;
 mode_button_dst_x = 0;
 mode_button_dst_y = 0;
+
+value_box_width = 34;
+operand_editing_slot = "";
+operand_edit_text = "";

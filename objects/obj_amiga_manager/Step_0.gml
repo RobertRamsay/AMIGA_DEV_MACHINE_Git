@@ -1,12 +1,5 @@
 if (keyboard_check_pressed(vk_f5) && build_state == "idle") {
-    var _all_nodes = instance_number(obj_opcode_node);
-    var _node_array = array_create(_all_nodes);
-    var _n = 0;
-
-    with (obj_opcode_node) {
-        _node_array[_n] = self;
-        _n += 1;
-    }
+    var _node_array = scr_amiga_collect_program_nodes();
 
     var _start_result = scr_amiga_start_build(_node_array, global.current_project_path, global.current_chipset_mode);
 

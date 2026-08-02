@@ -3,6 +3,8 @@
 // 0. Grid constant — must be set before anything below reads it
 global.grid_size = 20;
 
+
+
 // 1. Addressing mode bitflags — must run before any opcode table definitions
 scr_define_addressing_modes();
 
@@ -26,6 +28,8 @@ global.canvas_bounds = {
 global.current_project_path = "C:/AmigaDevMachine/build_output";
 global.current_volume_name = "AmigaDevDisk";
 global.current_chipset_mode = "AGA";
+
+global.operand_edit_owner_uid = -1;
 
 // 5. Palette scroll + hover state
 global.palette_scroll_y = 0;
@@ -78,3 +82,8 @@ build_timeout_frames = 600;
 global.vasm_path = "C:/Users/me/Downloads/vasmm68k_mot.exe";
 global.xdftool_path = "C:/Users/me/AppData/Local/Python/pythoncore-3.14-64/Scripts/xdftool.exe";
 global.fsuae_path = "C:/Users/me/OneDrive/Documents/AMIGA/TheSettlers/fsuae/fs-uae.exe";
+
+var _org_palette_instance = instance_create_layer(palette_start_x, palette_start_y - global.grid_size - 3, "Instances", obj_opcode_palette_item);
+_org_palette_instance.palette_mnemonic = "ORG";
+_org_palette_instance.palette_x = palette_start_x;
+_org_palette_instance.base_palette_y = palette_start_y - global.grid_size - 3;

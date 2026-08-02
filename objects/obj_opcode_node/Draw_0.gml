@@ -16,20 +16,56 @@ draw_text(node_x + 6, node_y , opcode_mnemonic + _size_suffix_display);
 var _entry_for_draw = global.opcode_map[$ opcode_mnemonic];
 
 if (_entry_for_draw != undefined) {
+    var _mode_zone_width = mode_button_width - value_box_width;
+
     if (_entry_for_draw.operand_count >= 1) {
         draw_set_colour(c_dkgray);
-        draw_rectangle(mode_button_src_x, mode_button_src_y, mode_button_src_x + mode_button_width, mode_button_src_y + mode_button_height, false);
+        draw_rectangle(mode_button_src_x, mode_button_src_y, mode_button_src_x + _mode_zone_width, mode_button_src_y + mode_button_height, false);
         draw_set_colour(c_white);
-		
         draw_text(mode_button_src_x + 4, mode_button_src_y + 2, addressing_mode_src);
+
+        var _src_value_colour = c_dkgray;
+
+        if (operand_editing_slot == "src") {
+            _src_value_colour = c_olive;
+        }
+
+        draw_set_colour(_src_value_colour);
+        draw_rectangle(mode_button_src_x + _mode_zone_width, mode_button_src_y, mode_button_src_x + mode_button_width, mode_button_src_y + mode_button_height, false);
+        draw_set_colour(c_white);
+
+        var _src_value_text = string(operand_src);
+
+        if (operand_editing_slot == "src") {
+            _src_value_text = operand_edit_text;
+        }
+
+        draw_text(mode_button_src_x + _mode_zone_width + 4, mode_button_src_y + 2, _src_value_text);
     }
 
     if (_entry_for_draw.operand_count >= 2) {
         draw_set_colour(c_dkgray);
-        draw_rectangle(mode_button_dst_x, mode_button_dst_y, mode_button_dst_x + mode_button_width, mode_button_dst_y + mode_button_height, false);
+        draw_rectangle(mode_button_dst_x, mode_button_dst_y, mode_button_dst_x + _mode_zone_width, mode_button_dst_y + mode_button_height, false);
         draw_set_colour(c_white);
-		
-        draw_text(mode_button_dst_x + 4, mode_button_dst_y + 2, addressing_mode_dst)
+        draw_text(mode_button_dst_x + 4, mode_button_dst_y + 2, addressing_mode_dst);
+
+        var _dst_value_colour = c_dkgray;
+
+        if (operand_editing_slot == "dst") {
+            _dst_value_colour = c_olive;
+        }
+
+        draw_set_colour(_dst_value_colour);
+        draw_rectangle(mode_button_dst_x + _mode_zone_width, mode_button_dst_y, mode_button_dst_x + mode_button_width, mode_button_dst_y + mode_button_height, false);
+        draw_set_colour(c_white);
+
+        var _dst_value_text = string(operand_dst);
+
+        if (operand_editing_slot == "dst") {
+            _dst_value_text = operand_edit_text;
+        }
+
+        draw_text(mode_button_dst_x + _mode_zone_width + 4, mode_button_dst_y + 2, _dst_value_text);
     }
 }
 

@@ -1,5 +1,3 @@
-/// @desc scr_try_stack_connect(_self_id)
-/// Checks if _self_id landed close beneath another node and snaps it into the chain.
 function scr_try_stack_connect(_self_id) {
     var _snap_distance = global.grid_size;
     var _best_target_id = noone;
@@ -19,6 +17,20 @@ function scr_try_stack_connect(_self_id) {
                     _best_distance = _dy;
                     _best_target_id = id;
                 }
+            }
+        }
+    }
+
+    with (obj_amiga_root_node) {
+        var _target_bottom_y = node_y + node_height;
+        var _dx = abs(node_x - _self_id.node_x);
+        var _dy = abs(_target_bottom_y - _self_id.node_y);
+        var _close_enough = (_dx <= _snap_distance) && (_dy <= _snap_distance);
+
+        if (_close_enough) {
+            if (_dy < _best_distance) {
+                _best_distance = _dy;
+                _best_target_id = id;
             }
         }
     }

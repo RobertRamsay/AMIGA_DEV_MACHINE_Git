@@ -1,0 +1,10 @@
+uid = irandom(999999);
+root_type = "ORG";
+node_x = 0;
+node_y = 0;
+node_width = 160;
+node_height = 30;
+continues_from_root_uid = -1;
+is_dragging = false;
+drag_offset_x = 0;
+drag_offset_y = 0;
