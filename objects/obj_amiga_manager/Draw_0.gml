@@ -74,7 +74,7 @@ if (_preview_count == 0) {
 }
 
 draw_set_colour(c_maroon);
-draw_rectangle(8, 2, 68, 18, false);
+draw_rectangle(310, 2, 370, 18, false);
 draw_set_colour(c_white);
-draw_rectangle(8, 2, 68, 18, true);
-draw_text(14, 4, "TEST");
+draw_rectangle(310, 2, 370, 18, true);
+draw_text(316, 4, "TEST");
