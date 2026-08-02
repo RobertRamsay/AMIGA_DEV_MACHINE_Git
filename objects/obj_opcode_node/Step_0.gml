@@ -43,7 +43,7 @@ if (is_dragging) {
             global.operand_edit_owner_uid = -1;
         }
 
-        instance_destroy();
+        scr_delete_node_and_relink(id);
     }
 }
 

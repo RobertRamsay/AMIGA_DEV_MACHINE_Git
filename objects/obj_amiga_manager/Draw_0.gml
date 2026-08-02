@@ -22,9 +22,9 @@ if (_has_hover) {
     }
 }
 
-var _panel_x = room_width - 300;
+var _panel_x = room_width - 360;
 var _panel_y = 60;
-var _panel_width = 290;
+var _panel_width = 350;
 var _panel_height = room_height - 80;
 
 draw_set_alpha(0.85);
