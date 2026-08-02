@@ -9,12 +9,11 @@ src_validity_dot.dot_y = node_y + 30;
 dst_validity_dot.dot_x = node_x - 12;
 dst_validity_dot.dot_y = node_y + 50;
 
-// Dragging — smooth (unsnapped) while held. The node's OWN origin slot is
-// treated as just another wedge point: staying within threshold of where
-// you picked it up keeps everything connected exactly as before (no-op).
-// Moving away closes that gap live (preview only until release); getting
-// near a DIFFERENT connection point opens THAT gap instead. Grid-snap
-// happens once, at release, only if actually committing to a new spot.
+// Dragging — smooth (unsnapped) while held. The origin slot closes for
+// real, live, the FIRST moment you cross 20px away from where you picked
+// the node up — not a preview, an actual commit. From that point on, this
+// is identical to approaching any other connection point: a gap only
+// previews opening if you come within 20px of one, and only that one.
 if (is_dragging) {
     depth = -1000;
 
@@ -23,23 +22,27 @@ if (is_dragging) {
 
     scr_clear_wedge_preview();
 
-    var _my_center_x = node_x + (node_width / 2);
-    var _my_center_y = node_y + (node_height / 2);
-    var _origin_center_x = grab_start_x + (node_width / 2);
-    var _origin_center_y = grab_start_y + (node_height / 2);
-    var _origin_distance = point_distance(_my_center_x, _my_center_y, _origin_center_x, _origin_center_y);
-    var _near_origin = (_origin_distance <= 20);
+    if (!has_left_origin) {
+        var _my_center_x = node_x + (node_width / 2);
+        var _my_center_y = node_y + (node_height / 2);
+        var _origin_center_x = grab_start_x + (node_width / 2);
+        var _origin_center_y = grab_start_y + (node_height / 2);
+        var _origin_distance = point_distance(_my_center_x, _my_center_y, _origin_center_x, _origin_center_y);
+
+        if (_origin_distance > 20) {
+            has_left_origin = true;
+
+            // Permanent, live commit — closes the origin gap for real right now.
+            scr_relink_around_node(id);
+            is_connected = false;
+            parent_uid = -1;
+        }
+    }
 
     wedge_target_found = false;
 
-    if (_near_origin) {
-        // Still hovering over where it came from — nothing previews, nothing changes.
-    } else {
+    if (has_left_origin) {
         var _wedge_result = scr_find_nearest_wedge_point(id, node_x, node_y);
-
-        if (_wedge_result.child_uid == origin_child_uid) {
-            _wedge_result.found = false;
-        }
 
         wedge_target_found = _wedge_result.found;
         wedge_target_parent_uid = _wedge_result.parent_uid;
@@ -49,46 +52,33 @@ if (is_dragging) {
 
         if (wedge_target_found) {
             scr_apply_wedge_preview(wedge_target_child_uid, node_height);
-        } else if (origin_child_uid != -1) {
-            // Far from everything, including home — preview closing the origin gap.
-            scr_apply_wedge_preview(origin_child_uid, node_height);
         }
-
-        // The dragged node itself should never visually nudge — only the
-        // chain around it previews moving, never the node you're holding.
-        wedge_preview_shift_y = 0;
     }
+
+    // The dragged node itself should never visually nudge — only the
+    // chain around it previews moving, never the node you're holding.
+    wedge_preview_shift_y = 0;
 
     if (mouse_check_button_released(mb_left)) {
         is_dragging = false;
         depth = 0;
 
-        if (_near_origin) {
-            // Returning home — true no-op, nothing was ever actually detached.
+        if (!has_left_origin) {
+            // Never crossed the threshold at all — true no-op, nothing was ever touched.
             node_x = grab_start_x;
             node_y = grab_start_y;
         } else {
             node_x = scr_snap_to_grid(node_x, global.grid_size);
             node_y = scr_snap_to_grid(node_y, global.grid_size);
 
-            var _would_overlap = false;
-
-            if (!wedge_target_found) {
-                _would_overlap = scr_check_node_overlap(id, node_x, node_y);
-            }
-
-            if (_would_overlap) {
-                node_x = grab_start_x;
-                node_y = grab_start_y;
+            if (wedge_target_found) {
+                scr_commit_wedge_insert(id, wedge_target_parent_uid, wedge_target_child_uid, wedge_target_x, wedge_target_y);
             } else {
-                scr_push_undo_snapshot();
+                var _would_overlap = scr_check_node_overlap(id, node_x, node_y);
 
-                // Only now actually detach from the origin slot, since we
-                // know for certain this is a real move, not a revert.
-                scr_relink_around_node(id);
-
-                if (wedge_target_found) {
-                    scr_commit_wedge_insert(id, wedge_target_parent_uid, wedge_target_child_uid, wedge_target_x, wedge_target_y);
+                if (_would_overlap) {
+                    node_x = grab_start_x;
+                    node_y = grab_start_y;
                 } else {
                     scr_try_stack_connect(id);
                 }
@@ -99,12 +89,15 @@ if (is_dragging) {
         wedge_target_found = false;
         origin_parent_uid = -1;
         origin_child_uid = -1;
+        has_left_origin = false;
     }
 } else {
     var _over_body = point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y, node_x + node_width, node_y + node_height);
 
     if (_over_body && mouse_check_button_pressed(mb_left) && !global.left_click_pickup_handled_this_frame) {
         global.left_click_pickup_handled_this_frame = true;
+
+        scr_push_undo_snapshot();
 
         origin_parent_uid = parent_uid;
 
@@ -118,6 +111,7 @@ if (is_dragging) {
         }
 
         origin_child_uid = _found_origin_child;
+        has_left_origin = false;
 
         is_dragging = true;
         drag_offset_x = node_x - _world_mouse_x;

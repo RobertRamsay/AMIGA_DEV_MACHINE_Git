@@ -15,6 +15,7 @@ grab_start_x = 0;
 grab_start_y = 0;
 origin_parent_uid = -1;
 origin_child_uid = -1;
+has_left_origin = false;
 
 is_connected = false;
 parent_uid = -1;
