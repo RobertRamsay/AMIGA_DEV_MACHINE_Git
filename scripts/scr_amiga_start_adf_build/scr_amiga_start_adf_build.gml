@@ -17,7 +17,7 @@ function scr_amiga_start_adf_build(_exe_path, _project_path, _volume_name) {
     show_debug_message("scr_amiga_start_adf_build: launching xdftool for " + _adf_path);
 
     var _file = file_text_open_write(_startup_path);
-    file_text_write_string(_file, "main\n");
+    file_text_write_string(_file, _volume_name + ":main\n");
     file_text_close(_file);
 
     var _xdf_args = "\"" + _adf_path + "\" create ";
