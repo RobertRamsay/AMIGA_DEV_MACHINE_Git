@@ -18,13 +18,13 @@ if (build_state == "waiting_for_asm") {
     build_wait_timer += 1;
 
     if (file_exists(build_exe_path)) {
-        show_debug_message("obj_amiga_manager: main.exe appeared after " + string(build_wait_timer) + " frames");
+        show_debug_message("obj_amiga_manager: main.bin appeared after " + string(build_wait_timer) + " frames");
         build_adf_path = scr_amiga_start_adf_build(build_exe_path, build_project_path, build_volume_name);
         build_state = "waiting_for_adf";
         build_wait_timer = 0;
     } else {
         if (build_wait_timer > build_timeout_frames) {
-            show_debug_message("Build timed out waiting for vasm to produce main.exe.");
+            show_debug_message("Build timed out waiting for vasm to produce main.bin.");
             build_state = "idle";
         }
     }

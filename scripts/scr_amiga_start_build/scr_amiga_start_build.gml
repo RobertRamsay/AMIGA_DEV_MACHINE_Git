@@ -47,7 +47,7 @@ function scr_amiga_start_build(_node_array, _project_path, _chipset_mode) {
     }
 
     var _asm_path = _build_dir + "/main.s";
-    var _exe_path = _build_dir + "/main.exe";
+    var _bin_path = _build_dir + "/main.bin";
 
     var _file = file_text_open_write(_asm_path);
     file_text_write_string(_file, _asm_text);
@@ -55,17 +55,17 @@ function scr_amiga_start_build(_node_array, _project_path, _chipset_mode) {
 
     show_debug_message("scr_amiga_start_build: wrote " + _asm_path);
 
-    // Delete any stale exe from a previous build — otherwise the poll loop
+    // Delete any stale bin from a previous build — otherwise the poll loop
     // below would see the OLD file and think the NEW vasm run already finished
-    if (file_exists(_exe_path)) {
-        file_delete(_exe_path);
+    if (file_exists(_bin_path)) {
+        file_delete(_bin_path);
     }
 
-    var _vasm_args = "-Fhunkexe -o \"" + _exe_path + "\" \"" + _asm_path + "\"";
+    var _vasm_args = "-Fbin -o \"" + _bin_path + "\" \"" + _asm_path + "\"";
     show_debug_message("scr_amiga_start_build: launching " + global.vasm_path + " " + _vasm_args);
     execute_shell_simple(global.vasm_path, _vasm_args);
 	
     _result.success = true;
-    _result.exe_path = _exe_path;
+    _result.exe_path = _bin_path;
     return _result;
 }
