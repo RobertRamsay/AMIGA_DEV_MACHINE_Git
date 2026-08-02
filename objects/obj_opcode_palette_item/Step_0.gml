@@ -22,7 +22,18 @@ if (is_being_dragged) {
             _new_org.node_y = scr_snap_to_grid(_drop_world_y, global.grid_size);
         }
 
-        if (_dropped_on_canvas && palette_mnemonic != "ORG") {
+        if (_dropped_on_canvas && palette_mnemonic == "CPRBAR") {
+            scr_push_undo_snapshot();
+            var _new_macro = instance_create_layer(_drop_world_x, _drop_world_y, "Instances", obj_opcode_node);
+            _new_macro.node_x = scr_snap_to_grid(_drop_world_x, global.grid_size);
+            _new_macro.node_y = scr_snap_to_grid(_drop_world_y, global.grid_size);
+            _new_macro.node_height = 100;
+            _new_macro.is_macro = true;
+            _new_macro.macro_type = "COPPER_BAR";
+            _new_macro.macro_asset_name = "SunriseWater";
+        }
+
+        if (_dropped_on_canvas && palette_mnemonic != "ORG" && palette_mnemonic != "CPRBAR") {
             scr_push_undo_snapshot();
             var _new_node = instance_create_layer(_drop_world_x, _drop_world_y, "Instances", obj_opcode_node);
             _new_node.node_x = scr_snap_to_grid(_drop_world_x, global.grid_size);

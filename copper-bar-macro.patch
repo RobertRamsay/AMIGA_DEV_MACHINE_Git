@@ -1,0 +1,764 @@
+diff --git a/AMIGA_DEV_MACHINE.yyp b/AMIGA_DEV_MACHINE.yyp
+index 3ef7cc4..c21b449 100644
+--- a/AMIGA_DEV_MACHINE.yyp
++++ b/AMIGA_DEV_MACHINE.yyp
+@@ -55,6 +55,10 @@
+     {"id":{"name":"scr_delete_node_and_relink","path":"scripts/scr_delete_node_and_relink/scr_delete_node_and_relink.yy",},},
+     {"id":{"name":"scr_drag_children_with_root","path":"scripts/scr_drag_children_with_root/scr_drag_children_with_root.yy",},},
+     {"id":{"name":"scr_emit_opcode_line","path":"scripts/scr_emit_opcode_line/scr_emit_opcode_line.yy",},},
++    {"id":{"name":"scr_asset_find_by_name","path":"scripts/scr_asset_find_by_name/scr_asset_find_by_name.yy",},},
++    {"id":{"name":"scr_asset_define_copper_bar","path":"scripts/scr_asset_define_copper_bar/scr_asset_define_copper_bar.yy",},},
++    {"id":{"name":"scr_emit_macro_copper_bar","path":"scripts/scr_emit_macro_copper_bar/scr_emit_macro_copper_bar.yy",},},
++    {"id":{"name":"scr_emit_macro_line","path":"scripts/scr_emit_macro_line/scr_emit_macro_line.yy",},},
+     {"id":{"name":"scr_find_nearest_left_root","path":"scripts/scr_find_nearest_left_root/scr_find_nearest_left_root.yy",},},
+     {"id":{"name":"scr_find_nearest_wedge_point","path":"scripts/scr_find_nearest_wedge_point/scr_find_nearest_wedge_point.yy",},},
+     {"id":{"name":"scr_format_operand","path":"scripts/scr_format_operand/scr_format_operand.yy",},},
+diff --git a/objects/obj_amiga_manager/Create_0.gml b/objects/obj_amiga_manager/Create_0.gml
+index 66d5c27..98891d7 100644
+--- a/objects/obj_amiga_manager/Create_0.gml
++++ b/objects/obj_amiga_manager/Create_0.gml
+@@ -94,6 +94,13 @@ _org_palette_instance.palette_mnemonic = "ORG";
+ _org_palette_instance.palette_x = palette_start_x;
+ _org_palette_instance.base_palette_y = palette_start_y - global.grid_size - 3;
+ 
++// 7b. Copper Bar macro palette entry — next to ORG
++var _cprbar_palette_instance = instance_create_layer(palette_start_x + palette_column_width, palette_start_y - global.grid_size - 3, "Instances", obj_opcode_palette_item);
++_cprbar_palette_instance.palette_mnemonic = "CPRBAR";
++_cprbar_palette_instance.palette_display_label = "CPRBAR";
++_cprbar_palette_instance.palette_x = palette_start_x + palette_column_width;
++_cprbar_palette_instance.base_palette_y = palette_start_y - global.grid_size - 3;
++
+ // 8. Build state machine
+ build_state = "idle";
+ build_project_path = "";
+@@ -115,4 +122,10 @@ var _init_y = room_height / 4;
+ var _init_instance = instance_create_layer(_init_x, _init_y, "Instances", obj_amiga_root_node);
+ _init_instance.root_type = "INIT";
+ _init_instance.node_x = scr_snap_to_grid(_init_x, global.grid_size);
+-_init_instance.node_y = scr_snap_to_grid(_init_y, global.grid_size);
+\ No newline at end of file
++_init_instance.node_y = scr_snap_to_grid(_init_y, global.grid_size);
++
++// 10. Asset list — named byte-data assets that macro nodes look up by name,
++// same pattern as C64DM's obj_asset_manager.asset_list. One default Copper
++// Bar asset is registered up front so there's immediately something to use.
++global.asset_list = [];
++scr_asset_define_copper_bar("SunriseWater", 4, 44, 110, 13, 2, 0, 15, 12, 6, 4, 110, 200, 15, 8, 4, 0, 1, 6);
+\ No newline at end of file
+diff --git a/objects/obj_opcode_node/Create_0.gml b/objects/obj_opcode_node/Create_0.gml
+index 66870ac..4d2781a 100644
+--- a/objects/obj_opcode_node/Create_0.gml
++++ b/objects/obj_opcode_node/Create_0.gml
+@@ -28,6 +28,11 @@ node_label = "";
+ operand_label_src = "";
+ operand_label_dst = "";
+ 
++// Macro nodes reference a named asset instead of carrying operands directly
++is_macro = false;
++macro_type = "";
++macro_asset_name = "";
++
+ // Opcode data — fully populated, no partial/optional fields
+ opcode_mnemonic = "MOVE";
+ opcode_size = "W";
+diff --git a/objects/obj_opcode_node/Draw_0.gml b/objects/obj_opcode_node/Draw_0.gml
+index 9c1d0fd..3b4bcc9 100644
+--- a/objects/obj_opcode_node/Draw_0.gml
++++ b/objects/obj_opcode_node/Draw_0.gml
+@@ -4,19 +4,29 @@
+ var _dx = node_x + global.pan_x;
+ var _dy = node_y + global.pan_y;
+ 
+-draw_set_colour(node_colour);
++var _body_colour = node_colour;
++
++if (is_macro) {
++    _body_colour = make_color_rgb(120, 60, 160);
++}
++
++draw_set_colour(_body_colour);
+ draw_rectangle(_dx + 1, _dy + 1, _dx + node_width - 1, _dy + node_height - 1, false);
+ 
+ draw_set_colour(c_white);
+ draw_rectangle(_dx + 1, _dy + 1, _dx + node_width - 1, _dy + node_height - 1, true);
+ 
+-var _size_suffix_display = "";
++var _header_text = scr_opcode_display_label(opcode_mnemonic);
+ 
+ if (opcode_size != "") {
+-    _size_suffix_display = "." + opcode_size;
++    _header_text += "." + opcode_size;
+ }
+ 
+-draw_text(_dx + 6, _dy, scr_opcode_display_label(opcode_mnemonic) + _size_suffix_display);
++if (is_macro) {
++    _header_text = "MACRO: " + macro_type;
++}
++
++draw_text(_dx + 6, _dy, _header_text);
+ 
+ var _label_display_text = node_label;
+ 
+@@ -36,86 +46,118 @@ if (operand_editing_slot == "node_label") {
+     draw_set_colour(c_white);
+ }
+ 
+-var _mode_src_dx = mode_button_src_x + global.pan_x;
+-var _mode_src_dy = mode_button_src_y + global.pan_y;
+-var _mode_dst_dx = mode_button_dst_x + global.pan_x;
+-var _mode_dst_dy = mode_button_dst_y + global.pan_y;
++if (is_macro) {
++    var _asset_field_dx = node_x + global.pan_x;
++    var _asset_field_dy = node_y + global.pan_y + 20;
+ 
+-var _entry_for_draw = global.opcode_map[$ opcode_mnemonic];
++    var _asset_field_colour = c_dkgray;
+ 
+-if (_entry_for_draw != undefined) {
+-    var _mode_zone_width = mode_button_width - value_box_width;
++    if (operand_editing_slot == "macro_asset") {
++        _asset_field_colour = c_olive;
++    }
+ 
+-    if (_entry_for_draw.operand_count >= 1) {
+-        draw_set_colour(c_dkgray);
+-        draw_rectangle(_mode_src_dx, _mode_src_dy, _mode_src_dx + _mode_zone_width, _mode_src_dy + mode_button_height, false);
+-        draw_set_colour(c_white);
+-        draw_text(_mode_src_dx + 4, _mode_src_dy, addressing_mode_src);
++    draw_set_colour(_asset_field_colour);
++    draw_rectangle(_asset_field_dx, _asset_field_dy, _asset_field_dx + node_width, _asset_field_dy + 20, false);
++    draw_set_colour(c_white);
+ 
+-        var _src_value_colour = c_dkgray;
++    var _asset_field_text = "ASSET: " + macro_asset_name;
+ 
+-        if (operand_editing_slot == "src") {
+-            _src_value_colour = c_olive;
+-        }
++    if (operand_editing_slot == "macro_asset") {
++        _asset_field_text = "ASSET: " + operand_edit_text;
++    }
+ 
+-        draw_set_colour(_src_value_colour);
+-        draw_rectangle(_mode_src_dx + _mode_zone_width, _mode_src_dy, _mode_src_dx + mode_button_width, _mode_src_dy + mode_button_height, false);
+-        draw_set_colour(c_white);
++    draw_text(_asset_field_dx + 4, _asset_field_dy + 2, _asset_field_text);
+ 
+-        var _src_is_register_display = scr_operand_mode_uses_register_index(addressing_mode_src);
+-        var _src_value_text = string(operand_src);
++    var _asset_for_info = scr_asset_find_by_name(macro_asset_name);
++    var _info_text = "asset not found";
+ 
+-        if (global.value_display_mode == "HEX" && !_src_is_register_display) {
+-            _src_value_text = "$" + scr_number_to_hex_string(operand_src);
+-        }
++    if (_asset_for_info != undefined) {
++        _info_text = string(array_length(_asset_for_info.bands)) + " colour bands";
++    }
+ 
+-        if (addressing_mode_src == "LABEL") {
+-            _src_value_text = operand_label_src;
+-        }
++    draw_text(_asset_field_dx + 4, _asset_field_dy + 24, _info_text);
++} else {
++    var _mode_src_dx = mode_button_src_x + global.pan_x;
++    var _mode_src_dy = mode_button_src_y + global.pan_y;
++    var _mode_dst_dx = mode_button_dst_x + global.pan_x;
++    var _mode_dst_dy = mode_button_dst_y + global.pan_y;
+ 
+-        if (operand_editing_slot == "src") {
+-            _src_value_text = operand_edit_text;
+-        }
++    var _entry_for_draw = global.opcode_map[$ opcode_mnemonic];
+ 
+-        draw_set_halign(fa_right);
+-        draw_text(_mode_src_dx + mode_button_width - 4, _mode_src_dy, _src_value_text);
+-        draw_set_halign(fa_left);
+-    }
++    if (_entry_for_draw != undefined) {
++        var _mode_zone_width = mode_button_width - value_box_width;
+ 
+-    if (_entry_for_draw.operand_count >= 2) {
+-        draw_set_colour(c_dkgray);
+-        draw_rectangle(_mode_dst_dx, _mode_dst_dy, _mode_dst_dx + _mode_zone_width, _mode_dst_dy + mode_button_height, false);
+-        draw_set_colour(c_white);
+-        draw_text(_mode_dst_dx + 4, _mode_dst_dy, addressing_mode_dst);
++        if (_entry_for_draw.operand_count >= 1) {
++            draw_set_colour(c_dkgray);
++            draw_rectangle(_mode_src_dx, _mode_src_dy, _mode_src_dx + _mode_zone_width, _mode_src_dy + mode_button_height, false);
++            draw_set_colour(c_white);
++            draw_text(_mode_src_dx + 4, _mode_src_dy, addressing_mode_src);
+ 
+-        var _dst_value_colour = c_dkgray;
++            var _src_value_colour = c_dkgray;
+ 
+-        if (operand_editing_slot == "dst") {
+-            _dst_value_colour = c_olive;
+-        }
++            if (operand_editing_slot == "src") {
++                _src_value_colour = c_olive;
++            }
+ 
+-        draw_set_colour(_dst_value_colour);
+-        draw_rectangle(_mode_dst_dx + _mode_zone_width, _mode_dst_dy, _mode_dst_dx + mode_button_width, _mode_dst_dy + mode_button_height, false);
+-        draw_set_colour(c_white);
++            draw_set_colour(_src_value_colour);
++            draw_rectangle(_mode_src_dx + _mode_zone_width, _mode_src_dy, _mode_src_dx + mode_button_width, _mode_src_dy + mode_button_height, false);
++            draw_set_colour(c_white);
+ 
+-        var _dst_is_register_display = scr_operand_mode_uses_register_index(addressing_mode_dst);
+-        var _dst_value_text = string(operand_dst);
++            var _src_is_register_display = scr_operand_mode_uses_register_index(addressing_mode_src);
++            var _src_value_text = string(operand_src);
+ 
+-        if (global.value_display_mode == "HEX" && !_dst_is_register_display) {
+-            _dst_value_text = "$" + scr_number_to_hex_string(operand_dst);
+-        }
++            if (global.value_display_mode == "HEX" && !_src_is_register_display) {
++                _src_value_text = "$" + scr_number_to_hex_string(operand_src);
++            }
+ 
+-        if (addressing_mode_dst == "LABEL") {
+-            _dst_value_text = operand_label_dst;
+-        }
++            if (addressing_mode_src == "LABEL") {
++                _src_value_text = operand_label_src;
++            }
++
++            if (operand_editing_slot == "src") {
++                _src_value_text = operand_edit_text;
++            }
+ 
+-        if (operand_editing_slot == "dst") {
+-            _dst_value_text = operand_edit_text;
++            draw_set_halign(fa_right);
++            draw_text(_mode_src_dx + mode_button_width - 4, _mode_src_dy, _src_value_text);
++            draw_set_halign(fa_left);
+         }
+ 
+-        draw_set_halign(fa_right);
+-        draw_text(_mode_dst_dx + mode_button_width - 4, _mode_dst_dy, _dst_value_text);
+-        draw_set_halign(fa_left);
++        if (_entry_for_draw.operand_count >= 2) {
++            draw_set_colour(c_dkgray);
++            draw_rectangle(_mode_dst_dx, _mode_dst_dy, _mode_dst_dx + _mode_zone_width, _mode_dst_dy + mode_button_height, false);
++            draw_set_colour(c_white);
++            draw_text(_mode_dst_dx + 4, _mode_dst_dy, addressing_mode_dst);
++
++            var _dst_value_colour = c_dkgray;
++
++            if (operand_editing_slot == "dst") {
++                _dst_value_colour = c_olive;
++            }
++
++            draw_set_colour(_dst_value_colour);
++            draw_rectangle(_mode_dst_dx + _mode_zone_width, _mode_dst_dy, _mode_dst_dx + mode_button_width, _mode_dst_dy + mode_button_height, false);
++            draw_set_colour(c_white);
++
++            var _dst_is_register_display = scr_operand_mode_uses_register_index(addressing_mode_dst);
++            var _dst_value_text = string(operand_dst);
++
++            if (global.value_display_mode == "HEX" && !_dst_is_register_display) {
++                _dst_value_text = "$" + scr_number_to_hex_string(operand_dst);
++            }
++
++            if (addressing_mode_dst == "LABEL") {
++                _dst_value_text = operand_label_dst;
++            }
++
++            if (operand_editing_slot == "dst") {
++                _dst_value_text = operand_edit_text;
++            }
++
++            draw_set_halign(fa_right);
++            draw_text(_mode_dst_dx + mode_button_width - 4, _mode_dst_dy, _dst_value_text);
++            draw_set_halign(fa_left);
++        }
+     }
+ }
+ 
+diff --git a/objects/obj_opcode_node/Step_0.gml b/objects/obj_opcode_node/Step_0.gml
+index 7d422ee..aae0e0d 100644
+--- a/objects/obj_opcode_node/Step_0.gml
++++ b/objects/obj_opcode_node/Step_0.gml
+@@ -124,101 +124,122 @@ if (scr_is_dbcc_opcode(opcode_mnemonic)) {
+     addressing_mode_dst = "LABEL";
+ }
+ 
+-var _entry_for_validity = global.opcode_map[$ opcode_mnemonic];
+-
+-if (_entry_for_validity == undefined) {
+-    slot_src_is_valid = false;
+-    slot_dst_is_valid = false;
++if (is_macro) {
++    var _asset_resolved = (scr_asset_find_by_name(macro_asset_name) != undefined);
++    slot_src_is_valid = _asset_resolved;
++    slot_dst_is_valid = _asset_resolved;
++
++    var _asset_field_x = node_x;
++    var _asset_field_y = node_y + 20;
++    var _asset_field_width = node_width;
++    var _asset_field_height = 20;
++
++    var _over_asset_field = point_in_rectangle(_world_mouse_x, _world_mouse_y, _asset_field_x, _asset_field_y, _asset_field_x + _asset_field_width, _asset_field_y + _asset_field_height);
++    var _can_start_asset_edit = (global.operand_edit_owner_uid == -1) || (global.operand_edit_owner_uid == uid);
++
++    if (_over_asset_field && mouse_check_button_pressed(mb_left) && _can_start_asset_edit) {
++        global.operand_edit_owner_uid = uid;
++        operand_editing_slot = "macro_asset";
++        operand_edit_text = macro_asset_name;
++        keyboard_string = "";
++    }
+ } else {
+-    if (_entry_for_validity.operand_count >= 1) {
+-        if (addressing_mode_src == "LABEL") {
+-            slot_src_is_valid = (operand_label_src != "");
++    var _entry_for_validity = global.opcode_map[$ opcode_mnemonic];
++
++    if (_entry_for_validity == undefined) {
++        slot_src_is_valid = false;
++        slot_dst_is_valid = false;
++    } else {
++        if (_entry_for_validity.operand_count >= 1) {
++            if (addressing_mode_src == "LABEL") {
++                slot_src_is_valid = (operand_label_src != "");
++            } else {
++                var _src_flag = scr_addressing_mode_flag(addressing_mode_src);
++                slot_src_is_valid = (_src_flag & _entry_for_validity.src_modes) != 0;
++            }
+         } else {
+-            var _src_flag = scr_addressing_mode_flag(addressing_mode_src);
+-            slot_src_is_valid = (_src_flag & _entry_for_validity.src_modes) != 0;
++            slot_src_is_valid = true;
+         }
+-    } else {
+-        slot_src_is_valid = true;
+-    }
+ 
+-    if (_entry_for_validity.operand_count >= 2) {
+-        if (addressing_mode_dst == "LABEL") {
+-            slot_dst_is_valid = (operand_label_dst != "");
++        if (_entry_for_validity.operand_count >= 2) {
++            if (addressing_mode_dst == "LABEL") {
++                slot_dst_is_valid = (operand_label_dst != "");
++            } else {
++                var _dst_flag = scr_addressing_mode_flag(addressing_mode_dst);
++                slot_dst_is_valid = (_dst_flag & _entry_for_validity.dst_modes) != 0;
++            }
+         } else {
+-            var _dst_flag = scr_addressing_mode_flag(addressing_mode_dst);
+-            slot_dst_is_valid = (_dst_flag & _entry_for_validity.dst_modes) != 0;
++            slot_dst_is_valid = true;
+         }
+-    } else {
+-        slot_dst_is_valid = true;
+     }
+-}
+ 
+-var _entry_for_modes = global.opcode_map[$ opcode_mnemonic];
++    var _entry_for_modes = global.opcode_map[$ opcode_mnemonic];
+ 
+-if (_entry_for_modes != undefined) {
+-    var _mode_zone_width = mode_button_width - value_box_width;
++    if (_entry_for_modes != undefined) {
++        var _mode_zone_width = mode_button_width - value_box_width;
+ 
+-    if (_entry_for_modes.operand_count >= 1) {
+-        var _over_src_mode = point_in_rectangle(_world_mouse_x, _world_mouse_y, mode_button_src_x, mode_button_src_y, mode_button_src_x + _mode_zone_width, mode_button_src_y + mode_button_height);
+-        var _over_src_value = point_in_rectangle(_world_mouse_x, _world_mouse_y, mode_button_src_x + _mode_zone_width, mode_button_src_y, mode_button_src_x + mode_button_width, mode_button_src_y + mode_button_height);
+-        var _src_mode_locked = scr_is_branch_target_opcode(opcode_mnemonic);
+-
+-        if (_over_src_mode && mouse_check_button_pressed(mb_left) && !_src_mode_locked) {
+-            scr_push_undo_snapshot();
+-            addressing_mode_src = scr_cycle_addressing_mode(addressing_mode_src, _entry_for_modes.src_modes);
+-        }
++        if (_entry_for_modes.operand_count >= 1) {
++            var _over_src_mode = point_in_rectangle(_world_mouse_x, _world_mouse_y, mode_button_src_x, mode_button_src_y, mode_button_src_x + _mode_zone_width, mode_button_src_y + mode_button_height);
++            var _over_src_value = point_in_rectangle(_world_mouse_x, _world_mouse_y, mode_button_src_x + _mode_zone_width, mode_button_src_y, mode_button_src_x + mode_button_width, mode_button_src_y + mode_button_height);
++            var _src_mode_locked = scr_is_branch_target_opcode(opcode_mnemonic);
+ 
+-        var _can_start_src_edit = (global.operand_edit_owner_uid == -1) || (global.operand_edit_owner_uid == uid);
++            if (_over_src_mode && mouse_check_button_pressed(mb_left) && !_src_mode_locked) {
++                scr_push_undo_snapshot();
++                addressing_mode_src = scr_cycle_addressing_mode(addressing_mode_src, _entry_for_modes.src_modes);
++            }
+ 
+-        if (_over_src_value && mouse_check_button_pressed(mb_left) && _can_start_src_edit) {
+-            global.operand_edit_owner_uid = uid;
+-            operand_editing_slot = "src";
++            var _can_start_src_edit = (global.operand_edit_owner_uid == -1) || (global.operand_edit_owner_uid == uid);
+ 
+-            if (addressing_mode_src == "LABEL") {
+-                operand_edit_text = operand_label_src;
+-            } else {
+-                var _src_is_register_seed = scr_operand_mode_uses_register_index(addressing_mode_src);
++            if (_over_src_value && mouse_check_button_pressed(mb_left) && _can_start_src_edit) {
++                global.operand_edit_owner_uid = uid;
++                operand_editing_slot = "src";
+ 
+-                if (global.value_display_mode == "HEX" && !_src_is_register_seed) {
+-                    operand_edit_text = scr_number_to_hex_string(operand_src);
++                if (addressing_mode_src == "LABEL") {
++                    operand_edit_text = operand_label_src;
+                 } else {
+-                    operand_edit_text = string(operand_src);
++                    var _src_is_register_seed = scr_operand_mode_uses_register_index(addressing_mode_src);
++
++                    if (global.value_display_mode == "HEX" && !_src_is_register_seed) {
++                        operand_edit_text = scr_number_to_hex_string(operand_src);
++                    } else {
++                        operand_edit_text = string(operand_src);
++                    }
+                 }
+-            }
+ 
+-            keyboard_string = "";
++                keyboard_string = "";
++            }
+         }
+-    }
+ 
+-    if (_entry_for_modes.operand_count >= 2) {
+-        var _over_dst_mode = point_in_rectangle(_world_mouse_x, _world_mouse_y, mode_button_dst_x, mode_button_dst_y, mode_button_dst_x + _mode_zone_width, mode_button_dst_y + mode_button_height);
+-        var _over_dst_value = point_in_rectangle(_world_mouse_x, _world_mouse_y, mode_button_dst_x + _mode_zone_width, mode_button_dst_y, mode_button_dst_x + mode_button_width, mode_button_dst_y + mode_button_height);
+-        var _dst_mode_locked = scr_is_dbcc_opcode(opcode_mnemonic);
++        if (_entry_for_modes.operand_count >= 2) {
++            var _over_dst_mode = point_in_rectangle(_world_mouse_x, _world_mouse_y, mode_button_dst_x, mode_button_dst_y, mode_button_dst_x + _mode_zone_width, mode_button_dst_y + mode_button_height);
++            var _over_dst_value = point_in_rectangle(_world_mouse_x, _world_mouse_y, mode_button_dst_x + _mode_zone_width, mode_button_dst_y, mode_button_dst_x + mode_button_width, mode_button_dst_y + mode_button_height);
++            var _dst_mode_locked = scr_is_dbcc_opcode(opcode_mnemonic);
+ 
+-        if (_over_dst_mode && mouse_check_button_pressed(mb_left) && !_dst_mode_locked) {
+-            scr_push_undo_snapshot();
+-            addressing_mode_dst = scr_cycle_addressing_mode(addressing_mode_dst, _entry_for_modes.dst_modes);
+-        }
+-
+-        var _can_start_dst_edit = (global.operand_edit_owner_uid == -1) || (global.operand_edit_owner_uid == uid);
++            if (_over_dst_mode && mouse_check_button_pressed(mb_left) && !_dst_mode_locked) {
++                scr_push_undo_snapshot();
++                addressing_mode_dst = scr_cycle_addressing_mode(addressing_mode_dst, _entry_for_modes.dst_modes);
++            }
+ 
+-        if (_over_dst_value && mouse_check_button_pressed(mb_left) && _can_start_dst_edit) {
+-            global.operand_edit_owner_uid = uid;
+-            operand_editing_slot = "dst";
++            var _can_start_dst_edit = (global.operand_edit_owner_uid == -1) || (global.operand_edit_owner_uid == uid);
+ 
+-            if (addressing_mode_dst == "LABEL") {
+-                operand_edit_text = operand_label_dst;
+-            } else {
+-                var _dst_is_register_seed = scr_operand_mode_uses_register_index(addressing_mode_dst);
++            if (_over_dst_value && mouse_check_button_pressed(mb_left) && _can_start_dst_edit) {
++                global.operand_edit_owner_uid = uid;
++                operand_editing_slot = "dst";
+ 
+-                if (global.value_display_mode == "HEX" && !_dst_is_register_seed) {
+-                    operand_edit_text = scr_number_to_hex_string(operand_dst);
++                if (addressing_mode_dst == "LABEL") {
++                    operand_edit_text = operand_label_dst;
+                 } else {
+-                    operand_edit_text = string(operand_dst);
++                    var _dst_is_register_seed = scr_operand_mode_uses_register_index(addressing_mode_dst);
++
++                    if (global.value_display_mode == "HEX" && !_dst_is_register_seed) {
++                        operand_edit_text = scr_number_to_hex_string(operand_dst);
++                    } else {
++                        operand_edit_text = string(operand_dst);
++                    }
+                 }
+-            }
+ 
+-            keyboard_string = "";
++                keyboard_string = "";
++            }
+         }
+     }
+ }
+@@ -242,7 +263,7 @@ if (operand_editing_slot != "" && global.operand_edit_owner_uid == uid) {
+     var _typed_chars = keyboard_string;
+     keyboard_string = "";
+ 
+-    var _is_text_field = (operand_editing_slot == "node_label");
++    var _is_text_field = (operand_editing_slot == "node_label") || (operand_editing_slot == "macro_asset");
+ 
+     if (operand_editing_slot == "src" && addressing_mode_src == "LABEL") {
+         _is_text_field = true;
+@@ -307,6 +328,8 @@ if (operand_editing_slot != "" && global.operand_edit_owner_uid == uid) {
+         if (_is_text_field) {
+             if (operand_editing_slot == "node_label") {
+                 node_label = operand_edit_text;
++            } else if (operand_editing_slot == "macro_asset") {
++                macro_asset_name = operand_edit_text;
+             } else {
+                 if (operand_editing_slot == "src") {
+                     operand_label_src = operand_edit_text;
+diff --git a/objects/obj_opcode_palette_item/Step_0.gml b/objects/obj_opcode_palette_item/Step_0.gml
+index 7373035..378f0f9 100644
+--- a/objects/obj_opcode_palette_item/Step_0.gml
++++ b/objects/obj_opcode_palette_item/Step_0.gml
+@@ -22,7 +22,18 @@ if (is_being_dragged) {
+             _new_org.node_y = scr_snap_to_grid(_drop_world_y, global.grid_size);
+         }
+ 
+-        if (_dropped_on_canvas && palette_mnemonic != "ORG") {
++        if (_dropped_on_canvas && palette_mnemonic == "CPRBAR") {
++            scr_push_undo_snapshot();
++            var _new_macro = instance_create_layer(_drop_world_x, _drop_world_y, "Instances", obj_opcode_node);
++            _new_macro.node_x = scr_snap_to_grid(_drop_world_x, global.grid_size);
++            _new_macro.node_y = scr_snap_to_grid(_drop_world_y, global.grid_size);
++            _new_macro.node_height = 100;
++            _new_macro.is_macro = true;
++            _new_macro.macro_type = "COPPER_BAR";
++            _new_macro.macro_asset_name = "SunriseWater";
++        }
++
++        if (_dropped_on_canvas && palette_mnemonic != "ORG" && palette_mnemonic != "CPRBAR") {
+             scr_push_undo_snapshot();
+             var _new_node = instance_create_layer(_drop_world_x, _drop_world_y, "Instances", obj_opcode_node);
+             _new_node.node_x = scr_snap_to_grid(_drop_world_x, global.grid_size);
+diff --git a/scripts/scr_asset_define_copper_bar/scr_asset_define_copper_bar.gml b/scripts/scr_asset_define_copper_bar/scr_asset_define_copper_bar.gml
+new file mode 100644
+index 0000000..13323d4
+--- /dev/null
++++ b/scripts/scr_asset_define_copper_bar/scr_asset_define_copper_bar.gml
+@@ -0,0 +1,55 @@
++/// @desc scr_asset_define_copper_bar(_name, _sky_band_count, _sky_vp_start, _sky_vp_end, _sky_r_start, _sky_g_start, _sky_b_start, _sky_r_end, _sky_g_end, _sky_b_end, _water_band_count, _water_vp_start, _water_vp_end, _water_r_start, _water_g_start, _water_b_start, _water_r_end, _water_g_end, _water_b_end)
++/// Computes a two-half (sky/water) colour gradient as a list of {vp, colour}
++/// bands and stores it under _name in global.asset_list — the byte/word
++/// data a COPPER_BAR macro node looks up by name at build time. Re-defining
++/// an existing name replaces it in place.
++function scr_asset_define_copper_bar(_name, _sky_band_count, _sky_vp_start, _sky_vp_end, _sky_r_start, _sky_g_start, _sky_b_start, _sky_r_end, _sky_g_end, _sky_b_end, _water_band_count, _water_vp_start, _water_vp_end, _water_r_start, _water_g_start, _water_b_start, _water_r_end, _water_g_end, _water_b_end) {
++    var _bands = [];
++    var _i = 0;
++
++    while (_i < _sky_band_count) {
++        var _t = _i / (_sky_band_count - 1);
++        var _vp = floor(_sky_vp_start + (_sky_vp_end - _sky_vp_start) * _t);
++        var _r = floor(_sky_r_start + (_sky_r_end - _sky_r_start) * _t);
++        var _g = floor(_sky_g_start + (_sky_g_end - _sky_g_start) * _t);
++        var _b = floor(_sky_b_start + (_sky_b_end - _sky_b_start) * _t);
++        var _colour = (_r * 256) + (_g * 16) + _b;
++
++        array_push(_bands, { vp : _vp, colour : _colour });
++        _i += 1;
++    }
++
++    _i = 0;
++
++    while (_i < _water_band_count) {
++        var _t = _i / (_water_band_count - 1);
++        var _vp = floor(_water_vp_start + (_water_vp_end - _water_vp_start) * _t);
++        var _r = floor(_water_r_start + (_water_r_end - _water_r_start) * _t);
++        var _g = floor(_water_g_start + (_water_g_end - _water_g_start) * _t);
++        var _b = floor(_water_b_start + (_water_b_end - _water_b_start) * _t);
++        var _colour = (_r * 256) + (_g * 16) + _b;
++
++        array_push(_bands, { vp : _vp, colour : _colour });
++        _i += 1;
++    }
++
++    var _asset_data = { name : _name, type : "COPPER_BAR", bands : _bands };
++
++    var _existing_index = -1;
++    var _count = array_length(global.asset_list);
++    var _idx = 0;
++
++    while (_idx < _count) {
++        if (global.asset_list[_idx].name == _name) {
++            _existing_index = _idx;
++        }
++
++        _idx += 1;
++    }
++
++    if (_existing_index != -1) {
++        global.asset_list[_existing_index] = _asset_data;
++    } else {
++        array_push(global.asset_list, _asset_data);
++    }
++}
+diff --git a/scripts/scr_asset_define_copper_bar/scr_asset_define_copper_bar.yy b/scripts/scr_asset_define_copper_bar/scr_asset_define_copper_bar.yy
+new file mode 100644
+index 0000000..0617860
+--- /dev/null
++++ b/scripts/scr_asset_define_copper_bar/scr_asset_define_copper_bar.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_asset_define_copper_bar",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_asset_define_copper_bar",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}
+diff --git a/scripts/scr_asset_find_by_name/scr_asset_find_by_name.gml b/scripts/scr_asset_find_by_name/scr_asset_find_by_name.gml
+new file mode 100644
+index 0000000..f0ac3a3
+--- /dev/null
++++ b/scripts/scr_asset_find_by_name/scr_asset_find_by_name.gml
+@@ -0,0 +1,18 @@
++/// @desc scr_asset_find_by_name(_name)
++/// Looks up a named asset in global.asset_list, matching C64DM's
++/// obj_asset_manager.asset_list lookup pattern. Returns the asset struct,
++/// or undefined if no asset with that name exists.
++function scr_asset_find_by_name(_name) {
++    var _count = array_length(global.asset_list);
++    var _i = 0;
++
++    while (_i < _count) {
++        if (global.asset_list[_i].name == _name) {
++            return global.asset_list[_i];
++        }
++
++        _i += 1;
++    }
++
++    return undefined;
++}
+diff --git a/scripts/scr_asset_find_by_name/scr_asset_find_by_name.yy b/scripts/scr_asset_find_by_name/scr_asset_find_by_name.yy
+new file mode 100644
+index 0000000..3ce7523
+--- /dev/null
++++ b/scripts/scr_asset_find_by_name/scr_asset_find_by_name.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_asset_find_by_name",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_asset_find_by_name",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}
+diff --git a/scripts/scr_emit_macro_copper_bar/scr_emit_macro_copper_bar.gml b/scripts/scr_emit_macro_copper_bar/scr_emit_macro_copper_bar.gml
+new file mode 100644
+index 0000000..15519f2
+--- /dev/null
++++ b/scripts/scr_emit_macro_copper_bar/scr_emit_macro_copper_bar.gml
+@@ -0,0 +1,49 @@
++/// @desc scr_emit_macro_copper_bar(_node)
++/// Looks up _node.macro_asset_name in global.asset_list and expands into
++/// the full CPU-construction sequence: write each WAIT/MOVE band pair into
++/// a chip-RAM buffer, terminate the list, point COP1LC at it, then enable
++/// Copper DMA. Returns a struct { text, is_valid }, same shape as
++/// scr_emit_opcode_line — text may (and here, will) contain several lines.
++function scr_emit_macro_copper_bar(_node) {
++    var _asset = scr_asset_find_by_name(_node.macro_asset_name);
++
++    if (_asset == undefined) {
++        var _error_result = { text : "; ERROR: copper bar asset '" + _node.macro_asset_name + "' not found", is_valid : false };
++        return _error_result;
++    }
++
++    // Spread each macro instance's buffer out by uid so multiple copper
++    // bar macros on the same build don't collide in chip RAM.
++    var _buffer_base = 131072 + ((_node.uid mod 1000) * 512);
++
++    var _lines = "";
++
++    if (_node.node_label != "") {
++        _lines += _node.node_label + ":\n";
++    }
++
++    var _copper_offset = 0;
++    var _band_count = array_length(_asset.bands);
++    var _b = 0;
++
++    while (_b < _band_count) {
++        var _band = _asset.bands[_b];
++        var _wait_longword = ((_band.vp * 256 + 1) * 65536) + 65280;
++        var _move_longword = (384 * 65536) + _band.colour;
++
++        _lines += "\tMOVE.L #" + string(_wait_longword) + "," + string(_buffer_base + _copper_offset) + ".L\n";
++        _copper_offset += 4;
++
++        _lines += "\tMOVE.L #" + string(_move_longword) + "," + string(_buffer_base + _copper_offset) + ".L\n";
++        _copper_offset += 4;
++
++        _b += 1;
++    }
++
++    _lines += "\tMOVE.L #4294967294," + string(_buffer_base + _copper_offset) + ".L\n";
++    _lines += "\tMOVE.L #" + string(_buffer_base) + ",14676096.L\n";
++    _lines += "\tMOVE.W #33408,14676118.L";
++
++    var _result = { text : _lines, is_valid : true };
++    return _result;
++}
+diff --git a/scripts/scr_emit_macro_copper_bar/scr_emit_macro_copper_bar.yy b/scripts/scr_emit_macro_copper_bar/scr_emit_macro_copper_bar.yy
+new file mode 100644
+index 0000000..9185460
+--- /dev/null
++++ b/scripts/scr_emit_macro_copper_bar/scr_emit_macro_copper_bar.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_emit_macro_copper_bar",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_emit_macro_copper_bar",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}
+diff --git a/scripts/scr_emit_macro_line/scr_emit_macro_line.gml b/scripts/scr_emit_macro_line/scr_emit_macro_line.gml
+new file mode 100644
+index 0000000..cd8647a
+--- /dev/null
++++ b/scripts/scr_emit_macro_line/scr_emit_macro_line.gml
+@@ -0,0 +1,10 @@
++/// @desc scr_emit_macro_line(_node)
++/// Dispatches to the correct macro-type emitter. Returns { text, is_valid }.
++function scr_emit_macro_line(_node) {
++    if (_node.macro_type == "COPPER_BAR") {
++        return scr_emit_macro_copper_bar(_node);
++    }
++
++    var _error_result = { text : "; ERROR: unknown macro type '" + _node.macro_type + "'", is_valid : false };
++    return _error_result;
++}
+diff --git a/scripts/scr_emit_macro_line/scr_emit_macro_line.yy b/scripts/scr_emit_macro_line/scr_emit_macro_line.yy
+new file mode 100644
+index 0000000..6025b88
+--- /dev/null
++++ b/scripts/scr_emit_macro_line/scr_emit_macro_line.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_emit_macro_line",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_emit_macro_line",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}
+diff --git a/scripts/scr_emit_opcode_line/scr_emit_opcode_line.gml b/scripts/scr_emit_opcode_line/scr_emit_opcode_line.gml
+index 468e296..2925c7d 100644
+--- a/scripts/scr_emit_opcode_line/scr_emit_opcode_line.gml
++++ b/scripts/scr_emit_opcode_line/scr_emit_opcode_line.gml
+@@ -1,6 +1,10 @@
+ /// @desc scr_emit_opcode_line(_node)
+ /// Returns a struct { text, is_valid }
+ function scr_emit_opcode_line(_node) {
++    if (_node.is_macro) {
++        return scr_emit_macro_line(_node);
++    }
++
+     var _validation = scr_validate_node_addressing(_node);
+ 
+     if (!_validation.is_valid) {

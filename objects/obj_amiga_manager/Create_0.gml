@@ -94,6 +94,13 @@ _org_palette_instance.palette_mnemonic = "ORG";
 _org_palette_instance.palette_x = palette_start_x;
 _org_palette_instance.base_palette_y = palette_start_y - global.grid_size - 3;
 
+// 7b. Copper Bar macro palette entry — next to ORG
+var _cprbar_palette_instance = instance_create_layer(palette_start_x + palette_column_width, palette_start_y - global.grid_size - 3, "Instances", obj_opcode_palette_item);
+_cprbar_palette_instance.palette_mnemonic = "CPRBAR";
+_cprbar_palette_instance.palette_display_label = "CPRBAR";
+_cprbar_palette_instance.palette_x = palette_start_x + palette_column_width;
+_cprbar_palette_instance.base_palette_y = palette_start_y - global.grid_size - 3;
+
 // 8. Build state machine
 build_state = "idle";
 build_project_path = "";
@@ -116,3 +123,9 @@ var _init_instance = instance_create_layer(_init_x, _init_y, "Instances", obj_am
 _init_instance.root_type = "INIT";
 _init_instance.node_x = scr_snap_to_grid(_init_x, global.grid_size);
 _init_instance.node_y = scr_snap_to_grid(_init_y, global.grid_size);
+
+// 10. Asset list — named byte-data assets that macro nodes look up by name,
+// same pattern as C64DM's obj_asset_manager.asset_list. One default Copper
+// Bar asset is registered up front so there's immediately something to use.
+global.asset_list = [];
+scr_asset_define_copper_bar("SunriseWater", 4, 44, 110, 13, 2, 0, 15, 12, 6, 4, 110, 200, 15, 8, 4, 0, 1, 6);

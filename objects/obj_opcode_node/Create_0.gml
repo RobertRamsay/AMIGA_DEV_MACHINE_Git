@@ -28,6 +28,11 @@ node_label = "";
 operand_label_src = "";
 operand_label_dst = "";
 
+// Macro nodes reference a named asset instead of carrying operands directly
+is_macro = false;
+macro_type = "";
+macro_asset_name = "";
+
 // Opcode data — fully populated, no partial/optional fields
 opcode_mnemonic = "MOVE";
 opcode_size = "W";

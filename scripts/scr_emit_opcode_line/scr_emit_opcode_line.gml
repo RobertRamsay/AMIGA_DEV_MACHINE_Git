@@ -1,6 +1,10 @@
 /// @desc scr_emit_opcode_line(_node)
 /// Returns a struct { text, is_valid }
 function scr_emit_opcode_line(_node) {
+    if (_node.is_macro) {
+        return scr_emit_macro_line(_node);
+    }
+
     var _validation = scr_validate_node_addressing(_node);
 
     if (!_validation.is_valid) {

@@ -124,101 +124,122 @@ if (scr_is_dbcc_opcode(opcode_mnemonic)) {
     addressing_mode_dst = "LABEL";
 }
 
-var _entry_for_validity = global.opcode_map[$ opcode_mnemonic];
+if (is_macro) {
+    var _asset_resolved = (scr_asset_find_by_name(macro_asset_name) != undefined);
+    slot_src_is_valid = _asset_resolved;
+    slot_dst_is_valid = _asset_resolved;
 
-if (_entry_for_validity == undefined) {
-    slot_src_is_valid = false;
-    slot_dst_is_valid = false;
+    var _asset_field_x = node_x;
+    var _asset_field_y = node_y + 20;
+    var _asset_field_width = node_width;
+    var _asset_field_height = 20;
+
+    var _over_asset_field = point_in_rectangle(_world_mouse_x, _world_mouse_y, _asset_field_x, _asset_field_y, _asset_field_x + _asset_field_width, _asset_field_y + _asset_field_height);
+    var _can_start_asset_edit = (global.operand_edit_owner_uid == -1) || (global.operand_edit_owner_uid == uid);
+
+    if (_over_asset_field && mouse_check_button_pressed(mb_left) && _can_start_asset_edit) {
+        global.operand_edit_owner_uid = uid;
+        operand_editing_slot = "macro_asset";
+        operand_edit_text = macro_asset_name;
+        keyboard_string = "";
+    }
 } else {
-    if (_entry_for_validity.operand_count >= 1) {
-        if (addressing_mode_src == "LABEL") {
-            slot_src_is_valid = (operand_label_src != "");
-        } else {
-            var _src_flag = scr_addressing_mode_flag(addressing_mode_src);
-            slot_src_is_valid = (_src_flag & _entry_for_validity.src_modes) != 0;
-        }
+    var _entry_for_validity = global.opcode_map[$ opcode_mnemonic];
+
+    if (_entry_for_validity == undefined) {
+        slot_src_is_valid = false;
+        slot_dst_is_valid = false;
     } else {
-        slot_src_is_valid = true;
-    }
-
-    if (_entry_for_validity.operand_count >= 2) {
-        if (addressing_mode_dst == "LABEL") {
-            slot_dst_is_valid = (operand_label_dst != "");
-        } else {
-            var _dst_flag = scr_addressing_mode_flag(addressing_mode_dst);
-            slot_dst_is_valid = (_dst_flag & _entry_for_validity.dst_modes) != 0;
-        }
-    } else {
-        slot_dst_is_valid = true;
-    }
-}
-
-var _entry_for_modes = global.opcode_map[$ opcode_mnemonic];
-
-if (_entry_for_modes != undefined) {
-    var _mode_zone_width = mode_button_width - value_box_width;
-
-    if (_entry_for_modes.operand_count >= 1) {
-        var _over_src_mode = point_in_rectangle(_world_mouse_x, _world_mouse_y, mode_button_src_x, mode_button_src_y, mode_button_src_x + _mode_zone_width, mode_button_src_y + mode_button_height);
-        var _over_src_value = point_in_rectangle(_world_mouse_x, _world_mouse_y, mode_button_src_x + _mode_zone_width, mode_button_src_y, mode_button_src_x + mode_button_width, mode_button_src_y + mode_button_height);
-        var _src_mode_locked = scr_is_branch_target_opcode(opcode_mnemonic);
-
-        if (_over_src_mode && mouse_check_button_pressed(mb_left) && !_src_mode_locked) {
-            scr_push_undo_snapshot();
-            addressing_mode_src = scr_cycle_addressing_mode(addressing_mode_src, _entry_for_modes.src_modes);
-        }
-
-        var _can_start_src_edit = (global.operand_edit_owner_uid == -1) || (global.operand_edit_owner_uid == uid);
-
-        if (_over_src_value && mouse_check_button_pressed(mb_left) && _can_start_src_edit) {
-            global.operand_edit_owner_uid = uid;
-            operand_editing_slot = "src";
-
+        if (_entry_for_validity.operand_count >= 1) {
             if (addressing_mode_src == "LABEL") {
-                operand_edit_text = operand_label_src;
+                slot_src_is_valid = (operand_label_src != "");
             } else {
-                var _src_is_register_seed = scr_operand_mode_uses_register_index(addressing_mode_src);
-
-                if (global.value_display_mode == "HEX" && !_src_is_register_seed) {
-                    operand_edit_text = scr_number_to_hex_string(operand_src);
-                } else {
-                    operand_edit_text = string(operand_src);
-                }
+                var _src_flag = scr_addressing_mode_flag(addressing_mode_src);
+                slot_src_is_valid = (_src_flag & _entry_for_validity.src_modes) != 0;
             }
+        } else {
+            slot_src_is_valid = true;
+        }
 
-            keyboard_string = "";
+        if (_entry_for_validity.operand_count >= 2) {
+            if (addressing_mode_dst == "LABEL") {
+                slot_dst_is_valid = (operand_label_dst != "");
+            } else {
+                var _dst_flag = scr_addressing_mode_flag(addressing_mode_dst);
+                slot_dst_is_valid = (_dst_flag & _entry_for_validity.dst_modes) != 0;
+            }
+        } else {
+            slot_dst_is_valid = true;
         }
     }
 
-    if (_entry_for_modes.operand_count >= 2) {
-        var _over_dst_mode = point_in_rectangle(_world_mouse_x, _world_mouse_y, mode_button_dst_x, mode_button_dst_y, mode_button_dst_x + _mode_zone_width, mode_button_dst_y + mode_button_height);
-        var _over_dst_value = point_in_rectangle(_world_mouse_x, _world_mouse_y, mode_button_dst_x + _mode_zone_width, mode_button_dst_y, mode_button_dst_x + mode_button_width, mode_button_dst_y + mode_button_height);
-        var _dst_mode_locked = scr_is_dbcc_opcode(opcode_mnemonic);
+    var _entry_for_modes = global.opcode_map[$ opcode_mnemonic];
 
-        if (_over_dst_mode && mouse_check_button_pressed(mb_left) && !_dst_mode_locked) {
-            scr_push_undo_snapshot();
-            addressing_mode_dst = scr_cycle_addressing_mode(addressing_mode_dst, _entry_for_modes.dst_modes);
-        }
+    if (_entry_for_modes != undefined) {
+        var _mode_zone_width = mode_button_width - value_box_width;
 
-        var _can_start_dst_edit = (global.operand_edit_owner_uid == -1) || (global.operand_edit_owner_uid == uid);
+        if (_entry_for_modes.operand_count >= 1) {
+            var _over_src_mode = point_in_rectangle(_world_mouse_x, _world_mouse_y, mode_button_src_x, mode_button_src_y, mode_button_src_x + _mode_zone_width, mode_button_src_y + mode_button_height);
+            var _over_src_value = point_in_rectangle(_world_mouse_x, _world_mouse_y, mode_button_src_x + _mode_zone_width, mode_button_src_y, mode_button_src_x + mode_button_width, mode_button_src_y + mode_button_height);
+            var _src_mode_locked = scr_is_branch_target_opcode(opcode_mnemonic);
 
-        if (_over_dst_value && mouse_check_button_pressed(mb_left) && _can_start_dst_edit) {
-            global.operand_edit_owner_uid = uid;
-            operand_editing_slot = "dst";
-
-            if (addressing_mode_dst == "LABEL") {
-                operand_edit_text = operand_label_dst;
-            } else {
-                var _dst_is_register_seed = scr_operand_mode_uses_register_index(addressing_mode_dst);
-
-                if (global.value_display_mode == "HEX" && !_dst_is_register_seed) {
-                    operand_edit_text = scr_number_to_hex_string(operand_dst);
-                } else {
-                    operand_edit_text = string(operand_dst);
-                }
+            if (_over_src_mode && mouse_check_button_pressed(mb_left) && !_src_mode_locked) {
+                scr_push_undo_snapshot();
+                addressing_mode_src = scr_cycle_addressing_mode(addressing_mode_src, _entry_for_modes.src_modes);
             }
 
-            keyboard_string = "";
+            var _can_start_src_edit = (global.operand_edit_owner_uid == -1) || (global.operand_edit_owner_uid == uid);
+
+            if (_over_src_value && mouse_check_button_pressed(mb_left) && _can_start_src_edit) {
+                global.operand_edit_owner_uid = uid;
+                operand_editing_slot = "src";
+
+                if (addressing_mode_src == "LABEL") {
+                    operand_edit_text = operand_label_src;
+                } else {
+                    var _src_is_register_seed = scr_operand_mode_uses_register_index(addressing_mode_src);
+
+                    if (global.value_display_mode == "HEX" && !_src_is_register_seed) {
+                        operand_edit_text = scr_number_to_hex_string(operand_src);
+                    } else {
+                        operand_edit_text = string(operand_src);
+                    }
+                }
+
+                keyboard_string = "";
+            }
+        }
+
+        if (_entry_for_modes.operand_count >= 2) {
+            var _over_dst_mode = point_in_rectangle(_world_mouse_x, _world_mouse_y, mode_button_dst_x, mode_button_dst_y, mode_button_dst_x + _mode_zone_width, mode_button_dst_y + mode_button_height);
+            var _over_dst_value = point_in_rectangle(_world_mouse_x, _world_mouse_y, mode_button_dst_x + _mode_zone_width, mode_button_dst_y, mode_button_dst_x + mode_button_width, mode_button_dst_y + mode_button_height);
+            var _dst_mode_locked = scr_is_dbcc_opcode(opcode_mnemonic);
+
+            if (_over_dst_mode && mouse_check_button_pressed(mb_left) && !_dst_mode_locked) {
+                scr_push_undo_snapshot();
+                addressing_mode_dst = scr_cycle_addressing_mode(addressing_mode_dst, _entry_for_modes.dst_modes);
+            }
+
+            var _can_start_dst_edit = (global.operand_edit_owner_uid == -1) || (global.operand_edit_owner_uid == uid);
+
+            if (_over_dst_value && mouse_check_button_pressed(mb_left) && _can_start_dst_edit) {
+                global.operand_edit_owner_uid = uid;
+                operand_editing_slot = "dst";
+
+                if (addressing_mode_dst == "LABEL") {
+                    operand_edit_text = operand_label_dst;
+                } else {
+                    var _dst_is_register_seed = scr_operand_mode_uses_register_index(addressing_mode_dst);
+
+                    if (global.value_display_mode == "HEX" && !_dst_is_register_seed) {
+                        operand_edit_text = scr_number_to_hex_string(operand_dst);
+                    } else {
+                        operand_edit_text = string(operand_dst);
+                    }
+                }
+
+                keyboard_string = "";
+            }
         }
     }
 }
@@ -242,7 +263,7 @@ if (operand_editing_slot != "" && global.operand_edit_owner_uid == uid) {
     var _typed_chars = keyboard_string;
     keyboard_string = "";
 
-    var _is_text_field = (operand_editing_slot == "node_label");
+    var _is_text_field = (operand_editing_slot == "node_label") || (operand_editing_slot == "macro_asset");
 
     if (operand_editing_slot == "src" && addressing_mode_src == "LABEL") {
         _is_text_field = true;
@@ -307,6 +328,8 @@ if (operand_editing_slot != "" && global.operand_edit_owner_uid == uid) {
         if (_is_text_field) {
             if (operand_editing_slot == "node_label") {
                 node_label = operand_edit_text;
+            } else if (operand_editing_slot == "macro_asset") {
+                macro_asset_name = operand_edit_text;
             } else {
                 if (operand_editing_slot == "src") {
                     operand_label_src = operand_edit_text;
