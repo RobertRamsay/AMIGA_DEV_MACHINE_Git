@@ -56,11 +56,19 @@ if (_preview_count == 0) {
             _line_colour = c_red;
         }
 
-        draw_set_colour(_line_colour);
-        draw_text(_panel_x + 6, _line_y, _emit_result.text);
-        draw_set_colour(c_white);
+        var _emit_lines = scr_split_lines(_emit_result.text);
+        var _emit_line_count = array_length(_emit_lines);
+        var _line_index = 0;
 
-        _line_y += _line_height;
+        draw_set_colour(_line_colour);
+
+        while (_line_index < _emit_line_count) {
+            draw_text(_panel_x + 6, _line_y, _emit_lines[_line_index]);
+            _line_y += _line_height;
+            _line_index += 1;
+        }
+
+        draw_set_colour(c_white);
         _p += 1;
     }
 }

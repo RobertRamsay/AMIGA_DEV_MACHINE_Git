@@ -128,9 +128,9 @@ if (_entry_for_modes != undefined) {
     }
 }
 
-var _label_button_x = node_x + 110;
+var _label_button_x = node_x + node_width + 6;
 var _label_button_y = node_y;
-var _label_button_width = 50;
+var _label_button_width = 80;
 var _label_button_height = 20;
 
 var _over_label_button = point_in_rectangle(mouse_x, mouse_y, _label_button_x, _label_button_y, _label_button_x + _label_button_width, _label_button_y + _label_button_height);
