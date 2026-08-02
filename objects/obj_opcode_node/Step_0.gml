@@ -23,9 +23,12 @@ if (is_dragging) {
 
     scr_clear_wedge_preview();
 
-    var _origin_dx = abs(node_x - grab_start_x);
-    var _origin_dy = abs(node_y - grab_start_y);
-    var _near_origin = (_origin_dx <= 20) && (_origin_dy <= 20);
+    var _my_center_x = node_x + (node_width / 2);
+    var _my_center_y = node_y + (node_height / 2);
+    var _origin_center_x = grab_start_x + (node_width / 2);
+    var _origin_center_y = grab_start_y + (node_height / 2);
+    var _origin_distance = point_distance(_my_center_x, _my_center_y, _origin_center_x, _origin_center_y);
+    var _near_origin = (_origin_distance <= 20);
 
     wedge_target_found = false;
 
