@@ -1,4 +1,5 @@
 global.right_click_delete_handled_this_frame = false;
+global.left_click_pickup_handled_this_frame = false;
 
 var _pan_trigger_held = keyboard_check(vk_space) || mouse_check_button(mb_middle);
 

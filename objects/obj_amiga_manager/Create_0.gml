@@ -42,6 +42,7 @@ global.redo_stack = [];
 global.undo_stack_max = 100;
 
 global.right_click_delete_handled_this_frame = false;
+global.left_click_pickup_handled_this_frame = false;
 
 // 5. Palette scroll + hover state
 global.palette_scroll_y = 0;

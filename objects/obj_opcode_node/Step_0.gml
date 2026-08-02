@@ -57,7 +57,9 @@ if (is_dragging) {
 } else {
     var _over_body = point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y, node_x + node_width, node_y + node_height);
 
-    if (_over_body && mouse_check_button_pressed(mb_left)) {
+    if (_over_body && mouse_check_button_pressed(mb_left) && !global.left_click_pickup_handled_this_frame) {
+        global.left_click_pickup_handled_this_frame = true;
+
         scr_push_undo_snapshot();
 
         // Condense: whatever was below this node closes the gap and re-links
