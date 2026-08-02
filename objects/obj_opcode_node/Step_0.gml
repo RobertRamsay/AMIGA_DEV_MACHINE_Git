@@ -1,7 +1,7 @@
-// Validity dot positions — sit beside the mode bands, not the node edges
-src_validity_dot.dot_x = node_x + node_width - 12;
+// Validity dot positions — sit outside the node's left edge, clear of the value text
+src_validity_dot.dot_x = node_x - 12;
 src_validity_dot.dot_y = node_y + 30;
-dst_validity_dot.dot_x = node_x + node_width - 12;
+dst_validity_dot.dot_x = node_x - 12;
 dst_validity_dot.dot_y = node_y + 50;
 
 // Dragging — snapped to grid live, stack-connects to whatever it lands under on release

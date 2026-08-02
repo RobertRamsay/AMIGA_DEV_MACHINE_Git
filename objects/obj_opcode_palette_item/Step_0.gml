@@ -25,15 +25,7 @@ if (is_being_dragged) {
             _new_node.opcode_mnemonic = palette_mnemonic;
 
             var _entry = global.opcode_map[$ palette_mnemonic];
-            var _default_size = "W";
-
-            if (array_length(_entry.sizes) > 0) {
-                _default_size = _entry.sizes[0];
-            } else {
-                _default_size = "";
-            }
-
-            _new_node.opcode_size = _default_size;
+            _new_node.opcode_size = scr_pick_default_size(_entry.sizes);
         }
 
         is_being_dragged = false;
@@ -46,6 +38,7 @@ var _is_hovering_palette = point_in_rectangle(mouse_x, mouse_y, palette_x, palet
 
 if (_is_hovering_palette) {
     global.palette_hover_mnemonic = palette_mnemonic;
+    global.palette_hover_display_label = palette_display_label;
     global.palette_hover_x = mouse_x;
     global.palette_hover_y = mouse_y;
 }

@@ -15,7 +15,7 @@ function scr_emit_opcode_line(_node) {
         _size_suffix = "." + _node.opcode_size;
     }
 
-    var _line = "\t" + _node.opcode_mnemonic + _size_suffix;
+    var _line = "\t" + _entry.mnemonic + _size_suffix;
 
     if (_entry.operand_count >= 1) {
         var _src_text = scr_format_operand(_node.addressing_mode_src, _node.operand_src, _node.operand_extra_src);

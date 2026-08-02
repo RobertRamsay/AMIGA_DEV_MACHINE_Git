@@ -1,7 +1,8 @@
 draw_set_colour(c_dkgray);
 draw_rectangle(palette_x, palette_y, palette_x + palette_width, palette_y + palette_height, false);
 draw_set_colour(c_white);
-draw_text(palette_x + 15, palette_y , palette_mnemonic);
+draw_text(palette_x + 15, palette_y, palette_display_label);
+
 
 if (is_being_dragged) {
     draw_set_alpha(0.6);

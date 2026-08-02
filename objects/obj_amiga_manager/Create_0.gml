@@ -49,6 +49,9 @@ palette_column_width = 87;
 palette_row_height = global.grid_size + 3;
 
 var _mnemonic_list = variable_struct_get_names(global.opcode_map);
+
+array_sort(_mnemonic_list, true);
+
 var _mnemonic_count = array_length(_mnemonic_list);
 var _i = 0;
 
@@ -62,7 +65,8 @@ while (_i < _mnemonic_count) {
 
     var _palette_instance = instance_create_layer(_item_x, _item_y, "Instances", obj_opcode_palette_item);
 
-    _palette_instance.palette_mnemonic = global.opcode_map[$ _mnemonic_key].mnemonic;
+    _palette_instance.palette_mnemonic = _mnemonic_key;
+    _palette_instance.palette_display_label = scr_opcode_display_label(_mnemonic_key);
     _palette_instance.palette_x = _item_x;
     _palette_instance.base_palette_y = _item_y;
 

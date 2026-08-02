@@ -11,7 +11,7 @@ if (opcode_size != "") {
     _size_suffix_display = "." + opcode_size;
 }
 
-draw_text(node_x + 6, node_y , opcode_mnemonic + _size_suffix_display);
+draw_text(node_x + 6, node_y , scr_opcode_display_label(opcode_mnemonic) + _size_suffix_display);
 
 var _entry_for_draw = global.opcode_map[$ opcode_mnemonic];
 
@@ -40,7 +40,9 @@ if (_entry_for_draw != undefined) {
             _src_value_text = operand_edit_text;
         }
 
-        draw_text(mode_button_src_x + _mode_zone_width + 4, mode_button_src_y + 2, _src_value_text);
+        draw_set_halign(fa_right);
+        draw_text(mode_button_src_x + mode_button_width - 4, mode_button_src_y + 2, _src_value_text);
+        draw_set_halign(fa_left);
     }
 
     if (_entry_for_draw.operand_count >= 2) {
@@ -65,7 +67,9 @@ if (_entry_for_draw != undefined) {
             _dst_value_text = operand_edit_text;
         }
 
-        draw_text(mode_button_dst_x + _mode_zone_width + 4, mode_button_dst_y + 2, _dst_value_text);
+        draw_set_halign(fa_right);
+        draw_text(mode_button_dst_x + mode_button_width - 4, mode_button_dst_y + 2, _dst_value_text);
+        draw_set_halign(fa_left);
     }
 }
 
