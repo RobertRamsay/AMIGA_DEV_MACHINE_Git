@@ -22,6 +22,8 @@ global.canvas_bounds = {
     bottom : room_height - 20
 };
 
+global.value_display_mode = "HEX";
+
 // 4. Project/build state
 global.current_project_path = "C:/AmigaDevMachine/build_output";
 global.current_volume_name = "AmigaDevDisk";

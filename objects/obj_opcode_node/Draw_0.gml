@@ -52,7 +52,12 @@ if (_entry_for_draw != undefined) {
         draw_rectangle(mode_button_src_x + _mode_zone_width, mode_button_src_y, mode_button_src_x + mode_button_width, mode_button_src_y + mode_button_height, false);
         draw_set_colour(c_white);
 
+        var _src_is_register_display = scr_operand_mode_uses_register_index(addressing_mode_src);
         var _src_value_text = string(operand_src);
+
+        if (global.value_display_mode == "HEX" && !_src_is_register_display) {
+            _src_value_text = "$" + scr_number_to_hex_string(operand_src);
+        }
 
         if (addressing_mode_src == "LABEL") {
             _src_value_text = operand_label_src;
@@ -83,7 +88,12 @@ if (_entry_for_draw != undefined) {
         draw_rectangle(mode_button_dst_x + _mode_zone_width, mode_button_dst_y, mode_button_dst_x + mode_button_width, mode_button_dst_y + mode_button_height, false);
         draw_set_colour(c_white);
 
+        var _dst_is_register_display = scr_operand_mode_uses_register_index(addressing_mode_dst);
         var _dst_value_text = string(operand_dst);
+
+        if (global.value_display_mode == "HEX" && !_dst_is_register_display) {
+            _dst_value_text = "$" + scr_number_to_hex_string(operand_dst);
+        }
 
         if (addressing_mode_dst == "LABEL") {
             _dst_value_text = operand_label_dst;

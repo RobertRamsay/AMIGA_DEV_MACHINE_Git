@@ -46,6 +46,35 @@ if (build_state == "waiting_for_adf") {
     }
 }
 
+var _test_button_x = 8;
+var _test_button_y = 2;
+var _test_button_width = 60;
+var _test_button_height = 16;
+
+var _over_test_button = point_in_rectangle(mouse_x, mouse_y, _test_button_x, _test_button_y, _test_button_x + _test_button_width, _test_button_y + _test_button_height);
+
+if (_over_test_button && mouse_check_button_pressed(mb_left)) {
+    scr_load_test_setup();
+}
+
+if (keyboard_check_pressed(ord("H")) && global.operand_edit_owner_uid == -1) {
+    if (global.value_display_mode == "HEX") {
+        global.value_display_mode = "DEC";
+    } else {
+        global.value_display_mode = "HEX";
+    }
+}
+
+var _ctrl_held = keyboard_check(vk_control);
+
+if (_ctrl_held && keyboard_check_pressed(ord("S")) && global.operand_edit_owner_uid == -1) {
+    scr_save_layout();
+}
+
+if (_ctrl_held && keyboard_check_pressed(ord("L")) && global.operand_edit_owner_uid == -1) {
+    scr_load_layout();
+}
+
 var _over_palette = point_in_rectangle(mouse_x, mouse_y, global.palette_panel_bounds.left, global.palette_panel_bounds.top, global.palette_panel_bounds.right, global.palette_panel_bounds.bottom);
 
 if (_over_palette) {

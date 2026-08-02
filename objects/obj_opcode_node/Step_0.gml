@@ -95,7 +95,13 @@ if (_entry_for_modes != undefined) {
             if (addressing_mode_src == "LABEL") {
                 operand_edit_text = operand_label_src;
             } else {
-                operand_edit_text = string(operand_src);
+                var _src_is_register_seed = scr_operand_mode_uses_register_index(addressing_mode_src);
+
+                if (global.value_display_mode == "HEX" && !_src_is_register_seed) {
+                    operand_edit_text = scr_number_to_hex_string(operand_src);
+                } else {
+                    operand_edit_text = string(operand_src);
+                }
             }
 
             keyboard_string = "";
@@ -120,7 +126,13 @@ if (_entry_for_modes != undefined) {
             if (addressing_mode_dst == "LABEL") {
                 operand_edit_text = operand_label_dst;
             } else {
-                operand_edit_text = string(operand_dst);
+                var _dst_is_register_seed = scr_operand_mode_uses_register_index(addressing_mode_dst);
+
+                if (global.value_display_mode == "HEX" && !_dst_is_register_seed) {
+                    operand_edit_text = scr_number_to_hex_string(operand_dst);
+                } else {
+                    operand_edit_text = string(operand_dst);
+                }
             }
 
             keyboard_string = "";
@@ -182,10 +194,17 @@ if (operand_editing_slot != "" && global.operand_edit_owner_uid == uid) {
 
             _accept_char = _is_letter_lower || _is_letter_upper || _is_digit_char || _is_underscore;
         } else {
-            var _is_digit = (_this_char >= "0") && (_this_char <= "9");
-            var _is_minus = (_this_char == "-") && (string_length(operand_edit_text) == 0) && (!_uses_register_index);
+            var _is_hex_entry = (global.value_display_mode == "HEX") && (!_uses_register_index);
 
-            _accept_char = _is_digit || _is_minus;
+            if (_is_hex_entry) {
+                var _is_hex_digit = ((_this_char >= "0") && (_this_char <= "9")) || ((_this_char >= "A") && (_this_char <= "F")) || ((_this_char >= "a") && (_this_char <= "f"));
+                _accept_char = _is_hex_digit;
+            } else {
+                var _is_digit = (_this_char >= "0") && (_this_char <= "9");
+                var _is_minus = (_this_char == "-") && (string_length(operand_edit_text) == 0) && (!_uses_register_index);
+
+                _accept_char = _is_digit || _is_minus;
+            }
         }
 
         if (_accept_char) {
@@ -212,9 +231,16 @@ if (operand_editing_slot != "" && global.operand_edit_owner_uid == uid) {
             }
         } else {
             var _parsed_value = 0;
+            var _is_hex_entry = (global.value_display_mode == "HEX") && (!_uses_register_index);
 
-            if (string_length(operand_edit_text) > 0 && operand_edit_text != "-") {
-                _parsed_value = real(operand_edit_text);
+            if (_is_hex_entry) {
+                if (string_length(operand_edit_text) > 0) {
+                    _parsed_value = scr_hex_string_to_number(operand_edit_text);
+                }
+            } else {
+                if (string_length(operand_edit_text) > 0 && operand_edit_text != "-") {
+                    _parsed_value = real(operand_edit_text);
+                }
             }
 
             if (_uses_register_index) {
