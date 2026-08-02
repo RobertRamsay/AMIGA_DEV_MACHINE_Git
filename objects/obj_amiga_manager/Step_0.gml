@@ -83,7 +83,7 @@ if (build_state == "waiting_for_adf") {
 }
 
 var _test_button_x = 310;
-var _test_button_y = 2;
+var _test_button_y = 20;
 var _test_button_width = 60;
 var _test_button_height = 16;
 

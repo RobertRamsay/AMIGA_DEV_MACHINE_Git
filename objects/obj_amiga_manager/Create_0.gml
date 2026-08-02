@@ -58,7 +58,7 @@ global.palette_hover_y = 0;
 
 // 6. Palette — one obj_opcode_palette_item per defined opcode, 3-column grid
 palette_start_x = 10;
-palette_start_y = 20;
+palette_start_y = 100;
 palette_columns = 3;
 palette_column_width = 87;
 palette_row_height = global.grid_size + 3;
@@ -88,18 +88,19 @@ while (_i < _mnemonic_count) {
     _i += 1;
 }
 
-// 7. ORG palette entry — separate from the opcode grid loop above
-var _org_palette_instance = instance_create_layer(palette_start_x, palette_start_y - global.grid_size - 3, "Instances", obj_opcode_palette_item);
+// 7. ORG palette entry — on its own, well clear of the mnemonic grid below it
+var _org_palette_instance = instance_create_layer(palette_start_x, 20, "Instances", obj_opcode_palette_item);
 _org_palette_instance.palette_mnemonic = "ORG";
 _org_palette_instance.palette_x = palette_start_x;
-_org_palette_instance.base_palette_y = palette_start_y - global.grid_size - 3;
+_org_palette_instance.base_palette_y = 20;
 
-// 7b. Copper Bar macro palette entry — next to ORG
-var _cprbar_palette_instance = instance_create_layer(palette_start_x + palette_column_width, palette_start_y - global.grid_size - 3, "Instances", obj_opcode_palette_item);
+// 7b. MACROS panel — CPRBAR lives here now, not in the ORG row. The "MACROS:"
+// header text and the TEST button are drawn/handled in the manager itself.
+var _cprbar_palette_instance = instance_create_layer(310, 40, "Instances", obj_opcode_palette_item);
 _cprbar_palette_instance.palette_mnemonic = "CPRBAR";
 _cprbar_palette_instance.palette_display_label = "CPRBAR";
-_cprbar_palette_instance.palette_x = palette_start_x + palette_column_width;
-_cprbar_palette_instance.base_palette_y = palette_start_y - global.grid_size - 3;
+_cprbar_palette_instance.palette_x = 310;
+_cprbar_palette_instance.base_palette_y = 40;
 
 // 8. Build state machine
 build_state = "idle";

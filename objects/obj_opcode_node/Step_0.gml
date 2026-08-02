@@ -84,8 +84,21 @@ if (is_dragging) {
     }
 } else {
     var _over_body = point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y, node_x + node_width, node_y + node_height);
+    var _over_header = point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y, node_x + node_width, node_y + 20);
+    var _alt_held = keyboard_check(vk_alt);
 
-    if (_over_body && mouse_check_button_pressed(mb_left) && !global.left_click_pickup_handled_this_frame) {
+    if (_over_header && mouse_check_button_pressed(mb_left) && _alt_held && !global.left_click_pickup_handled_this_frame) {
+        global.left_click_pickup_handled_this_frame = true;
+
+        var _can_start_rename = (global.operand_edit_owner_uid == -1) || (global.operand_edit_owner_uid == uid);
+
+        if (_can_start_rename) {
+            global.operand_edit_owner_uid = uid;
+            operand_editing_slot = "node_label";
+            operand_edit_text = node_label;
+            keyboard_string = "";
+        }
+    } else if (_over_header && mouse_check_button_pressed(mb_left) && !global.left_click_pickup_handled_this_frame) {
         global.left_click_pickup_handled_this_frame = true;
 
         scr_push_undo_snapshot();

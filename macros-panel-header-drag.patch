@@ -1,0 +1,161 @@
+diff --git a/objects/obj_amiga_manager/Create_0.gml b/objects/obj_amiga_manager/Create_0.gml
+index 98891d7..9feeba1 100644
+--- a/objects/obj_amiga_manager/Create_0.gml
++++ b/objects/obj_amiga_manager/Create_0.gml
+@@ -58,7 +58,7 @@ global.palette_hover_y = 0;
+ 
+ // 6. Palette — one obj_opcode_palette_item per defined opcode, 3-column grid
+ palette_start_x = 10;
+-palette_start_y = 20;
++palette_start_y = 100;
+ palette_columns = 3;
+ palette_column_width = 87;
+ palette_row_height = global.grid_size + 3;
+@@ -88,18 +88,19 @@ while (_i < _mnemonic_count) {
+     _i += 1;
+ }
+ 
+-// 7. ORG palette entry — separate from the opcode grid loop above
+-var _org_palette_instance = instance_create_layer(palette_start_x, palette_start_y - global.grid_size - 3, "Instances", obj_opcode_palette_item);
++// 7. ORG palette entry — on its own, well clear of the mnemonic grid below it
++var _org_palette_instance = instance_create_layer(palette_start_x, 20, "Instances", obj_opcode_palette_item);
+ _org_palette_instance.palette_mnemonic = "ORG";
+ _org_palette_instance.palette_x = palette_start_x;
+-_org_palette_instance.base_palette_y = palette_start_y - global.grid_size - 3;
++_org_palette_instance.base_palette_y = 20;
+ 
+-// 7b. Copper Bar macro palette entry — next to ORG
+-var _cprbar_palette_instance = instance_create_layer(palette_start_x + palette_column_width, palette_start_y - global.grid_size - 3, "Instances", obj_opcode_palette_item);
++// 7b. MACROS panel — CPRBAR lives here now, not in the ORG row. The "MACROS:"
++// header text and the TEST button are drawn/handled in the manager itself.
++var _cprbar_palette_instance = instance_create_layer(310, 40, "Instances", obj_opcode_palette_item);
+ _cprbar_palette_instance.palette_mnemonic = "CPRBAR";
+ _cprbar_palette_instance.palette_display_label = "CPRBAR";
+-_cprbar_palette_instance.palette_x = palette_start_x + palette_column_width;
+-_cprbar_palette_instance.base_palette_y = palette_start_y - global.grid_size - 3;
++_cprbar_palette_instance.palette_x = 310;
++_cprbar_palette_instance.base_palette_y = 40;
+ 
+ // 8. Build state machine
+ build_state = "idle";
+diff --git a/objects/obj_amiga_manager/Draw_0.gml b/objects/obj_amiga_manager/Draw_0.gml
+index 0088a92..7a580d8 100644
+--- a/objects/obj_amiga_manager/Draw_0.gml
++++ b/objects/obj_amiga_manager/Draw_0.gml
+@@ -73,11 +73,14 @@ if (_preview_count == 0) {
+     }
+ }
+ 
++draw_set_colour(c_white);
++draw_text(310, 2, "MACROS:");
++
+ draw_set_colour(c_maroon);
+-draw_rectangle(310, 2, 370, 18, false);
++draw_rectangle(310, 20, 370, 36, false);
+ draw_set_colour(c_white);
+-draw_rectangle(310, 2, 370, 18, true);
+-draw_text(318, 0, "TEST");
++draw_rectangle(310, 20, 370, 36, true);
++draw_text(318, 18, "TEST");
+ 
+ if (keyboard_check(vk_control)) {
+     var _hud_text = "Undo: " + string(array_length(global.undo_stack)) + "   Redo: " + string(array_length(global.redo_stack));
+diff --git a/objects/obj_amiga_manager/Step_0.gml b/objects/obj_amiga_manager/Step_0.gml
+index 80e8567..55db4fb 100644
+--- a/objects/obj_amiga_manager/Step_0.gml
++++ b/objects/obj_amiga_manager/Step_0.gml
+@@ -83,7 +83,7 @@ if (build_state == "waiting_for_adf") {
+ }
+ 
+ var _test_button_x = 310;
+-var _test_button_y = 2;
++var _test_button_y = 20;
+ var _test_button_width = 60;
+ var _test_button_height = 16;
+ 
+diff --git a/objects/obj_opcode_node/Step_0.gml b/objects/obj_opcode_node/Step_0.gml
+index aae0e0d..bbdd650 100644
+--- a/objects/obj_opcode_node/Step_0.gml
++++ b/objects/obj_opcode_node/Step_0.gml
+@@ -84,8 +84,21 @@ if (is_dragging) {
+     }
+ } else {
+     var _over_body = point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y, node_x + node_width, node_y + node_height);
++    var _over_header = point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y, node_x + node_width, node_y + 20);
++    var _alt_held = keyboard_check(vk_alt);
+ 
+-    if (_over_body && mouse_check_button_pressed(mb_left) && !global.left_click_pickup_handled_this_frame) {
++    if (_over_header && mouse_check_button_pressed(mb_left) && _alt_held && !global.left_click_pickup_handled_this_frame) {
++        global.left_click_pickup_handled_this_frame = true;
++
++        var _can_start_rename = (global.operand_edit_owner_uid == -1) || (global.operand_edit_owner_uid == uid);
++
++        if (_can_start_rename) {
++            global.operand_edit_owner_uid = uid;
++            operand_editing_slot = "node_label";
++            operand_edit_text = node_label;
++            keyboard_string = "";
++        }
++    } else if (_over_header && mouse_check_button_pressed(mb_left) && !global.left_click_pickup_handled_this_frame) {
+         global.left_click_pickup_handled_this_frame = true;
+ 
+         scr_push_undo_snapshot();
+diff --git a/objects/obj_opcode_palette_item/Draw_0.gml b/objects/obj_opcode_palette_item/Draw_0.gml
+index 816d12a..a3905e4 100644
+--- a/objects/obj_opcode_palette_item/Draw_0.gml
++++ b/objects/obj_opcode_palette_item/Draw_0.gml
+@@ -1,4 +1,14 @@
+-draw_set_colour(c_dkgray);
++var _body_colour = make_color_rgb(40, 70, 140);
++
++if (palette_mnemonic == "ORG") {
++    _body_colour = make_color_rgb(160, 40, 160);
++}
++
++if (palette_mnemonic == "CPRBAR") {
++    _body_colour = make_color_rgb(200, 110, 20);
++}
++
++draw_set_colour(_body_colour);
+ draw_rectangle(palette_x, palette_y, palette_x + palette_width, palette_y + palette_height, false);
+ draw_set_colour(c_white);
+ draw_text(palette_x + 15, palette_y, palette_display_label);
+@@ -6,7 +16,7 @@ draw_text(palette_x + 15, palette_y, palette_display_label);
+ 
+ if (is_being_dragged) {
+     draw_set_alpha(0.6);
+-    draw_set_colour(c_dkgray);
++    draw_set_colour(_body_colour);
+     draw_rectangle(drag_ghost_x, drag_ghost_y, drag_ghost_x + palette_width, drag_ghost_y + palette_height, false);
+     draw_set_colour(c_white);
+     draw_text(drag_ghost_x + 8, drag_ghost_y + 6, palette_mnemonic);
+diff --git a/objects/obj_opcode_palette_item/Step_0.gml b/objects/obj_opcode_palette_item/Step_0.gml
+index 378f0f9..b7d2744 100644
+--- a/objects/obj_opcode_palette_item/Step_0.gml
++++ b/objects/obj_opcode_palette_item/Step_0.gml
+@@ -31,6 +31,12 @@ if (is_being_dragged) {
+             _new_macro.is_macro = true;
+             _new_macro.macro_type = "COPPER_BAR";
+             _new_macro.macro_asset_name = "SunriseWater";
++
++            var _macro_insert = scr_amiga_find_insert_point(_new_macro, _new_macro.node_x, _new_macro.node_y);
++
++            if (_macro_insert.found) {
++                scr_amiga_commit_insert(_new_macro, _macro_insert.root_uid, _macro_insert.insert_y, _macro_insert.anchor_x);
++            }
+         }
+ 
+         if (_dropped_on_canvas && palette_mnemonic != "ORG" && palette_mnemonic != "CPRBAR") {
+@@ -42,6 +48,12 @@ if (is_being_dragged) {
+ 
+             var _entry = global.opcode_map[$ palette_mnemonic];
+             _new_node.opcode_size = scr_pick_default_size(_entry.sizes);
++
++            var _node_insert = scr_amiga_find_insert_point(_new_node, _new_node.node_x, _new_node.node_y);
++
++            if (_node_insert.found) {
++                scr_amiga_commit_insert(_new_node, _node_insert.root_uid, _node_insert.insert_y, _node_insert.anchor_x);
++            }
+         }
+ 
+         is_being_dragged = false;

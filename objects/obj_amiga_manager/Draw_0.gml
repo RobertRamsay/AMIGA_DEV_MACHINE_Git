@@ -73,11 +73,14 @@ if (_preview_count == 0) {
     }
 }
 
-draw_set_colour(c_maroon);
-draw_rectangle(310, 2, 370, 18, false);
 draw_set_colour(c_white);
-draw_rectangle(310, 2, 370, 18, true);
-draw_text(318, 0, "TEST");
+draw_text(310, 2, "MACROS:");
+
+draw_set_colour(c_maroon);
+draw_rectangle(310, 20, 370, 36, false);
+draw_set_colour(c_white);
+draw_rectangle(310, 20, 370, 36, true);
+draw_text(318, 18, "TEST");
 
 if (keyboard_check(vk_control)) {
     var _hud_text = "Undo: " + string(array_length(global.undo_stack)) + "   Redo: " + string(array_length(global.redo_stack));
