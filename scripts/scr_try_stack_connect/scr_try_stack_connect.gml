@@ -37,6 +37,26 @@ function scr_try_stack_connect(_self_id) {
 
     var _found_target = (_best_target_id != noone);
 
+    // Refuse to connect if the target already has a different child —
+    // otherwise two nodes end up claiming the same parent and landing
+    // on the exact same coordinates. Use wedge-insert to insert into an
+    // occupied slot on purpose instead.
+    if (_found_target) {
+        var _target_already_has_child = false;
+
+        with (obj_opcode_node) {
+            var _is_self_check = (id == _self_id);
+
+            if (!_is_self_check && parent_uid == _best_target_id.uid) {
+                _target_already_has_child = true;
+            }
+        }
+
+        if (_target_already_has_child) {
+            _found_target = false;
+        }
+    }
+
     if (_found_target) {
         _self_id.node_x = _best_target_id.node_x;
         _self_id.node_y = _best_target_id.node_y + _best_target_id.node_height;
