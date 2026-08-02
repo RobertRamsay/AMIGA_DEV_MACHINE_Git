@@ -40,7 +40,7 @@ if (_entry_for_draw != undefined) {
         draw_set_colour(c_dkgray);
         draw_rectangle(mode_button_src_x, mode_button_src_y, mode_button_src_x + _mode_zone_width, mode_button_src_y + mode_button_height, false);
         draw_set_colour(c_white);
-        draw_text(mode_button_src_x + 4, mode_button_src_y + 2, addressing_mode_src);
+        draw_text(mode_button_src_x + 4, mode_button_src_y, addressing_mode_src);
 
         var _src_value_colour = c_dkgray;
 
@@ -68,7 +68,7 @@ if (_entry_for_draw != undefined) {
         }
 
         draw_set_halign(fa_right);
-        draw_text(mode_button_src_x + mode_button_width - 4, mode_button_src_y + 2, _src_value_text);
+        draw_text(mode_button_src_x + mode_button_width - 4, mode_button_src_y, _src_value_text);
         draw_set_halign(fa_left);
     }
 
@@ -76,7 +76,7 @@ if (_entry_for_draw != undefined) {
         draw_set_colour(c_dkgray);
         draw_rectangle(mode_button_dst_x, mode_button_dst_y, mode_button_dst_x + _mode_zone_width, mode_button_dst_y + mode_button_height, false);
         draw_set_colour(c_white);
-        draw_text(mode_button_dst_x + 4, mode_button_dst_y + 2, addressing_mode_dst);
+      draw_text(mode_button_dst_x + 4, mode_button_dst_y, addressing_mode_dst);
 
         var _dst_value_colour = c_dkgray;
 
@@ -104,7 +104,7 @@ if (_entry_for_draw != undefined) {
         }
 
         draw_set_halign(fa_right);
-        draw_text(mode_button_dst_x + mode_button_width - 4, mode_button_dst_y + 2, _dst_value_text);
+        draw_text(mode_button_dst_x + mode_button_width - 4, mode_button_dst_y, _dst_value_text);
         draw_set_halign(fa_left);
     }
 }

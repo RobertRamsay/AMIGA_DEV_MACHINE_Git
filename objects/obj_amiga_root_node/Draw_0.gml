@@ -1,7 +1,7 @@
 var _body_colour = c_orange;
 
 if (root_type == "INIT") {
-    _body_colour = c_aqua;
+    _body_colour = make_color_rgb(100, 150, 250);
 }
 var _is_orphaned = (root_type == "ORG") && (continues_from_root_uid == -1);
 
@@ -14,7 +14,11 @@ draw_rectangle(node_x + 1, node_y + 1, node_x + node_width - 1, node_y + node_he
 
 draw_set_colour(c_white);
 draw_rectangle(node_x + 1, node_y + 1, node_x + node_width - 1, node_y + node_height - 1, true);
-draw_text(node_x + 6, node_y + 6, root_type);
+draw_set_halign(fa_center);
+draw_set_valign(fa_middle);
+draw_text(node_x + (node_width / 2), node_y + (node_height / 2), root_type);
+draw_set_halign(fa_left);
+draw_set_valign(fa_top);
 
 if (_is_orphaned) {
     draw_text(node_x + 6, node_y + 18, "not connected");
