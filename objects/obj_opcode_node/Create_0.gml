@@ -2,6 +2,7 @@
 uid = irandom(999999);
 node_x = 0;
 node_y = 0;
+depth = 0;
 node_width = 160;
 node_height = 60;
 

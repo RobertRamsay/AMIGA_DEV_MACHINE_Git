@@ -16,6 +16,8 @@ dst_validity_dot.dot_y = node_y + 50;
 // near a DIFFERENT connection point opens THAT gap instead. Grid-snap
 // happens once, at release, only if actually committing to a new spot.
 if (is_dragging) {
+    depth = -1000;
+
     node_x = _world_mouse_x + drag_offset_x;
     node_y = _world_mouse_y + drag_offset_y;
 
@@ -48,10 +50,15 @@ if (is_dragging) {
             // Far from everything, including home — preview closing the origin gap.
             scr_apply_wedge_preview(origin_child_uid, node_height);
         }
+
+        // The dragged node itself should never visually nudge — only the
+        // chain around it previews moving, never the node you're holding.
+        wedge_preview_shift_y = 0;
     }
 
     if (mouse_check_button_released(mb_left)) {
         is_dragging = false;
+        depth = 0;
 
         if (_near_origin) {
             // Returning home — true no-op, nothing was ever actually detached.
