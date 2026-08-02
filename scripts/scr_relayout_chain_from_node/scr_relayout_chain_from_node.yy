@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_relayout_chain_from_node",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_relayout_chain_from_node",
+  "parent":{
+    "name":"AMIGA_DEV_MACHINE",
+    "path":"AMIGA_DEV_MACHINE.yyp",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

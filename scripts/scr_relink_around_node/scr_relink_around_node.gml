@@ -1,12 +1,12 @@
 /// @desc scr_relink_around_node(_node_id)
 /// Detaches _node_id from the chain: whatever was below it gets reparented
-/// to whatever was above it, and shifts up to close the gap. Handles the
-/// (should-not-normally-happen) case of more than one node claiming
-/// _node_id as their parent, relinking and shifting each independently.
+/// to whatever was above it, then that whole downstream chain gets its
+/// positions freshly recomputed from the new anchor — never shifted by a
+/// fixed amount, so it can't drift or collapse regardless of prior state.
+/// Handles more than one node claiming _node_id as parent, independently.
 /// Does NOT destroy _node_id — used both by delete and by drag pickup.
 function scr_relink_around_node(_node_id) {
     var _parent_uid = _node_id.parent_uid;
-    var _own_height = _node_id.node_height;
     var _own_uid = _node_id.uid;
 
     var _child_uids = [];
@@ -30,29 +30,25 @@ function scr_relink_around_node(_node_id) {
             }
         }
 
-        var _shift_cursor_uid = _this_child_uid;
-        var _still_shifting = true;
-
-        while (_still_shifting) {
-            _still_shifting = false;
+        if (_parent_uid != -1) {
+            var _anchor_id = noone;
 
             with (obj_opcode_node) {
-                if (uid == _shift_cursor_uid) {
-                    node_y -= _own_height;
+                if (uid == _parent_uid) {
+                    _anchor_id = id;
                 }
             }
 
-            var _next_uid = -1;
-
-            with (obj_opcode_node) {
-                if (parent_uid == _shift_cursor_uid) {
-                    _next_uid = uid;
+            if (_anchor_id == noone) {
+                with (obj_amiga_root_node) {
+                    if (uid == _parent_uid) {
+                        _anchor_id = id;
+                    }
                 }
             }
 
-            if (_next_uid != -1) {
-                _shift_cursor_uid = _next_uid;
-                _still_shifting = true;
+            if (_anchor_id != noone) {
+                scr_relayout_chain_from_node(_anchor_id);
             }
         }
 

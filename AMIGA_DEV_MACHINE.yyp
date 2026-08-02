@@ -67,6 +67,8 @@
     {"id":{"name":"scr_push_undo_snapshot","path":"scripts/scr_push_undo_snapshot/scr_push_undo_snapshot.yy",},},
     {"id":{"name":"scr_redo","path":"scripts/scr_redo/scr_redo.yy",},},
     {"id":{"name":"scr_relink_around_node","path":"scripts/scr_relink_around_node/scr_relink_around_node.yy",},},
+    {"id":{"name":"scr_relayout_chain_from_node","path":"scripts/scr_relayout_chain_from_node/scr_relayout_chain_from_node.yy",},},
+    {"id":{"name":"scr_drag_children_with_root","path":"scripts/scr_drag_children_with_root/scr_drag_children_with_root.yy",},},
     {"id":{"name":"scr_restore_snapshot","path":"scripts/scr_restore_snapshot/scr_restore_snapshot.yy",},},
     {"id":{"name":"scr_save_layout","path":"scripts/scr_save_layout/scr_save_layout.yy",},},
     {"id":{"name":"scr_snap_to_grid","path":"scripts/scr_snap_to_grid/scr_snap_to_grid.yy",},},

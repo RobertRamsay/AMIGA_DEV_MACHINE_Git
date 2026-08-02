@@ -9,13 +9,12 @@ src_validity_dot.dot_y = node_y + 30;
 dst_validity_dot.dot_x = node_x - 12;
 dst_validity_dot.dot_y = node_y + 50;
 
-// Dragging — snapped to grid live, stack-connects or wedge-inserts on release
+// Dragging — smooth (unsnapped) while held, so wedge-insert can detect
+// proximity continuously instead of only landing on 20px grid steps.
+// Grid-snap happens once, at release.
 if (is_dragging) {
-    var _raw_x = _world_mouse_x + drag_offset_x;
-    var _raw_y = _world_mouse_y + drag_offset_y;
-
-    node_x = scr_snap_to_grid(_raw_x, global.grid_size);
-    node_y = scr_snap_to_grid(_raw_y, global.grid_size);
+    node_x = _world_mouse_x + drag_offset_x;
+    node_y = _world_mouse_y + drag_offset_y;
 
     scr_clear_wedge_preview();
 
@@ -33,6 +32,9 @@ if (is_dragging) {
 
     if (mouse_check_button_released(mb_left)) {
         is_dragging = false;
+
+        node_x = scr_snap_to_grid(node_x, global.grid_size);
+        node_y = scr_snap_to_grid(node_y, global.grid_size);
 
         scr_push_undo_snapshot();
 
