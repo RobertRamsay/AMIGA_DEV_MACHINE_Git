@@ -35,7 +35,7 @@ if (build_state == "waiting_for_adf") {
 
     if (file_exists(build_adf_path)) {
         show_debug_message("obj_amiga_manager: disk.adf appeared after " + string(build_wait_timer) + " frames — launching FS-UAE");
-        var _uae_args = "--floppy_drive_0=\"" + build_adf_path + "\"";
+        var _uae_args = "--floppy_drive_0=\"" + build_adf_path + "\" --kickstart_file=\"" + global.kickstart_path + "\"";
         execute_shell_simple(global.fsuae_path, _uae_args);
         build_state = "idle";
     } else {
