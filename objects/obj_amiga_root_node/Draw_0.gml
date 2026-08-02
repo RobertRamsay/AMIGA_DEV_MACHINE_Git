@@ -1,9 +1,8 @@
 var _body_colour = c_orange;
 
 if (root_type == "INIT") {
-    _body_colour = c_green;
+    _body_colour = c_aqua;
 }
-
 var _is_orphaned = (root_type == "ORG") && (continues_from_root_uid == -1);
 
 if (_is_orphaned) {

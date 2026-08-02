@@ -14,6 +14,10 @@ drag_offset_y = 0;
 is_connected = false;
 parent_uid = -1;
 
+node_label = "";
+operand_label_src = "";
+operand_label_dst = "";
+
 // Opcode data — fully populated, no partial/optional fields
 opcode_mnemonic = "MOVE";
 opcode_size = "W";

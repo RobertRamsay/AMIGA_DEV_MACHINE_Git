@@ -32,24 +32,40 @@ function scr_validate_node_addressing(_node) {
     }
 
     if (_entry.operand_count >= 1) {
-        var _src_flag = scr_addressing_mode_flag(_node.addressing_mode_src);
-        var _src_legal = (_src_flag & _entry.src_modes) != 0;
+        if (_node.addressing_mode_src == "LABEL") {
+            if (_node.operand_label_src == "") {
+                _result.is_valid = false;
+                _result.error_message = _node.opcode_mnemonic + " has no label target set";
+                return _result;
+            }
+        } else {
+            var _src_flag = scr_addressing_mode_flag(_node.addressing_mode_src);
+            var _src_legal = (_src_flag & _entry.src_modes) != 0;
 
-        if (!_src_legal) {
-            _result.is_valid = false;
-            _result.error_message = _node.opcode_mnemonic + " does not allow " + _node.addressing_mode_src + " as source";
-            return _result;
+            if (!_src_legal) {
+                _result.is_valid = false;
+                _result.error_message = _node.opcode_mnemonic + " does not allow " + _node.addressing_mode_src + " as source";
+                return _result;
+            }
         }
     }
 
     if (_entry.operand_count >= 2) {
-        var _dst_flag = scr_addressing_mode_flag(_node.addressing_mode_dst);
-        var _dst_legal = (_dst_flag & _entry.dst_modes) != 0;
+        if (_node.addressing_mode_dst == "LABEL") {
+            if (_node.operand_label_dst == "") {
+                _result.is_valid = false;
+                _result.error_message = _node.opcode_mnemonic + " has no label target set";
+                return _result;
+            }
+        } else {
+            var _dst_flag = scr_addressing_mode_flag(_node.addressing_mode_dst);
+            var _dst_legal = (_dst_flag & _entry.dst_modes) != 0;
 
-        if (!_dst_legal) {
-            _result.is_valid = false;
-            _result.error_message = _node.opcode_mnemonic + " does not allow " + _node.addressing_mode_dst + " as destination";
-            return _result;
+            if (!_dst_legal) {
+                _result.is_valid = false;
+                _result.error_message = _node.opcode_mnemonic + " does not allow " + _node.addressing_mode_dst + " as destination";
+                return _result;
+            }
         }
     }
 

@@ -44,6 +44,8 @@
     {"id":{"name":"scr_emit_opcode_line","path":"scripts/scr_emit_opcode_line/scr_emit_opcode_line.yy",},},
     {"id":{"name":"scr_find_nearest_left_root","path":"scripts/scr_find_nearest_left_root/scr_find_nearest_left_root.yy",},},
     {"id":{"name":"scr_format_operand","path":"scripts/scr_format_operand/scr_format_operand.yy",},},
+    {"id":{"name":"scr_is_branch_target_opcode","path":"scripts/scr_is_branch_target_opcode/scr_is_branch_target_opcode.yy",},},
+    {"id":{"name":"scr_is_dbcc_opcode","path":"scripts/scr_is_dbcc_opcode/scr_is_dbcc_opcode.yy",},},
     {"id":{"name":"scr_opcode_display_label","path":"scripts/scr_opcode_display_label/scr_opcode_display_label.yy",},},
     {"id":{"name":"scr_opcode_helper_68k_part2","path":"scripts/scr_opcode_helper_68k_part2/scr_opcode_helper_68k_part2.yy",},},
     {"id":{"name":"scr_opcode_helper_68k_part3","path":"scripts/scr_opcode_helper_68k_part3/scr_opcode_helper_68k_part3.yy",},},

@@ -13,6 +13,30 @@ if (opcode_size != "") {
 
 draw_text(node_x + 6, node_y , scr_opcode_display_label(opcode_mnemonic) + _size_suffix_display);
 
+var _label_button_colour = c_dkgray;
+
+if (operand_editing_slot == "node_label") {
+    _label_button_colour = c_olive;
+}
+
+draw_set_colour(_label_button_colour);
+draw_rectangle(node_x + 110, node_y, node_x + 160, node_y + 20, false);
+draw_set_colour(c_white);
+
+var _label_display_text = node_label;
+
+if (operand_editing_slot == "node_label") {
+    _label_display_text = operand_edit_text;
+}
+
+if (_label_display_text == "") {
+    _label_display_text = "···";
+}
+
+draw_set_halign(fa_right);
+draw_text(node_x + 156, node_y + 2, _label_display_text);
+draw_set_halign(fa_left);
+
 var _entry_for_draw = global.opcode_map[$ opcode_mnemonic];
 
 if (_entry_for_draw != undefined) {
@@ -35,6 +59,10 @@ if (_entry_for_draw != undefined) {
         draw_set_colour(c_white);
 
         var _src_value_text = string(operand_src);
+
+        if (addressing_mode_src == "LABEL") {
+            _src_value_text = operand_label_src;
+        }
 
         if (operand_editing_slot == "src") {
             _src_value_text = operand_edit_text;
@@ -62,6 +90,10 @@ if (_entry_for_draw != undefined) {
         draw_set_colour(c_white);
 
         var _dst_value_text = string(operand_dst);
+
+        if (addressing_mode_dst == "LABEL") {
+            _dst_value_text = operand_label_dst;
+        }
 
         if (operand_editing_slot == "dst") {
             _dst_value_text = operand_edit_text;
@@ -97,4 +129,6 @@ if (is_connected) {
     draw_line_width(node_x + (node_width / 2), node_y, node_x + (node_width / 2), node_y - 6, 3);
     draw_set_colour(c_white);
 }
+
+
 

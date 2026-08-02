@@ -50,6 +50,9 @@ function scr_format_operand(_mode_label, _value, _extra) {
         case "#imm":
             _text = "#" + string(_value);
             break;
+        case "LABEL":
+            _text = string(_value);
+            break;
         default:
             _text = "?";
             break;
