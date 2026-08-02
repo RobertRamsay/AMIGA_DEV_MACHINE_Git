@@ -1,3 +1,6 @@
+var _dx = node_x + global.pan_x;
+var _dy = node_y + global.pan_y;
+
 var _body_colour = c_orange;
 
 if (root_type == "INIT") {
@@ -10,16 +13,16 @@ if (_is_orphaned) {
 }
 
 draw_set_colour(_body_colour);
-draw_rectangle(node_x + 1, node_y + 1, node_x + node_width - 1, node_y + node_height - 1, false);
+draw_rectangle(_dx + 1, _dy + 1, _dx + node_width - 1, _dy + node_height - 1, false);
 
 draw_set_colour(c_white);
-draw_rectangle(node_x + 1, node_y + 1, node_x + node_width - 1, node_y + node_height - 1, true);
+draw_rectangle(_dx + 1, _dy + 1, _dx + node_width - 1, _dy + node_height - 1, true);
 draw_set_halign(fa_center);
 draw_set_valign(fa_middle);
-draw_text(node_x + (node_width / 2), node_y + (node_height / 2), root_type);
+draw_text(_dx + (node_width / 2), _dy + (node_height / 2), root_type);
 draw_set_halign(fa_left);
 draw_set_valign(fa_top);
 
 if (_is_orphaned) {
-    draw_text(node_x + 6, node_y + 18, "not connected");
+    draw_text(_dx + 6, _dy + 18, "not connected");
 }

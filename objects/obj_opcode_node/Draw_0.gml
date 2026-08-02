@@ -1,9 +1,14 @@
+// Screen-space draw position — world position plus current pan offset,
+// plus a temporary wedge-preview nudge (0 unless another node is being
+// dragged near this one right now).
+var _dx = node_x + global.pan_x;
+var _dy = node_y + global.pan_y + wedge_preview_shift_y;
 
 draw_set_colour(node_colour);
-draw_rectangle(node_x + 1, node_y + 1, node_x + node_width - 1, node_y + node_height - 1, false);
+draw_rectangle(_dx + 1, _dy + 1, _dx + node_width - 1, _dy + node_height - 1, false);
 
 draw_set_colour(c_white);
-draw_rectangle(node_x + 1, node_y + 1, node_x + node_width - 1, node_y + node_height - 1, true);
+draw_rectangle(_dx + 1, _dy + 1, _dx + node_width - 1, _dy + node_height - 1, true);
 
 var _size_suffix_display = "";
 
@@ -11,7 +16,7 @@ if (opcode_size != "") {
     _size_suffix_display = "." + opcode_size;
 }
 
-draw_text(node_x + 6, node_y , scr_opcode_display_label(opcode_mnemonic) + _size_suffix_display);
+draw_text(_dx + 6, _dy, scr_opcode_display_label(opcode_mnemonic) + _size_suffix_display);
 
 var _label_display_text = node_label;
 
@@ -21,15 +26,20 @@ if (operand_editing_slot == "node_label") {
 
 if (_label_display_text != "") {
     draw_set_colour(c_yellow);
-    draw_text(node_x + node_width + 6, node_y + 2, _label_display_text);
+    draw_text(_dx + node_width + 6, _dy + 2, _label_display_text);
     draw_set_colour(c_white);
 }
 
 if (operand_editing_slot == "node_label") {
     draw_set_colour(c_olive);
-    draw_rectangle(node_x + node_width + 4, node_y, node_x + node_width + 84, node_y + 20, true);
+    draw_rectangle(_dx + node_width + 4, _dy, _dx + node_width + 84, _dy + 20, true);
     draw_set_colour(c_white);
 }
+
+var _mode_src_dx = mode_button_src_x + global.pan_x;
+var _mode_src_dy = mode_button_src_y + global.pan_y + wedge_preview_shift_y;
+var _mode_dst_dx = mode_button_dst_x + global.pan_x;
+var _mode_dst_dy = mode_button_dst_y + global.pan_y + wedge_preview_shift_y;
 
 var _entry_for_draw = global.opcode_map[$ opcode_mnemonic];
 
@@ -38,9 +48,9 @@ if (_entry_for_draw != undefined) {
 
     if (_entry_for_draw.operand_count >= 1) {
         draw_set_colour(c_dkgray);
-        draw_rectangle(mode_button_src_x, mode_button_src_y, mode_button_src_x + _mode_zone_width, mode_button_src_y + mode_button_height, false);
+        draw_rectangle(_mode_src_dx, _mode_src_dy, _mode_src_dx + _mode_zone_width, _mode_src_dy + mode_button_height, false);
         draw_set_colour(c_white);
-        draw_text(mode_button_src_x + 4, mode_button_src_y, addressing_mode_src);
+        draw_text(_mode_src_dx + 4, _mode_src_dy, addressing_mode_src);
 
         var _src_value_colour = c_dkgray;
 
@@ -49,7 +59,7 @@ if (_entry_for_draw != undefined) {
         }
 
         draw_set_colour(_src_value_colour);
-        draw_rectangle(mode_button_src_x + _mode_zone_width, mode_button_src_y, mode_button_src_x + mode_button_width, mode_button_src_y + mode_button_height, false);
+        draw_rectangle(_mode_src_dx + _mode_zone_width, _mode_src_dy, _mode_src_dx + mode_button_width, _mode_src_dy + mode_button_height, false);
         draw_set_colour(c_white);
 
         var _src_is_register_display = scr_operand_mode_uses_register_index(addressing_mode_src);
@@ -68,15 +78,15 @@ if (_entry_for_draw != undefined) {
         }
 
         draw_set_halign(fa_right);
-        draw_text(mode_button_src_x + mode_button_width - 4, mode_button_src_y, _src_value_text);
+        draw_text(_mode_src_dx + mode_button_width - 4, _mode_src_dy, _src_value_text);
         draw_set_halign(fa_left);
     }
 
     if (_entry_for_draw.operand_count >= 2) {
         draw_set_colour(c_dkgray);
-        draw_rectangle(mode_button_dst_x, mode_button_dst_y, mode_button_dst_x + _mode_zone_width, mode_button_dst_y + mode_button_height, false);
+        draw_rectangle(_mode_dst_dx, _mode_dst_dy, _mode_dst_dx + _mode_zone_width, _mode_dst_dy + mode_button_height, false);
         draw_set_colour(c_white);
-      draw_text(mode_button_dst_x + 4, mode_button_dst_y, addressing_mode_dst);
+        draw_text(_mode_dst_dx + 4, _mode_dst_dy, addressing_mode_dst);
 
         var _dst_value_colour = c_dkgray;
 
@@ -85,7 +95,7 @@ if (_entry_for_draw != undefined) {
         }
 
         draw_set_colour(_dst_value_colour);
-        draw_rectangle(mode_button_dst_x + _mode_zone_width, mode_button_dst_y, mode_button_dst_x + mode_button_width, mode_button_dst_y + mode_button_height, false);
+        draw_rectangle(_mode_dst_dx + _mode_zone_width, _mode_dst_dy, _mode_dst_dx + mode_button_width, _mode_dst_dy + mode_button_height, false);
         draw_set_colour(c_white);
 
         var _dst_is_register_display = scr_operand_mode_uses_register_index(addressing_mode_dst);
@@ -104,7 +114,7 @@ if (_entry_for_draw != undefined) {
         }
 
         draw_set_halign(fa_right);
-        draw_text(mode_button_dst_x + mode_button_width - 4, mode_button_dst_y, _dst_value_text);
+        draw_text(_mode_dst_dx + mode_button_width - 4, _mode_dst_dy, _dst_value_text);
         draw_set_halign(fa_left);
     }
 }
@@ -121,18 +131,21 @@ if (!slot_dst_is_valid) {
 }
 
 draw_set_colour(_src_colour);
-draw_circle(src_validity_dot.dot_x, src_validity_dot.dot_y, 5, false);
+draw_circle(src_validity_dot.dot_x + global.pan_x, src_validity_dot.dot_y + global.pan_y + wedge_preview_shift_y, 5, false);
 
 draw_set_colour(_dst_colour);
-draw_circle(dst_validity_dot.dot_x, dst_validity_dot.dot_y, 5, false);
+draw_circle(dst_validity_dot.dot_x + global.pan_x, dst_validity_dot.dot_y + global.pan_y + wedge_preview_shift_y, 5, false);
 
 draw_set_colour(c_white);
 
 if (is_connected) {
     draw_set_colour(c_yellow);
-    draw_line_width(node_x + (node_width / 2), node_y, node_x + (node_width / 2), node_y - 6, 3);
+    draw_line_width(_dx + (node_width / 2), _dy, _dx + (node_width / 2), _dy - 6, 3);
     draw_set_colour(c_white);
 }
 
-
-
+if (wedge_target_found && is_dragging) {
+    draw_set_colour(c_yellow);
+    draw_rectangle(_dx - 3, _dy - 3, _dx + node_width + 3, _dy + node_height + 3, true);
+    draw_set_colour(c_white);
+}

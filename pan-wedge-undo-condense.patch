@@ -1,0 +1,1168 @@
+diff --git a/AMIGA_DEV_MACHINE.yyp b/AMIGA_DEV_MACHINE.yyp
+index 1ebb64c..e659f51 100644
+--- a/AMIGA_DEV_MACHINE.yyp
++++ b/AMIGA_DEV_MACHINE.yyp
+@@ -43,6 +43,16 @@
+     {"id":{"name":"scr_define_opcodes_68k_part4","path":"scripts/scr_define_opcodes_68k_part4/scr_define_opcodes_68k_part4.yy",},},
+     {"id":{"name":"scr_define_opcodes_68k_part5","path":"scripts/scr_define_opcodes_68k_part5/scr_define_opcodes_68k_part5.yy",},},
+     {"id":{"name":"scr_delete_node_and_relink","path":"scripts/scr_delete_node_and_relink/scr_delete_node_and_relink.yy",},},
++    {"id":{"name":"scr_relink_around_node","path":"scripts/scr_relink_around_node/scr_relink_around_node.yy",},},
++    {"id":{"name":"scr_find_nearest_wedge_point","path":"scripts/scr_find_nearest_wedge_point/scr_find_nearest_wedge_point.yy",},},
++    {"id":{"name":"scr_clear_wedge_preview","path":"scripts/scr_clear_wedge_preview/scr_clear_wedge_preview.yy",},},
++    {"id":{"name":"scr_apply_wedge_preview","path":"scripts/scr_apply_wedge_preview/scr_apply_wedge_preview.yy",},},
++    {"id":{"name":"scr_commit_wedge_insert","path":"scripts/scr_commit_wedge_insert/scr_commit_wedge_insert.yy",},},
++    {"id":{"name":"scr_capture_snapshot","path":"scripts/scr_capture_snapshot/scr_capture_snapshot.yy",},},
++    {"id":{"name":"scr_restore_snapshot","path":"scripts/scr_restore_snapshot/scr_restore_snapshot.yy",},},
++    {"id":{"name":"scr_push_undo_snapshot","path":"scripts/scr_push_undo_snapshot/scr_push_undo_snapshot.yy",},},
++    {"id":{"name":"scr_undo","path":"scripts/scr_undo/scr_undo.yy",},},
++    {"id":{"name":"scr_redo","path":"scripts/scr_redo/scr_redo.yy",},},
+     {"id":{"name":"scr_emit_opcode_line","path":"scripts/scr_emit_opcode_line/scr_emit_opcode_line.yy",},},
+     {"id":{"name":"scr_find_nearest_left_root","path":"scripts/scr_find_nearest_left_root/scr_find_nearest_left_root.yy",},},
+     {"id":{"name":"scr_format_operand","path":"scripts/scr_format_operand/scr_format_operand.yy",},},
+diff --git a/objects/obj_amiga_manager/Create_0.gml b/objects/obj_amiga_manager/Create_0.gml
+index 9197b3b..f5dee42 100644
+--- a/objects/obj_amiga_manager/Create_0.gml
++++ b/objects/obj_amiga_manager/Create_0.gml
+@@ -31,6 +31,18 @@ global.current_chipset_mode = "AGA";
+ 
+ global.operand_edit_owner_uid = -1;
+ 
++global.pan_x = 0;
++global.pan_y = 0;
++global.pan_active = false;
++global.pan_last_mouse_x = 0;
++global.pan_last_mouse_y = 0;
++
++global.undo_stack = [];
++global.redo_stack = [];
++global.undo_stack_max = 100;
++
++global.right_click_delete_handled_this_frame = false;
++
+ // 5. Palette scroll + hover state
+ global.palette_scroll_y = 0;
+ global.palette_panel_bounds = {
+diff --git a/objects/obj_amiga_manager/Draw_0.gml b/objects/obj_amiga_manager/Draw_0.gml
+index c04eed2..0088a92 100644
+--- a/objects/obj_amiga_manager/Draw_0.gml
++++ b/objects/obj_amiga_manager/Draw_0.gml
+@@ -77,4 +77,19 @@ draw_set_colour(c_maroon);
+ draw_rectangle(310, 2, 370, 18, false);
+ draw_set_colour(c_white);
+ draw_rectangle(310, 2, 370, 18, true);
+-draw_text(318, 0, "TEST");
+\ No newline at end of file
++draw_text(318, 0, "TEST");
++
++if (keyboard_check(vk_control)) {
++    var _hud_text = "Undo: " + string(array_length(global.undo_stack)) + "   Redo: " + string(array_length(global.redo_stack));
++    var _hud_x = mouse_x + 16;
++    var _hud_y = mouse_y + 16;
++    var _hud_width = 160;
++    var _hud_height = 20;
++
++    draw_set_alpha(0.85);
++    draw_rectangle_colour(_hud_x, _hud_y, _hud_x + _hud_width, _hud_y + _hud_height, c_black, c_black, c_black, c_black, false);
++    draw_set_alpha(1);
++    draw_set_colour(c_white);
++    draw_rectangle(_hud_x, _hud_y, _hud_x + _hud_width, _hud_y + _hud_height, true);
++    draw_text(_hud_x + 6, _hud_y + 2, _hud_text);
++}
+\ No newline at end of file
+diff --git a/objects/obj_amiga_manager/Step_0.gml b/objects/obj_amiga_manager/Step_0.gml
+index 5338bb7..1ca5304 100644
+--- a/objects/obj_amiga_manager/Step_0.gml
++++ b/objects/obj_amiga_manager/Step_0.gml
+@@ -1,3 +1,38 @@
++global.right_click_delete_handled_this_frame = false;
++
++var _pan_trigger_held = keyboard_check(vk_space) || mouse_check_button(mb_middle);
++
++if (_pan_trigger_held && !global.pan_active) {
++    global.pan_active = true;
++    global.pan_last_mouse_x = mouse_x;
++    global.pan_last_mouse_y = mouse_y;
++}
++
++if (_pan_trigger_held && global.pan_active) {
++    var _pan_delta_x = mouse_x - global.pan_last_mouse_x;
++    var _pan_delta_y = mouse_y - global.pan_last_mouse_y;
++
++    global.pan_x += _pan_delta_x;
++    global.pan_y += _pan_delta_y;
++
++    global.pan_last_mouse_x = mouse_x;
++    global.pan_last_mouse_y = mouse_y;
++}
++
++if (!_pan_trigger_held) {
++    global.pan_active = false;
++}
++
++var _ctrl_held_for_undo = keyboard_check(vk_control);
++
++if (_ctrl_held_for_undo && keyboard_check_pressed(ord("Z")) && global.operand_edit_owner_uid == -1) {
++    scr_undo();
++}
++
++if (_ctrl_held_for_undo && keyboard_check_pressed(ord("Y")) && global.operand_edit_owner_uid == -1) {
++    scr_redo();
++}
++
+ if (keyboard_check_pressed(vk_f5) && build_state == "idle") {
+     var _node_array = scr_amiga_collect_program_nodes();
+ 
+diff --git a/objects/obj_amiga_root_node/Draw_0.gml b/objects/obj_amiga_root_node/Draw_0.gml
+index 4ef6345..80336aa 100644
+--- a/objects/obj_amiga_root_node/Draw_0.gml
++++ b/objects/obj_amiga_root_node/Draw_0.gml
+@@ -1,3 +1,6 @@
++var _dx = node_x + global.pan_x;
++var _dy = node_y + global.pan_y;
++
+ var _body_colour = c_orange;
+ 
+ if (root_type == "INIT") {
+@@ -10,16 +13,16 @@ if (_is_orphaned) {
+ }
+ 
+ draw_set_colour(_body_colour);
+-draw_rectangle(node_x + 1, node_y + 1, node_x + node_width - 1, node_y + node_height - 1, false);
++draw_rectangle(_dx + 1, _dy + 1, _dx + node_width - 1, _dy + node_height - 1, false);
+ 
+ draw_set_colour(c_white);
+-draw_rectangle(node_x + 1, node_y + 1, node_x + node_width - 1, node_y + node_height - 1, true);
++draw_rectangle(_dx + 1, _dy + 1, _dx + node_width - 1, _dy + node_height - 1, true);
+ draw_set_halign(fa_center);
+ draw_set_valign(fa_middle);
+-draw_text(node_x + (node_width / 2), node_y + (node_height / 2), root_type);
++draw_text(_dx + (node_width / 2), _dy + (node_height / 2), root_type);
+ draw_set_halign(fa_left);
+ draw_set_valign(fa_top);
+ 
+ if (_is_orphaned) {
+-    draw_text(node_x + 6, node_y + 18, "not connected");
+-}
+\ No newline at end of file
++    draw_text(_dx + 6, _dy + 18, "not connected");
++}
+diff --git a/objects/obj_amiga_root_node/Step_0.gml b/objects/obj_amiga_root_node/Step_0.gml
+index f54a455..d969983 100644
+--- a/objects/obj_amiga_root_node/Step_0.gml
++++ b/objects/obj_amiga_root_node/Step_0.gml
+@@ -1,7 +1,10 @@
++var _world_mouse_x = mouse_x - global.pan_x;
++var _world_mouse_y = mouse_y - global.pan_y;
++
+ if (root_type == "ORG") {
+     if (is_dragging) {
+-        var _raw_x = mouse_x + drag_offset_x;
+-        var _raw_y = mouse_y + drag_offset_y;
++        var _raw_x = _world_mouse_x + drag_offset_x;
++        var _raw_y = _world_mouse_y + drag_offset_y;
+ 
+         node_x = scr_snap_to_grid(_raw_x, global.grid_size);
+         node_y = scr_snap_to_grid(_raw_y, global.grid_size);
+@@ -10,14 +13,15 @@ if (root_type == "ORG") {
+             is_dragging = false;
+         }
+     } else {
+-        var _over_body = point_in_rectangle(mouse_x, mouse_y, node_x, node_y, node_x + node_width, node_y + node_height);
++        var _over_body = point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y, node_x + node_width, node_y + node_height);
+ 
+         if (_over_body && mouse_check_button_pressed(mb_left)) {
++            scr_push_undo_snapshot();
+             is_dragging = true;
+-            drag_offset_x = node_x - mouse_x;
+-            drag_offset_y = node_y - mouse_y;
++            drag_offset_x = node_x - _world_mouse_x;
++            drag_offset_y = node_y - _world_mouse_y;
+         }
+     }
+ 
+     continues_from_root_uid = scr_find_nearest_left_root(id);
+-}
+\ No newline at end of file
++}
+diff --git a/objects/obj_opcode_node/Create_0.gml b/objects/obj_opcode_node/Create_0.gml
+index 26ef11f..92aa481 100644
+--- a/objects/obj_opcode_node/Create_0.gml
++++ b/objects/obj_opcode_node/Create_0.gml
+@@ -16,6 +16,13 @@ grab_start_y = 0;
+ is_connected = false;
+ parent_uid = -1;
+ 
++wedge_preview_shift_y = 0;
++wedge_target_found = false;
++wedge_target_parent_uid = -1;
++wedge_target_child_uid = -1;
++wedge_target_x = 0;
++wedge_target_y = 0;
++
+ node_label = "";
+ operand_label_src = "";
+ operand_label_dst = "";
+diff --git a/objects/obj_opcode_node/Draw_0.gml b/objects/obj_opcode_node/Draw_0.gml
+index 9a98b34..b98bda0 100644
+--- a/objects/obj_opcode_node/Draw_0.gml
++++ b/objects/obj_opcode_node/Draw_0.gml
+@@ -1,9 +1,14 @@
++// Screen-space draw position — world position plus current pan offset,
++// plus a temporary wedge-preview nudge (0 unless another node is being
++// dragged near this one right now).
++var _dx = node_x + global.pan_x;
++var _dy = node_y + global.pan_y + wedge_preview_shift_y;
+ 
+ draw_set_colour(node_colour);
+-draw_rectangle(node_x + 1, node_y + 1, node_x + node_width - 1, node_y + node_height - 1, false);
++draw_rectangle(_dx + 1, _dy + 1, _dx + node_width - 1, _dy + node_height - 1, false);
+ 
+ draw_set_colour(c_white);
+-draw_rectangle(node_x + 1, node_y + 1, node_x + node_width - 1, node_y + node_height - 1, true);
++draw_rectangle(_dx + 1, _dy + 1, _dx + node_width - 1, _dy + node_height - 1, true);
+ 
+ var _size_suffix_display = "";
+ 
+@@ -11,7 +16,7 @@ if (opcode_size != "") {
+     _size_suffix_display = "." + opcode_size;
+ }
+ 
+-draw_text(node_x + 6, node_y , scr_opcode_display_label(opcode_mnemonic) + _size_suffix_display);
++draw_text(_dx + 6, _dy, scr_opcode_display_label(opcode_mnemonic) + _size_suffix_display);
+ 
+ var _label_display_text = node_label;
+ 
+@@ -21,16 +26,21 @@ if (operand_editing_slot == "node_label") {
+ 
+ if (_label_display_text != "") {
+     draw_set_colour(c_yellow);
+-    draw_text(node_x + node_width + 6, node_y + 2, _label_display_text);
++    draw_text(_dx + node_width + 6, _dy + 2, _label_display_text);
+     draw_set_colour(c_white);
+ }
+ 
+ if (operand_editing_slot == "node_label") {
+     draw_set_colour(c_olive);
+-    draw_rectangle(node_x + node_width + 4, node_y, node_x + node_width + 84, node_y + 20, true);
++    draw_rectangle(_dx + node_width + 4, _dy, _dx + node_width + 84, _dy + 20, true);
+     draw_set_colour(c_white);
+ }
+ 
++var _mode_src_dx = mode_button_src_x + global.pan_x;
++var _mode_src_dy = mode_button_src_y + global.pan_y + wedge_preview_shift_y;
++var _mode_dst_dx = mode_button_dst_x + global.pan_x;
++var _mode_dst_dy = mode_button_dst_y + global.pan_y + wedge_preview_shift_y;
++
+ var _entry_for_draw = global.opcode_map[$ opcode_mnemonic];
+ 
+ if (_entry_for_draw != undefined) {
+@@ -38,9 +48,9 @@ if (_entry_for_draw != undefined) {
+ 
+     if (_entry_for_draw.operand_count >= 1) {
+         draw_set_colour(c_dkgray);
+-        draw_rectangle(mode_button_src_x, mode_button_src_y, mode_button_src_x + _mode_zone_width, mode_button_src_y + mode_button_height, false);
++        draw_rectangle(_mode_src_dx, _mode_src_dy, _mode_src_dx + _mode_zone_width, _mode_src_dy + mode_button_height, false);
+         draw_set_colour(c_white);
+-        draw_text(mode_button_src_x + 4, mode_button_src_y, addressing_mode_src);
++        draw_text(_mode_src_dx + 4, _mode_src_dy, addressing_mode_src);
+ 
+         var _src_value_colour = c_dkgray;
+ 
+@@ -49,7 +59,7 @@ if (_entry_for_draw != undefined) {
+         }
+ 
+         draw_set_colour(_src_value_colour);
+-        draw_rectangle(mode_button_src_x + _mode_zone_width, mode_button_src_y, mode_button_src_x + mode_button_width, mode_button_src_y + mode_button_height, false);
++        draw_rectangle(_mode_src_dx + _mode_zone_width, _mode_src_dy, _mode_src_dx + mode_button_width, _mode_src_dy + mode_button_height, false);
+         draw_set_colour(c_white);
+ 
+         var _src_is_register_display = scr_operand_mode_uses_register_index(addressing_mode_src);
+@@ -68,15 +78,15 @@ if (_entry_for_draw != undefined) {
+         }
+ 
+         draw_set_halign(fa_right);
+-        draw_text(mode_button_src_x + mode_button_width - 4, mode_button_src_y, _src_value_text);
++        draw_text(_mode_src_dx + mode_button_width - 4, _mode_src_dy, _src_value_text);
+         draw_set_halign(fa_left);
+     }
+ 
+     if (_entry_for_draw.operand_count >= 2) {
+         draw_set_colour(c_dkgray);
+-        draw_rectangle(mode_button_dst_x, mode_button_dst_y, mode_button_dst_x + _mode_zone_width, mode_button_dst_y + mode_button_height, false);
++        draw_rectangle(_mode_dst_dx, _mode_dst_dy, _mode_dst_dx + _mode_zone_width, _mode_dst_dy + mode_button_height, false);
+         draw_set_colour(c_white);
+-      draw_text(mode_button_dst_x + 4, mode_button_dst_y, addressing_mode_dst);
++        draw_text(_mode_dst_dx + 4, _mode_dst_dy, addressing_mode_dst);
+ 
+         var _dst_value_colour = c_dkgray;
+ 
+@@ -85,7 +95,7 @@ if (_entry_for_draw != undefined) {
+         }
+ 
+         draw_set_colour(_dst_value_colour);
+-        draw_rectangle(mode_button_dst_x + _mode_zone_width, mode_button_dst_y, mode_button_dst_x + mode_button_width, mode_button_dst_y + mode_button_height, false);
++        draw_rectangle(_mode_dst_dx + _mode_zone_width, _mode_dst_dy, _mode_dst_dx + mode_button_width, _mode_dst_dy + mode_button_height, false);
+         draw_set_colour(c_white);
+ 
+         var _dst_is_register_display = scr_operand_mode_uses_register_index(addressing_mode_dst);
+@@ -104,7 +114,7 @@ if (_entry_for_draw != undefined) {
+         }
+ 
+         draw_set_halign(fa_right);
+-        draw_text(mode_button_dst_x + mode_button_width - 4, mode_button_dst_y, _dst_value_text);
++        draw_text(_mode_dst_dx + mode_button_width - 4, _mode_dst_dy, _dst_value_text);
+         draw_set_halign(fa_left);
+     }
+ }
+@@ -121,18 +131,21 @@ if (!slot_dst_is_valid) {
+ }
+ 
+ draw_set_colour(_src_colour);
+-draw_circle(src_validity_dot.dot_x, src_validity_dot.dot_y, 5, false);
++draw_circle(src_validity_dot.dot_x + global.pan_x, src_validity_dot.dot_y + global.pan_y + wedge_preview_shift_y, 5, false);
+ 
+ draw_set_colour(_dst_colour);
+-draw_circle(dst_validity_dot.dot_x, dst_validity_dot.dot_y, 5, false);
++draw_circle(dst_validity_dot.dot_x + global.pan_x, dst_validity_dot.dot_y + global.pan_y + wedge_preview_shift_y, 5, false);
+ 
+ draw_set_colour(c_white);
+ 
+ if (is_connected) {
+     draw_set_colour(c_yellow);
+-    draw_line_width(node_x + (node_width / 2), node_y, node_x + (node_width / 2), node_y - 6, 3);
++    draw_line_width(_dx + (node_width / 2), _dy, _dx + (node_width / 2), _dy - 6, 3);
+     draw_set_colour(c_white);
+ }
+ 
+-
+-
++if (wedge_target_found && is_dragging) {
++    draw_set_colour(c_yellow);
++    draw_rectangle(_dx - 3, _dy - 3, _dx + node_width + 3, _dy + node_height + 3, true);
++    draw_set_colour(c_white);
++}
+diff --git a/objects/obj_opcode_node/Step_0.gml b/objects/obj_opcode_node/Step_0.gml
+index 609d85d..540a7c0 100644
+--- a/objects/obj_opcode_node/Step_0.gml
++++ b/objects/obj_opcode_node/Step_0.gml
+@@ -1,36 +1,70 @@
++// World-space mouse — mouse minus the current pan offset, since node_x/node_y
++// are always stored in true world space regardless of how far the view has panned.
++var _world_mouse_x = mouse_x - global.pan_x;
++var _world_mouse_y = mouse_y - global.pan_y;
++
+ // Validity dot positions — sit outside the node's left edge, clear of the value text
+ src_validity_dot.dot_x = node_x - 12;
+ src_validity_dot.dot_y = node_y + 30;
+ dst_validity_dot.dot_x = node_x - 12;
+ dst_validity_dot.dot_y = node_y + 50;
+ 
+-// Dragging — snapped to grid live, stack-connects to whatever it lands under on release
++// Dragging — snapped to grid live, stack-connects or wedge-inserts on release
+ if (is_dragging) {
+-    var _raw_x = mouse_x + drag_offset_x;
+-    var _raw_y = mouse_y + drag_offset_y;
++    var _raw_x = _world_mouse_x + drag_offset_x;
++    var _raw_y = _world_mouse_y + drag_offset_y;
+ 
+     node_x = scr_snap_to_grid(_raw_x, global.grid_size);
+     node_y = scr_snap_to_grid(_raw_y, global.grid_size);
+ 
++    scr_clear_wedge_preview();
++
++    var _wedge_result = scr_find_nearest_wedge_point(id, node_x, node_y);
++
++    wedge_target_found = _wedge_result.found;
++    wedge_target_parent_uid = _wedge_result.parent_uid;
++    wedge_target_child_uid = _wedge_result.child_uid;
++    wedge_target_x = _wedge_result.wedge_x;
++    wedge_target_y = _wedge_result.wedge_y;
++
++    if (wedge_target_found) {
++        scr_apply_wedge_preview(wedge_target_child_uid, node_height);
++    }
++
+     if (mouse_check_button_released(mb_left)) {
+         is_dragging = false;
+ 
+-        var _would_overlap = scr_check_node_overlap(id, node_x, node_y);
++        scr_push_undo_snapshot();
++
++        if (wedge_target_found) {
++            scr_commit_wedge_insert(id, wedge_target_parent_uid, wedge_target_child_uid, wedge_target_x, wedge_target_y);
++        } else {
++            var _would_overlap = scr_check_node_overlap(id, node_x, node_y);
++
++            if (_would_overlap) {
++                node_x = grab_start_x;
++                node_y = grab_start_y;
++            }
+ 
+-        if (_would_overlap) {
+-            node_x = grab_start_x;
+-            node_y = grab_start_y;
++            scr_try_stack_connect(id);
+         }
+ 
+-        scr_try_stack_connect(id);
++        scr_clear_wedge_preview();
++        wedge_target_found = false;
+     }
+ } else {
+-    var _over_body = point_in_rectangle(mouse_x, mouse_y, node_x, node_y, node_x + node_width, node_y + node_height);
++    var _over_body = point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y, node_x + node_width, node_y + node_height);
+ 
+     if (_over_body && mouse_check_button_pressed(mb_left)) {
++        scr_push_undo_snapshot();
++
++        // Condense: whatever was below this node closes the gap and re-links
++        // to whatever was above it, before this node floats free.
++        scr_relink_around_node(id);
++
+         is_dragging = true;
+-        drag_offset_x = node_x - mouse_x;
+-        drag_offset_y = node_y - mouse_y;
++        drag_offset_x = node_x - _world_mouse_x;
++        drag_offset_y = node_y - _world_mouse_y;
+         grab_start_x = node_x;
+         grab_start_y = node_y;
+         is_selected = true;
+@@ -38,7 +72,11 @@ if (is_dragging) {
+         parent_uid = -1;
+     }
+ 
+-    if (_over_body && mouse_check_button_pressed(mb_right)) {
++    if (_over_body && mouse_check_button_released(mb_right) && !global.right_click_delete_handled_this_frame) {
++        global.right_click_delete_handled_this_frame = true;
++
++        scr_push_undo_snapshot();
++
+         if (global.operand_edit_owner_uid == uid) {
+             global.operand_edit_owner_uid = -1;
+         }
+@@ -96,11 +134,12 @@ if (_entry_for_modes != undefined) {
+     var _mode_zone_width = mode_button_width - value_box_width;
+ 
+     if (_entry_for_modes.operand_count >= 1) {
+-        var _over_src_mode = point_in_rectangle(mouse_x, mouse_y, mode_button_src_x, mode_button_src_y, mode_button_src_x + _mode_zone_width, mode_button_src_y + mode_button_height);
+-        var _over_src_value = point_in_rectangle(mouse_x, mouse_y, mode_button_src_x + _mode_zone_width, mode_button_src_y, mode_button_src_x + mode_button_width, mode_button_src_y + mode_button_height);
++        var _over_src_mode = point_in_rectangle(_world_mouse_x, _world_mouse_y, mode_button_src_x, mode_button_src_y, mode_button_src_x + _mode_zone_width, mode_button_src_y + mode_button_height);
++        var _over_src_value = point_in_rectangle(_world_mouse_x, _world_mouse_y, mode_button_src_x + _mode_zone_width, mode_button_src_y, mode_button_src_x + mode_button_width, mode_button_src_y + mode_button_height);
+         var _src_mode_locked = scr_is_branch_target_opcode(opcode_mnemonic);
+ 
+         if (_over_src_mode && mouse_check_button_pressed(mb_left) && !_src_mode_locked) {
++            scr_push_undo_snapshot();
+             addressing_mode_src = scr_cycle_addressing_mode(addressing_mode_src, _entry_for_modes.src_modes);
+         }
+ 
+@@ -127,11 +166,12 @@ if (_entry_for_modes != undefined) {
+     }
+ 
+     if (_entry_for_modes.operand_count >= 2) {
+-        var _over_dst_mode = point_in_rectangle(mouse_x, mouse_y, mode_button_dst_x, mode_button_dst_y, mode_button_dst_x + _mode_zone_width, mode_button_dst_y + mode_button_height);
+-        var _over_dst_value = point_in_rectangle(mouse_x, mouse_y, mode_button_dst_x + _mode_zone_width, mode_button_dst_y, mode_button_dst_x + mode_button_width, mode_button_dst_y + mode_button_height);
++        var _over_dst_mode = point_in_rectangle(_world_mouse_x, _world_mouse_y, mode_button_dst_x, mode_button_dst_y, mode_button_dst_x + _mode_zone_width, mode_button_dst_y + mode_button_height);
++        var _over_dst_value = point_in_rectangle(_world_mouse_x, _world_mouse_y, mode_button_dst_x + _mode_zone_width, mode_button_dst_y, mode_button_dst_x + mode_button_width, mode_button_dst_y + mode_button_height);
+         var _dst_mode_locked = scr_is_dbcc_opcode(opcode_mnemonic);
+ 
+         if (_over_dst_mode && mouse_check_button_pressed(mb_left) && !_dst_mode_locked) {
++            scr_push_undo_snapshot();
+             addressing_mode_dst = scr_cycle_addressing_mode(addressing_mode_dst, _entry_for_modes.dst_modes);
+         }
+ 
+@@ -163,7 +203,7 @@ var _label_button_y = node_y;
+ var _label_button_width = 80;
+ var _label_button_height = 20;
+ 
+-var _over_label_button = point_in_rectangle(mouse_x, mouse_y, _label_button_x, _label_button_y, _label_button_x + _label_button_width, _label_button_y + _label_button_height);
++var _over_label_button = point_in_rectangle(_world_mouse_x, _world_mouse_y, _label_button_x, _label_button_y, _label_button_x + _label_button_width, _label_button_y + _label_button_height);
+ var _can_start_label_edit = (global.operand_edit_owner_uid == -1) || (global.operand_edit_owner_uid == uid);
+ 
+ if (_over_label_button && mouse_check_button_pressed(mb_left) && _can_start_label_edit) {
+@@ -237,6 +277,8 @@ if (operand_editing_slot != "" && global.operand_edit_owner_uid == uid) {
+     }
+ 
+     if (keyboard_check_pressed(vk_enter)) {
++        scr_push_undo_snapshot();
++
+         if (_is_text_field) {
+             if (operand_editing_slot == "node_label") {
+                 node_label = operand_edit_text;
+@@ -286,4 +328,4 @@ if (operand_editing_slot != "" && global.operand_edit_owner_uid == uid) {
+         operand_editing_slot = "";
+         global.operand_edit_owner_uid = -1;
+     }
+-}
+\ No newline at end of file
++}
+diff --git a/objects/obj_opcode_palette_item/Step_0.gml b/objects/obj_opcode_palette_item/Step_0.gml
+index 69ca7d6..7373035 100644
+--- a/objects/obj_opcode_palette_item/Step_0.gml
++++ b/objects/obj_opcode_palette_item/Step_0.gml
+@@ -11,17 +11,22 @@ if (is_being_dragged) {
+     if (mouse_check_button_released(mb_left)) {
+         var _dropped_on_canvas = point_in_rectangle(mouse_x, mouse_y, global.canvas_bounds.left, global.canvas_bounds.top, global.canvas_bounds.right, global.canvas_bounds.bottom);
+ 
++        var _drop_world_x = mouse_x - global.pan_x;
++        var _drop_world_y = mouse_y - global.pan_y;
++
+          if (_dropped_on_canvas && palette_mnemonic == "ORG") {
+-            var _new_org = instance_create_layer(mouse_x, mouse_y, "Instances", obj_amiga_root_node);
++            scr_push_undo_snapshot();
++            var _new_org = instance_create_layer(_drop_world_x, _drop_world_y, "Instances", obj_amiga_root_node);
+             _new_org.root_type = "ORG";
+-            _new_org.node_x = scr_snap_to_grid(mouse_x, global.grid_size);
+-            _new_org.node_y = scr_snap_to_grid(mouse_y, global.grid_size);
++            _new_org.node_x = scr_snap_to_grid(_drop_world_x, global.grid_size);
++            _new_org.node_y = scr_snap_to_grid(_drop_world_y, global.grid_size);
+         }
+ 
+         if (_dropped_on_canvas && palette_mnemonic != "ORG") {
+-            var _new_node = instance_create_layer(mouse_x, mouse_y, "Instances", obj_opcode_node);
+-            _new_node.node_x = scr_snap_to_grid(mouse_x, global.grid_size);
+-            _new_node.node_y = scr_snap_to_grid(mouse_y, global.grid_size);
++            scr_push_undo_snapshot();
++            var _new_node = instance_create_layer(_drop_world_x, _drop_world_y, "Instances", obj_opcode_node);
++            _new_node.node_x = scr_snap_to_grid(_drop_world_x, global.grid_size);
++            _new_node.node_y = scr_snap_to_grid(_drop_world_y, global.grid_size);
+             _new_node.opcode_mnemonic = palette_mnemonic;
+ 
+             var _entry = global.opcode_map[$ palette_mnemonic];
+diff --git a/scripts/scr_apply_wedge_preview/scr_apply_wedge_preview.gml b/scripts/scr_apply_wedge_preview/scr_apply_wedge_preview.gml
+new file mode 100644
+index 0000000..7f99067
+--- /dev/null
++++ b/scripts/scr_apply_wedge_preview/scr_apply_wedge_preview.gml
+@@ -0,0 +1,30 @@
++/// @desc scr_apply_wedge_preview(_child_uid, _shift_amount)
++/// Temporarily nudges the node at _child_uid, and everything below it in the
++/// chain, down by _shift_amount for preview only — does not touch real node_y.
++function scr_apply_wedge_preview(_child_uid, _shift_amount) {
++    var _cursor_uid = _child_uid;
++    var _still_walking = true;
++
++    while (_still_walking) {
++        _still_walking = false;
++
++        with (obj_opcode_node) {
++            if (uid == _cursor_uid) {
++                wedge_preview_shift_y = _shift_amount;
++            }
++        }
++
++        var _next_uid = -1;
++
++        with (obj_opcode_node) {
++            if (parent_uid == _cursor_uid) {
++                _next_uid = uid;
++            }
++        }
++
++        if (_next_uid != -1) {
++            _cursor_uid = _next_uid;
++            _still_walking = true;
++        }
++    }
++}
+diff --git a/scripts/scr_apply_wedge_preview/scr_apply_wedge_preview.yy b/scripts/scr_apply_wedge_preview/scr_apply_wedge_preview.yy
+new file mode 100644
+index 0000000..d66c345
+--- /dev/null
++++ b/scripts/scr_apply_wedge_preview/scr_apply_wedge_preview.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_apply_wedge_preview",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_apply_wedge_preview",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}
+diff --git a/scripts/scr_capture_snapshot/scr_capture_snapshot.gml b/scripts/scr_capture_snapshot/scr_capture_snapshot.gml
+new file mode 100644
+index 0000000..e56eaf1
+--- /dev/null
++++ b/scripts/scr_capture_snapshot/scr_capture_snapshot.gml
+@@ -0,0 +1,41 @@
++/// @desc scr_capture_snapshot()
++/// Same data shape as scr_save_layout, kept in memory rather than written to disk.
++function scr_capture_snapshot() {
++    var _root_array = [];
++
++    with (obj_amiga_root_node) {
++        var _root_data = { uid : uid, root_type : root_type, node_x : node_x, node_y : node_y };
++        array_push(_root_array, _root_data);
++    }
++
++    var _node_array = [];
++
++    with (obj_opcode_node) {
++        var _node_data = {
++            uid : uid,
++            node_x : node_x,
++            node_y : node_y,
++            is_connected : is_connected,
++            parent_uid : parent_uid,
++            opcode_mnemonic : opcode_mnemonic,
++            opcode_size : opcode_size,
++            addressing_mode_src : addressing_mode_src,
++            addressing_mode_dst : addressing_mode_dst,
++            operand_src : operand_src,
++            operand_dst : operand_dst,
++            operand_label_src : operand_label_src,
++            operand_label_dst : operand_label_dst,
++            node_label : node_label,
++            displacement_src : operand_extra_src.displacement,
++            index_register_src : operand_extra_src.index_register,
++            index_register_is_address_src : operand_extra_src.index_register_is_address,
++            displacement_dst : operand_extra_dst.displacement,
++            index_register_dst : operand_extra_dst.index_register,
++            index_register_is_address_dst : operand_extra_dst.index_register_is_address
++        };
++
++        array_push(_node_array, _node_data);
++    }
++
++    return { roots : _root_array, nodes : _node_array };
++}
+diff --git a/scripts/scr_capture_snapshot/scr_capture_snapshot.yy b/scripts/scr_capture_snapshot/scr_capture_snapshot.yy
+new file mode 100644
+index 0000000..a725273
+--- /dev/null
++++ b/scripts/scr_capture_snapshot/scr_capture_snapshot.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_capture_snapshot",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_capture_snapshot",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}
+diff --git a/scripts/scr_clear_wedge_preview/scr_clear_wedge_preview.gml b/scripts/scr_clear_wedge_preview/scr_clear_wedge_preview.gml
+new file mode 100644
+index 0000000..bfd46c5
+--- /dev/null
++++ b/scripts/scr_clear_wedge_preview/scr_clear_wedge_preview.gml
+@@ -0,0 +1,7 @@
++/// @desc scr_clear_wedge_preview()
++/// Resets every node's temporary wedge-insert preview offset back to zero.
++function scr_clear_wedge_preview() {
++    with (obj_opcode_node) {
++        wedge_preview_shift_y = 0;
++    }
++}
+diff --git a/scripts/scr_clear_wedge_preview/scr_clear_wedge_preview.yy b/scripts/scr_clear_wedge_preview/scr_clear_wedge_preview.yy
+new file mode 100644
+index 0000000..df5dd33
+--- /dev/null
++++ b/scripts/scr_clear_wedge_preview/scr_clear_wedge_preview.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_clear_wedge_preview",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_clear_wedge_preview",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}
+diff --git a/scripts/scr_commit_wedge_insert/scr_commit_wedge_insert.gml b/scripts/scr_commit_wedge_insert/scr_commit_wedge_insert.gml
+new file mode 100644
+index 0000000..68115ff
+--- /dev/null
++++ b/scripts/scr_commit_wedge_insert/scr_commit_wedge_insert.gml
+@@ -0,0 +1,50 @@
++/// @desc scr_commit_wedge_insert(_self_id, _wedge_parent_uid, _wedge_child_uid, _wedge_x, _wedge_y)
++/// Permanently inserts _self_id at a wedge point: takes over the child's old
++/// position/parent, and pushes the child (and everything below it) down for real.
++function scr_commit_wedge_insert(_self_id, _wedge_parent_uid, _wedge_child_uid, _wedge_x, _wedge_y) {
++    var _own_height = _self_id.node_height;
++
++    _self_id.node_x = _wedge_x;
++    _self_id.node_y = _wedge_y;
++    _self_id.parent_uid = _wedge_parent_uid;
++    _self_id.is_connected = true;
++
++    var _child_id = noone;
++
++    with (obj_opcode_node) {
++        if (uid == _wedge_child_uid) {
++            _child_id = id;
++        }
++    }
++
++    if (_child_id != noone) {
++        _child_id.parent_uid = _self_id.uid;
++
++        var _shift_cursor_uid = _child_id.uid;
++        var _still_shifting = true;
++
++        while (_still_shifting) {
++            _still_shifting = false;
++
++            with (obj_opcode_node) {
++                if (uid == _shift_cursor_uid) {
++                    node_y += _own_height;
++                    wedge_preview_shift_y = 0;
++                }
++            }
++
++            var _next_uid = -1;
++
++            with (obj_opcode_node) {
++                if (parent_uid == _shift_cursor_uid) {
++                    _next_uid = uid;
++                }
++            }
++
++            if (_next_uid != -1) {
++                _shift_cursor_uid = _next_uid;
++                _still_shifting = true;
++            }
++        }
++    }
++}
+diff --git a/scripts/scr_commit_wedge_insert/scr_commit_wedge_insert.yy b/scripts/scr_commit_wedge_insert/scr_commit_wedge_insert.yy
+new file mode 100644
+index 0000000..b13cd78
+--- /dev/null
++++ b/scripts/scr_commit_wedge_insert/scr_commit_wedge_insert.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_commit_wedge_insert",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_commit_wedge_insert",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}
+diff --git a/scripts/scr_delete_node_and_relink/scr_delete_node_and_relink.gml b/scripts/scr_delete_node_and_relink/scr_delete_node_and_relink.gml
+index 8fd430b..e101c81 100644
+--- a/scripts/scr_delete_node_and_relink/scr_delete_node_and_relink.gml
++++ b/scripts/scr_delete_node_and_relink/scr_delete_node_and_relink.gml
+@@ -2,48 +2,6 @@
+ /// Reconnects whatever was below _deleted_id to whatever was above it,
+ /// shifting the rest of the chain up so it stays visually contiguous, then destroys it.
+ function scr_delete_node_and_relink(_deleted_id) {
+-    var _deleted_parent_uid = _deleted_id.parent_uid;
+-    var _deleted_height = _deleted_id.node_height;
+-    var _deleted_uid = _deleted_id.uid;
+-
+-    var _child_id = noone;
+-
+-    with (obj_opcode_node) {
+-        if (parent_uid == _deleted_uid) {
+-            _child_id = id;
+-        }
+-    }
+-
+-    if (_child_id != noone) {
+-        _child_id.parent_uid = _deleted_parent_uid;
+-        _child_id.is_connected = true;
+-
+-        var _shift_cursor_uid = _child_id.uid;
+-        var _still_shifting = true;
+-
+-        while (_still_shifting) {
+-            _still_shifting = false;
+-
+-            with (obj_opcode_node) {
+-                if (uid == _shift_cursor_uid) {
+-                    node_y -= _deleted_height;
+-                }
+-            }
+-
+-            var _next_uid = -1;
+-
+-            with (obj_opcode_node) {
+-                if (parent_uid == _shift_cursor_uid) {
+-                    _next_uid = uid;
+-                }
+-            }
+-
+-            if (_next_uid != -1) {
+-                _shift_cursor_uid = _next_uid;
+-                _still_shifting = true;
+-            }
+-        }
+-    }
+-
++    scr_relink_around_node(_deleted_id);
+     instance_destroy(_deleted_id);
+-}
+\ No newline at end of file
++}
+diff --git a/scripts/scr_find_nearest_wedge_point/scr_find_nearest_wedge_point.gml b/scripts/scr_find_nearest_wedge_point/scr_find_nearest_wedge_point.gml
+new file mode 100644
+index 0000000..c1af4a2
+--- /dev/null
++++ b/scripts/scr_find_nearest_wedge_point/scr_find_nearest_wedge_point.gml
+@@ -0,0 +1,43 @@
++/// @desc scr_find_nearest_wedge_point(_self_id, _test_x, _test_y)
++/// Looks for an existing connected node whose position is within 20px of
++/// (_test_x, _test_y) — that node's position IS the wedge point (inserting
++/// there pushes it, and everything below it, down by one node height).
++/// Returns { found, parent_uid, child_uid, wedge_x, wedge_y }.
++function scr_find_nearest_wedge_point(_self_id, _test_x, _test_y) {
++    var _threshold = 20;
++    var _result = {
++        found : false,
++        parent_uid : -1,
++        child_uid : -1,
++        wedge_x : 0,
++        wedge_y : 0
++    };
++
++    var _best_distance = _threshold * 2 + 1;
++
++    with (obj_opcode_node) {
++        var _is_self = (id == _self_id);
++        var _has_real_parent = (parent_uid != -1);
++
++        if (!_is_self && _has_real_parent) {
++            var _dx = abs(node_x - _test_x);
++            var _dy = abs(node_y - _test_y);
++            var _within_threshold = (_dx <= _threshold) && (_dy <= _threshold);
++
++            if (_within_threshold) {
++                var _distance = _dx + _dy;
++
++                if (_distance < _best_distance) {
++                    _best_distance = _distance;
++                    _result.found = true;
++                    _result.parent_uid = parent_uid;
++                    _result.child_uid = uid;
++                    _result.wedge_x = node_x;
++                    _result.wedge_y = node_y;
++                }
++            }
++        }
++    }
++
++    return _result;
++}
+diff --git a/scripts/scr_find_nearest_wedge_point/scr_find_nearest_wedge_point.yy b/scripts/scr_find_nearest_wedge_point/scr_find_nearest_wedge_point.yy
+new file mode 100644
+index 0000000..1e0b5af
+--- /dev/null
++++ b/scripts/scr_find_nearest_wedge_point/scr_find_nearest_wedge_point.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_find_nearest_wedge_point",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_find_nearest_wedge_point",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}
+diff --git a/scripts/scr_push_undo_snapshot/scr_push_undo_snapshot.gml b/scripts/scr_push_undo_snapshot/scr_push_undo_snapshot.gml
+new file mode 100644
+index 0000000..4a407da
+--- /dev/null
++++ b/scripts/scr_push_undo_snapshot/scr_push_undo_snapshot.gml
+@@ -0,0 +1,12 @@
++/// @desc scr_push_undo_snapshot()
++/// Call BEFORE a mutation, so the stack holds "state right before this action."
++function scr_push_undo_snapshot() {
++    var _snapshot = scr_capture_snapshot();
++    array_push(global.undo_stack, _snapshot);
++
++    if (array_length(global.undo_stack) > global.undo_stack_max) {
++        array_delete(global.undo_stack, 0, 1);
++    }
++
++    global.redo_stack = [];
++}
+diff --git a/scripts/scr_push_undo_snapshot/scr_push_undo_snapshot.yy b/scripts/scr_push_undo_snapshot/scr_push_undo_snapshot.yy
+new file mode 100644
+index 0000000..bef80dd
+--- /dev/null
++++ b/scripts/scr_push_undo_snapshot/scr_push_undo_snapshot.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_push_undo_snapshot",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_push_undo_snapshot",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}
+diff --git a/scripts/scr_redo/scr_redo.gml b/scripts/scr_redo/scr_redo.gml
+new file mode 100644
+index 0000000..bc9d65b
+--- /dev/null
++++ b/scripts/scr_redo/scr_redo.gml
+@@ -0,0 +1,21 @@
++/// @desc scr_redo()
++function scr_redo() {
++    var _redo_count = array_length(global.redo_stack);
++
++    if (_redo_count == 0) {
++        show_debug_message("Nothing to redo.");
++        return;
++    }
++
++    var _current_snapshot = scr_capture_snapshot();
++    array_push(global.undo_stack, _current_snapshot);
++
++    if (array_length(global.undo_stack) > global.undo_stack_max) {
++        array_delete(global.undo_stack, 0, 1);
++    }
++
++    var _next_snapshot = global.redo_stack[_redo_count - 1];
++    array_delete(global.redo_stack, _redo_count - 1, 1);
++
++    scr_restore_snapshot(_next_snapshot);
++}
+diff --git a/scripts/scr_redo/scr_redo.yy b/scripts/scr_redo/scr_redo.yy
+new file mode 100644
+index 0000000..793629e
+--- /dev/null
++++ b/scripts/scr_redo/scr_redo.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_redo",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_redo",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}
+diff --git a/scripts/scr_relink_around_node/scr_relink_around_node.gml b/scripts/scr_relink_around_node/scr_relink_around_node.gml
+new file mode 100644
+index 0000000..77081b9
+--- /dev/null
++++ b/scripts/scr_relink_around_node/scr_relink_around_node.gml
+@@ -0,0 +1,49 @@
++/// @desc scr_relink_around_node(_node_id)
++/// Detaches _node_id from the chain: whatever was below it gets reparented
++/// to whatever was above it, and shifts up to close the gap. Does NOT destroy
++/// _node_id — used both by delete (which destroys afterward) and by picking
++/// a node up to drag (which doesn't).
++function scr_relink_around_node(_node_id) {
++    var _parent_uid = _node_id.parent_uid;
++    var _own_height = _node_id.node_height;
++    var _own_uid = _node_id.uid;
++
++    var _child_id = noone;
++
++    with (obj_opcode_node) {
++        if (parent_uid == _own_uid) {
++            _child_id = id;
++        }
++    }
++
++    if (_child_id != noone) {
++        _child_id.parent_uid = _parent_uid;
++        _child_id.is_connected = (_parent_uid != -1);
++
++        var _shift_cursor_uid = _child_id.uid;
++        var _still_shifting = true;
++
++        while (_still_shifting) {
++            _still_shifting = false;
++
++            with (obj_opcode_node) {
++                if (uid == _shift_cursor_uid) {
++                    node_y -= _own_height;
++                }
++            }
++
++            var _next_uid = -1;
++
++            with (obj_opcode_node) {
++                if (parent_uid == _shift_cursor_uid) {
++                    _next_uid = uid;
++                }
++            }
++
++            if (_next_uid != -1) {
++                _shift_cursor_uid = _next_uid;
++                _still_shifting = true;
++            }
++        }
++    }
++}
+diff --git a/scripts/scr_relink_around_node/scr_relink_around_node.yy b/scripts/scr_relink_around_node/scr_relink_around_node.yy
+new file mode 100644
+index 0000000..7af13db
+--- /dev/null
++++ b/scripts/scr_relink_around_node/scr_relink_around_node.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_relink_around_node",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_relink_around_node",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}
+diff --git a/scripts/scr_restore_snapshot/scr_restore_snapshot.gml b/scripts/scr_restore_snapshot/scr_restore_snapshot.gml
+new file mode 100644
+index 0000000..4e59615
+--- /dev/null
++++ b/scripts/scr_restore_snapshot/scr_restore_snapshot.gml
+@@ -0,0 +1,62 @@
++/// @desc scr_restore_snapshot(_snapshot)
++/// Destroys the current graph and rebuilds it exactly from _snapshot,
++/// including original uids so parent_uid links stay correct.
++function scr_restore_snapshot(_snapshot) {
++    with (obj_opcode_node) {
++        instance_destroy();
++    }
++
++    with (obj_amiga_root_node) {
++        instance_destroy();
++    }
++
++    var _root_array = _snapshot.roots;
++    var _root_count = array_length(_root_array);
++    var _r = 0;
++
++    while (_r < _root_count) {
++        var _root_data = _root_array[_r];
++        var _new_root = instance_create_layer(_root_data.node_x, _root_data.node_y, "Instances", obj_amiga_root_node);
++
++        _new_root.uid = _root_data.uid;
++        _new_root.root_type = _root_data.root_type;
++        _new_root.node_x = _root_data.node_x;
++        _new_root.node_y = _root_data.node_y;
++
++        _r += 1;
++    }
++
++    var _node_array = _snapshot.nodes;
++    var _node_count = array_length(_node_array);
++    var _n = 0;
++
++    while (_n < _node_count) {
++        var _node_data = _node_array[_n];
++        var _new_node = instance_create_layer(_node_data.node_x, _node_data.node_y, "Instances", obj_opcode_node);
++
++        _new_node.uid = _node_data.uid;
++        _new_node.node_x = _node_data.node_x;
++        _new_node.node_y = _node_data.node_y;
++        _new_node.is_connected = _node_data.is_connected;
++        _new_node.parent_uid = _node_data.parent_uid;
++        _new_node.opcode_mnemonic = _node_data.opcode_mnemonic;
++        _new_node.opcode_size = _node_data.opcode_size;
++        _new_node.addressing_mode_src = _node_data.addressing_mode_src;
++        _new_node.addressing_mode_dst = _node_data.addressing_mode_dst;
++        _new_node.operand_src = _node_data.operand_src;
++        _new_node.operand_dst = _node_data.operand_dst;
++        _new_node.operand_label_src = _node_data.operand_label_src;
++        _new_node.operand_label_dst = _node_data.operand_label_dst;
++        _new_node.node_label = _node_data.node_label;
++
++        _new_node.operand_extra_src.displacement = _node_data.displacement_src;
++        _new_node.operand_extra_src.index_register = _node_data.index_register_src;
++        _new_node.operand_extra_src.index_register_is_address = _node_data.index_register_is_address_src;
++
++        _new_node.operand_extra_dst.displacement = _node_data.displacement_dst;
++        _new_node.operand_extra_dst.index_register = _node_data.index_register_dst;
++        _new_node.operand_extra_dst.index_register_is_address = _node_data.index_register_is_address_dst;
++
++        _n += 1;
++    }
++}
+diff --git a/scripts/scr_restore_snapshot/scr_restore_snapshot.yy b/scripts/scr_restore_snapshot/scr_restore_snapshot.yy
+new file mode 100644
+index 0000000..c17f015
+--- /dev/null
++++ b/scripts/scr_restore_snapshot/scr_restore_snapshot.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_restore_snapshot",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_restore_snapshot",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}
+diff --git a/scripts/scr_undo/scr_undo.gml b/scripts/scr_undo/scr_undo.gml
+new file mode 100644
+index 0000000..650d111
+--- /dev/null
++++ b/scripts/scr_undo/scr_undo.gml
+@@ -0,0 +1,17 @@
++/// @desc scr_undo()
++function scr_undo() {
++    var _undo_count = array_length(global.undo_stack);
++
++    if (_undo_count == 0) {
++        show_debug_message("Nothing to undo.");
++        return;
++    }
++
++    var _current_snapshot = scr_capture_snapshot();
++    array_push(global.redo_stack, _current_snapshot);
++
++    var _previous_snapshot = global.undo_stack[_undo_count - 1];
++    array_delete(global.undo_stack, _undo_count - 1, 1);
++
++    scr_restore_snapshot(_previous_snapshot);
++}
+diff --git a/scripts/scr_undo/scr_undo.yy b/scripts/scr_undo/scr_undo.yy
+new file mode 100644
+index 0000000..5f8c48e
+--- /dev/null
++++ b/scripts/scr_undo/scr_undo.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_undo",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_undo",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}

@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_apply_wedge_preview",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_apply_wedge_preview",
+  "parent":{
+    "name":"AMIGA_DEV_MACHINE",
+    "path":"AMIGA_DEV_MACHINE.yyp",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

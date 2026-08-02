@@ -31,6 +31,18 @@ global.current_chipset_mode = "AGA";
 
 global.operand_edit_owner_uid = -1;
 
+global.pan_x = 0;
+global.pan_y = 0;
+global.pan_active = false;
+global.pan_last_mouse_x = 0;
+global.pan_last_mouse_y = 0;
+
+global.undo_stack = [];
+global.redo_stack = [];
+global.undo_stack_max = 100;
+
+global.right_click_delete_handled_this_frame = false;
+
 // 5. Palette scroll + hover state
 global.palette_scroll_y = 0;
 global.palette_panel_bounds = {

@@ -1,3 +1,38 @@
+global.right_click_delete_handled_this_frame = false;
+
+var _pan_trigger_held = keyboard_check(vk_space) || mouse_check_button(mb_middle);
+
+if (_pan_trigger_held && !global.pan_active) {
+    global.pan_active = true;
+    global.pan_last_mouse_x = mouse_x;
+    global.pan_last_mouse_y = mouse_y;
+}
+
+if (_pan_trigger_held && global.pan_active) {
+    var _pan_delta_x = mouse_x - global.pan_last_mouse_x;
+    var _pan_delta_y = mouse_y - global.pan_last_mouse_y;
+
+    global.pan_x += _pan_delta_x;
+    global.pan_y += _pan_delta_y;
+
+    global.pan_last_mouse_x = mouse_x;
+    global.pan_last_mouse_y = mouse_y;
+}
+
+if (!_pan_trigger_held) {
+    global.pan_active = false;
+}
+
+var _ctrl_held_for_undo = keyboard_check(vk_control);
+
+if (_ctrl_held_for_undo && keyboard_check_pressed(ord("Z")) && global.operand_edit_owner_uid == -1) {
+    scr_undo();
+}
+
+if (_ctrl_held_for_undo && keyboard_check_pressed(ord("Y")) && global.operand_edit_owner_uid == -1) {
+    scr_redo();
+}
+
 if (keyboard_check_pressed(vk_f5) && build_state == "idle") {
     var _node_array = scr_amiga_collect_program_nodes();
 

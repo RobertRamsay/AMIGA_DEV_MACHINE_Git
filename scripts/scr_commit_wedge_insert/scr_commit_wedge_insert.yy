@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_commit_wedge_insert",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_commit_wedge_insert",
+  "parent":{
+    "name":"AMIGA_DEV_MACHINE",
+    "path":"AMIGA_DEV_MACHINE.yyp",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

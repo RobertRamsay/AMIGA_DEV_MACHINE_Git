@@ -16,6 +16,13 @@ grab_start_y = 0;
 is_connected = false;
 parent_uid = -1;
 
+wedge_preview_shift_y = 0;
+wedge_target_found = false;
+wedge_target_parent_uid = -1;
+wedge_target_child_uid = -1;
+wedge_target_x = 0;
+wedge_target_y = 0;
+
 node_label = "";
 operand_label_src = "";
 operand_label_dst = "";

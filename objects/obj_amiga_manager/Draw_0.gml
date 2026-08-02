@@ -78,3 +78,18 @@ draw_rectangle(310, 2, 370, 18, false);
 draw_set_colour(c_white);
 draw_rectangle(310, 2, 370, 18, true);
 draw_text(318, 0, "TEST");
+
+if (keyboard_check(vk_control)) {
+    var _hud_text = "Undo: " + string(array_length(global.undo_stack)) + "   Redo: " + string(array_length(global.redo_stack));
+    var _hud_x = mouse_x + 16;
+    var _hud_y = mouse_y + 16;
+    var _hud_width = 160;
+    var _hud_height = 20;
+
+    draw_set_alpha(0.85);
+    draw_rectangle_colour(_hud_x, _hud_y, _hud_x + _hud_width, _hud_y + _hud_height, c_black, c_black, c_black, c_black, false);
+    draw_set_alpha(1);
+    draw_set_colour(c_white);
+    draw_rectangle(_hud_x, _hud_y, _hud_x + _hud_width, _hud_y + _hud_height, true);
+    draw_text(_hud_x + 6, _hud_y + 2, _hud_text);
+}
