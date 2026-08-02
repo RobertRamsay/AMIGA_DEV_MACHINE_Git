@@ -9,7 +9,7 @@ if (_is_orphaned) {
     _body_colour = c_red;
 }
 
-draw_set_colour(node_colour);
+draw_set_colour(_body_colour);
 draw_rectangle(node_x + 1, node_y + 1, node_x + node_width - 1, node_y + node_height - 1, false);
 
 draw_set_colour(c_white);
