@@ -3,8 +3,6 @@
 // 0. Grid constant — must be set before anything below reads it
 global.grid_size = 20;
 
-
-
 // 1. Addressing mode bitflags — must run before any opcode table definitions
 scr_define_addressing_modes();
 
@@ -43,12 +41,12 @@ global.palette_hover_mnemonic = "";
 global.palette_hover_x = 0;
 global.palette_hover_y = 0;
 
-// 6. Palette — one obj_opcode_palette_item per defined opcode, 2-column grid
+// 6. Palette — one obj_opcode_palette_item per defined opcode, 3-column grid
 palette_start_x = 10;
 palette_start_y = 20;
 palette_columns = 3;
 palette_column_width = 87;
-palette_row_height = global.grid_size+3;
+palette_row_height = global.grid_size + 3;
 
 var _mnemonic_list = variable_struct_get_names(global.opcode_map);
 var _mnemonic_count = array_length(_mnemonic_list);
@@ -71,6 +69,13 @@ while (_i < _mnemonic_count) {
     _i += 1;
 }
 
+// 7. ORG palette entry — separate from the opcode grid loop above
+var _org_palette_instance = instance_create_layer(palette_start_x, palette_start_y - global.grid_size - 3, "Instances", obj_opcode_palette_item);
+_org_palette_instance.palette_mnemonic = "ORG";
+_org_palette_instance.palette_x = palette_start_x;
+_org_palette_instance.base_palette_y = palette_start_y - global.grid_size - 3;
+
+// 8. Build state machine
 build_state = "idle";
 build_project_path = "";
 build_volume_name = "";
@@ -83,7 +88,11 @@ global.vasm_path = "C:/Users/me/Downloads/vasmm68k_mot.exe";
 global.xdftool_path = "C:/Users/me/AppData/Local/Python/pythoncore-3.14-64/Scripts/xdftool.exe";
 global.fsuae_path = "C:/Users/me/OneDrive/Documents/AMIGA/TheSettlers/fsuae/fs-uae.exe";
 
-var _org_palette_instance = instance_create_layer(palette_start_x, palette_start_y - global.grid_size - 3, "Instances", obj_opcode_palette_item);
-_org_palette_instance.palette_mnemonic = "ORG";
-_org_palette_instance.palette_x = palette_start_x;
-_org_palette_instance.base_palette_y = palette_start_y - global.grid_size - 3;
+// 9. The one fixed INIT node — program entry point, spawned once, home position
+var _init_x = (room_width / 2) - 80;
+var _init_y = room_height / 4;
+
+var _init_instance = instance_create_layer(_init_x, _init_y, "Instances", obj_amiga_root_node);
+_init_instance.root_type = "INIT";
+_init_instance.node_x = scr_snap_to_grid(_init_x, global.grid_size);
+_init_instance.node_y = scr_snap_to_grid(_init_y, global.grid_size);
