@@ -1,6 +1,6 @@
 /// @desc scr_restore_snapshot(_snapshot)
 /// Destroys the current graph and rebuilds it exactly from _snapshot,
-/// including original uids so parent_uid links stay correct.
+/// including original uids so root_uid membership stays correct.
 function scr_restore_snapshot(_snapshot) {
     with (obj_opcode_node) {
         instance_destroy();
@@ -38,7 +38,7 @@ function scr_restore_snapshot(_snapshot) {
         _new_node.node_x = _node_data.node_x;
         _new_node.node_y = _node_data.node_y;
         _new_node.is_connected = _node_data.is_connected;
-        _new_node.parent_uid = _node_data.parent_uid;
+        _new_node.root_uid = _node_data.root_uid;
         _new_node.opcode_mnemonic = _node_data.opcode_mnemonic;
         _new_node.opcode_size = _node_data.opcode_size;
         _new_node.addressing_mode_src = _node_data.addressing_mode_src;

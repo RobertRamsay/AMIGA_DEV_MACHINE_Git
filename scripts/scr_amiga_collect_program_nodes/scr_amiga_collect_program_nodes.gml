@@ -1,6 +1,8 @@
 /// @desc scr_amiga_collect_program_nodes()
-/// Walks INIT's chain, then each continuing ORG's chain in order.
-/// Returns an ordered array of obj_opcode_node instances that are actually part of the program.
+/// For INIT, then each continuing ORG in turn: gather every connected node
+/// that belongs to that root (flat membership via root_uid, matching
+/// C64DM's org_parent model) and sort by Y-position — position IS the
+/// order, nothing is stored as a link between adjacent nodes.
 function scr_amiga_collect_program_nodes() {
     var _ordered_nodes = [];
     var _init_uid = -1;
@@ -21,25 +23,24 @@ function scr_amiga_collect_program_nodes() {
     var _guard_limit = 1000;
 
     while (_current_root_uid != -1 && _guard_count < _guard_limit) {
-        var _current_link_uid = _current_root_uid;
-        var _found_next = true;
+        var _members = [];
 
-        while (_found_next) {
-            _found_next = false;
-
-            with (obj_opcode_node) {
-                if (parent_uid == _current_link_uid && is_connected) {
-                    array_push(_ordered_nodes, id);
-                    _current_link_uid = uid;
-                    _found_next = true;
-                }
+        with (obj_opcode_node) {
+            if (root_uid == _current_root_uid && is_connected) {
+                array_push(_members, id);
             }
+        }
 
-            _guard_count += 1;
+        array_sort(_members, function(_a, _b) {
+            return _a.node_y - _b.node_y;
+        });
 
-            if (_guard_count >= _guard_limit) {
-                _found_next = false;
-            }
+        var _m = 0;
+        var _member_count = array_length(_members);
+
+        while (_m < _member_count) {
+            array_push(_ordered_nodes, _members[_m]);
+            _m += 1;
         }
 
         var _next_root_uid = -1;

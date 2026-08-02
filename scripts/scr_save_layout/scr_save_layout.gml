@@ -16,7 +16,7 @@ function scr_save_layout() {
             node_x : node_x,
             node_y : node_y,
             is_connected : is_connected,
-            parent_uid : parent_uid,
+            root_uid : root_uid,
             opcode_mnemonic : opcode_mnemonic,
             opcode_size : opcode_size,
             addressing_mode_src : addressing_mode_src,

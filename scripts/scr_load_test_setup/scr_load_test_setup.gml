@@ -36,11 +36,11 @@ function scr_load_test_setup() {
 
     var _init_cursor_x = _init_instance.node_x;
     var _init_cursor_y = _init_instance.node_y + _init_instance.node_height;
-    var _init_previous_uid = _init_instance.uid;
+    var _init_uid = _init_instance.uid;
 
     var _org_cursor_x = _org_instance.node_x;
     var _org_cursor_y = _org_instance.node_y + _org_instance.node_height;
-    var _org_previous_uid = _org_instance.uid;
+    var _org_uid = _org_instance.uid;
 
     // --- INIT column: disable channels, build the sky half of the gradient ---
     var _init_steps = [];
@@ -134,10 +134,9 @@ function scr_load_test_setup() {
         _new_node.operand_dst = _step_data.dst_val;
         _new_node.node_label = _step_data.label;
         _new_node.is_connected = true;
-        _new_node.parent_uid = _init_previous_uid;
+        _new_node.root_uid = _init_uid;
 
         _init_cursor_y += _new_node.node_height;
-        _init_previous_uid = _new_node.uid;
 
         _step_index += 1;
     }
@@ -161,14 +160,13 @@ function scr_load_test_setup() {
         _new_node.operand_dst = _step_data.dst_val;
         _new_node.node_label = _step_data.label;
         _new_node.is_connected = true;
-        _new_node.parent_uid = _org_previous_uid;
+        _new_node.root_uid = _org_uid;
 
         if (_step_data.mnemonic == "BRA") {
             _new_node.operand_label_src = "mainloop";
         }
 
         _org_cursor_y += _new_node.node_height;
-        _org_previous_uid = _new_node.uid;
 
         _step_index += 1;
     }

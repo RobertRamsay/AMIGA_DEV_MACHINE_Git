@@ -11,21 +11,18 @@ is_dragging = false;
 is_selected = false;
 drag_offset_x = 0;
 drag_offset_y = 0;
-grab_start_x = 0;
-grab_start_y = 0;
-origin_parent_uid = -1;
-origin_child_uid = -1;
-has_left_origin = false;
+prev_x = 0;
+prev_y = 0;
+was_dragged = false;
 
 is_connected = false;
-parent_uid = -1;
+root_uid = -1;
+wedge_y_stored = -1;
 
-wedge_preview_shift_y = 0;
 wedge_target_found = false;
-wedge_target_parent_uid = -1;
-wedge_target_child_uid = -1;
-wedge_target_x = 0;
+wedge_target_root_uid = -1;
 wedge_target_y = 0;
+wedge_target_anchor_x = 0;
 
 node_label = "";
 operand_label_src = "";

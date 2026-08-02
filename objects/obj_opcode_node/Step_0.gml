@@ -9,87 +9,78 @@ src_validity_dot.dot_y = node_y + 30;
 dst_validity_dot.dot_x = node_x - 12;
 dst_validity_dot.dot_y = node_y + 50;
 
-// Dragging — smooth (unsnapped) while held. The origin slot closes for
-// real, live, the FIRST moment you cross 20px away from where you picked
-// the node up — not a preview, an actual commit. From that point on, this
-// is identical to approaching any other connection point: a gap only
-// previews opening if you come within 20px of one, and only that one.
+// Dragging — matches C64DM's actual mechanism: detach the INSTANT any real
+// movement happens (not a threshold), and every frame restore all wedge
+// shifts then recompute fresh (real position mutation, not a render-only
+// offset). Order is never stored as a link — it's always just Y-position.
 if (is_dragging) {
     depth = -1000;
 
-    node_x = _world_mouse_x + drag_offset_x;
-    node_y = _world_mouse_y + drag_offset_y;
+    var _new_x = _world_mouse_x + drag_offset_x;
+    var _new_y = _world_mouse_y + drag_offset_y;
 
-    scr_clear_wedge_preview();
+    if ((_new_x != node_x || _new_y != node_y) && !was_dragged) {
+        was_dragged = true;
 
-    if (!has_left_origin) {
-        var _my_center_x = node_x + (node_width / 2);
-        var _my_center_y = node_y + (node_height / 2);
-        var _origin_center_x = grab_start_x + (node_width / 2);
-        var _origin_center_y = grab_start_y + (node_height / 2);
-        var _origin_distance = point_distance(_my_center_x, _my_center_y, _origin_center_x, _origin_center_y);
+        var _old_root_uid = root_uid;
+        var _old_y = node_y;
 
-        if (_origin_distance > 20) {
-            has_left_origin = true;
+        is_connected = false;
+        root_uid = -1;
 
-            // Permanent, live commit — closes the origin gap for real right now.
-            scr_relink_around_node(id);
-            is_connected = false;
-            parent_uid = -1;
+        if (_old_root_uid != -1) {
+            scr_amiga_close_gap_after_detach(id, _old_root_uid, _old_y);
         }
     }
+
+    node_x = _new_x;
+    node_y = _new_y;
+
+    scr_amiga_restore_wedge_shifts();
 
     wedge_target_found = false;
 
-    if (has_left_origin) {
-        var _wedge_result = scr_find_nearest_wedge_point(id, node_x, node_y);
+    if (was_dragged) {
+        var _insert_result = scr_amiga_find_insert_point(id, node_x, node_y);
 
-        wedge_target_found = _wedge_result.found;
-        wedge_target_parent_uid = _wedge_result.parent_uid;
-        wedge_target_child_uid = _wedge_result.child_uid;
-        wedge_target_x = _wedge_result.wedge_x;
-        wedge_target_y = _wedge_result.wedge_y;
+        wedge_target_found = _insert_result.found;
+        wedge_target_root_uid = _insert_result.root_uid;
+        wedge_target_y = _insert_result.insert_y;
+        wedge_target_anchor_x = _insert_result.anchor_x;
 
         if (wedge_target_found) {
-            scr_apply_wedge_preview(wedge_target_child_uid, node_height);
+            scr_amiga_apply_wedge_preview(id, wedge_target_root_uid, wedge_target_y);
         }
     }
-
-    // The dragged node itself should never visually nudge — only the
-    // chain around it previews moving, never the node you're holding.
-    wedge_preview_shift_y = 0;
 
     if (mouse_check_button_released(mb_left)) {
         is_dragging = false;
         depth = 0;
 
-        if (!has_left_origin) {
-            // Never crossed the threshold at all — true no-op, nothing was ever touched.
-            node_x = grab_start_x;
-            node_y = grab_start_y;
-        } else {
+        scr_amiga_restore_wedge_shifts();
+
+        if (was_dragged) {
             node_x = scr_snap_to_grid(node_x, global.grid_size);
             node_y = scr_snap_to_grid(node_y, global.grid_size);
 
-            if (wedge_target_found) {
-                scr_commit_wedge_insert(id, wedge_target_parent_uid, wedge_target_child_uid, wedge_target_x, wedge_target_y);
+            var _final_insert = scr_amiga_find_insert_point(id, node_x, node_y);
+
+            if (_final_insert.found) {
+                scr_amiga_commit_insert(id, _final_insert.root_uid, _final_insert.insert_y, _final_insert.anchor_x);
             } else {
+                is_connected = false;
+                root_uid = -1;
+
                 var _would_overlap = scr_check_node_overlap(id, node_x, node_y);
 
                 if (_would_overlap) {
-                    node_x = grab_start_x;
-                    node_y = grab_start_y;
-                } else {
-                    scr_try_stack_connect(id);
+                    node_x = scr_snap_to_grid(node_x + node_width, global.grid_size);
                 }
             }
         }
 
-        scr_clear_wedge_preview();
+        was_dragged = false;
         wedge_target_found = false;
-        origin_parent_uid = -1;
-        origin_child_uid = -1;
-        has_left_origin = false;
     }
 } else {
     var _over_body = point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y, node_x + node_width, node_y + node_height);
@@ -99,25 +90,10 @@ if (is_dragging) {
 
         scr_push_undo_snapshot();
 
-        origin_parent_uid = parent_uid;
-
-        var _self_uid_for_origin = uid;
-        var _found_origin_child = -1;
-
-        with (obj_opcode_node) {
-            if (parent_uid == _self_uid_for_origin) {
-                _found_origin_child = uid;
-            }
-        }
-
-        origin_child_uid = _found_origin_child;
-        has_left_origin = false;
-
+        was_dragged = false;
         is_dragging = true;
         drag_offset_x = node_x - _world_mouse_x;
         drag_offset_y = node_y - _world_mouse_y;
-        grab_start_x = node_x;
-        grab_start_y = node_y;
         is_selected = true;
     }
 
@@ -130,7 +106,7 @@ if (is_dragging) {
             global.operand_edit_owner_uid = -1;
         }
 
-        scr_delete_node_and_relink(id);
+        scr_amiga_delete_and_close_gap(id);
     }
 }
 

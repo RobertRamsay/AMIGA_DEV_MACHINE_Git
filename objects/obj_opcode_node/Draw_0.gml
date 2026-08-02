@@ -1,8 +1,8 @@
-// Screen-space draw position — world position plus current pan offset,
-// plus a temporary wedge-preview nudge (0 unless another node is being
-// dragged near this one right now).
+// Screen-space draw position — world position plus current pan offset.
+// node_y already reflects any live wedge-preview shift directly, since
+// that's a real position mutation now, not a separate render-only offset.
 var _dx = node_x + global.pan_x;
-var _dy = node_y + global.pan_y + wedge_preview_shift_y;
+var _dy = node_y + global.pan_y;
 
 draw_set_colour(node_colour);
 draw_rectangle(_dx + 1, _dy + 1, _dx + node_width - 1, _dy + node_height - 1, false);
@@ -37,9 +37,9 @@ if (operand_editing_slot == "node_label") {
 }
 
 var _mode_src_dx = mode_button_src_x + global.pan_x;
-var _mode_src_dy = mode_button_src_y + global.pan_y + wedge_preview_shift_y;
+var _mode_src_dy = mode_button_src_y + global.pan_y;
 var _mode_dst_dx = mode_button_dst_x + global.pan_x;
-var _mode_dst_dy = mode_button_dst_y + global.pan_y + wedge_preview_shift_y;
+var _mode_dst_dy = mode_button_dst_y + global.pan_y;
 
 var _entry_for_draw = global.opcode_map[$ opcode_mnemonic];
 
@@ -131,10 +131,10 @@ if (!slot_dst_is_valid) {
 }
 
 draw_set_colour(_src_colour);
-draw_circle(src_validity_dot.dot_x + global.pan_x, src_validity_dot.dot_y + global.pan_y + wedge_preview_shift_y, 5, false);
+draw_circle(src_validity_dot.dot_x + global.pan_x, src_validity_dot.dot_y + global.pan_y, 5, false);
 
 draw_set_colour(_dst_colour);
-draw_circle(dst_validity_dot.dot_x + global.pan_x, dst_validity_dot.dot_y + global.pan_y + wedge_preview_shift_y, 5, false);
+draw_circle(dst_validity_dot.dot_x + global.pan_x, dst_validity_dot.dot_y + global.pan_y, 5, false);
 
 draw_set_colour(c_white);
 

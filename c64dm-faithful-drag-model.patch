@@ -1,0 +1,756 @@
+diff --git a/AMIGA_DEV_MACHINE.yyp b/AMIGA_DEV_MACHINE.yyp
+index 1b1ddee..3ef7cc4 100644
+--- a/AMIGA_DEV_MACHINE.yyp
++++ b/AMIGA_DEV_MACHINE.yyp
+@@ -32,6 +32,12 @@
+     {"id":{"name":"scr_addressing_mode_flag","path":"scripts/scr_addressing_mode_flag/scr_addressing_mode_flag.yy",},},
+     {"id":{"name":"scr_addressing_mode_list_from_flags","path":"scripts/scr_addressing_mode_list_from_flags/scr_addressing_mode_list_from_flags.yy",},},
+     {"id":{"name":"scr_amiga_collect_program_nodes","path":"scripts/scr_amiga_collect_program_nodes/scr_amiga_collect_program_nodes.yy",},},
++    {"id":{"name":"scr_amiga_find_insert_point","path":"scripts/scr_amiga_find_insert_point/scr_amiga_find_insert_point.yy",},},
++    {"id":{"name":"scr_amiga_restore_wedge_shifts","path":"scripts/scr_amiga_restore_wedge_shifts/scr_amiga_restore_wedge_shifts.yy",},},
++    {"id":{"name":"scr_amiga_apply_wedge_preview","path":"scripts/scr_amiga_apply_wedge_preview/scr_amiga_apply_wedge_preview.yy",},},
++    {"id":{"name":"scr_amiga_commit_insert","path":"scripts/scr_amiga_commit_insert/scr_amiga_commit_insert.yy",},},
++    {"id":{"name":"scr_amiga_delete_and_close_gap","path":"scripts/scr_amiga_delete_and_close_gap/scr_amiga_delete_and_close_gap.yy",},},
++    {"id":{"name":"scr_amiga_close_gap_after_detach","path":"scripts/scr_amiga_close_gap_after_detach/scr_amiga_close_gap_after_detach.yy",},},
+     {"id":{"name":"scr_amiga_start_adf_build","path":"scripts/scr_amiga_start_adf_build/scr_amiga_start_adf_build.yy",},},
+     {"id":{"name":"scr_amiga_start_build","path":"scripts/scr_amiga_start_build/scr_amiga_start_build.yy",},},
+     {"id":{"name":"scr_apply_wedge_preview","path":"scripts/scr_apply_wedge_preview/scr_apply_wedge_preview.yy",},},
+diff --git a/objects/obj_opcode_node/Create_0.gml b/objects/obj_opcode_node/Create_0.gml
+index 172c39f..66870ac 100644
+--- a/objects/obj_opcode_node/Create_0.gml
++++ b/objects/obj_opcode_node/Create_0.gml
+@@ -11,21 +11,18 @@ is_dragging = false;
+ is_selected = false;
+ drag_offset_x = 0;
+ drag_offset_y = 0;
+-grab_start_x = 0;
+-grab_start_y = 0;
+-origin_parent_uid = -1;
+-origin_child_uid = -1;
+-has_left_origin = false;
++prev_x = 0;
++prev_y = 0;
++was_dragged = false;
+ 
+ is_connected = false;
+-parent_uid = -1;
++root_uid = -1;
++wedge_y_stored = -1;
+ 
+-wedge_preview_shift_y = 0;
+ wedge_target_found = false;
+-wedge_target_parent_uid = -1;
+-wedge_target_child_uid = -1;
+-wedge_target_x = 0;
++wedge_target_root_uid = -1;
+ wedge_target_y = 0;
++wedge_target_anchor_x = 0;
+ 
+ node_label = "";
+ operand_label_src = "";
+diff --git a/objects/obj_opcode_node/Draw_0.gml b/objects/obj_opcode_node/Draw_0.gml
+index b98bda0..9c1d0fd 100644
+--- a/objects/obj_opcode_node/Draw_0.gml
++++ b/objects/obj_opcode_node/Draw_0.gml
+@@ -1,8 +1,8 @@
+-// Screen-space draw position — world position plus current pan offset,
+-// plus a temporary wedge-preview nudge (0 unless another node is being
+-// dragged near this one right now).
++// Screen-space draw position — world position plus current pan offset.
++// node_y already reflects any live wedge-preview shift directly, since
++// that's a real position mutation now, not a separate render-only offset.
+ var _dx = node_x + global.pan_x;
+-var _dy = node_y + global.pan_y + wedge_preview_shift_y;
++var _dy = node_y + global.pan_y;
+ 
+ draw_set_colour(node_colour);
+ draw_rectangle(_dx + 1, _dy + 1, _dx + node_width - 1, _dy + node_height - 1, false);
+@@ -37,9 +37,9 @@ if (operand_editing_slot == "node_label") {
+ }
+ 
+ var _mode_src_dx = mode_button_src_x + global.pan_x;
+-var _mode_src_dy = mode_button_src_y + global.pan_y + wedge_preview_shift_y;
++var _mode_src_dy = mode_button_src_y + global.pan_y;
+ var _mode_dst_dx = mode_button_dst_x + global.pan_x;
+-var _mode_dst_dy = mode_button_dst_y + global.pan_y + wedge_preview_shift_y;
++var _mode_dst_dy = mode_button_dst_y + global.pan_y;
+ 
+ var _entry_for_draw = global.opcode_map[$ opcode_mnemonic];
+ 
+@@ -131,10 +131,10 @@ if (!slot_dst_is_valid) {
+ }
+ 
+ draw_set_colour(_src_colour);
+-draw_circle(src_validity_dot.dot_x + global.pan_x, src_validity_dot.dot_y + global.pan_y + wedge_preview_shift_y, 5, false);
++draw_circle(src_validity_dot.dot_x + global.pan_x, src_validity_dot.dot_y + global.pan_y, 5, false);
+ 
+ draw_set_colour(_dst_colour);
+-draw_circle(dst_validity_dot.dot_x + global.pan_x, dst_validity_dot.dot_y + global.pan_y + wedge_preview_shift_y, 5, false);
++draw_circle(dst_validity_dot.dot_x + global.pan_x, dst_validity_dot.dot_y + global.pan_y, 5, false);
+ 
+ draw_set_colour(c_white);
+ 
+diff --git a/objects/obj_opcode_node/Step_0.gml b/objects/obj_opcode_node/Step_0.gml
+index bbd595e..7d422ee 100644
+--- a/objects/obj_opcode_node/Step_0.gml
++++ b/objects/obj_opcode_node/Step_0.gml
+@@ -9,87 +9,78 @@ src_validity_dot.dot_y = node_y + 30;
+ dst_validity_dot.dot_x = node_x - 12;
+ dst_validity_dot.dot_y = node_y + 50;
+ 
+-// Dragging — smooth (unsnapped) while held. The origin slot closes for
+-// real, live, the FIRST moment you cross 20px away from where you picked
+-// the node up — not a preview, an actual commit. From that point on, this
+-// is identical to approaching any other connection point: a gap only
+-// previews opening if you come within 20px of one, and only that one.
++// Dragging — matches C64DM's actual mechanism: detach the INSTANT any real
++// movement happens (not a threshold), and every frame restore all wedge
++// shifts then recompute fresh (real position mutation, not a render-only
++// offset). Order is never stored as a link — it's always just Y-position.
+ if (is_dragging) {
+     depth = -1000;
+ 
+-    node_x = _world_mouse_x + drag_offset_x;
+-    node_y = _world_mouse_y + drag_offset_y;
++    var _new_x = _world_mouse_x + drag_offset_x;
++    var _new_y = _world_mouse_y + drag_offset_y;
+ 
+-    scr_clear_wedge_preview();
++    if ((_new_x != node_x || _new_y != node_y) && !was_dragged) {
++        was_dragged = true;
+ 
+-    if (!has_left_origin) {
+-        var _my_center_x = node_x + (node_width / 2);
+-        var _my_center_y = node_y + (node_height / 2);
+-        var _origin_center_x = grab_start_x + (node_width / 2);
+-        var _origin_center_y = grab_start_y + (node_height / 2);
+-        var _origin_distance = point_distance(_my_center_x, _my_center_y, _origin_center_x, _origin_center_y);
++        var _old_root_uid = root_uid;
++        var _old_y = node_y;
+ 
+-        if (_origin_distance > 20) {
+-            has_left_origin = true;
++        is_connected = false;
++        root_uid = -1;
+ 
+-            // Permanent, live commit — closes the origin gap for real right now.
+-            scr_relink_around_node(id);
+-            is_connected = false;
+-            parent_uid = -1;
++        if (_old_root_uid != -1) {
++            scr_amiga_close_gap_after_detach(id, _old_root_uid, _old_y);
+         }
+     }
+ 
++    node_x = _new_x;
++    node_y = _new_y;
++
++    scr_amiga_restore_wedge_shifts();
++
+     wedge_target_found = false;
+ 
+-    if (has_left_origin) {
+-        var _wedge_result = scr_find_nearest_wedge_point(id, node_x, node_y);
++    if (was_dragged) {
++        var _insert_result = scr_amiga_find_insert_point(id, node_x, node_y);
+ 
+-        wedge_target_found = _wedge_result.found;
+-        wedge_target_parent_uid = _wedge_result.parent_uid;
+-        wedge_target_child_uid = _wedge_result.child_uid;
+-        wedge_target_x = _wedge_result.wedge_x;
+-        wedge_target_y = _wedge_result.wedge_y;
++        wedge_target_found = _insert_result.found;
++        wedge_target_root_uid = _insert_result.root_uid;
++        wedge_target_y = _insert_result.insert_y;
++        wedge_target_anchor_x = _insert_result.anchor_x;
+ 
+         if (wedge_target_found) {
+-            scr_apply_wedge_preview(wedge_target_child_uid, node_height);
++            scr_amiga_apply_wedge_preview(id, wedge_target_root_uid, wedge_target_y);
+         }
+     }
+ 
+-    // The dragged node itself should never visually nudge — only the
+-    // chain around it previews moving, never the node you're holding.
+-    wedge_preview_shift_y = 0;
+-
+     if (mouse_check_button_released(mb_left)) {
+         is_dragging = false;
+         depth = 0;
+ 
+-        if (!has_left_origin) {
+-            // Never crossed the threshold at all — true no-op, nothing was ever touched.
+-            node_x = grab_start_x;
+-            node_y = grab_start_y;
+-        } else {
++        scr_amiga_restore_wedge_shifts();
++
++        if (was_dragged) {
+             node_x = scr_snap_to_grid(node_x, global.grid_size);
+             node_y = scr_snap_to_grid(node_y, global.grid_size);
+ 
+-            if (wedge_target_found) {
+-                scr_commit_wedge_insert(id, wedge_target_parent_uid, wedge_target_child_uid, wedge_target_x, wedge_target_y);
++            var _final_insert = scr_amiga_find_insert_point(id, node_x, node_y);
++
++            if (_final_insert.found) {
++                scr_amiga_commit_insert(id, _final_insert.root_uid, _final_insert.insert_y, _final_insert.anchor_x);
+             } else {
++                is_connected = false;
++                root_uid = -1;
++
+                 var _would_overlap = scr_check_node_overlap(id, node_x, node_y);
+ 
+                 if (_would_overlap) {
+-                    node_x = grab_start_x;
+-                    node_y = grab_start_y;
+-                } else {
+-                    scr_try_stack_connect(id);
++                    node_x = scr_snap_to_grid(node_x + node_width, global.grid_size);
+                 }
+             }
+         }
+ 
+-        scr_clear_wedge_preview();
++        was_dragged = false;
+         wedge_target_found = false;
+-        origin_parent_uid = -1;
+-        origin_child_uid = -1;
+-        has_left_origin = false;
+     }
+ } else {
+     var _over_body = point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y, node_x + node_width, node_y + node_height);
+@@ -99,25 +90,10 @@ if (is_dragging) {
+ 
+         scr_push_undo_snapshot();
+ 
+-        origin_parent_uid = parent_uid;
+-
+-        var _self_uid_for_origin = uid;
+-        var _found_origin_child = -1;
+-
+-        with (obj_opcode_node) {
+-            if (parent_uid == _self_uid_for_origin) {
+-                _found_origin_child = uid;
+-            }
+-        }
+-
+-        origin_child_uid = _found_origin_child;
+-        has_left_origin = false;
+-
++        was_dragged = false;
+         is_dragging = true;
+         drag_offset_x = node_x - _world_mouse_x;
+         drag_offset_y = node_y - _world_mouse_y;
+-        grab_start_x = node_x;
+-        grab_start_y = node_y;
+         is_selected = true;
+     }
+ 
+@@ -130,7 +106,7 @@ if (is_dragging) {
+             global.operand_edit_owner_uid = -1;
+         }
+ 
+-        scr_delete_node_and_relink(id);
++        scr_amiga_delete_and_close_gap(id);
+     }
+ }
+ 
+diff --git a/scripts/scr_amiga_apply_wedge_preview/scr_amiga_apply_wedge_preview.gml b/scripts/scr_amiga_apply_wedge_preview/scr_amiga_apply_wedge_preview.gml
+new file mode 100644
+index 0000000..f55336e
+--- /dev/null
++++ b/scripts/scr_amiga_apply_wedge_preview/scr_amiga_apply_wedge_preview.gml
+@@ -0,0 +1,18 @@
++/// @desc scr_amiga_apply_wedge_preview(_dragged_id, _root_uid, _insert_y)
++/// Pushes every OTHER connected member of _root_uid at or below _insert_y
++/// down by _dragged_id's height — a REAL position change (not a separate
++/// render-only offset), with the old value remembered in wedge_y_stored
++/// so scr_amiga_restore_wedge_shifts can put it back next frame.
++function scr_amiga_apply_wedge_preview(_dragged_id, _root_uid, _insert_y) {
++    var _shift_amount = _dragged_id.node_height;
++
++    with (obj_opcode_node) {
++        var _is_self = (id == _dragged_id);
++        var _in_this_root = (root_uid == _root_uid) && is_connected;
++
++        if (!_is_self && _in_this_root && node_y >= _insert_y && wedge_y_stored < 0) {
++            wedge_y_stored = node_y;
++            node_y += _shift_amount;
++        }
++    }
++}
+diff --git a/scripts/scr_amiga_apply_wedge_preview/scr_amiga_apply_wedge_preview.yy b/scripts/scr_amiga_apply_wedge_preview/scr_amiga_apply_wedge_preview.yy
+new file mode 100644
+index 0000000..73b055b
+--- /dev/null
++++ b/scripts/scr_amiga_apply_wedge_preview/scr_amiga_apply_wedge_preview.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_amiga_apply_wedge_preview",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_amiga_apply_wedge_preview",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}
+diff --git a/scripts/scr_amiga_close_gap_after_detach/scr_amiga_close_gap_after_detach.gml b/scripts/scr_amiga_close_gap_after_detach/scr_amiga_close_gap_after_detach.gml
+new file mode 100644
+index 0000000..9f02302
+--- /dev/null
++++ b/scripts/scr_amiga_close_gap_after_detach/scr_amiga_close_gap_after_detach.gml
+@@ -0,0 +1,17 @@
++/// @desc scr_amiga_close_gap_after_detach(_dragged_id, _old_root_uid, _old_y)
++/// The instant a node detaches (any real movement while dragging), whoever
++/// was below it in the same column permanently shifts up to close the gap
++/// — for real, immediately, matching "the whole spine stays tidy" rather
++/// than leaving a visual hole that's only harmless for compile order.
++function scr_amiga_close_gap_after_detach(_dragged_id, _old_root_uid, _old_y) {
++    var _shift_amount = _dragged_id.node_height;
++
++    with (obj_opcode_node) {
++        var _is_self = (id == _dragged_id);
++        var _in_old_root = (root_uid == _old_root_uid) && is_connected;
++
++        if (!_is_self && _in_old_root && node_y > _old_y) {
++            node_y -= _shift_amount;
++        }
++    }
++}
+diff --git a/scripts/scr_amiga_close_gap_after_detach/scr_amiga_close_gap_after_detach.yy b/scripts/scr_amiga_close_gap_after_detach/scr_amiga_close_gap_after_detach.yy
+new file mode 100644
+index 0000000..6f4cf43
+--- /dev/null
++++ b/scripts/scr_amiga_close_gap_after_detach/scr_amiga_close_gap_after_detach.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_amiga_close_gap_after_detach",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_amiga_close_gap_after_detach",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}
+diff --git a/scripts/scr_amiga_collect_program_nodes/scr_amiga_collect_program_nodes.gml b/scripts/scr_amiga_collect_program_nodes/scr_amiga_collect_program_nodes.gml
+index ed36c44..744d815 100644
+--- a/scripts/scr_amiga_collect_program_nodes/scr_amiga_collect_program_nodes.gml
++++ b/scripts/scr_amiga_collect_program_nodes/scr_amiga_collect_program_nodes.gml
+@@ -1,6 +1,8 @@
+ /// @desc scr_amiga_collect_program_nodes()
+-/// Walks INIT's chain, then each continuing ORG's chain in order.
+-/// Returns an ordered array of obj_opcode_node instances that are actually part of the program.
++/// For INIT, then each continuing ORG in turn: gather every connected node
++/// that belongs to that root (flat membership via root_uid, matching
++/// C64DM's org_parent model) and sort by Y-position — position IS the
++/// order, nothing is stored as a link between adjacent nodes.
+ function scr_amiga_collect_program_nodes() {
+     var _ordered_nodes = [];
+     var _init_uid = -1;
+@@ -21,25 +23,24 @@ function scr_amiga_collect_program_nodes() {
+     var _guard_limit = 1000;
+ 
+     while (_current_root_uid != -1 && _guard_count < _guard_limit) {
+-        var _current_link_uid = _current_root_uid;
+-        var _found_next = true;
+-
+-        while (_found_next) {
+-            _found_next = false;
+-
+-            with (obj_opcode_node) {
+-                if (parent_uid == _current_link_uid && is_connected) {
+-                    array_push(_ordered_nodes, id);
+-                    _current_link_uid = uid;
+-                    _found_next = true;
+-                }
++        var _members = [];
++
++        with (obj_opcode_node) {
++            if (root_uid == _current_root_uid && is_connected) {
++                array_push(_members, id);
+             }
++        }
+ 
+-            _guard_count += 1;
++        array_sort(_members, function(_a, _b) {
++            return _a.node_y - _b.node_y;
++        });
+ 
+-            if (_guard_count >= _guard_limit) {
+-                _found_next = false;
+-            }
++        var _m = 0;
++        var _member_count = array_length(_members);
++
++        while (_m < _member_count) {
++            array_push(_ordered_nodes, _members[_m]);
++            _m += 1;
+         }
+ 
+         var _next_root_uid = -1;
+@@ -55,4 +56,4 @@ function scr_amiga_collect_program_nodes() {
+     }
+ 
+     return _ordered_nodes;
+-}
+\ No newline at end of file
++}
+diff --git a/scripts/scr_amiga_commit_insert/scr_amiga_commit_insert.gml b/scripts/scr_amiga_commit_insert/scr_amiga_commit_insert.gml
+new file mode 100644
+index 0000000..f3a1d00
+--- /dev/null
++++ b/scripts/scr_amiga_commit_insert/scr_amiga_commit_insert.gml
+@@ -0,0 +1,22 @@
++/// @desc scr_amiga_commit_insert(_dragged_id, _root_uid, _insert_y, _anchor_x)
++/// Permanently inserts _dragged_id into _root_uid's column at _insert_y —
++/// everyone else in that root at or below _insert_y gets pushed down for
++/// real. No relinking needed anywhere: order is purely Y-position, so
++/// nothing else has to change.
++function scr_amiga_commit_insert(_dragged_id, _root_uid, _insert_y, _anchor_x) {
++    var _shift_amount = _dragged_id.node_height;
++
++    with (obj_opcode_node) {
++        var _is_self = (id == _dragged_id);
++        var _in_this_root = (root_uid == _root_uid) && is_connected;
++
++        if (!_is_self && _in_this_root && node_y >= _insert_y) {
++            node_y += _shift_amount;
++        }
++    }
++
++    _dragged_id.node_x = _anchor_x;
++    _dragged_id.node_y = _insert_y;
++    _dragged_id.root_uid = _root_uid;
++    _dragged_id.is_connected = true;
++}
+diff --git a/scripts/scr_amiga_commit_insert/scr_amiga_commit_insert.yy b/scripts/scr_amiga_commit_insert/scr_amiga_commit_insert.yy
+new file mode 100644
+index 0000000..eb09d5e
+--- /dev/null
++++ b/scripts/scr_amiga_commit_insert/scr_amiga_commit_insert.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_amiga_commit_insert",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_amiga_commit_insert",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}
+diff --git a/scripts/scr_amiga_delete_and_close_gap/scr_amiga_delete_and_close_gap.gml b/scripts/scr_amiga_delete_and_close_gap/scr_amiga_delete_and_close_gap.gml
+new file mode 100644
+index 0000000..683e75f
+--- /dev/null
++++ b/scripts/scr_amiga_delete_and_close_gap/scr_amiga_delete_and_close_gap.gml
+@@ -0,0 +1,20 @@
++/// @desc scr_amiga_delete_and_close_gap(_deleted_id)
++/// Destroys _deleted_id and permanently pulls everyone below it (in the
++/// same root's column) up by its height. No relinking needed — order is
++/// pure Y-position, so closing the gap is the only thing required.
++function scr_amiga_delete_and_close_gap(_deleted_id) {
++    var _root_uid = _deleted_id.root_uid;
++    var _deleted_y = _deleted_id.node_y;
++    var _deleted_height = _deleted_id.node_height;
++
++    with (obj_opcode_node) {
++        var _is_self = (id == _deleted_id);
++        var _in_this_root = (root_uid == _root_uid) && is_connected;
++
++        if (!_is_self && _in_this_root && node_y > _deleted_y) {
++            node_y -= _deleted_height;
++        }
++    }
++
++    instance_destroy(_deleted_id);
++}
+diff --git a/scripts/scr_amiga_delete_and_close_gap/scr_amiga_delete_and_close_gap.yy b/scripts/scr_amiga_delete_and_close_gap/scr_amiga_delete_and_close_gap.yy
+new file mode 100644
+index 0000000..ffdb401
+--- /dev/null
++++ b/scripts/scr_amiga_delete_and_close_gap/scr_amiga_delete_and_close_gap.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_amiga_delete_and_close_gap",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_amiga_delete_and_close_gap",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}
+diff --git a/scripts/scr_amiga_find_insert_point/scr_amiga_find_insert_point.gml b/scripts/scr_amiga_find_insert_point/scr_amiga_find_insert_point.gml
+new file mode 100644
+index 0000000..7871f45
+--- /dev/null
++++ b/scripts/scr_amiga_find_insert_point/scr_amiga_find_insert_point.gml
+@@ -0,0 +1,51 @@
++/// @desc scr_amiga_find_insert_point(_dragged_id, _test_x, _test_y)
++/// Finds the nearest root (INIT/ORG) column to _test_x, then the node
++/// immediately above _test_y within that root's membership — purely by
++/// Y-position, nothing stored as a link. Returns
++/// { found, root_uid, insert_y, anchor_x }.
++function scr_amiga_find_insert_point(_dragged_id, _test_x, _test_y) {
++    var _result = { found : false, root_uid : -1, insert_y : 0, anchor_x : 0 };
++
++    var _best_root_id = noone;
++    var _best_dx = 999999;
++
++    with (obj_amiga_root_node) {
++        var _dx = abs(node_x - _test_x);
++
++        if (_dx < _best_dx) {
++            _best_dx = _dx;
++            _best_root_id = id;
++        }
++    }
++
++    if (_best_root_id == noone) {
++        return _result;
++    }
++
++    var _column_threshold = (_best_root_id.node_width / 2) + 40;
++
++    if (_best_dx > _column_threshold) {
++        return _result;
++    }
++
++    var _root_uid = _best_root_id.uid;
++    var _above_y = _best_root_id.node_y;
++    var _above_height = _best_root_id.node_height;
++
++    with (obj_opcode_node) {
++        var _is_self = (id == _dragged_id);
++        var _in_this_root = (root_uid == _root_uid) && is_connected;
++
++        if (!_is_self && _in_this_root && node_y <= _test_y && node_y >= _above_y) {
++            _above_y = node_y;
++            _above_height = node_height;
++        }
++    }
++
++    _result.found = true;
++    _result.root_uid = _root_uid;
++    _result.insert_y = _above_y + _above_height;
++    _result.anchor_x = _best_root_id.node_x;
++
++    return _result;
++}
+diff --git a/scripts/scr_amiga_find_insert_point/scr_amiga_find_insert_point.yy b/scripts/scr_amiga_find_insert_point/scr_amiga_find_insert_point.yy
+new file mode 100644
+index 0000000..a14673a
+--- /dev/null
++++ b/scripts/scr_amiga_find_insert_point/scr_amiga_find_insert_point.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_amiga_find_insert_point",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_amiga_find_insert_point",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}
+diff --git a/scripts/scr_amiga_restore_wedge_shifts/scr_amiga_restore_wedge_shifts.gml b/scripts/scr_amiga_restore_wedge_shifts/scr_amiga_restore_wedge_shifts.gml
+new file mode 100644
+index 0000000..a452513
+--- /dev/null
++++ b/scripts/scr_amiga_restore_wedge_shifts/scr_amiga_restore_wedge_shifts.gml
+@@ -0,0 +1,11 @@
++/// @desc scr_amiga_restore_wedge_shifts()
++/// Every node that was live-shifted for a wedge preview gets its real
++/// position put back, every frame, before the preview is recomputed fresh.
++function scr_amiga_restore_wedge_shifts() {
++    with (obj_opcode_node) {
++        if (wedge_y_stored >= 0) {
++            node_y = wedge_y_stored;
++            wedge_y_stored = -1;
++        }
++    }
++}
+diff --git a/scripts/scr_amiga_restore_wedge_shifts/scr_amiga_restore_wedge_shifts.yy b/scripts/scr_amiga_restore_wedge_shifts/scr_amiga_restore_wedge_shifts.yy
+new file mode 100644
+index 0000000..6af9319
+--- /dev/null
++++ b/scripts/scr_amiga_restore_wedge_shifts/scr_amiga_restore_wedge_shifts.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_amiga_restore_wedge_shifts",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_amiga_restore_wedge_shifts",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}
+diff --git a/scripts/scr_capture_snapshot/scr_capture_snapshot.gml b/scripts/scr_capture_snapshot/scr_capture_snapshot.gml
+index e56eaf1..69bfb17 100644
+--- a/scripts/scr_capture_snapshot/scr_capture_snapshot.gml
++++ b/scripts/scr_capture_snapshot/scr_capture_snapshot.gml
+@@ -16,7 +16,7 @@ function scr_capture_snapshot() {
+             node_x : node_x,
+             node_y : node_y,
+             is_connected : is_connected,
+-            parent_uid : parent_uid,
++            root_uid : root_uid,
+             opcode_mnemonic : opcode_mnemonic,
+             opcode_size : opcode_size,
+             addressing_mode_src : addressing_mode_src,
+diff --git a/scripts/scr_drag_children_with_root/scr_drag_children_with_root.gml b/scripts/scr_drag_children_with_root/scr_drag_children_with_root.gml
+index 0c060ae..ed29440 100644
+--- a/scripts/scr_drag_children_with_root/scr_drag_children_with_root.gml
++++ b/scripts/scr_drag_children_with_root/scr_drag_children_with_root.gml
+@@ -1,27 +1,14 @@
+ /// @desc scr_drag_children_with_root(_root_id, _delta_x, _delta_y)
+-/// Same principle as C64DM's "ORG drags its children with it" — every node
+-/// transitively connected to _root_id moves by the identical delta, so their
+-/// relative spacing can never change regardless of how many there are.
++/// Matches C64DM's "ORG drags its children with it" exactly — every node
++/// whose root_uid is this root moves by the identical delta. Flat
++/// membership means this is a single pass, no chain-walking needed.
+ function scr_drag_children_with_root(_root_id, _delta_x, _delta_y) {
+-    var _cursor_uid = _root_id.uid;
+-    var _still_walking = true;
++    var _root_uid = _root_id.uid;
+ 
+-    while (_still_walking) {
+-        _still_walking = false;
+-
+-        var _next_uid = -1;
+-
+-        with (obj_opcode_node) {
+-            if (parent_uid == _cursor_uid) {
+-                node_x += _delta_x;
+-                node_y += _delta_y;
+-                _next_uid = uid;
+-            }
+-        }
+-
+-        if (_next_uid != -1) {
+-            _cursor_uid = _next_uid;
+-            _still_walking = true;
++    with (obj_opcode_node) {
++        if (root_uid == _root_uid) {
++            node_x += _delta_x;
++            node_y += _delta_y;
+         }
+     }
+ }
+diff --git a/scripts/scr_load_layout/scr_load_layout.gml b/scripts/scr_load_layout/scr_load_layout.gml
+index 0737be5..336d287 100644
+--- a/scripts/scr_load_layout/scr_load_layout.gml
++++ b/scripts/scr_load_layout/scr_load_layout.gml
+@@ -55,7 +55,7 @@ function scr_load_layout() {
+         _new_node.node_x = _node_data.node_x;
+         _new_node.node_y = _node_data.node_y;
+         _new_node.is_connected = _node_data.is_connected;
+-        _new_node.parent_uid = _node_data.parent_uid;
++        _new_node.root_uid = _node_data.root_uid;
+         _new_node.opcode_mnemonic = _node_data.opcode_mnemonic;
+         _new_node.opcode_size = _node_data.opcode_size;
+         _new_node.addressing_mode_src = _node_data.addressing_mode_src;
+diff --git a/scripts/scr_load_test_setup/scr_load_test_setup.gml b/scripts/scr_load_test_setup/scr_load_test_setup.gml
+index 475d3fe..a92f847 100644
+--- a/scripts/scr_load_test_setup/scr_load_test_setup.gml
++++ b/scripts/scr_load_test_setup/scr_load_test_setup.gml
+@@ -36,11 +36,11 @@ function scr_load_test_setup() {
+ 
+     var _init_cursor_x = _init_instance.node_x;
+     var _init_cursor_y = _init_instance.node_y + _init_instance.node_height;
+-    var _init_previous_uid = _init_instance.uid;
++    var _init_uid = _init_instance.uid;
+ 
+     var _org_cursor_x = _org_instance.node_x;
+     var _org_cursor_y = _org_instance.node_y + _org_instance.node_height;
+-    var _org_previous_uid = _org_instance.uid;
++    var _org_uid = _org_instance.uid;
+ 
+     // --- INIT column: disable channels, build the sky half of the gradient ---
+     var _init_steps = [];
+@@ -134,10 +134,9 @@ function scr_load_test_setup() {
+         _new_node.operand_dst = _step_data.dst_val;
+         _new_node.node_label = _step_data.label;
+         _new_node.is_connected = true;
+-        _new_node.parent_uid = _init_previous_uid;
++        _new_node.root_uid = _init_uid;
+ 
+         _init_cursor_y += _new_node.node_height;
+-        _init_previous_uid = _new_node.uid;
+ 
+         _step_index += 1;
+     }
+@@ -161,14 +160,13 @@ function scr_load_test_setup() {
+         _new_node.operand_dst = _step_data.dst_val;
+         _new_node.node_label = _step_data.label;
+         _new_node.is_connected = true;
+-        _new_node.parent_uid = _org_previous_uid;
++        _new_node.root_uid = _org_uid;
+ 
+         if (_step_data.mnemonic == "BRA") {
+             _new_node.operand_label_src = "mainloop";
+         }
+ 
+         _org_cursor_y += _new_node.node_height;
+-        _org_previous_uid = _new_node.uid;
+ 
+         _step_index += 1;
+     }
+diff --git a/scripts/scr_restore_snapshot/scr_restore_snapshot.gml b/scripts/scr_restore_snapshot/scr_restore_snapshot.gml
+index 4e59615..d7eb492 100644
+--- a/scripts/scr_restore_snapshot/scr_restore_snapshot.gml
++++ b/scripts/scr_restore_snapshot/scr_restore_snapshot.gml
+@@ -1,6 +1,6 @@
+ /// @desc scr_restore_snapshot(_snapshot)
+ /// Destroys the current graph and rebuilds it exactly from _snapshot,
+-/// including original uids so parent_uid links stay correct.
++/// including original uids so root_uid membership stays correct.
+ function scr_restore_snapshot(_snapshot) {
+     with (obj_opcode_node) {
+         instance_destroy();
+@@ -38,7 +38,7 @@ function scr_restore_snapshot(_snapshot) {
+         _new_node.node_x = _node_data.node_x;
+         _new_node.node_y = _node_data.node_y;
+         _new_node.is_connected = _node_data.is_connected;
+-        _new_node.parent_uid = _node_data.parent_uid;
++        _new_node.root_uid = _node_data.root_uid;
+         _new_node.opcode_mnemonic = _node_data.opcode_mnemonic;
+         _new_node.opcode_size = _node_data.opcode_size;
+         _new_node.addressing_mode_src = _node_data.addressing_mode_src;
+diff --git a/scripts/scr_save_layout/scr_save_layout.gml b/scripts/scr_save_layout/scr_save_layout.gml
+index 7905533..9d7d041 100644
+--- a/scripts/scr_save_layout/scr_save_layout.gml
++++ b/scripts/scr_save_layout/scr_save_layout.gml
+@@ -16,7 +16,7 @@ function scr_save_layout() {
+             node_x : node_x,
+             node_y : node_y,
+             is_connected : is_connected,
+-            parent_uid : parent_uid,
++            root_uid : root_uid,
+             opcode_mnemonic : opcode_mnemonic,
+             opcode_size : opcode_size,
+             addressing_mode_src : addressing_mode_src,
