@@ -41,7 +41,7 @@ var _preview_count = array_length(_preview_nodes);
 
 if (_preview_count == 0) {
     draw_set_colour(c_red);
-    draw_text(_panel_x + 6, _line_y, "(no reachable code — nothing will build)");
+    draw_text(_panel_x + 6, _line_y, "(NO CODE ADDED YET)");
     draw_set_colour(c_white);
 } else {
     var _p = 0;

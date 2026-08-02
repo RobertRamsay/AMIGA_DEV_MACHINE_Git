@@ -5,6 +5,3 @@ palette_y = 0;
 palette_width = 80;
 palette_height = 20;
 base_palette_y = 0;
-is_being_dragged = false;
-drag_ghost_x = 0;
-drag_ghost_y = 0;
