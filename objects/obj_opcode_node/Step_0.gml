@@ -14,6 +14,14 @@ if (is_dragging) {
 
     if (mouse_check_button_released(mb_left)) {
         is_dragging = false;
+
+        var _would_overlap = scr_check_node_overlap(id, node_x, node_y);
+
+        if (_would_overlap) {
+            node_x = grab_start_x;
+            node_y = grab_start_y;
+        }
+
         scr_try_stack_connect(id);
     }
 } else {
@@ -23,9 +31,19 @@ if (is_dragging) {
         is_dragging = true;
         drag_offset_x = node_x - mouse_x;
         drag_offset_y = node_y - mouse_y;
+        grab_start_x = node_x;
+        grab_start_y = node_y;
         is_selected = true;
         is_connected = false;
         parent_uid = -1;
+    }
+
+    if (_over_body && mouse_check_button_pressed(mb_right)) {
+        if (global.operand_edit_owner_uid == uid) {
+            global.operand_edit_owner_uid = -1;
+        }
+
+        instance_destroy();
     }
 }
 

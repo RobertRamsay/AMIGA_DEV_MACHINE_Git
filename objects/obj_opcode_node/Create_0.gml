@@ -10,6 +10,8 @@ is_dragging = false;
 is_selected = false;
 drag_offset_x = 0;
 drag_offset_y = 0;
+grab_start_x = 0;
+grab_start_y = 0;
 
 is_connected = false;
 parent_uid = -1;
