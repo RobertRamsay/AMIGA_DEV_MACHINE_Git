@@ -34,6 +34,7 @@
     {"id":{"name":"scr_amiga_apply_wedge_preview","path":"scripts/scr_amiga_apply_wedge_preview/scr_amiga_apply_wedge_preview.yy",},},
     {"id":{"name":"scr_amiga_close_gap_after_detach","path":"scripts/scr_amiga_close_gap_after_detach/scr_amiga_close_gap_after_detach.yy",},},
     {"id":{"name":"scr_amiga_collect_program_nodes","path":"scripts/scr_amiga_collect_program_nodes/scr_amiga_collect_program_nodes.yy",},},
+    {"id":{"name":"scr_amiga_build_preview_lines","path":"scripts/scr_amiga_build_preview_lines/scr_amiga_build_preview_lines.yy",},},
     {"id":{"name":"scr_amiga_commit_insert","path":"scripts/scr_amiga_commit_insert/scr_amiga_commit_insert.yy",},},
     {"id":{"name":"scr_amiga_delete_and_close_gap","path":"scripts/scr_amiga_delete_and_close_gap/scr_amiga_delete_and_close_gap.yy",},},
     {"id":{"name":"scr_amiga_find_insert_point","path":"scripts/scr_amiga_find_insert_point/scr_amiga_find_insert_point.yy",},},

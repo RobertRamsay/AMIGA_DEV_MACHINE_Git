@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_amiga_build_preview_lines",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_amiga_build_preview_lines",
+  "parent":{
+    "name":"AMIGA_DEV_MACHINE",
+    "path":"AMIGA_DEV_MACHINE.yyp",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

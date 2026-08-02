@@ -1,0 +1,258 @@
+diff --git a/AMIGA_DEV_MACHINE.yyp b/AMIGA_DEV_MACHINE.yyp
+index a8deb44..cc04b34 100644
+--- a/AMIGA_DEV_MACHINE.yyp
++++ b/AMIGA_DEV_MACHINE.yyp
+@@ -34,6 +34,7 @@
+     {"id":{"name":"scr_amiga_apply_wedge_preview","path":"scripts/scr_amiga_apply_wedge_preview/scr_amiga_apply_wedge_preview.yy",},},
+     {"id":{"name":"scr_amiga_close_gap_after_detach","path":"scripts/scr_amiga_close_gap_after_detach/scr_amiga_close_gap_after_detach.yy",},},
+     {"id":{"name":"scr_amiga_collect_program_nodes","path":"scripts/scr_amiga_collect_program_nodes/scr_amiga_collect_program_nodes.yy",},},
++    {"id":{"name":"scr_amiga_build_preview_lines","path":"scripts/scr_amiga_build_preview_lines/scr_amiga_build_preview_lines.yy",},},
+     {"id":{"name":"scr_amiga_commit_insert","path":"scripts/scr_amiga_commit_insert/scr_amiga_commit_insert.yy",},},
+     {"id":{"name":"scr_amiga_delete_and_close_gap","path":"scripts/scr_amiga_delete_and_close_gap/scr_amiga_delete_and_close_gap.yy",},},
+     {"id":{"name":"scr_amiga_find_insert_point","path":"scripts/scr_amiga_find_insert_point/scr_amiga_find_insert_point.yy",},},
+diff --git a/objects/obj_amiga_manager/Create_0.gml b/objects/obj_amiga_manager/Create_0.gml
+index 9feeba1..a2ce0b3 100644
+--- a/objects/obj_amiga_manager/Create_0.gml
++++ b/objects/obj_amiga_manager/Create_0.gml
+@@ -46,6 +46,8 @@ global.left_click_pickup_handled_this_frame = false;
+ 
+ // 5. Palette scroll + hover state
+ global.palette_scroll_y = 0;
++global.preview_scroll_y = 0;
++preview_line_cache = [];
+ global.palette_panel_bounds = {
+     left : 0,
+     top : 60,
+diff --git a/objects/obj_amiga_manager/Draw_0.gml b/objects/obj_amiga_manager/Draw_0.gml
+index 80c80de..9c8d27c 100644
+--- a/objects/obj_amiga_manager/Draw_0.gml
++++ b/objects/obj_amiga_manager/Draw_0.gml
+@@ -34,41 +34,42 @@ draw_set_colour(c_white);
+ draw_rectangle(_panel_x, _panel_y, _panel_x + _panel_width, _panel_y + _panel_height, true);
+ draw_text(_panel_x + 6, _panel_y + 4, "COMPILED PROGRAM PREVIEW");
+ 
+-var _preview_nodes = scr_amiga_collect_program_nodes();
+-var _line_y = _panel_y + 24;
++var _line_y = _panel_y + 24 + global.preview_scroll_y;
+ var _line_height = 16;
+-var _preview_count = array_length(_preview_nodes);
++var _preview_line_count = array_length(preview_line_cache);
+ 
+-if (_preview_count == 0) {
++if (_preview_line_count == 0) {
+     draw_set_colour(c_red);
+-    draw_text(_panel_x + 6, _line_y, "(NO CODE ADDED YET)");
++    draw_text(_panel_x + 6, _panel_y + 24, "(NO CODE ADDED YET)");
+     draw_set_colour(c_white);
+ } else {
+     var _p = 0;
+ 
+-    while (_p < _preview_count) {
+-        var _preview_node = _preview_nodes[_p];
+-        var _emit_result = scr_emit_opcode_line(_preview_node);
++    while (_p < _preview_line_count) {
++        var _line_data = preview_line_cache[_p];
++        var _is_visible = (_line_y >= _panel_y + 20) && (_line_y <= _panel_y + _panel_height - _line_height);
+ 
+-        var _line_colour = c_white;
++        if (_is_visible) {
++            var _line_colour = c_white;
+ 
+-        if (!_emit_result.is_valid) {
+-            _line_colour = c_red;
+-        }
++            if (_line_data.is_error) {
++                _line_colour = c_red;
++            } else if (_line_data.is_macro_header) {
++                _line_colour = make_color_rgb(220, 160, 255);
++            }
+ 
+-        var _emit_lines = scr_split_lines(_emit_result.text);
+-        var _emit_line_count = array_length(_emit_lines);
+-        var _line_index = 0;
++            var _text_x = _panel_x + 6;
+ 
+-        draw_set_colour(_line_colour);
++            if (_line_data.indent) {
++                _text_x += 12;
++            }
+ 
+-        while (_line_index < _emit_line_count) {
+-            draw_text(_panel_x + 6, _line_y, _emit_lines[_line_index]);
+-            _line_y += _line_height;
+-            _line_index += 1;
++            draw_set_colour(_line_colour);
++            draw_text(_text_x, _line_y, _line_data.text);
++            draw_set_colour(c_white);
+         }
+ 
+-        draw_set_colour(c_white);
++        _line_y += _line_height;
+         _p += 1;
+     }
+ }
+diff --git a/objects/obj_amiga_manager/Step_0.gml b/objects/obj_amiga_manager/Step_0.gml
+index 55db4fb..4b364a0 100644
+--- a/objects/obj_amiga_manager/Step_0.gml
++++ b/objects/obj_amiga_manager/Step_0.gml
+@@ -146,5 +146,65 @@ if (_over_palette) {
+     }
+ }
+ 
++preview_line_cache = scr_amiga_build_preview_lines();
++
++var _preview_panel_x = room_width - 360;
++var _preview_panel_y = 60;
++var _preview_panel_width = 350;
++var _preview_panel_height = room_height - 80;
++var _preview_line_height = 16;
++
++var _over_preview_panel = point_in_rectangle(mouse_x, mouse_y, _preview_panel_x, _preview_panel_y, _preview_panel_x + _preview_panel_width, _preview_panel_y + _preview_panel_height);
++
++if (_over_preview_panel) {
++    var _preview_wheel_amount = 0;
++
++    if (mouse_wheel_up()) {
++        _preview_wheel_amount = global.grid_size;
++    }
++
++    if (mouse_wheel_down()) {
++        _preview_wheel_amount = -global.grid_size;
++    }
++
++    global.preview_scroll_y += _preview_wheel_amount;
++
++    if (global.preview_scroll_y > 0) {
++        global.preview_scroll_y = 0;
++    }
++
++    var _preview_list_height = array_length(preview_line_cache) * _preview_line_height;
++    var _preview_min_scroll = 0;
++
++    if (_preview_list_height > _preview_panel_height) {
++        _preview_min_scroll = -(_preview_list_height - _preview_panel_height);
++    }
++
++    if (global.preview_scroll_y < _preview_min_scroll) {
++        global.preview_scroll_y = _preview_min_scroll;
++    }
++}
++
++if (mouse_check_button_pressed(mb_left)) {
++    var _click_line_y = _preview_panel_y + 24 + global.preview_scroll_y;
++    var _click_line_index = 0;
++    var _click_line_count = array_length(preview_line_cache);
++
++    while (_click_line_index < _click_line_count) {
++        var _line_data = preview_line_cache[_click_line_index];
++
++        if (_line_data.is_macro_header) {
++            var _over_this_line = point_in_rectangle(mouse_x, mouse_y, _preview_panel_x, _click_line_y, _preview_panel_x + _preview_panel_width, _click_line_y + _preview_line_height);
++
++            if (_over_this_line) {
++                _line_data.node_id.preview_collapsed = !_line_data.node_id.preview_collapsed;
++            }
++        }
++
++        _click_line_y += _preview_line_height;
++        _click_line_index += 1;
++    }
++}
++
+ global.palette_hover_mnemonic = "";
+ 
+diff --git a/objects/obj_opcode_node/Create_0.gml b/objects/obj_opcode_node/Create_0.gml
+index 4d2781a..831bddc 100644
+--- a/objects/obj_opcode_node/Create_0.gml
++++ b/objects/obj_opcode_node/Create_0.gml
+@@ -32,6 +32,7 @@ operand_label_dst = "";
+ is_macro = false;
+ macro_type = "";
+ macro_asset_name = "";
++preview_collapsed = true;
+ 
+ // Opcode data — fully populated, no partial/optional fields
+ opcode_mnemonic = "MOVE";
+diff --git a/scripts/scr_amiga_build_preview_lines/scr_amiga_build_preview_lines.gml b/scripts/scr_amiga_build_preview_lines/scr_amiga_build_preview_lines.gml
+new file mode 100644
+index 0000000..579f7d1
+--- /dev/null
++++ b/scripts/scr_amiga_build_preview_lines/scr_amiga_build_preview_lines.gml
+@@ -0,0 +1,58 @@
++/// @desc scr_amiga_build_preview_lines()
++/// Walks the real compiled program order and builds a flat array of
++/// preview lines. Macro nodes collapse to one header line by default
++/// (node.preview_collapsed == true) — click it to expand and see the
++/// full generated instructions, indented, underneath. Regular nodes are
++/// unaffected. Returns an array of structs:
++/// { text, is_error, is_macro_header, node_id, indent }
++function scr_amiga_build_preview_lines() {
++    var _lines = [];
++    var _preview_nodes = scr_amiga_collect_program_nodes();
++    var _count = array_length(_preview_nodes);
++    var _p = 0;
++
++    while (_p < _count) {
++        var _node = _preview_nodes[_p];
++        var _emit_result = scr_emit_opcode_line(_node);
++
++        if (_node.is_macro) {
++            var _toggle_glyph = "[+]";
++
++            if (!_node.preview_collapsed) {
++                _toggle_glyph = "[-]";
++            }
++
++            var _header_text = _toggle_glyph + " MACRO: " + _node.macro_type;
++
++            if (_node.node_label != "") {
++                _header_text += " (" + _node.node_label + ")";
++            }
++
++            array_push(_lines, { text : _header_text, is_error : !_emit_result.is_valid, is_macro_header : true, node_id : _node, indent : false });
++
++            if (!_node.preview_collapsed) {
++                var _sub_lines = scr_split_lines(_emit_result.text);
++                var _sub_count = array_length(_sub_lines);
++                var _s = 0;
++
++                while (_s < _sub_count) {
++                    array_push(_lines, { text : _sub_lines[_s], is_error : !_emit_result.is_valid, is_macro_header : false, node_id : noone, indent : true });
++                    _s += 1;
++                }
++            }
++        } else {
++            var _plain_lines = scr_split_lines(_emit_result.text);
++            var _plain_count = array_length(_plain_lines);
++            var _pl = 0;
++
++            while (_pl < _plain_count) {
++                array_push(_lines, { text : _plain_lines[_pl], is_error : !_emit_result.is_valid, is_macro_header : false, node_id : noone, indent : false });
++                _pl += 1;
++            }
++        }
++
++        _p += 1;
++    }
++
++    return _lines;
++}
+diff --git a/scripts/scr_amiga_build_preview_lines/scr_amiga_build_preview_lines.yy b/scripts/scr_amiga_build_preview_lines/scr_amiga_build_preview_lines.yy
+new file mode 100644
+index 0000000..c0dd434
+--- /dev/null
++++ b/scripts/scr_amiga_build_preview_lines/scr_amiga_build_preview_lines.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_amiga_build_preview_lines",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_amiga_build_preview_lines",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}

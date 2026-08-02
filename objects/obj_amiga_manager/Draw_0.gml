@@ -34,41 +34,42 @@ draw_set_colour(c_white);
 draw_rectangle(_panel_x, _panel_y, _panel_x + _panel_width, _panel_y + _panel_height, true);
 draw_text(_panel_x + 6, _panel_y + 4, "COMPILED PROGRAM PREVIEW");
 
-var _preview_nodes = scr_amiga_collect_program_nodes();
-var _line_y = _panel_y + 24;
+var _line_y = _panel_y + 24 + global.preview_scroll_y;
 var _line_height = 16;
-var _preview_count = array_length(_preview_nodes);
+var _preview_line_count = array_length(preview_line_cache);
 
-if (_preview_count == 0) {
+if (_preview_line_count == 0) {
     draw_set_colour(c_red);
-    draw_text(_panel_x + 6, _line_y, "(NO CODE ADDED YET)");
+    draw_text(_panel_x + 6, _panel_y + 24, "(NO CODE ADDED YET)");
     draw_set_colour(c_white);
 } else {
     var _p = 0;
 
-    while (_p < _preview_count) {
-        var _preview_node = _preview_nodes[_p];
-        var _emit_result = scr_emit_opcode_line(_preview_node);
+    while (_p < _preview_line_count) {
+        var _line_data = preview_line_cache[_p];
+        var _is_visible = (_line_y >= _panel_y + 20) && (_line_y <= _panel_y + _panel_height - _line_height);
 
-        var _line_colour = c_white;
+        if (_is_visible) {
+            var _line_colour = c_white;
 
-        if (!_emit_result.is_valid) {
-            _line_colour = c_red;
+            if (_line_data.is_error) {
+                _line_colour = c_red;
+            } else if (_line_data.is_macro_header) {
+                _line_colour = make_color_rgb(220, 160, 255);
+            }
+
+            var _text_x = _panel_x + 6;
+
+            if (_line_data.indent) {
+                _text_x += 12;
+            }
+
+            draw_set_colour(_line_colour);
+            draw_text(_text_x, _line_y, _line_data.text);
+            draw_set_colour(c_white);
         }
 
-        var _emit_lines = scr_split_lines(_emit_result.text);
-        var _emit_line_count = array_length(_emit_lines);
-        var _line_index = 0;
-
-        draw_set_colour(_line_colour);
-
-        while (_line_index < _emit_line_count) {
-            draw_text(_panel_x + 6, _line_y, _emit_lines[_line_index]);
-            _line_y += _line_height;
-            _line_index += 1;
-        }
-
-        draw_set_colour(c_white);
+        _line_y += _line_height;
         _p += 1;
     }
 }

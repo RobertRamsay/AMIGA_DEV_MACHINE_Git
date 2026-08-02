@@ -32,6 +32,7 @@ operand_label_dst = "";
 is_macro = false;
 macro_type = "";
 macro_asset_name = "";
+preview_collapsed = true;
 
 // Opcode data — fully populated, no partial/optional fields
 opcode_mnemonic = "MOVE";

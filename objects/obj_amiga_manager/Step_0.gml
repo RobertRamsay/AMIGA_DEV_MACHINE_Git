@@ -146,5 +146,65 @@ if (_over_palette) {
     }
 }
 
+preview_line_cache = scr_amiga_build_preview_lines();
+
+var _preview_panel_x = room_width - 360;
+var _preview_panel_y = 60;
+var _preview_panel_width = 350;
+var _preview_panel_height = room_height - 80;
+var _preview_line_height = 16;
+
+var _over_preview_panel = point_in_rectangle(mouse_x, mouse_y, _preview_panel_x, _preview_panel_y, _preview_panel_x + _preview_panel_width, _preview_panel_y + _preview_panel_height);
+
+if (_over_preview_panel) {
+    var _preview_wheel_amount = 0;
+
+    if (mouse_wheel_up()) {
+        _preview_wheel_amount = global.grid_size;
+    }
+
+    if (mouse_wheel_down()) {
+        _preview_wheel_amount = -global.grid_size;
+    }
+
+    global.preview_scroll_y += _preview_wheel_amount;
+
+    if (global.preview_scroll_y > 0) {
+        global.preview_scroll_y = 0;
+    }
+
+    var _preview_list_height = array_length(preview_line_cache) * _preview_line_height;
+    var _preview_min_scroll = 0;
+
+    if (_preview_list_height > _preview_panel_height) {
+        _preview_min_scroll = -(_preview_list_height - _preview_panel_height);
+    }
+
+    if (global.preview_scroll_y < _preview_min_scroll) {
+        global.preview_scroll_y = _preview_min_scroll;
+    }
+}
+
+if (mouse_check_button_pressed(mb_left)) {
+    var _click_line_y = _preview_panel_y + 24 + global.preview_scroll_y;
+    var _click_line_index = 0;
+    var _click_line_count = array_length(preview_line_cache);
+
+    while (_click_line_index < _click_line_count) {
+        var _line_data = preview_line_cache[_click_line_index];
+
+        if (_line_data.is_macro_header) {
+            var _over_this_line = point_in_rectangle(mouse_x, mouse_y, _preview_panel_x, _click_line_y, _preview_panel_x + _preview_panel_width, _click_line_y + _preview_line_height);
+
+            if (_over_this_line) {
+                _line_data.node_id.preview_collapsed = !_line_data.node_id.preview_collapsed;
+            }
+        }
+
+        _click_line_y += _preview_line_height;
+        _click_line_index += 1;
+    }
+}
+
 global.palette_hover_mnemonic = "";
 
