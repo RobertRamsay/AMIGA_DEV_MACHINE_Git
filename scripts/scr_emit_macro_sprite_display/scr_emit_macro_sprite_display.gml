@@ -42,6 +42,7 @@ function scr_emit_macro_sprite_display(_node) {
     // The sprite occupies at most 268 bytes (64 rows plus control and end
     // words). Keep the per-frame pointer-reset Copper list well clear of it.
     var _copper_address = _address + 4096;
+    var _bitplane_address = _address + 8192;
 
     var _colour_1_value = (_asset.colour_r[0] * 256) + (_asset.colour_g[0] * 16) + _asset.colour_b[0];
     var _colour_2_value = (_asset.colour_r[1] * 256) + (_asset.colour_g[1] * 16) + _asset.colour_b[1];
@@ -67,10 +68,11 @@ function scr_emit_macro_sprite_display(_node) {
         _lines += _node.node_label + ":\n";
     }
 
-    // Minimal PAL display with no bitplanes. Hardware sprites do not require
-    // bitplane DMA; leaving it disabled also avoids displaying uninitialised
-    // chip RAM behind the sprite.
-    _lines += "\tMOVE.W #512,14676224.L\n";
+    // Use one minimal bitplane. Some emulator/display configurations do not
+    // present sprite output reliably with BPU=0 even though sprite DMA itself
+    // is independent. Kickstart has cleared this chip-RAM area before boot.
+    _lines += "\tMOVE.L #" + string(_bitplane_address) + ",14676192.L\n";
+    _lines += "\tMOVE.W #4608,14676224.L\n";
     _lines += "\tMOVE.W #0,14676226.L\n";
     _lines += "\tMOVE.W #0,14676228.L\n";
     _lines += "\tMOVE.W #0,14676230.L\n";
@@ -83,7 +85,10 @@ function scr_emit_macro_sprite_display(_node) {
     _lines += "\tMOVE.W #208,14676116.L\n";
     _lines += "\tMOVE.W #11393,14676110.L\n";
     _lines += "\tMOVE.W #11457,14676112.L\n";
-    _lines += "\tMOVE.W #0,14676352.L\n";
+    // Deliberately visible diagnostic background: if this appears dark grey,
+    // the boot code reached the display setup. It can return to zero once the
+    // sprite path is confirmed.
+    _lines += "\tMOVE.W #273,14676352.L\n";
 
     _lines += "\tMOVE.W #" + string(_colour_1_value) + "," + string(_colour_reg_1) + ".L\n";
     _lines += "\tMOVE.W #" + string(_colour_2_value) + "," + string(_colour_reg_2) + ".L\n";
@@ -140,8 +145,8 @@ function scr_emit_macro_sprite_display(_node) {
     _lines += "\tMOVE.L #" + string(_copper_address) + ",14676096.L\n";
     _lines += "\tMOVE.W #0,14676104.L\n";
 
-    // SET/CLR + DMAEN + COPEN + SPREN. Bitplane DMA stays disabled.
-    _lines += "\tMOVE.W #33440,14676118.L";
+    // SET/CLR + DMAEN + BPLEN + COPEN + SPREN.
+    _lines += "\tMOVE.W #33696,14676118.L";
 
     var _result = { text : _lines, is_valid : true };
     return _result;
