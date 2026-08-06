@@ -99,6 +99,7 @@ function scr_load_workspace_from_path(_path) {
         // back to the correct taller height here instead.
         if (_new_node.macro_type == "SETBKG" || _new_node.macro_type == "COPPER_BAR") {
             _new_node.node_height = 100;
+        }
 
         _n += 1;
     }
