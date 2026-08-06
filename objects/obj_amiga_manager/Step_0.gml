@@ -94,7 +94,7 @@ if (build_state == "waiting_for_adf") {
 
 var _test_button_x = 310;
 var _test_button_y = 20;
-var _test_button_width = 60;
+var _test_button_width = 100;
 var _test_button_height = 16;
 
 var _over_test_button = point_in_rectangle(mouse_x, mouse_y, _test_button_x, _test_button_y, _test_button_x + _test_button_width, _test_button_y + _test_button_height);
@@ -105,7 +105,7 @@ if (_over_test_button && mouse_check_button_pressed(mb_left)) {
 
 var _sprite_editor_button_x = 310;
 var _sprite_editor_button_y = 64;
-var _sprite_editor_button_width = 60;
+var _sprite_editor_button_width = 100;
 var _sprite_editor_button_height = 16;
 
 var _over_sprite_editor_button = point_in_rectangle(mouse_x, mouse_y, _sprite_editor_button_x, _sprite_editor_button_y, _sprite_editor_button_x + _sprite_editor_button_width, _sprite_editor_button_y + _sprite_editor_button_height);
@@ -116,7 +116,7 @@ if (_over_sprite_editor_button && mouse_check_button_pressed(mb_left)) {
 
 var _sprite_test_button_x = 310;
 var _sprite_test_button_y = 84;
-var _sprite_test_button_width = 60;
+var _sprite_test_button_width = 100;
 var _sprite_test_button_height = 16;
 
 var _over_sprite_test_button = point_in_rectangle(mouse_x, mouse_y, _sprite_test_button_x, _sprite_test_button_y, _sprite_test_button_x + _sprite_test_button_width, _sprite_test_button_y + _sprite_test_button_height);
