@@ -1,0 +1,68 @@
+--- a/objects/obj_amiga_manager/Create_0.gml
++++ b/objects/obj_amiga_manager/Create_0.gml
+@@ -46,10 +46,23 @@
+ 
+ // ============================================================================
+ // 4. PROJECT AND BUILD SETTINGS
+-// working_directory is automatically resolved for each user's installation.
++// Keep generated projects out of GameMaker's disposable GMS2TEMP directory.
++// LOCALAPPDATA is stable and writable for both IDE and installed Windows runs.
+ // ============================================================================
+ 
+-global.current_project_path = working_directory + "build_output";
++var _local_app_data = environment_get_variable("LOCALAPPDATA");
++
++if (_local_app_data == "") {
++    _local_app_data = working_directory;
++}
++
++var _amiga_dev_data_path = _local_app_data + "/AmigaDevMachine";
++
++if (!directory_exists(_amiga_dev_data_path)) {
++    directory_create(_amiga_dev_data_path);
++}
++
++global.current_project_path = _amiga_dev_data_path + "/build_output";
+ global.current_volume_name = "AmigaDevDisk";
+ global.current_chipset_mode = "AGA";
+ 
+--- a/scripts/scr_emit_macro_sprite_display/scr_emit_macro_sprite_display.gml
++++ b/scripts/scr_emit_macro_sprite_display/scr_emit_macro_sprite_display.gml
+@@ -38,6 +38,7 @@
+ 
+     var _sprxpth = 14676256 + (_channel * 4);
+     var _sprxpth_offset = 288 + (_channel * 4);
++    var _bpl1pth_offset = 224;
+ 
+     // The sprite occupies at most 268 bytes (64 rows plus control and end
+     // words). Keep the per-frame pointer-reset Copper list well clear of it.
+@@ -139,14 +140,20 @@
+     // Sprite DMA increments SPRxPT as it fetches control/data words. A Copper
+     // list runs again at the start of every frame and restores both halves of
+     // the pointer before the sprite's vertical start position is reached.
+-    var _pointer_high = (_address >> 16) & 65535;
+-    var _pointer_low = _address & 65535;
+-    var _copper_move_high = (_sprxpth_offset * 65536) + _pointer_high;
+-    var _copper_move_low = ((_sprxpth_offset + 2) * 65536) + _pointer_low;
+-
+-    _lines += "\tMOVE.L #" + string(_copper_move_high) + "," + string(_copper_address) + ".L\n";
+-    _lines += "\tMOVE.L #" + string(_copper_move_low) + "," + string(_copper_address + 4) + ".L\n";
+-    _lines += "\tMOVE.L #4294967294," + string(_copper_address + 8) + ".L\n";
++    var _sprite_pointer_high = (_address >> 16) & 65535;
++    var _sprite_pointer_low = _address & 65535;
++    var _bitplane_pointer_high = (_bitplane_address >> 16) & 65535;
++    var _bitplane_pointer_low = _bitplane_address & 65535;
++    var _copper_sprite_high = (_sprxpth_offset * 65536) + _sprite_pointer_high;
++    var _copper_sprite_low = ((_sprxpth_offset + 2) * 65536) + _sprite_pointer_low;
++    var _copper_bitplane_high = (_bpl1pth_offset * 65536) + _bitplane_pointer_high;
++    var _copper_bitplane_low = ((_bpl1pth_offset + 2) * 65536) + _bitplane_pointer_low;
++
++    _lines += "\tMOVE.L #" + string(_copper_sprite_high) + "," + string(_copper_address) + ".L\n";
++    _lines += "\tMOVE.L #" + string(_copper_sprite_low) + "," + string(_copper_address + 4) + ".L\n";
++    _lines += "\tMOVE.L #" + string(_copper_bitplane_high) + "," + string(_copper_address + 8) + ".L\n";
++    _lines += "\tMOVE.L #" + string(_copper_bitplane_low) + "," + string(_copper_address + 12) + ".L\n";
++    _lines += "\tMOVE.L #4294967294," + string(_copper_address + 16) + ".L\n";
+     _lines += "\tMOVE.L #" + string(_copper_address) + ",14676096.L\n";
+     _lines += "\tMOVE.W #0,14676104.L\n";
+ 
+

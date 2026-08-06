@@ -79,6 +79,6 @@ mode_button_src_y = 0;
 mode_button_dst_x = 0;
 mode_button_dst_y = 0;
 
-value_box_width = 34;
+value_box_width = 70;
 operand_editing_slot = "";
 operand_edit_text = "";

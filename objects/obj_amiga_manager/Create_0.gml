@@ -46,10 +46,23 @@ global.value_display_mode = "HEX";
 
 // ============================================================================
 // 4. PROJECT AND BUILD SETTINGS
-// working_directory is automatically resolved for each user's installation.
+// Keep generated projects out of GameMaker's disposable GMS2TEMP directory.
+// LOCALAPPDATA is stable and writable for both IDE and installed Windows runs.
 // ============================================================================
 
-global.current_project_path = working_directory + "build_output";
+var _local_app_data = environment_get_variable("LOCALAPPDATA");
+
+if (_local_app_data == "") {
+    _local_app_data = working_directory;
+}
+
+var _amiga_dev_data_path = _local_app_data + "/AmigaDevMachine";
+
+if (!directory_exists(_amiga_dev_data_path)) {
+    directory_create(_amiga_dev_data_path);
+}
+
+global.current_project_path = _amiga_dev_data_path + "/build_output";
 global.current_volume_name = "AmigaDevDisk";
 global.current_chipset_mode = "AGA";
 

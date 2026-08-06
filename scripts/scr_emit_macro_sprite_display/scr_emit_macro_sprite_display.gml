@@ -38,6 +38,7 @@ function scr_emit_macro_sprite_display(_node) {
 
     var _sprxpth = 14676256 + (_channel * 4);
     var _sprxpth_offset = 288 + (_channel * 4);
+    var _bpl1pth_offset = 224;
 
     // The sprite occupies at most 268 bytes (64 rows plus control and end
     // words). Keep the per-frame pointer-reset Copper list well clear of it.
@@ -139,14 +140,20 @@ function scr_emit_macro_sprite_display(_node) {
     // Sprite DMA increments SPRxPT as it fetches control/data words. A Copper
     // list runs again at the start of every frame and restores both halves of
     // the pointer before the sprite's vertical start position is reached.
-    var _pointer_high = (_address >> 16) & 65535;
-    var _pointer_low = _address & 65535;
-    var _copper_move_high = (_sprxpth_offset * 65536) + _pointer_high;
-    var _copper_move_low = ((_sprxpth_offset + 2) * 65536) + _pointer_low;
+    var _sprite_pointer_high = (_address >> 16) & 65535;
+    var _sprite_pointer_low = _address & 65535;
+    var _bitplane_pointer_high = (_bitplane_address >> 16) & 65535;
+    var _bitplane_pointer_low = _bitplane_address & 65535;
+    var _copper_sprite_high = (_sprxpth_offset * 65536) + _sprite_pointer_high;
+    var _copper_sprite_low = ((_sprxpth_offset + 2) * 65536) + _sprite_pointer_low;
+    var _copper_bitplane_high = (_bpl1pth_offset * 65536) + _bitplane_pointer_high;
+    var _copper_bitplane_low = ((_bpl1pth_offset + 2) * 65536) + _bitplane_pointer_low;
 
-    _lines += "\tMOVE.L #" + string(_copper_move_high) + "," + string(_copper_address) + ".L\n";
-    _lines += "\tMOVE.L #" + string(_copper_move_low) + "," + string(_copper_address + 4) + ".L\n";
-    _lines += "\tMOVE.L #4294967294," + string(_copper_address + 8) + ".L\n";
+    _lines += "\tMOVE.L #" + string(_copper_sprite_high) + "," + string(_copper_address) + ".L\n";
+    _lines += "\tMOVE.L #" + string(_copper_sprite_low) + "," + string(_copper_address + 4) + ".L\n";
+    _lines += "\tMOVE.L #" + string(_copper_bitplane_high) + "," + string(_copper_address + 8) + ".L\n";
+    _lines += "\tMOVE.L #" + string(_copper_bitplane_low) + "," + string(_copper_address + 12) + ".L\n";
+    _lines += "\tMOVE.L #4294967294," + string(_copper_address + 16) + ".L\n";
     _lines += "\tMOVE.L #" + string(_copper_address) + ",14676096.L\n";
     _lines += "\tMOVE.W #0,14676104.L\n";
 
