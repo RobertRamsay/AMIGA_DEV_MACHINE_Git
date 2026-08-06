@@ -151,10 +151,16 @@ if (is_macro) {
     draw_rectangle(_asset_field_dx, _asset_field_dy, _asset_field_dx + node_width, _asset_field_dy + 20, false);
     draw_set_colour(c_white);
 
-    var _asset_field_text = "ASSET: " + macro_asset_name;
+    var _asset_field_label = "ASSET: ";
+
+    if (macro_type == "SETBKG") {
+        _asset_field_label = "RGB: ";
+    }
+
+    var _asset_field_text = _asset_field_label + macro_asset_name;
 
     if (operand_editing_slot == "macro_asset") {
-        _asset_field_text = "ASSET: " + operand_edit_text;
+        _asset_field_text = _asset_field_label + operand_edit_text;
     }
 
     draw_text(_asset_field_dx + 4, _asset_field_dy + 2, _asset_field_text);

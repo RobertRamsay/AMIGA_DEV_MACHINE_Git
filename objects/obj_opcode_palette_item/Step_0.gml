@@ -29,6 +29,7 @@ if (_over_item && mouse_check_button_pressed(mb_left) && !global.left_click_pick
             _new_node.macro_type = "COPPER_BAR";
             _new_node.macro_asset_name = "SunriseWater";
         } else if (palette_mnemonic == "SETBKG") {
+            _new_node.node_height = 100;
             _new_node.is_macro = true;
             _new_node.macro_type = "SETBKG";
             _new_node.macro_asset_name = "000";

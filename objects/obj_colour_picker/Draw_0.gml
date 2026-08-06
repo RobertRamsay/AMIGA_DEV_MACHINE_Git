@@ -85,5 +85,3 @@ draw_rectangle(close_button_x, close_button_y, close_button_x + close_button_wid
 draw_set_colour(c_white);
 draw_rectangle(close_button_x, close_button_y, close_button_x + close_button_width, close_button_y + close_button_height, true);
 draw_text(close_button_x + 8, close_button_y + 4, "Close");
-
-draw_text(panel_x + 12, panel_y + panel_height - 20, "Enter/Close commits — Right-click/Esc cancels");
