@@ -212,7 +212,7 @@ if (_hovering_node && !is_dragging && global.operand_edit_owner_uid == -1) {
 
     if (_explanation != "") {
         var _tip_width = 460;
-        var _tip_height = 86;
+        var _tip_height = 100;
         var _tip_x = mouse_x + 18;
         var _tip_y = mouse_y + 18;
 
