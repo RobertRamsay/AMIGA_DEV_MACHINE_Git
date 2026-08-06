@@ -19,10 +19,14 @@ function scr_emit_macro_copper_bar(_node) {
     var _vp_end = _node.macro_cprbar_vp_end;
 
     if (_node.macro_cprbar_equidistant) {
-        // Genuinely full height (0-256), not the old sky/water sub-range —
-        // that was only ever half of a two-zone gradient, not "full height".
-        _vp_start = 0;
-        _vp_end = 256;
+        // vp 0-44 is vertical blanking/border, not the visible picture — a
+        // band's WAIT can fire there, but part of its zone burns up before
+        // anything is actually on screen, which is what made band 1 read
+        // as a thin sliver. 44 is the real DIWSTRT visible-area start, so
+        // anchoring there keeps the clean 256-line span while starting it
+        // where the picture genuinely begins.
+        _vp_start = 44;
+        _vp_end = 300;
     } else if (_vp_start >= _vp_end) {
         var _error_result = { text : "; ERROR: CPRBAR VP start must be less than VP end (currently " + string(_vp_start) + " to " + string(_vp_end) + ")", is_valid : false };
         return _error_result;
