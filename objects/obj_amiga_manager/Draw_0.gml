@@ -227,15 +227,11 @@ if (global.sprite_editor_open) {
         draw_set_colour(_border_colour);
         draw_rectangle(_swatch_x, _layout.swatch_row_y, _swatch_x + _layout.swatch_width, _layout.swatch_row_y + _layout.swatch_height, true);
 
-        if (global.sprite_editing_field == ("colour" + string(_swatch_index))) {
-            draw_text(_swatch_x, _layout.swatch_row_y - 14, global.sprite_edit_text);
-        }
-
         _swatch_index += 1;
     }
 
     draw_set_colour(c_white);
-    draw_text(_layout.swatch_x, _layout.swatch_row_y + _layout.swatch_height + 2, "click=paint  right-click swatch=edit colour");
+    draw_text(_layout.swatch_x, _layout.swatch_row_y + _layout.swatch_height + 2, "click swatch = paint + edit colour");
 
     var _row = 0;
 
@@ -265,6 +261,81 @@ if (global.sprite_editor_open) {
         }
 
         _row += 1;
+    }
+
+    // --------------------------------------------------------------------
+    // Live 12-bit Amiga palette editor: three 0-F channel sliders.
+    // --------------------------------------------------------------------
+    var _edit_index = global.sprite_palette_edit_index;
+    var _edit_array_index = _edit_index - 1;
+    var _edit_r = global.sprite_colour_r[_edit_array_index];
+    var _edit_g = global.sprite_colour_g[_edit_array_index];
+    var _edit_b = global.sprite_colour_b[_edit_array_index];
+    var _hex_digits = "0123456789ABCDEF";
+    var _edit_hex = string_char_at(_hex_digits, _edit_r + 1)
+        + string_char_at(_hex_digits, _edit_g + 1)
+        + string_char_at(_hex_digits, _edit_b + 1);
+    var _edit_colour = make_color_rgb(_edit_r * 17, _edit_g * 17, _edit_b * 17);
+    var _edit_register = _base_colour_index + (_edit_index - 1);
+
+    draw_set_colour(c_white);
+    draw_text(_layout.panel_x + 12, _layout.palette_y, "PALETTE EDITOR  COLOR" + string(_edit_register) + "  #" + _edit_hex);
+
+    draw_set_colour(_edit_colour);
+    draw_rectangle(_layout.palette_preview_x, _layout.palette_preview_y, _layout.palette_preview_x + _layout.palette_preview_width, _layout.palette_preview_y + _layout.palette_preview_height, false);
+    draw_set_colour(c_white);
+    draw_rectangle(_layout.palette_preview_x, _layout.palette_preview_y, _layout.palette_preview_x + _layout.palette_preview_width, _layout.palette_preview_y + _layout.palette_preview_height, true);
+
+    var _slider_channel = 0;
+
+    while (_slider_channel < 3) {
+        var _slider_y = _layout.slider_r_y;
+        var _slider_selected_value = _edit_r;
+        var _slider_label = "R";
+
+        if (_slider_channel == 1) {
+            _slider_y = _layout.slider_g_y;
+            _slider_selected_value = _edit_g;
+            _slider_label = "G";
+        } else if (_slider_channel == 2) {
+            _slider_y = _layout.slider_b_y;
+            _slider_selected_value = _edit_b;
+            _slider_label = "B";
+        }
+
+        draw_set_colour(c_white);
+        draw_text(_layout.slider_x - 18, _slider_y, _slider_label);
+
+        var _slider_position = 0;
+
+        while (_slider_position < 16) {
+            var _segment_x = _layout.slider_x + (_slider_position * _layout.slider_step_width);
+            var _segment_colour = make_color_rgb(_slider_position * 17, 0, 0);
+
+            if (_slider_channel == 1) {
+                _segment_colour = make_color_rgb(0, _slider_position * 17, 0);
+            } else if (_slider_channel == 2) {
+                _segment_colour = make_color_rgb(0, 0, _slider_position * 17);
+            }
+
+            draw_set_colour(_segment_colour);
+            draw_rectangle(_segment_x, _slider_y, _segment_x + _layout.slider_step_width, _slider_y + _layout.slider_height, false);
+
+            draw_set_colour(c_dkgray);
+            draw_rectangle(_segment_x, _slider_y, _segment_x + _layout.slider_step_width, _slider_y + _layout.slider_height, true);
+
+            if (_slider_position == _slider_selected_value) {
+                draw_set_colour(c_yellow);
+                draw_rectangle(_segment_x - 1, _slider_y - 1, _segment_x + _layout.slider_step_width + 1, _slider_y + _layout.slider_height + 1, true);
+            }
+
+            _slider_position += 1;
+        }
+
+        draw_set_colour(c_white);
+        draw_text(_layout.slider_x + _layout.slider_width + 4, _slider_y, string_char_at(_hex_digits, _slider_selected_value + 1));
+
+        _slider_channel += 1;
     }
 
     draw_set_colour(c_white);

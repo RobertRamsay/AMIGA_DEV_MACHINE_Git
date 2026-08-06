@@ -377,5 +377,6 @@ global.sprite_colour_g = [0, 15, 0];
 global.sprite_colour_b = [0, 0, 15];
 
 global.sprite_paint_index = 1;
+global.sprite_palette_edit_index = 1;
 global.sprite_editing_field = "";
 global.sprite_edit_text = "";

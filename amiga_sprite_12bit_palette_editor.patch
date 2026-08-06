@@ -1,0 +1,196 @@
+--- a/objects/obj_amiga_manager/Create_0.gml
++++ b/objects/obj_amiga_manager/Create_0.gml
+@@ -377,5 +377,6 @@
+ global.sprite_colour_b = [0, 0, 15];
+ 
+ global.sprite_paint_index = 1;
++global.sprite_palette_edit_index = 1;
+ global.sprite_editing_field = "";
+ global.sprite_edit_text = "";
+--- a/objects/obj_amiga_manager/Draw_0.gml
++++ b/objects/obj_amiga_manager/Draw_0.gml
+@@ -227,15 +227,11 @@
+         draw_set_colour(_border_colour);
+         draw_rectangle(_swatch_x, _layout.swatch_row_y, _swatch_x + _layout.swatch_width, _layout.swatch_row_y + _layout.swatch_height, true);
+ 
+-        if (global.sprite_editing_field == ("colour" + string(_swatch_index))) {
+-            draw_text(_swatch_x, _layout.swatch_row_y - 14, global.sprite_edit_text);
+-        }
+-
+         _swatch_index += 1;
+     }
+ 
+     draw_set_colour(c_white);
+-    draw_text(_layout.swatch_x, _layout.swatch_row_y + _layout.swatch_height + 2, "click=paint  right-click swatch=edit colour");
++    draw_text(_layout.swatch_x, _layout.swatch_row_y + _layout.swatch_height + 2, "click swatch = paint + edit colour");
+ 
+     var _row = 0;
+ 
+@@ -267,5 +263,80 @@
+         _row += 1;
+     }
+ 
++    // --------------------------------------------------------------------
++    // Live 12-bit Amiga palette editor: three 0-F channel sliders.
++    // --------------------------------------------------------------------
++    var _edit_index = global.sprite_palette_edit_index;
++    var _edit_array_index = _edit_index - 1;
++    var _edit_r = global.sprite_colour_r[_edit_array_index];
++    var _edit_g = global.sprite_colour_g[_edit_array_index];
++    var _edit_b = global.sprite_colour_b[_edit_array_index];
++    var _hex_digits = "0123456789ABCDEF";
++    var _edit_hex = string_char_at(_hex_digits, _edit_r + 1)
++        + string_char_at(_hex_digits, _edit_g + 1)
++        + string_char_at(_hex_digits, _edit_b + 1);
++    var _edit_colour = make_color_rgb(_edit_r * 17, _edit_g * 17, _edit_b * 17);
++    var _edit_register = _base_colour_index + (_edit_index - 1);
++
++    draw_set_colour(c_white);
++    draw_text(_layout.panel_x + 12, _layout.palette_y, "PALETTE EDITOR  COLOR" + string(_edit_register) + "  #" + _edit_hex);
++
++    draw_set_colour(_edit_colour);
++    draw_rectangle(_layout.palette_preview_x, _layout.palette_preview_y, _layout.palette_preview_x + _layout.palette_preview_width, _layout.palette_preview_y + _layout.palette_preview_height, false);
++    draw_set_colour(c_white);
++    draw_rectangle(_layout.palette_preview_x, _layout.palette_preview_y, _layout.palette_preview_x + _layout.palette_preview_width, _layout.palette_preview_y + _layout.palette_preview_height, true);
++
++    var _slider_channel = 0;
++
++    while (_slider_channel < 3) {
++        var _slider_y = _layout.slider_r_y;
++        var _slider_selected_value = _edit_r;
++        var _slider_label = "R";
++
++        if (_slider_channel == 1) {
++            _slider_y = _layout.slider_g_y;
++            _slider_selected_value = _edit_g;
++            _slider_label = "G";
++        } else if (_slider_channel == 2) {
++            _slider_y = _layout.slider_b_y;
++            _slider_selected_value = _edit_b;
++            _slider_label = "B";
++        }
++
++        draw_set_colour(c_white);
++        draw_text(_layout.slider_x - 18, _slider_y, _slider_label);
++
++        var _slider_position = 0;
++
++        while (_slider_position < 16) {
++            var _segment_x = _layout.slider_x + (_slider_position * _layout.slider_step_width);
++            var _segment_colour = make_color_rgb(_slider_position * 17, 0, 0);
++
++            if (_slider_channel == 1) {
++                _segment_colour = make_color_rgb(0, _slider_position * 17, 0);
++            } else if (_slider_channel == 2) {
++                _segment_colour = make_color_rgb(0, 0, _slider_position * 17);
++            }
++
++            draw_set_colour(_segment_colour);
++            draw_rectangle(_segment_x, _slider_y, _segment_x + _layout.slider_step_width, _slider_y + _layout.slider_height, false);
++
++            draw_set_colour(c_dkgray);
++            draw_rectangle(_segment_x, _slider_y, _segment_x + _layout.slider_step_width, _slider_y + _layout.slider_height, true);
++
++            if (_slider_position == _slider_selected_value) {
++                draw_set_colour(c_yellow);
++                draw_rectangle(_segment_x - 1, _slider_y - 1, _segment_x + _layout.slider_step_width + 1, _slider_y + _layout.slider_height + 1, true);
++            }
++
++            _slider_position += 1;
++        }
++
++        draw_set_colour(c_white);
++        draw_text(_layout.slider_x + _layout.slider_width + 4, _slider_y, string_char_at(_hex_digits, _slider_selected_value + 1));
++
++        _slider_channel += 1;
++    }
++
+     draw_set_colour(c_white);
+-}
+\ No newline at end of file
++}
+--- a/objects/obj_amiga_manager/Step_0.gml
++++ b/objects/obj_amiga_manager/Step_0.gml
+@@ -306,20 +306,37 @@
+ 
+         if (_over_swatch && mouse_check_button_pressed(mb_left)) {
+             global.sprite_paint_index = _swatch_index;
++
++            if (_swatch_index >= 1) {
++                global.sprite_palette_edit_index = _swatch_index;
++            }
+         }
+ 
+-        if (_over_swatch && mouse_check_button_pressed(mb_right) && _swatch_index >= 1 && global.sprite_editing_field == "") {
+-            global.sprite_editing_field = "colour" + string(_swatch_index);
++        _swatch_index += 1;
++    }
+ 
+-            var _hex_r = scr_number_to_hex_string(global.sprite_colour_r[_swatch_index - 1]);
+-            var _hex_g = scr_number_to_hex_string(global.sprite_colour_g[_swatch_index - 1]);
+-            var _hex_b = scr_number_to_hex_string(global.sprite_colour_b[_swatch_index - 1]);
++    // Live 12-bit Amiga palette editor. Each slider has exactly 16 discrete
++    // positions (0-F); dragging updates every sprite pixel using that swatch.
++    if (mouse_check_button(mb_left) && global.sprite_palette_edit_index >= 1) {
++        var _palette_array_index = global.sprite_palette_edit_index - 1;
++        var _slider_value = floor((mouse_x - _layout.slider_x) / _layout.slider_step_width);
++        _slider_value = clamp(_slider_value, 0, 15);
++
++        var _over_r_slider = point_in_rectangle(mouse_x, mouse_y, _layout.slider_x, _layout.slider_r_y, _layout.slider_x + _layout.slider_width, _layout.slider_r_y + _layout.slider_height);
++        var _over_g_slider = point_in_rectangle(mouse_x, mouse_y, _layout.slider_x, _layout.slider_g_y, _layout.slider_x + _layout.slider_width, _layout.slider_g_y + _layout.slider_height);
++        var _over_b_slider = point_in_rectangle(mouse_x, mouse_y, _layout.slider_x, _layout.slider_b_y, _layout.slider_x + _layout.slider_width, _layout.slider_b_y + _layout.slider_height);
+ 
+-            global.sprite_edit_text = _hex_r + _hex_g + _hex_b;
+-            keyboard_string = "";
++        if (_over_r_slider) {
++            global.sprite_colour_r[_palette_array_index] = _slider_value;
+         }
+ 
+-        _swatch_index += 1;
++        if (_over_g_slider) {
++            global.sprite_colour_g[_palette_array_index] = _slider_value;
++        }
++
++        if (_over_b_slider) {
++            global.sprite_colour_b[_palette_array_index] = _slider_value;
++        }
+     }
+ 
+     if (mouse_check_button(mb_left) && global.sprite_editing_field == "") {
+--- a/scripts/scr_sprite_editor_layout/scr_sprite_editor_layout.gml
++++ b/scripts/scr_sprite_editor_layout/scr_sprite_editor_layout.gml
+@@ -12,7 +12,11 @@
+     var _grid_y = _panel_y + 112;
+     var _grid_width = 16 * _cell_size;
+     var _grid_height = global.sprite_height * _cell_size;
+-    var _panel_height = 112 + _grid_height + 16;
++    var _palette_y = _grid_y + _grid_height + 28;
++    var _slider_x = _panel_x + 32;
++    var _slider_width = 192;
++    var _slider_step_width = _slider_width / 16;
++    var _panel_height = (_palette_y - _panel_y) + 126;
+ 
+     var _layout = {
+         panel_x : _panel_x,
+@@ -36,7 +40,19 @@
+         swatch_row_y : _panel_y + 88,
+         swatch_width : 40,
+         swatch_height : 18,
+-        swatch_x : _panel_x + 12
++        swatch_x : _panel_x + 12,
++        palette_y : _palette_y,
++        palette_preview_x : _panel_x + 12,
++        palette_preview_y : _palette_y + 18,
++        palette_preview_width : 40,
++        palette_preview_height : 64,
++        slider_x : _slider_x,
++        slider_width : _slider_width,
++        slider_height : 16,
++        slider_step_width : _slider_step_width,
++        slider_r_y : _palette_y + 18,
++        slider_g_y : _palette_y + 42,
++        slider_b_y : _palette_y + 66
+     };
+ 
+     return _layout;
+

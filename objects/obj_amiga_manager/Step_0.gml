@@ -306,20 +306,37 @@ if (global.sprite_editor_open) {
 
         if (_over_swatch && mouse_check_button_pressed(mb_left)) {
             global.sprite_paint_index = _swatch_index;
-        }
 
-        if (_over_swatch && mouse_check_button_pressed(mb_right) && _swatch_index >= 1 && global.sprite_editing_field == "") {
-            global.sprite_editing_field = "colour" + string(_swatch_index);
-
-            var _hex_r = scr_number_to_hex_string(global.sprite_colour_r[_swatch_index - 1]);
-            var _hex_g = scr_number_to_hex_string(global.sprite_colour_g[_swatch_index - 1]);
-            var _hex_b = scr_number_to_hex_string(global.sprite_colour_b[_swatch_index - 1]);
-
-            global.sprite_edit_text = _hex_r + _hex_g + _hex_b;
-            keyboard_string = "";
+            if (_swatch_index >= 1) {
+                global.sprite_palette_edit_index = _swatch_index;
+            }
         }
 
         _swatch_index += 1;
+    }
+
+    // Live 12-bit Amiga palette editor. Each slider has exactly 16 discrete
+    // positions (0-F); dragging updates every sprite pixel using that swatch.
+    if (mouse_check_button(mb_left) && global.sprite_palette_edit_index >= 1) {
+        var _palette_array_index = global.sprite_palette_edit_index - 1;
+        var _slider_value = floor((mouse_x - _layout.slider_x) / _layout.slider_step_width);
+        _slider_value = clamp(_slider_value, 0, 15);
+
+        var _over_r_slider = point_in_rectangle(mouse_x, mouse_y, _layout.slider_x, _layout.slider_r_y, _layout.slider_x + _layout.slider_width, _layout.slider_r_y + _layout.slider_height);
+        var _over_g_slider = point_in_rectangle(mouse_x, mouse_y, _layout.slider_x, _layout.slider_g_y, _layout.slider_x + _layout.slider_width, _layout.slider_g_y + _layout.slider_height);
+        var _over_b_slider = point_in_rectangle(mouse_x, mouse_y, _layout.slider_x, _layout.slider_b_y, _layout.slider_x + _layout.slider_width, _layout.slider_b_y + _layout.slider_height);
+
+        if (_over_r_slider) {
+            global.sprite_colour_r[_palette_array_index] = _slider_value;
+        }
+
+        if (_over_g_slider) {
+            global.sprite_colour_g[_palette_array_index] = _slider_value;
+        }
+
+        if (_over_b_slider) {
+            global.sprite_colour_b[_palette_array_index] = _slider_value;
+        }
     }
 
     if (mouse_check_button(mb_left) && global.sprite_editing_field == "") {

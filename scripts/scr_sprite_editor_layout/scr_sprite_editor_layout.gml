@@ -12,7 +12,11 @@ function scr_sprite_editor_layout() {
     var _grid_y = _panel_y + 112;
     var _grid_width = 16 * _cell_size;
     var _grid_height = global.sprite_height * _cell_size;
-    var _panel_height = 112 + _grid_height + 16;
+    var _palette_y = _grid_y + _grid_height + 28;
+    var _slider_x = _panel_x + 32;
+    var _slider_width = 192;
+    var _slider_step_width = _slider_width / 16;
+    var _panel_height = (_palette_y - _panel_y) + 126;
 
     var _layout = {
         panel_x : _panel_x,
@@ -36,7 +40,19 @@ function scr_sprite_editor_layout() {
         swatch_row_y : _panel_y + 88,
         swatch_width : 40,
         swatch_height : 18,
-        swatch_x : _panel_x + 12
+        swatch_x : _panel_x + 12,
+        palette_y : _palette_y,
+        palette_preview_x : _panel_x + 12,
+        palette_preview_y : _palette_y + 18,
+        palette_preview_width : 40,
+        palette_preview_height : 64,
+        slider_x : _slider_x,
+        slider_width : _slider_width,
+        slider_height : 16,
+        slider_step_width : _slider_step_width,
+        slider_r_y : _palette_y + 18,
+        slider_g_y : _palette_y + 42,
+        slider_b_y : _palette_y + 66
     };
 
     return _layout;
