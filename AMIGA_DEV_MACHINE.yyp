@@ -218,6 +218,7 @@
     {"id":{"name":"scr_amiga_collect_program_nodes","path":"scripts/scr_amiga_collect_program_nodes/scr_amiga_collect_program_nodes.yy",},},
     {"id":{"name":"scr_amiga_commit_insert","path":"scripts/scr_amiga_commit_insert/scr_amiga_commit_insert.yy",},},
     {"id":{"name":"scr_amiga_delete_and_close_gap","path":"scripts/scr_amiga_delete_and_close_gap/scr_amiga_delete_and_close_gap.yy",},},
+    {"id":{"name":"scr_amiga_explain_node","path":"scripts/scr_amiga_explain_node/scr_amiga_explain_node.yy",},},
     {"id":{"name":"scr_amiga_describe_node","path":"scripts/scr_amiga_describe_node/scr_amiga_describe_node.yy",},},
     {"id":{"name":"scr_amiga_find_insert_point","path":"scripts/scr_amiga_find_insert_point/scr_amiga_find_insert_point.yy",},},
     {"id":{"name":"scr_amiga_restore_wedge_shifts","path":"scripts/scr_amiga_restore_wedge_shifts/scr_amiga_restore_wedge_shifts.yy",},},
