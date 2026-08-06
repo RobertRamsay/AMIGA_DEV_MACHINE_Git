@@ -4,15 +4,17 @@ if (instance_exists(obj_bitmap_editor)) {
     exit;
 }
 
-if (keyboard_check_pressed(ord("I"))) {
-    global.kickstart_path = "";
-
-    ini_open("settings.ini");
-    ini_write_string("paths", "kickstart", "");
-    ini_close();
-
-    scr_set_status_message("Kickstart ROM cleared — you'll be prompted again on the next DOS-loader build.");
-}
+// Kickstart ROM clear shortcut disabled alongside the picker above —
+// nothing to clear while it's off. Revisit together.
+// if (keyboard_check_pressed(ord("I"))) {
+//     global.kickstart_path = "";
+//
+//     ini_open("settings.ini");
+//     ini_write_string("paths", "kickstart", "");
+//     ini_close();
+//
+//     scr_set_status_message("Kickstart ROM cleared — you'll be prompted again on the next DOS-loader build.");
+// }
 
 global.right_click_delete_handled_this_frame = false;
 global.left_click_pickup_handled_this_frame = false;
@@ -68,8 +70,15 @@ if (keyboard_check_pressed(vk_f5) && build_state == "idle") {
         _node_scan_index += 1;
     }
 
+    // Kickstart ROM picker disabled for now — internal testing only,
+    // boots straight to FS-UAE's bundled AROS fallback as before. Revisit
+    // once a licensed ROM workflow is actually needed.
+    // if (_requires_kickstart) {
+    //     scr_amiga_ensure_kickstart_path();
+    // }
+
     if (_requires_kickstart) {
-        scr_amiga_ensure_kickstart_path();
+        scr_set_status_message("Booting with unknown Kickstart — at CLI 1> please enter \"DF0:main\"");
     }
 
     var _start_result = scr_amiga_start_build(_node_array, global.current_project_path, global.current_chipset_mode);
