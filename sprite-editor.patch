@@ -1,0 +1,778 @@
+diff --git a/AMIGA_DEV_MACHINE.yyp b/AMIGA_DEV_MACHINE.yyp
+index 7a94c3f..e198bac 100644
+--- a/AMIGA_DEV_MACHINE.yyp
++++ b/AMIGA_DEV_MACHINE.yyp
+@@ -43,6 +43,10 @@
+     {"id":{"name":"scr_amiga_start_build","path":"scripts/scr_amiga_start_build/scr_amiga_start_build.yy",},},
+     {"id":{"name":"scr_apply_wedge_preview","path":"scripts/scr_apply_wedge_preview/scr_apply_wedge_preview.yy",},},
+     {"id":{"name":"scr_asset_define_copper_bar","path":"scripts/scr_asset_define_copper_bar/scr_asset_define_copper_bar.yy",},},
++    {"id":{"name":"scr_asset_define_sprite","path":"scripts/scr_asset_define_sprite/scr_asset_define_sprite.yy",},},
++    {"id":{"name":"scr_emit_macro_sprite_display","path":"scripts/scr_emit_macro_sprite_display/scr_emit_macro_sprite_display.yy",},},
++    {"id":{"name":"scr_amiga_run_sprite_test","path":"scripts/scr_amiga_run_sprite_test/scr_amiga_run_sprite_test.yy",},},
++    {"id":{"name":"scr_sprite_editor_layout","path":"scripts/scr_sprite_editor_layout/scr_sprite_editor_layout.yy",},},
+     {"id":{"name":"scr_asset_find_by_name","path":"scripts/scr_asset_find_by_name/scr_asset_find_by_name.yy",},},
+     {"id":{"name":"scr_capture_snapshot","path":"scripts/scr_capture_snapshot/scr_capture_snapshot.yy",},},
+     {"id":{"name":"scr_check_node_overlap","path":"scripts/scr_check_node_overlap/scr_check_node_overlap.yy",},},
+diff --git a/objects/obj_amiga_manager/Create_0.gml b/objects/obj_amiga_manager/Create_0.gml
+index 325ba1e..a8e100e 100644
+--- a/objects/obj_amiga_manager/Create_0.gml
++++ b/objects/obj_amiga_manager/Create_0.gml
+@@ -132,4 +132,20 @@ _init_instance.node_y = scr_snap_to_grid(_init_y, global.grid_size);
+ // same pattern as C64DM's obj_asset_manager.asset_list. One default Copper
+ // Bar asset is registered up front so there's immediately something to use.
+ global.asset_list = [];
+-scr_asset_define_copper_bar("SunriseWater", 4, 44, 110, 13, 2, 0, 15, 12, 6, 4, 110, 200, 15, 8, 4, 0, 1, 6);
+\ No newline at end of file
++scr_asset_define_copper_bar("SunriseWater", 4, 44, 110, 13, 2, 0, 15, 12, 6, 4, 110, 200, 15, 8, 4, 0, 1, 6);
++
++// 11. Sprite editor state — a 16px-wide, 8-channel hardware sprite editor.
++// Height is capped at 64; the pixel array is always allocated at full
++// capacity (64*16) and only the first (height*16) entries are used, so
++// changing height never needs a resize.
++global.sprite_editor_open = false;
++global.sprite_channel = 0;
++global.sprite_height = 16;
++global.sprite_address = 262144;
++global.sprite_pixels = array_create(64 * 16, 0);
++global.sprite_colour_r = [15, 0, 0];
++global.sprite_colour_g = [0, 15, 0];
++global.sprite_colour_b = [0, 0, 15];
++global.sprite_paint_index = 1;
++global.sprite_editing_field = "";
++global.sprite_edit_text = "";
+\ No newline at end of file
+diff --git a/objects/obj_amiga_manager/Draw_0.gml b/objects/obj_amiga_manager/Draw_0.gml
+index 4c3cc9b..a57f3a9 100644
+--- a/objects/obj_amiga_manager/Draw_0.gml
++++ b/objects/obj_amiga_manager/Draw_0.gml
+@@ -83,6 +83,18 @@ draw_set_colour(c_white);
+ draw_rectangle(310, 20, 370, 36, true);
+ draw_text(318, 18, "TEST");
+ 
++draw_set_colour(make_color_rgb(120, 60, 160));
++draw_rectangle(310, 64, 370, 80, false);
++draw_set_colour(c_white);
++draw_rectangle(310, 64, 370, 80, true);
++draw_text(312, 62, "SPR EDIT");
++
++draw_set_colour(c_maroon);
++draw_rectangle(310, 84, 370, 100, false);
++draw_set_colour(c_white);
++draw_rectangle(310, 84, 370, 100, true);
++draw_text(312, 82, "TEST SPR");
++
+ if (keyboard_check(vk_control)) {
+     var _hud_text = "Undo: " + string(array_length(global.undo_stack)) + "   Redo: " + string(array_length(global.redo_stack));
+     var _hud_x = mouse_x + 16;
+@@ -127,5 +139,130 @@ if (array_length(global.status_message_log) > 0) {
+         _i -= 1;
+     }
+ 
++    draw_set_colour(c_white);
++}
++
++if (global.sprite_editor_open) {
++    var _layout = scr_sprite_editor_layout();
++
++    draw_set_alpha(0.9);
++    draw_rectangle_colour(_layout.panel_x, _layout.panel_y, _layout.panel_x + _layout.panel_width, _layout.panel_y + _layout.panel_height, c_black, c_black, c_black, c_black, false);
++    draw_set_alpha(1);
++    draw_set_colour(c_white);
++    draw_rectangle(_layout.panel_x, _layout.panel_y, _layout.panel_x + _layout.panel_width, _layout.panel_y + _layout.panel_height, true);
++    draw_text(_layout.panel_x + 6, _layout.panel_y + 2, "SPRITE EDITOR");
++
++    draw_set_colour(c_red);
++    draw_rectangle(_layout.close_x, _layout.close_y, _layout.close_x + 16, _layout.close_y + 16, false);
++    draw_set_colour(c_white);
++    draw_rectangle(_layout.close_x, _layout.close_y, _layout.close_x + 16, _layout.close_y + 16, true);
++    draw_text(_layout.close_x + 4, _layout.close_y - 1, "X");
++
++    draw_text(_layout.panel_x + 12, _layout.channel_row_y, "CHANNEL:");
++    draw_rectangle(_layout.channel_minus_x, _layout.channel_row_y, _layout.channel_minus_x + 16, _layout.channel_row_y + 16, true);
++    draw_text(_layout.channel_minus_x + 4, _layout.channel_row_y - 1, "<");
++    draw_text(_layout.channel_minus_x + 22, _layout.channel_row_y, string(global.sprite_channel));
++    draw_rectangle(_layout.channel_plus_x, _layout.channel_row_y, _layout.channel_plus_x + 16, _layout.channel_row_y + 16, true);
++    draw_text(_layout.channel_plus_x + 4, _layout.channel_row_y - 1, ">");
++
++    var _pair_index = global.sprite_channel div 2;
++    var _base_colour_index = 17 + (_pair_index * 4);
++    draw_text(_layout.panel_x + 155, _layout.channel_row_y, "COLOR" + string(_base_colour_index) + "-" + string(_base_colour_index + 2));
++
++    draw_text(_layout.panel_x + 12, _layout.height_row_y, "HEIGHT:");
++    var _height_display = string(global.sprite_height);
++    var _height_colour = c_dkgray;
++
++    if (global.sprite_editing_field == "height") {
++        _height_display = global.sprite_edit_text;
++        _height_colour = c_olive;
++    }
++
++    draw_set_colour(_height_colour);
++    draw_rectangle(_layout.height_field_x, _layout.height_row_y, _layout.height_field_x + 60, _layout.height_row_y + 16, false);
++    draw_set_colour(c_white);
++    draw_rectangle(_layout.height_field_x, _layout.height_row_y, _layout.height_field_x + 60, _layout.height_row_y + 16, true);
++    draw_text(_layout.height_field_x + 4, _layout.height_row_y, _height_display);
++
++    draw_text(_layout.panel_x + 12, _layout.addr_row_y, "ADDR:");
++    var _addr_display = "$" + scr_number_to_hex_string(global.sprite_address);
++    var _addr_colour = c_dkgray;
++
++    if (global.sprite_editing_field == "address") {
++        _addr_display = "$" + global.sprite_edit_text;
++        _addr_colour = c_olive;
++    }
++
++    draw_set_colour(_addr_colour);
++    draw_rectangle(_layout.addr_field_x, _layout.addr_row_y, _layout.addr_field_x + 80, _layout.addr_row_y + 16, false);
++    draw_set_colour(c_white);
++    draw_rectangle(_layout.addr_field_x, _layout.addr_row_y, _layout.addr_field_x + 80, _layout.addr_row_y + 16, true);
++    draw_text(_layout.addr_field_x + 4, _layout.addr_row_y, _addr_display);
++
++    var _swatch_index = 0;
++
++    while (_swatch_index < 4) {
++        var _swatch_x = _layout.swatch_x + (_swatch_index * (_layout.swatch_width + 6));
++        var _swatch_colour = c_black;
++
++        if (_swatch_index >= 1) {
++            var _sr = global.sprite_colour_r[_swatch_index - 1] * 17;
++            var _sg = global.sprite_colour_g[_swatch_index - 1] * 17;
++            var _sb = global.sprite_colour_b[_swatch_index - 1] * 17;
++            _swatch_colour = make_color_rgb(_sr, _sg, _sb);
++        }
++
++        draw_set_colour(_swatch_colour);
++        draw_rectangle(_swatch_x, _layout.swatch_row_y, _swatch_x + _layout.swatch_width, _layout.swatch_row_y + _layout.swatch_height, false);
++
++        var _border_colour = c_white;
++
++        if (global.sprite_paint_index == _swatch_index) {
++            _border_colour = c_yellow;
++        }
++
++        draw_set_colour(_border_colour);
++        draw_rectangle(_swatch_x, _layout.swatch_row_y, _swatch_x + _layout.swatch_width, _layout.swatch_row_y + _layout.swatch_height, true);
++
++        if (global.sprite_editing_field == ("colour" + string(_swatch_index))) {
++            draw_text(_swatch_x, _layout.swatch_row_y - 14, global.sprite_edit_text);
++        }
++
++        _swatch_index += 1;
++    }
++
++    draw_set_colour(c_white);
++    draw_text(_layout.swatch_x, _layout.swatch_row_y + _layout.swatch_height + 2, "click=paint  right-click swatch=edit colour");
++
++    var _row = 0;
++
++    while (_row < global.sprite_height) {
++        var _col = 0;
++
++        while (_col < 16) {
++            var _pixel_index = global.sprite_pixels[(_row * 16) + _col];
++            var _cell_x = _layout.grid_x + (_col * _layout.cell_size);
++            var _cell_y = _layout.grid_y + (_row * _layout.cell_size);
++
++            var _cell_colour = c_black;
++
++            if (_pixel_index >= 1) {
++                var _cr = global.sprite_colour_r[_pixel_index - 1] * 17;
++                var _cg = global.sprite_colour_g[_pixel_index - 1] * 17;
++                var _cb = global.sprite_colour_b[_pixel_index - 1] * 17;
++                _cell_colour = make_color_rgb(_cr, _cg, _cb);
++            }
++
++            draw_set_colour(_cell_colour);
++            draw_rectangle(_cell_x, _cell_y, _cell_x + _layout.cell_size, _cell_y + _layout.cell_size, false);
++            draw_set_colour(c_dkgray);
++            draw_rectangle(_cell_x, _cell_y, _cell_x + _layout.cell_size, _cell_y + _layout.cell_size, true);
++
++            _col += 1;
++        }
++
++        _row += 1;
++    }
++
+     draw_set_colour(c_white);
+ }
+\ No newline at end of file
+diff --git a/objects/obj_amiga_manager/Step_0.gml b/objects/obj_amiga_manager/Step_0.gml
+index 4b364a0..cd86286 100644
+--- a/objects/obj_amiga_manager/Step_0.gml
++++ b/objects/obj_amiga_manager/Step_0.gml
+@@ -93,6 +93,28 @@ if (_over_test_button && mouse_check_button_pressed(mb_left)) {
+     scr_load_test_setup();
+ }
+ 
++var _sprite_editor_button_x = 310;
++var _sprite_editor_button_y = 64;
++var _sprite_editor_button_width = 60;
++var _sprite_editor_button_height = 16;
++
++var _over_sprite_editor_button = point_in_rectangle(mouse_x, mouse_y, _sprite_editor_button_x, _sprite_editor_button_y, _sprite_editor_button_x + _sprite_editor_button_width, _sprite_editor_button_y + _sprite_editor_button_height);
++
++if (_over_sprite_editor_button && mouse_check_button_pressed(mb_left)) {
++    global.sprite_editor_open = !global.sprite_editor_open;
++}
++
++var _sprite_test_button_x = 310;
++var _sprite_test_button_y = 84;
++var _sprite_test_button_width = 60;
++var _sprite_test_button_height = 16;
++
++var _over_sprite_test_button = point_in_rectangle(mouse_x, mouse_y, _sprite_test_button_x, _sprite_test_button_y, _sprite_test_button_x + _sprite_test_button_width, _sprite_test_button_y + _sprite_test_button_height);
++
++if (_over_sprite_test_button && mouse_check_button_pressed(mb_left)) {
++    scr_amiga_run_sprite_test();
++}
++
+ if (keyboard_check_pressed(ord("H")) && global.operand_edit_owner_uid == -1) {
+     if (global.value_display_mode == "HEX") {
+         global.value_display_mode = "DEC";
+@@ -208,3 +230,146 @@ if (mouse_check_button_pressed(mb_left)) {
+ 
+ global.palette_hover_mnemonic = "";
+ 
++if (global.sprite_editor_open) {
++    var _layout = scr_sprite_editor_layout();
++
++    var _over_close = point_in_rectangle(mouse_x, mouse_y, _layout.close_x, _layout.close_y, _layout.close_x + 16, _layout.close_y + 16);
++
++    if (_over_close && mouse_check_button_pressed(mb_left)) {
++        global.sprite_editor_open = false;
++    }
++
++    var _over_channel_minus = point_in_rectangle(mouse_x, mouse_y, _layout.channel_minus_x, _layout.channel_row_y, _layout.channel_minus_x + 16, _layout.channel_row_y + 16);
++    var _over_channel_plus = point_in_rectangle(mouse_x, mouse_y, _layout.channel_plus_x, _layout.channel_row_y, _layout.channel_plus_x + 16, _layout.channel_row_y + 16);
++
++    if (_over_channel_minus && mouse_check_button_pressed(mb_left)) {
++        global.sprite_channel -= 1;
++
++        if (global.sprite_channel < 0) {
++            global.sprite_channel = 7;
++        }
++    }
++
++    if (_over_channel_plus && mouse_check_button_pressed(mb_left)) {
++        global.sprite_channel += 1;
++
++        if (global.sprite_channel > 7) {
++            global.sprite_channel = 0;
++        }
++    }
++
++    var _over_height_field = point_in_rectangle(mouse_x, mouse_y, _layout.height_field_x, _layout.height_row_y, _layout.height_field_x + 60, _layout.height_row_y + 16);
++    var _over_addr_field = point_in_rectangle(mouse_x, mouse_y, _layout.addr_field_x, _layout.addr_row_y, _layout.addr_field_x + 80, _layout.addr_row_y + 16);
++
++    if (_over_height_field && mouse_check_button_pressed(mb_left) && global.sprite_editing_field == "") {
++        global.sprite_editing_field = "height";
++        global.sprite_edit_text = string(global.sprite_height);
++        keyboard_string = "";
++    }
++
++    if (_over_addr_field && mouse_check_button_pressed(mb_left) && global.sprite_editing_field == "") {
++        global.sprite_editing_field = "address";
++        global.sprite_edit_text = scr_number_to_hex_string(global.sprite_address);
++        keyboard_string = "";
++    }
++
++    var _swatch_index = 0;
++
++    while (_swatch_index < 4) {
++        var _swatch_x = _layout.swatch_x + (_swatch_index * (_layout.swatch_width + 6));
++        var _over_swatch = point_in_rectangle(mouse_x, mouse_y, _swatch_x, _layout.swatch_row_y, _swatch_x + _layout.swatch_width, _layout.swatch_row_y + _layout.swatch_height);
++
++        if (_over_swatch && mouse_check_button_pressed(mb_left)) {
++            global.sprite_paint_index = _swatch_index;
++        }
++
++        if (_over_swatch && mouse_check_button_pressed(mb_right) && _swatch_index >= 1 && global.sprite_editing_field == "") {
++            global.sprite_editing_field = "colour" + string(_swatch_index);
++
++            var _hex_r = scr_number_to_hex_string(global.sprite_colour_r[_swatch_index - 1]);
++            var _hex_g = scr_number_to_hex_string(global.sprite_colour_g[_swatch_index - 1]);
++            var _hex_b = scr_number_to_hex_string(global.sprite_colour_b[_swatch_index - 1]);
++
++            global.sprite_edit_text = _hex_r + _hex_g + _hex_b;
++            keyboard_string = "";
++        }
++
++        _swatch_index += 1;
++    }
++
++    if (mouse_check_button(mb_left) && global.sprite_editing_field == "") {
++        var _over_grid = point_in_rectangle(mouse_x, mouse_y, _layout.grid_x, _layout.grid_y, _layout.grid_x + _layout.grid_width, _layout.grid_y + _layout.grid_height);
++
++        if (_over_grid) {
++            var _cell_col = floor((mouse_x - _layout.grid_x) / _layout.cell_size);
++            var _cell_row = floor((mouse_y - _layout.grid_y) / _layout.cell_size);
++
++            if (_cell_col >= 0 && _cell_col < 16 && _cell_row >= 0 && _cell_row < global.sprite_height) {
++                global.sprite_pixels[(_cell_row * 16) + _cell_col] = global.sprite_paint_index;
++            }
++        }
++    }
++
++    if (global.sprite_editing_field != "") {
++        var _typed = keyboard_string;
++        keyboard_string = "";
++
++        var _char_index = 1;
++        var _typed_length = string_length(_typed);
++
++        while (_char_index <= _typed_length) {
++            var _this_char = string_char_at(_typed, _char_index);
++            var _is_hex_digit = ((_this_char >= "0") && (_this_char <= "9")) || ((_this_char >= "A") && (_this_char <= "F")) || ((_this_char >= "a") && (_this_char <= "f"));
++            var _is_digit = (_this_char >= "0") && (_this_char <= "9");
++            var _accept = _is_hex_digit;
++
++            if (global.sprite_editing_field == "height") {
++                _accept = _is_digit;
++            }
++
++            if (_accept) {
++                global.sprite_edit_text += _this_char;
++            }
++
++            _char_index += 1;
++        }
++
++        if (keyboard_check_pressed(vk_backspace) && string_length(global.sprite_edit_text) > 0) {
++            global.sprite_edit_text = string_copy(global.sprite_edit_text, 1, string_length(global.sprite_edit_text) - 1);
++        }
++
++        if (keyboard_check_pressed(vk_enter)) {
++            if (global.sprite_editing_field == "height") {
++                var _new_height = real(global.sprite_edit_text);
++
++                if (_new_height < 1) {
++                    _new_height = 1;
++                }
++
++                if (_new_height > 64) {
++                    _new_height = 64;
++                }
++
++                global.sprite_height = _new_height;
++            } else if (global.sprite_editing_field == "address") {
++                global.sprite_address = scr_hex_string_to_number(global.sprite_edit_text);
++            } else if (string_pos("colour", global.sprite_editing_field) == 1) {
++                var _swatch_num = real(string_copy(global.sprite_editing_field, 7, 1));
++                var _hex_text = global.sprite_edit_text;
++
++                if (string_length(_hex_text) == 3) {
++                    global.sprite_colour_r[_swatch_num - 1] = scr_hex_string_to_number(string_char_at(_hex_text, 1));
++                    global.sprite_colour_g[_swatch_num - 1] = scr_hex_string_to_number(string_char_at(_hex_text, 2));
++                    global.sprite_colour_b[_swatch_num - 1] = scr_hex_string_to_number(string_char_at(_hex_text, 3));
++                }
++            }
++
++            global.sprite_editing_field = "";
++        }
++
++        if (keyboard_check_pressed(vk_escape)) {
++            global.sprite_editing_field = "";
++        }
++    }
++}
++
+diff --git a/scripts/scr_amiga_run_sprite_test/scr_amiga_run_sprite_test.gml b/scripts/scr_amiga_run_sprite_test/scr_amiga_run_sprite_test.gml
+new file mode 100644
+index 0000000..31d38e6
+--- /dev/null
++++ b/scripts/scr_amiga_run_sprite_test/scr_amiga_run_sprite_test.gml
+@@ -0,0 +1,95 @@
++/// @desc scr_amiga_run_sprite_test()
++/// Saves the sprite editor's current state as a named asset, clears the
++/// canvas, and builds a minimal INIT+ORG program: disable DMA/interrupts,
++/// display the sprite via a SPRITE_DISPLAY macro, then idle forever.
++function scr_amiga_run_sprite_test() {
++    scr_asset_define_sprite("TestSprite", global.sprite_channel, global.sprite_height, global.sprite_address, global.sprite_pixels, global.sprite_colour_r, global.sprite_colour_g, global.sprite_colour_b);
++
++    with (obj_opcode_node) {
++        instance_destroy();
++    }
++
++    with (obj_amiga_root_node) {
++        instance_destroy();
++    }
++
++    var _init_x = (room_width / 2) - 260;
++    var _init_y = room_height / 4;
++
++    var _init_instance = instance_create_layer(_init_x, _init_y, "Instances", obj_amiga_root_node);
++    _init_instance.root_type = "INIT";
++    _init_instance.node_x = scr_snap_to_grid(_init_x, global.grid_size);
++    _init_instance.node_y = scr_snap_to_grid(_init_y, global.grid_size);
++
++    var _org_x = _init_instance.node_x + 240;
++    var _org_y = _init_instance.node_y;
++
++    var _org_instance = instance_create_layer(_org_x, _org_y, "Instances", obj_amiga_root_node);
++    _org_instance.root_type = "ORG";
++    _org_instance.node_x = scr_snap_to_grid(_org_x, global.grid_size);
++    _org_instance.node_y = scr_snap_to_grid(_org_y, global.grid_size);
++
++    var _init_cursor_y = _init_instance.node_y + _init_instance.node_height;
++
++    var _dmacon_node = instance_create_layer(_init_instance.node_x, _init_cursor_y, "Instances", obj_opcode_node);
++    _dmacon_node.node_x = _init_instance.node_x;
++    _dmacon_node.node_y = _init_cursor_y;
++    _dmacon_node.opcode_mnemonic = "MOVE";
++    _dmacon_node.opcode_size = "W";
++    _dmacon_node.addressing_mode_src = "#imm";
++    _dmacon_node.operand_src = 32767;
++    _dmacon_node.addressing_mode_dst = "abs.L";
++    _dmacon_node.operand_dst = 14676118;
++    _dmacon_node.is_connected = true;
++    _dmacon_node.root_uid = _init_instance.uid;
++
++    _init_cursor_y += _dmacon_node.node_height;
++
++    var _intena_node = instance_create_layer(_init_instance.node_x, _init_cursor_y, "Instances", obj_opcode_node);
++    _intena_node.node_x = _init_instance.node_x;
++    _intena_node.node_y = _init_cursor_y;
++    _intena_node.opcode_mnemonic = "MOVE";
++    _intena_node.opcode_size = "W";
++    _intena_node.addressing_mode_src = "#imm";
++    _intena_node.operand_src = 32767;
++    _intena_node.addressing_mode_dst = "abs.L";
++    _intena_node.operand_dst = 14676122;
++    _intena_node.is_connected = true;
++    _intena_node.root_uid = _init_instance.uid;
++
++    var _org_cursor_y = _org_instance.node_y + _org_instance.node_height;
++
++    var _sprite_macro_node = instance_create_layer(_org_instance.node_x, _org_cursor_y, "Instances", obj_opcode_node);
++    _sprite_macro_node.node_x = _org_instance.node_x;
++    _sprite_macro_node.node_y = _org_cursor_y;
++    _sprite_macro_node.node_height = 100;
++    _sprite_macro_node.is_macro = true;
++    _sprite_macro_node.macro_type = "SPRITE_DISPLAY";
++    _sprite_macro_node.macro_asset_name = "TestSprite";
++    _sprite_macro_node.is_connected = true;
++    _sprite_macro_node.root_uid = _org_instance.uid;
++
++    _org_cursor_y += _sprite_macro_node.node_height;
++
++    var _nop_node = instance_create_layer(_org_instance.node_x, _org_cursor_y, "Instances", obj_opcode_node);
++    _nop_node.node_x = _org_instance.node_x;
++    _nop_node.node_y = _org_cursor_y;
++    _nop_node.opcode_mnemonic = "NOP";
++    _nop_node.node_label = "mainloop";
++    _nop_node.is_connected = true;
++    _nop_node.root_uid = _org_instance.uid;
++
++    _org_cursor_y += _nop_node.node_height;
++
++    var _bra_node = instance_create_layer(_org_instance.node_x, _org_cursor_y, "Instances", obj_opcode_node);
++    _bra_node.node_x = _org_instance.node_x;
++    _bra_node.node_y = _org_cursor_y;
++    _bra_node.opcode_mnemonic = "BRA";
++    _bra_node.opcode_size = "W";
++    _bra_node.addressing_mode_src = "LABEL";
++    _bra_node.operand_label_src = "mainloop";
++    _bra_node.is_connected = true;
++    _bra_node.root_uid = _org_instance.uid;
++
++    scr_set_status_message("Sprite test loaded — channel " + string(global.sprite_channel) + ", " + string(global.sprite_height) + " rows.");
++}
+diff --git a/scripts/scr_amiga_run_sprite_test/scr_amiga_run_sprite_test.yy b/scripts/scr_amiga_run_sprite_test/scr_amiga_run_sprite_test.yy
+new file mode 100644
+index 0000000..19a5d66
+--- /dev/null
++++ b/scripts/scr_amiga_run_sprite_test/scr_amiga_run_sprite_test.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_amiga_run_sprite_test",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_amiga_run_sprite_test",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}
+diff --git a/scripts/scr_asset_define_sprite/scr_asset_define_sprite.gml b/scripts/scr_asset_define_sprite/scr_asset_define_sprite.gml
+new file mode 100644
+index 0000000..6f8e301
+--- /dev/null
++++ b/scripts/scr_asset_define_sprite/scr_asset_define_sprite.gml
+@@ -0,0 +1,46 @@
++/// @desc scr_asset_define_sprite(_name, _channel, _height, _address, _pixels, _colour_r, _colour_g, _colour_b)
++/// Stores a hardware sprite asset under _name in global.asset_list — the
++/// data a SPRITE_DISPLAY macro node looks up by name at build time.
++/// _pixels is a flat array of 16*height entries, each 0-3 (0=transparent).
++/// _colour_r/g/b are 3-entry arrays (0-15 per channel) for colour indices
++/// 1/2/3. The pixel array is copied explicitly, not referenced — otherwise
++/// this asset would keep changing every time the editor is touched again.
++function scr_asset_define_sprite(_name, _channel, _height, _address, _pixels, _colour_r, _colour_g, _colour_b) {
++    var _pixel_count = 16 * _height;
++    var _pixels_copy = array_create(_pixel_count, 0);
++    array_copy(_pixels_copy, 0, _pixels, 0, _pixel_count);
++
++    var _colour_r_copy = [_colour_r[0], _colour_r[1], _colour_r[2]];
++    var _colour_g_copy = [_colour_g[0], _colour_g[1], _colour_g[2]];
++    var _colour_b_copy = [_colour_b[0], _colour_b[1], _colour_b[2]];
++
++    var _asset_data = {
++        name : _name,
++        type : "SPRITE",
++        channel : _channel,
++        height : _height,
++        address : _address,
++        pixels : _pixels_copy,
++        colour_r : _colour_r_copy,
++        colour_g : _colour_g_copy,
++        colour_b : _colour_b_copy
++    };
++
++    var _existing_index = -1;
++    var _count = array_length(global.asset_list);
++    var _idx = 0;
++
++    while (_idx < _count) {
++        if (global.asset_list[_idx].name == _name) {
++            _existing_index = _idx;
++        }
++
++        _idx += 1;
++    }
++
++    if (_existing_index != -1) {
++        global.asset_list[_existing_index] = _asset_data;
++    } else {
++        array_push(global.asset_list, _asset_data);
++    }
++}
+diff --git a/scripts/scr_asset_define_sprite/scr_asset_define_sprite.yy b/scripts/scr_asset_define_sprite/scr_asset_define_sprite.yy
+new file mode 100644
+index 0000000..4fc7ab9
+--- /dev/null
++++ b/scripts/scr_asset_define_sprite/scr_asset_define_sprite.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_asset_define_sprite",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_asset_define_sprite",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}
+diff --git a/scripts/scr_emit_macro_line/scr_emit_macro_line.gml b/scripts/scr_emit_macro_line/scr_emit_macro_line.gml
+index cd8647a..4730dcc 100644
+--- a/scripts/scr_emit_macro_line/scr_emit_macro_line.gml
++++ b/scripts/scr_emit_macro_line/scr_emit_macro_line.gml
+@@ -5,6 +5,10 @@ function scr_emit_macro_line(_node) {
+         return scr_emit_macro_copper_bar(_node);
+     }
+ 
++    if (_node.macro_type == "SPRITE_DISPLAY") {
++        return scr_emit_macro_sprite_display(_node);
++    }
++
+     var _error_result = { text : "; ERROR: unknown macro type '" + _node.macro_type + "'", is_valid : false };
+     return _error_result;
+ }
+diff --git a/scripts/scr_emit_macro_sprite_display/scr_emit_macro_sprite_display.gml b/scripts/scr_emit_macro_sprite_display/scr_emit_macro_sprite_display.gml
+new file mode 100644
+index 0000000..7c922eb
+--- /dev/null
++++ b/scripts/scr_emit_macro_sprite_display/scr_emit_macro_sprite_display.gml
+@@ -0,0 +1,101 @@
++/// @desc scr_emit_macro_sprite_display(_node)
++/// Looks up _node.macro_asset_name and expands into the full sequence to
++/// display a real hardware sprite: sets the 3 colour registers for this
++/// sprite's channel pair, writes the POS/CTL words + DATA/DATB pairs per
++/// scanline + terminator into chip RAM at the asset's address, points
++/// SPRxPTH/PTL at it, then enables sprite DMA. Returns { text, is_valid }.
++///
++/// Hardware format verified against the Amiga Hardware Reference Manual:
++/// SPRxPOS  bits15-8 = VSTART low byte, bits7-0 = HSTART high byte
++/// SPRxCTL  bits15-8 = VSTOP low byte, bit2 = VSTART bit8,
++///          bit1 = VSTOP bit8, bit0 = HSTART bit0
++/// Sprite pairs (0&1)/(2&3)/(4&5)/(6&7) share COLOR17-19/21-23/25-27/29-31.
++function scr_emit_macro_sprite_display(_node) {
++    var _asset = scr_asset_find_by_name(_node.macro_asset_name);
++
++    if (_asset == undefined) {
++        var _error_result = { text : "; ERROR: sprite asset '" + _node.macro_asset_name + "' not found", is_valid : false };
++        return _error_result;
++    }
++
++    var _channel = _asset.channel;
++    var _height = _asset.height;
++    var _address = _asset.address;
++    var _pixels = _asset.pixels;
++
++    var _pair_index = _channel div 2;
++    var _base_colour_index = 17 + (_pair_index * 4);
++    var _colour_reg_1 = 14676352 + (_base_colour_index * 2);
++    var _colour_reg_2 = 14676352 + ((_base_colour_index + 1) * 2);
++    var _colour_reg_3 = 14676352 + ((_base_colour_index + 2) * 2);
++
++    var _sprxpth = 14676256 + (_channel * 4);
++
++    var _colour_1_value = (_asset.colour_r[0] * 256) + (_asset.colour_g[0] * 16) + _asset.colour_b[0];
++    var _colour_2_value = (_asset.colour_r[1] * 256) + (_asset.colour_g[1] * 16) + _asset.colour_b[1];
++    var _colour_3_value = (_asset.colour_r[2] * 256) + (_asset.colour_g[2] * 16) + _asset.colour_b[2];
++
++    var _vstart = 100;
++    var _hstart = 100;
++    var _vstop = _vstart + _height;
++
++    var _vstart_lo = _vstart & 255;
++    var _vstart_hi = (_vstart >> 8) & 1;
++    var _hstart_lo = _hstart & 1;
++    var _hstart_hi = (_hstart >> 1) & 255;
++    var _vstop_lo = _vstop & 255;
++    var _vstop_hi = (_vstop >> 8) & 1;
++
++    var _pos_word = (_vstart_lo << 8) | _hstart_hi;
++    var _ctl_word = (_vstop_lo << 8) | (_vstart_hi << 2) | (_vstop_hi << 1) | _hstart_lo;
++
++    var _lines = "";
++
++    if (_node.node_label != "") {
++        _lines += _node.node_label + ":\n";
++    }
++
++    _lines += "\tMOVE.W #" + string(_colour_1_value) + "," + string(_colour_reg_1) + ".L\n";
++    _lines += "\tMOVE.W #" + string(_colour_2_value) + "," + string(_colour_reg_2) + ".L\n";
++    _lines += "\tMOVE.W #" + string(_colour_3_value) + "," + string(_colour_reg_3) + ".L\n";
++
++    var _write_offset = _address;
++
++    _lines += "\tMOVE.L #" + string((_pos_word * 65536) + _ctl_word) + "," + string(_write_offset) + ".L\n";
++    _write_offset += 4;
++
++    var _row = 0;
++
++    while (_row < _height) {
++        var _data_word = 0;
++        var _datb_word = 0;
++        var _col = 0;
++
++        while (_col < 16) {
++            var _pixel_index = _pixels[(_row * 16) + _col];
++            var _bit_position = 15 - _col;
++            var _low_bit = _pixel_index & 1;
++            var _high_bit = (_pixel_index >> 1) & 1;
++
++            _data_word += (_low_bit << _bit_position);
++            _datb_word += (_high_bit << _bit_position);
++
++            _col += 1;
++        }
++
++        _lines += "\tMOVE.L #" + string((_data_word * 65536) + _datb_word) + "," + string(_write_offset) + ".L\n";
++        _write_offset += 4;
++
++        _row += 1;
++    }
++
++    // Two zero words (end-of-data), written as one longword
++    _lines += "\tMOVE.L #0," + string(_write_offset) + ".L\n";
++    _write_offset += 4;
++
++    _lines += "\tMOVE.L #" + string(_address) + "," + string(_sprxpth) + ".L\n";
++    _lines += "\tMOVE.W #33312,14676118.L";
++
++    var _result = { text : _lines, is_valid : true };
++    return _result;
++}
+diff --git a/scripts/scr_emit_macro_sprite_display/scr_emit_macro_sprite_display.yy b/scripts/scr_emit_macro_sprite_display/scr_emit_macro_sprite_display.yy
+new file mode 100644
+index 0000000..e12490b
+--- /dev/null
++++ b/scripts/scr_emit_macro_sprite_display/scr_emit_macro_sprite_display.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_emit_macro_sprite_display",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_emit_macro_sprite_display",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}
+diff --git a/scripts/scr_sprite_editor_layout/scr_sprite_editor_layout.gml b/scripts/scr_sprite_editor_layout/scr_sprite_editor_layout.gml
+new file mode 100644
+index 0000000..f3f8e24
+--- /dev/null
++++ b/scripts/scr_sprite_editor_layout/scr_sprite_editor_layout.gml
+@@ -0,0 +1,43 @@
++/// @desc scr_sprite_editor_layout()
++/// Computes every position the sprite editor panel needs, once, so Step
++/// (click detection) and Draw (rendering) always agree — the same lesson
++/// as scr_amiga_find_insert_point: one shared implementation, not two that
++/// could quietly drift out of sync with each other.
++function scr_sprite_editor_layout() {
++    var _panel_x = 380;
++    var _panel_y = 60;
++    var _panel_width = 260;
++    var _cell_size = 14;
++    var _grid_x = _panel_x + 18;
++    var _grid_y = _panel_y + 112;
++    var _grid_width = 16 * _cell_size;
++    var _grid_height = global.sprite_height * _cell_size;
++    var _panel_height = 112 + _grid_height + 16;
++
++    var _layout = {
++        panel_x : _panel_x,
++        panel_y : _panel_y,
++        panel_width : _panel_width,
++        panel_height : _panel_height,
++        cell_size : _cell_size,
++        grid_x : _grid_x,
++        grid_y : _grid_y,
++        grid_width : _grid_width,
++        grid_height : _grid_height,
++        close_x : _panel_x + _panel_width - 20,
++        close_y : _panel_y + 2,
++        channel_minus_x : _panel_x + 90,
++        channel_plus_x : _panel_x + 130,
++        channel_row_y : _panel_y + 24,
++        height_field_x : _panel_x + 90,
++        height_row_y : _panel_y + 44,
++        addr_field_x : _panel_x + 90,
++        addr_row_y : _panel_y + 64,
++        swatch_row_y : _panel_y + 88,
++        swatch_width : 40,
++        swatch_height : 18,
++        swatch_x : _panel_x + 12
++    };
++
++    return _layout;
++}
+diff --git a/scripts/scr_sprite_editor_layout/scr_sprite_editor_layout.yy b/scripts/scr_sprite_editor_layout/scr_sprite_editor_layout.yy
+new file mode 100644
+index 0000000..d168744
+--- /dev/null
++++ b/scripts/scr_sprite_editor_layout/scr_sprite_editor_layout.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_sprite_editor_layout",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_sprite_editor_layout",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}

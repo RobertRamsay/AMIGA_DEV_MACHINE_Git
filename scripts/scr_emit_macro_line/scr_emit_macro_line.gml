@@ -5,6 +5,10 @@ function scr_emit_macro_line(_node) {
         return scr_emit_macro_copper_bar(_node);
     }
 
+    if (_node.macro_type == "SPRITE_DISPLAY") {
+        return scr_emit_macro_sprite_display(_node);
+    }
+
     var _error_result = { text : "; ERROR: unknown macro type '" + _node.macro_type + "'", is_valid : false };
     return _error_result;
 }

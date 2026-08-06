@@ -133,3 +133,19 @@ _init_instance.node_y = scr_snap_to_grid(_init_y, global.grid_size);
 // Bar asset is registered up front so there's immediately something to use.
 global.asset_list = [];
 scr_asset_define_copper_bar("SunriseWater", 4, 44, 110, 13, 2, 0, 15, 12, 6, 4, 110, 200, 15, 8, 4, 0, 1, 6);
+
+// 11. Sprite editor state — a 16px-wide, 8-channel hardware sprite editor.
+// Height is capped at 64; the pixel array is always allocated at full
+// capacity (64*16) and only the first (height*16) entries are used, so
+// changing height never needs a resize.
+global.sprite_editor_open = false;
+global.sprite_channel = 0;
+global.sprite_height = 16;
+global.sprite_address = 262144;
+global.sprite_pixels = array_create(64 * 16, 0);
+global.sprite_colour_r = [15, 0, 0];
+global.sprite_colour_g = [0, 15, 0];
+global.sprite_colour_b = [0, 0, 15];
+global.sprite_paint_index = 1;
+global.sprite_editing_field = "";
+global.sprite_edit_text = "";
