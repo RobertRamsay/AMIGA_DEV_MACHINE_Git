@@ -19,7 +19,10 @@ function scr_amiga_start_adf_build(_bin_path, _project_path, _volume_name, _uses
     if (_uses_dos_loader) {
         var _startup_path = _build_dir + "/startup-sequence";
         var _startup_file = file_text_open_write(_startup_path);
-        file_text_write_string(_startup_file, "main\n");
+        // Startup-sequence runs from SYS:S, while the executable is stored in
+        // the volume root. Use an explicit device path so AmigaDOS/AROS does
+        // not search for S:main and report "object not found".
+        file_text_write_string(_startup_file, "SYS:main\n");
         file_text_close(_startup_file);
 
         // `boot install` normally loads boot2x3x.bin from amitools' Python
