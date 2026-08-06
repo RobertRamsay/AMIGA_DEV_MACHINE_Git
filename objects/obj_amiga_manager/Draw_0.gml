@@ -98,14 +98,34 @@ if (keyboard_check(vk_control)) {
     draw_text(_hud_x + 6, _hud_y + 2, _hud_text);
 }
 
-if (global.status_message != "") {
-    var _status_bar_height = 22;
-    var _status_bar_y = room_height - _status_bar_height - 100;
+if (array_length(global.status_message_log) > 0) {
+    var _status_bar_height = 122;
+    var _status_bar_y = room_height - _status_bar_height;
+    var _status_line_height = 18;
 
     draw_set_alpha(0.85);
-    draw_rectangle_colour(0, _status_bar_y, room_width, _status_bar_y + _status_bar_height, c_black, c_black, c_black, c_black, false);
+    draw_rectangle_colour(0, _status_bar_y, room_width, room_height, c_black, c_black, c_black, c_black, false);
     draw_set_alpha(1);
     draw_set_colour(c_white);
-    draw_rectangle(0, _status_bar_y, room_width, _status_bar_y + _status_bar_height, true);
-    draw_text(8, _status_bar_y + 3, global.status_message);
+    draw_rectangle(0, _status_bar_y, room_width, room_height, true);
+
+    var _log_count = array_length(global.status_message_log);
+    var _line_y = _status_bar_y + 4;
+    var _i = _log_count - 1;
+
+    while (_i >= 0 && _line_y <= room_height - _status_line_height) {
+        var _line_colour = c_white;
+
+        if (_i == _log_count - 1) {
+            _line_colour = c_yellow;
+        }
+
+        draw_set_colour(_line_colour);
+        draw_text(8, _line_y, global.status_message_log[_i]);
+
+        _line_y += _status_line_height;
+        _i -= 1;
+    }
+
+    draw_set_colour(c_white);
 }

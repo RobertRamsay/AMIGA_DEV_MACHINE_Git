@@ -111,17 +111,28 @@ if (is_dragging) {
         is_selected = true;
     }
 
-    if (_over_body && mouse_check_button_released(mb_right) && !global.right_click_delete_handled_this_frame) {
+    var _just_cancelled_edit_this_release = false;
+
+    if (mouse_check_button_released(mb_right) && global.operand_edit_owner_uid == uid && operand_editing_slot != "") {
+        // Right-click ANYWHERE cancels the active edit on this node —
+        // mirrors "click away commits", but for right-click, without
+        // committing, and stops the label box pulse since that's driven
+        // purely by operand_editing_slot being non-empty.
+        operand_editing_slot = "";
+        global.operand_edit_owner_uid = -1;
+        scr_set_status_message("Label edit cancelled.");
+        _just_cancelled_edit_this_release = true;
+    }
+
+    if (_over_body && mouse_check_button_released(mb_right) && !global.right_click_delete_handled_this_frame && !_just_cancelled_edit_this_release) {
         global.right_click_delete_handled_this_frame = true;
 
-        if (global.operand_edit_owner_uid == uid && operand_editing_slot != "") {
-            operand_editing_slot = "";
-            global.operand_edit_owner_uid = -1;
-            scr_set_status_message("");
-        } else {
+        if (global.operand_edit_owner_uid == -1) {
             scr_push_undo_snapshot();
             scr_amiga_delete_and_close_gap(id);
         }
+        // else: some OTHER node still has an edit open — don't delete
+        // while editing is in progress anywhere.
     }
 }
 

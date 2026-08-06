@@ -48,7 +48,7 @@ global.left_click_pickup_handled_this_frame = false;
 global.palette_scroll_y = 0;
 global.preview_scroll_y = 0;
 preview_line_cache = [];
-global.status_message = "";
+global.status_message_log = [];
 global.palette_panel_bounds = {
     left : 0,
     top : 60,
