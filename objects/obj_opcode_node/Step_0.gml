@@ -90,13 +90,14 @@ if (is_dragging) {
     if (_over_header && mouse_check_button_pressed(mb_left) && _alt_held && !global.left_click_pickup_handled_this_frame) {
         global.left_click_pickup_handled_this_frame = true;
 
-        var _can_start_rename = (global.operand_edit_owner_uid == -1) || (global.operand_edit_owner_uid == uid);
+        var _can_start_rename = ((global.operand_edit_owner_uid == -1) || (global.operand_edit_owner_uid == uid)) && (operand_editing_slot != "node_label");
 
         if (_can_start_rename) {
             global.operand_edit_owner_uid = uid;
             operand_editing_slot = "node_label";
             operand_edit_text = node_label;
             keyboard_string = "";
+            scr_set_status_message("Enter label name, click away or enter to commit, right click to cancel");
         }
     } else if (_over_header && mouse_check_button_pressed(mb_left) && !global.left_click_pickup_handled_this_frame) {
         global.left_click_pickup_handled_this_frame = true;
@@ -113,13 +114,14 @@ if (is_dragging) {
     if (_over_body && mouse_check_button_released(mb_right) && !global.right_click_delete_handled_this_frame) {
         global.right_click_delete_handled_this_frame = true;
 
-        scr_push_undo_snapshot();
-
-        if (global.operand_edit_owner_uid == uid) {
+        if (global.operand_edit_owner_uid == uid && operand_editing_slot != "") {
+            operand_editing_slot = "";
             global.operand_edit_owner_uid = -1;
+            scr_set_status_message("");
+        } else {
+            scr_push_undo_snapshot();
+            scr_amiga_delete_and_close_gap(id);
         }
-
-        scr_amiga_delete_and_close_gap(id);
     }
 }
 
@@ -148,13 +150,14 @@ if (is_macro) {
     var _asset_field_height = 20;
 
     var _over_asset_field = point_in_rectangle(_world_mouse_x, _world_mouse_y, _asset_field_x, _asset_field_y, _asset_field_x + _asset_field_width, _asset_field_y + _asset_field_height);
-    var _can_start_asset_edit = (global.operand_edit_owner_uid == -1) || (global.operand_edit_owner_uid == uid);
+    var _can_start_asset_edit = ((global.operand_edit_owner_uid == -1) || (global.operand_edit_owner_uid == uid)) && (operand_editing_slot != "macro_asset");
 
     if (_over_asset_field && mouse_check_button_pressed(mb_left) && _can_start_asset_edit) {
         global.operand_edit_owner_uid = uid;
         operand_editing_slot = "macro_asset";
         operand_edit_text = macro_asset_name;
         keyboard_string = "";
+        scr_set_status_message("Enter asset name, click away or enter to commit, right click to cancel");
     }
 } else {
     var _entry_for_validity = global.opcode_map[$ opcode_mnemonic];
@@ -201,7 +204,7 @@ if (is_macro) {
                 addressing_mode_src = scr_cycle_addressing_mode(addressing_mode_src, _entry_for_modes.src_modes);
             }
 
-            var _can_start_src_edit = (global.operand_edit_owner_uid == -1) || (global.operand_edit_owner_uid == uid);
+            var _can_start_src_edit = ((global.operand_edit_owner_uid == -1) || (global.operand_edit_owner_uid == uid)) && (operand_editing_slot != "src");
 
             if (_over_src_value && mouse_check_button_pressed(mb_left) && _can_start_src_edit) {
                 global.operand_edit_owner_uid = uid;
@@ -209,6 +212,7 @@ if (is_macro) {
 
                 if (addressing_mode_src == "LABEL") {
                     operand_edit_text = operand_label_src;
+                    scr_set_status_message("Enter target label name, click away or enter to commit, right click to cancel");
                 } else {
                     var _src_is_register_seed = scr_operand_mode_uses_register_index(addressing_mode_src);
 
@@ -217,6 +221,8 @@ if (is_macro) {
                     } else {
                         operand_edit_text = string(operand_src);
                     }
+
+                    scr_set_status_message("Enter value, click away or enter to commit, right click to cancel");
                 }
 
                 keyboard_string = "";
@@ -233,7 +239,7 @@ if (is_macro) {
                 addressing_mode_dst = scr_cycle_addressing_mode(addressing_mode_dst, _entry_for_modes.dst_modes);
             }
 
-            var _can_start_dst_edit = (global.operand_edit_owner_uid == -1) || (global.operand_edit_owner_uid == uid);
+            var _can_start_dst_edit = ((global.operand_edit_owner_uid == -1) || (global.operand_edit_owner_uid == uid)) && (operand_editing_slot != "dst");
 
             if (_over_dst_value && mouse_check_button_pressed(mb_left) && _can_start_dst_edit) {
                 global.operand_edit_owner_uid = uid;
@@ -241,6 +247,7 @@ if (is_macro) {
 
                 if (addressing_mode_dst == "LABEL") {
                     operand_edit_text = operand_label_dst;
+                    scr_set_status_message("Enter target label name, click away or enter to commit, right click to cancel");
                 } else {
                     var _dst_is_register_seed = scr_operand_mode_uses_register_index(addressing_mode_dst);
 
@@ -249,6 +256,8 @@ if (is_macro) {
                     } else {
                         operand_edit_text = string(operand_dst);
                     }
+
+                    scr_set_status_message("Enter value, click away or enter to commit, right click to cancel");
                 }
 
                 keyboard_string = "";
@@ -263,13 +272,14 @@ var _label_button_width = 80;
 var _label_button_height = 20;
 
 var _over_label_button = point_in_rectangle(_world_mouse_x, _world_mouse_y, _label_button_x, _label_button_y, _label_button_x + _label_button_width, _label_button_y + _label_button_height);
-var _can_start_label_edit = (global.operand_edit_owner_uid == -1) || (global.operand_edit_owner_uid == uid);
+var _can_start_label_edit = ((global.operand_edit_owner_uid == -1) || (global.operand_edit_owner_uid == uid)) && (operand_editing_slot != "node_label");
 
 if (_over_label_button && mouse_check_button_pressed(mb_left) && _can_start_label_edit) {
     global.operand_edit_owner_uid = uid;
     operand_editing_slot = "node_label";
     operand_edit_text = node_label;
     keyboard_string = "";
+    scr_set_status_message("Enter label name, click away or enter to commit, right click to cancel");
 }
 
 if (operand_editing_slot != "" && global.operand_edit_owner_uid == uid) {
@@ -335,7 +345,34 @@ if (operand_editing_slot != "" && global.operand_edit_owner_uid == uid) {
         operand_edit_text = string_copy(operand_edit_text, 1, string_length(operand_edit_text) - 1);
     }
 
-    if (keyboard_check_pressed(vk_enter)) {
+    // "Click away" commits too — figure out whether this click landed on
+    // this exact field's own zone (which just continues the edit) or
+    // genuinely somewhere else (which commits, same as Enter).
+    var _should_commit = keyboard_check_pressed(vk_enter);
+
+    if (!_should_commit && mouse_check_button_pressed(mb_left)) {
+        var _click_on_active_zone = false;
+
+        if (operand_editing_slot == "node_label") {
+            var _lbl_zone_x = node_x + node_width + 6;
+            var _lbl_zone_y = node_y;
+            _click_on_active_zone = point_in_rectangle(_world_mouse_x, _world_mouse_y, _lbl_zone_x, _lbl_zone_y, _lbl_zone_x + 80, _lbl_zone_y + 20);
+        } else if (operand_editing_slot == "macro_asset") {
+            _click_on_active_zone = point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y + 20, node_x + node_width, node_y + 40);
+        } else if (operand_editing_slot == "src") {
+            var _src_zone_w = mode_button_width - value_box_width;
+            _click_on_active_zone = point_in_rectangle(_world_mouse_x, _world_mouse_y, mode_button_src_x + _src_zone_w, mode_button_src_y, mode_button_src_x + mode_button_width, mode_button_src_y + mode_button_height);
+        } else if (operand_editing_slot == "dst") {
+            var _dst_zone_w = mode_button_width - value_box_width;
+            _click_on_active_zone = point_in_rectangle(_world_mouse_x, _world_mouse_y, mode_button_dst_x + _dst_zone_w, mode_button_dst_y, mode_button_dst_x + mode_button_width, mode_button_dst_y + mode_button_height);
+        }
+
+        if (!_click_on_active_zone) {
+            _should_commit = true;
+        }
+    }
+
+    if (_should_commit) {
         scr_push_undo_snapshot();
 
         if (_is_text_field) {
@@ -383,10 +420,12 @@ if (operand_editing_slot != "" && global.operand_edit_owner_uid == uid) {
 
         operand_editing_slot = "";
         global.operand_edit_owner_uid = -1;
+        scr_set_status_message("");
     }
 
     if (keyboard_check_pressed(vk_escape)) {
         operand_editing_slot = "";
         global.operand_edit_owner_uid = -1;
+        scr_set_status_message("");
     }
 }

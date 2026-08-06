@@ -97,3 +97,15 @@ if (keyboard_check(vk_control)) {
     draw_rectangle(_hud_x, _hud_y, _hud_x + _hud_width, _hud_y + _hud_height, true);
     draw_text(_hud_x + 6, _hud_y + 2, _hud_text);
 }
+
+if (global.status_message != "") {
+    var _status_bar_height = 22;
+    var _status_bar_y = room_height - _status_bar_height;
+
+    draw_set_alpha(0.85);
+    draw_rectangle_colour(0, _status_bar_y, room_width, room_height, c_black, c_black, c_black, c_black, false);
+    draw_set_alpha(1);
+    draw_set_colour(c_white);
+    draw_rectangle(0, _status_bar_y, room_width, room_height, true);
+    draw_text(8, _status_bar_y + 3, global.status_message);
+}

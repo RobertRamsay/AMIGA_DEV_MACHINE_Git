@@ -1,9 +1,9 @@
 {
   "$GMScript":"v1",
-  "%Name":"scr_amiga_close_gap_after_detach",
+  "%Name":"scr_set_status_message",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"scr_amiga_close_gap_after_detach",
+  "name":"scr_set_status_message",
   "parent":{
     "name":"AMIGA_DEV_MACHINE",
     "path":"AMIGA_DEV_MACHINE.yyp",
