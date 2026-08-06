@@ -70,7 +70,15 @@ function scr_emit_macro_sprite_display(_node) {
 
     // Use one minimal bitplane. Some emulator/display configurations do not
     // present sprite output reliably with BPU=0 even though sprite DMA itself
-    // is independent. Kickstart has cleared this chip-RAM area before boot.
+    // is independent. Clear all 320x256 low-res bitplane bytes before DMA so
+    // unrelated chip-RAM contents cannot appear as flicker or mode-like noise.
+    var _clear_label = "__sprite_bpl_clear_" + string(floor(_node.uid));
+
+    _lines += "\tMOVEA.L #" + string(_bitplane_address) + ",A0\n";
+    _lines += "\tMOVE.W #2559,D0\n";
+    _lines += _clear_label + ":\n";
+    _lines += "\tCLR.L (A0)+\n";
+    _lines += "\tDBRA D0," + _clear_label + "\n";
     _lines += "\tMOVE.L #" + string(_bitplane_address) + ",14676192.L\n";
     _lines += "\tMOVE.W #4608,14676224.L\n";
     _lines += "\tMOVE.W #0,14676226.L\n";
@@ -85,10 +93,7 @@ function scr_emit_macro_sprite_display(_node) {
     _lines += "\tMOVE.W #208,14676116.L\n";
     _lines += "\tMOVE.W #11393,14676110.L\n";
     _lines += "\tMOVE.W #11457,14676112.L\n";
-    // Deliberately visible diagnostic background: if this appears dark grey,
-    // the boot code reached the display setup. It can return to zero once the
-    // sprite path is confirmed.
-    _lines += "\tMOVE.W #273,14676352.L\n";
+    _lines += "\tMOVE.W #0,14676352.L\n";
 
     _lines += "\tMOVE.W #" + string(_colour_1_value) + "," + string(_colour_reg_1) + ".L\n";
     _lines += "\tMOVE.W #" + string(_colour_2_value) + "," + string(_colour_reg_2) + ".L\n";
