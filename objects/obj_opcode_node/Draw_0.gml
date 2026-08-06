@@ -98,7 +98,7 @@ if (is_macro) {
 draw_text(_dx + 6, _dy, _header_text);
 
 var _label_display_text = node_label;
-var _lab_width = 140;
+var _lab_width = 80;
 
 if (operand_editing_slot == "node_label") {
     _label_display_text = operand_edit_text;

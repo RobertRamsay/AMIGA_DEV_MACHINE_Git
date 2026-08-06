@@ -244,6 +244,7 @@
     {"id":{"name":"scr_capture_snapshot","path":"scripts/scr_capture_snapshot/scr_capture_snapshot.yy",},},
     {"id":{"name":"scr_check_node_overlap","path":"scripts/scr_check_node_overlap/scr_check_node_overlap.yy",},},
     {"id":{"name":"scr_clear_wedge_preview","path":"scripts/scr_clear_wedge_preview/scr_clear_wedge_preview.yy",},},
+    {"id":{"name":"scr_clone_opcode_node","path":"scripts/scr_clone_opcode_node/scr_clone_opcode_node.yy",},},
     {"id":{"name":"scr_colour_picker_open","path":"scripts/scr_colour_picker_open/scr_colour_picker_open.yy",},},
     {"id":{"name":"scr_commit_wedge_insert","path":"scripts/scr_commit_wedge_insert/scr_commit_wedge_insert.yy",},},
     {"id":{"name":"scr_cycle_addressing_mode","path":"scripts/scr_cycle_addressing_mode/scr_cycle_addressing_mode.yy",},},

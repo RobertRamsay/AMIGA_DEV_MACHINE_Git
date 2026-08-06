@@ -104,29 +104,37 @@ draw_set_colour(c_white);
 draw_rectangle(_macro_xpos, 104, _macro_xpos+_macro_but_width, 120, true);
 draw_text(312, 102, "BITMAP EDIT");
 
-draw_set_colour(make_color_rgb(140, 30, 30));
-draw_rectangle(_macro_xpos, 124, _macro_xpos+_macro_but_width, 140, false);
-draw_set_colour(c_white);
-draw_rectangle(_macro_xpos, 124, _macro_xpos+_macro_but_width, 140, true);
-draw_text(312, 122, "KILL FSUAE");
+// SAVE/LOAD moved to their own column off to the side, and widened —
+// they're used often enough to want more room and less chance of a
+// mis-click against the macro buttons next to them.
+var _workspace_but_width = 150;
+var _workspace_xpos = _macro_xpos + _macro_but_width + 20;
 
 draw_set_colour(make_color_rgb(40, 100, 40));
-draw_rectangle(_macro_xpos, 144, _macro_xpos+_macro_but_width, 160, false);
+draw_rectangle(_workspace_xpos, 20, _workspace_xpos+_workspace_but_width, 36, false);
 draw_set_colour(c_white);
-draw_rectangle(_macro_xpos, 144, _macro_xpos+_macro_but_width, 160, true);
-draw_text(312, 142, "SAVE WORKSPACE");
+draw_rectangle(_workspace_xpos, 20, _workspace_xpos+_workspace_but_width, 36, true);
+draw_text(_workspace_xpos + 2, 18, "SAVE WORKSPACE");
 
 draw_set_colour(make_color_rgb(35, 55, 85));
-draw_rectangle(_macro_xpos, 164, _macro_xpos+_macro_but_width, 180, false);
+draw_rectangle(_workspace_xpos, 44, _workspace_xpos+_workspace_but_width, 60, false);
 draw_set_colour(c_white);
-draw_rectangle(_macro_xpos, 164, _macro_xpos+_macro_but_width, 180, true);
-draw_text(312, 162, "LOAD WORKSPACE");
+draw_rectangle(_workspace_xpos, 44, _workspace_xpos+_workspace_but_width, 60, true);
+draw_text(_workspace_xpos + 2, 42, "LOAD WORKSPACE");
+
+// KILL FSUAE and QUIT sit further below with a real gap, not tucked
+// directly under BITMAP EDIT, so they're harder to hit by accident.
+draw_set_colour(make_color_rgb(140, 30, 30));
+draw_rectangle(_macro_xpos, 140, _macro_xpos+_macro_but_width, 156, false);
+draw_set_colour(c_white);
+draw_rectangle(_macro_xpos, 140, _macro_xpos+_macro_but_width, 156, true);
+draw_text(312, 138, "KILL FSUAE");
 
 draw_set_colour(make_color_rgb(90, 20, 20));
-draw_rectangle(_macro_xpos, 184, _macro_xpos+_macro_but_width, 200, false);
+draw_rectangle(_macro_xpos, 176, _macro_xpos+_macro_but_width, 192, false);
 draw_set_colour(c_white);
-draw_rectangle(_macro_xpos, 184, _macro_xpos+_macro_but_width, 200, true);
-draw_text(312, 182, "QUIT");
+draw_rectangle(_macro_xpos, 176, _macro_xpos+_macro_but_width, 192, true);
+draw_text(312, 174, "QUIT");
 
 if (keyboard_check(vk_control)) {
     var _hud_text = "Undo: " + string(array_length(global.undo_stack)) + "   Redo: " + string(array_length(global.redo_stack));

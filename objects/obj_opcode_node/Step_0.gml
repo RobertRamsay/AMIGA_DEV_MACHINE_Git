@@ -109,11 +109,22 @@ if (is_dragging) {
 
         scr_push_undo_snapshot();
 
-        was_dragged = false;
-        is_dragging = true;
-        drag_offset_x = node_x - _world_mouse_x;
-        drag_offset_y = node_y - _world_mouse_y;
-        is_selected = true;
+        if (keyboard_check(vk_control)) {
+            var _cloned_node = scr_clone_opcode_node(id);
+            _cloned_node.was_dragged = false;
+            _cloned_node.is_dragging = true;
+            _cloned_node.drag_offset_x = _cloned_node.node_x - _world_mouse_x;
+            _cloned_node.drag_offset_y = _cloned_node.node_y - _world_mouse_y;
+            _cloned_node.is_selected = true;
+            is_selected = false;
+            scr_set_status_message("Node cloned.");
+        } else {
+            was_dragged = false;
+            is_dragging = true;
+            drag_offset_x = node_x - _world_mouse_x;
+            drag_offset_y = node_y - _world_mouse_y;
+            is_selected = true;
+        }
     }
 
     var _just_cancelled_edit_this_release = false;
@@ -302,7 +313,7 @@ if (is_macro) {
 
 // Matches the label box drawn in Draw_0.gml — left of the node body, same
 // 140px width, so the click zone lines up with what's actually on screen.
-var _label_button_width = 140;
+var _label_button_width = 80;
 var _label_button_x = node_x - 4 - _label_button_width;
 var _label_button_y = node_y;
 var _label_button_height = 20;
@@ -392,7 +403,7 @@ if (operand_editing_slot != "" && global.operand_edit_owner_uid == uid) {
         if (operand_editing_slot == "node_label") {
             // Matches the label box's new left-side position — same values
             // used where editing starts, and the same box Draw_0.gml draws.
-            var _lbl_zone_width = 140;
+            var _lbl_zone_width = 80;
             var _lbl_zone_x = node_x - 4 - _lbl_zone_width;
             var _lbl_zone_y = node_y;
             _click_on_active_zone = point_in_rectangle(_world_mouse_x, _world_mouse_y, _lbl_zone_x, _lbl_zone_y, _lbl_zone_x + _lbl_zone_width, _lbl_zone_y + 20);

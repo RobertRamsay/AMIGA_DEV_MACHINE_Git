@@ -93,6 +93,13 @@ function scr_load_workspace_from_path(_path) {
             _new_node.macro_cprbar_bands = _node_data.macro_cprbar_bands;
         }
 
+        // node_height for SETBKG/CPRBAR is normally set once, at
+        // palette-spawn time — loading skips that path entirely, so it
+        // would otherwise sit at the generic default (60) forever. Snap it
+        // back to the correct taller height here instead.
+        if (_new_node.macro_type == "SETBKG" || _new_node.macro_type == "COPPER_BAR") {
+            _new_node.node_height = 100;
+
         _n += 1;
     }
 

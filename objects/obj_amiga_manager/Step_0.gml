@@ -199,7 +199,7 @@ if (_over_bitmap_editor_button && mouse_check_button_pressed(mb_left)) {
 }
 
 var _kill_fsuae_button_x = 310;
-var _kill_fsuae_button_y = 124;
+var _kill_fsuae_button_y = 140;
 var _kill_fsuae_button_width = 100;
 var _kill_fsuae_button_height = 16;
 
@@ -210,9 +210,9 @@ if (_over_kill_fsuae_button && mouse_check_button_pressed(mb_left)) {
     scr_set_status_message("FS-UAE killed.");
 }
 
-var _save_workspace_button_x = 310;
-var _save_workspace_button_y = 144;
-var _save_workspace_button_width = 100;
+var _save_workspace_button_x = 430;
+var _save_workspace_button_y = 20;
+var _save_workspace_button_width = 150;
 var _save_workspace_button_height = 16;
 
 var _over_save_workspace_button = point_in_rectangle(mouse_x, mouse_y, _save_workspace_button_x, _save_workspace_button_y, _save_workspace_button_x + _save_workspace_button_width, _save_workspace_button_y + _save_workspace_button_height);
@@ -226,9 +226,9 @@ if (_over_save_workspace_button && mouse_check_button_pressed(mb_left)) {
     }
 }
 
-var _load_workspace_button_x = 310;
-var _load_workspace_button_y = 164;
-var _load_workspace_button_width = 100;
+var _load_workspace_button_x = 430;
+var _load_workspace_button_y = 44;
+var _load_workspace_button_width = 150;
 var _load_workspace_button_height = 16;
 
 var _over_load_workspace_button = point_in_rectangle(mouse_x, mouse_y, _load_workspace_button_x, _load_workspace_button_y, _load_workspace_button_x + _load_workspace_button_width, _load_workspace_button_y + _load_workspace_button_height);
@@ -243,7 +243,7 @@ if (_over_load_workspace_button && mouse_check_button_pressed(mb_left)) {
 }
 
 var _quit_button_x = 310;
-var _quit_button_y = 184;
+var _quit_button_y = 176;
 var _quit_button_width = 100;
 var _quit_button_height = 16;
 
