@@ -1,0 +1,30 @@
+diff --git a/scripts/scr_amiga_start_adf_build/scr_amiga_start_adf_build.gml b/scripts/scr_amiga_start_adf_build/scr_amiga_start_adf_build.gml
+index 16cc708..4f94f55 100644
+--- a/scripts/scr_amiga_start_adf_build/scr_amiga_start_adf_build.gml
++++ b/scripts/scr_amiga_start_adf_build/scr_amiga_start_adf_build.gml
+@@ -80,14 +80,22 @@ function scr_amiga_start_adf_build(_bin_path, _project_path, _volume_name, _uses
+     // xdftool exits successfully. The manager can now use file_exists() as a
+     // genuine completion signal instead of guessing with a fixed delay.
+     var _batch_path = _build_dir + "/build_adf.bat";
++    var _log_path = _build_dir + "/build_adf.log";
+     var _batch_file = file_text_open_write(_batch_path);
+     file_text_write_string(_batch_file, "@echo off\r\n");
+-    file_text_write_string(_batch_file, "\"" + global.xdftool_path + "\" " + _xdf_args + "\r\n");
++    file_text_write_string(_batch_file, "cd /D \"%~dp0\"\r\n");
++    file_text_write_string(_batch_file, "\"" + global.xdftool_path + "\" " + _xdf_args + " > \"" + _log_path + "\" 2>&1\r\n");
+     file_text_write_string(_batch_file, "if errorlevel 1 exit /b %errorlevel%\r\n");
+-    file_text_write_string(_batch_file, "move /Y \"" + _working_adf_path + "\" \"" + _adf_path + "\" >nul\r\n");
++    file_text_write_string(_batch_file, "move /Y \"" + _working_adf_path + "\" \"" + _adf_path + "\" >> \"" + _log_path + "\" 2>&1\r\n");
+     file_text_close(_batch_file);
+ 
+-    execute_shell_simple("cmd.exe", "/C \"\"" + _batch_path + "\"\"");
++    // ShellExecute can launch a .bat file directly. This avoids cmd.exe's
++    // fragile nested /C quoting when the GameMaker temp path contains spaces.
++    // SW_HIDE (0) also prevents the transient console window from flashing.
++    var _batch_started = execute_shell_simple(_batch_path, "", "open", 0, _build_dir);
++    if (!_batch_started) {
++        show_debug_message("scr_amiga_start_adf_build: could not launch " + _batch_path);
++    }
+ 
+     return _adf_path;
+ }
