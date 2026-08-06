@@ -145,24 +145,70 @@ if (_over_canvas && _canvas_pixel_valid && keyboard_check(vk_alt)
     var _picked_index = bitmap_pixels[(_canvas_pixel_y * bitmap_width) + _canvas_pixel_x];
     bitmap_paint_index = _picked_index;
     bitmap_palette_edit_index = _picked_index;
+    bitmap_stroke_active = false;
 }
 
-// Paint with left, erase to COLOR00 with right. At 1x this is exact pixels;
-// at higher zoom the same mapping follows the panned viewport.
-if (_over_canvas && !canvas_panning && !keyboard_check(vk_space)
+// Paint with left, erase to COLOR00 with right. Bresenham interpolation fills
+// every bitmap pixel crossed between frames, so fast mouse movement cannot
+// leave holes in a stroke.
+var _stroke_can_draw = _over_canvas && _canvas_pixel_valid
+    && !canvas_panning && !keyboard_check(vk_space)
 && !keyboard_check(vk_alt)
-&& (mouse_check_button(mb_left) || mouse_check_button(mb_right))) {
-    if (_canvas_pixel_valid) {
-        var _draw_index = bitmap_paint_index;
-        if (mouse_check_button(mb_right)) _draw_index = 0;
-        var _pixel_offset = (_canvas_pixel_y * bitmap_width) + _canvas_pixel_x;
+    && (mouse_check_button(mb_left) || mouse_check_button(mb_right));
+
+if (_stroke_can_draw) {
+    var _draw_index = bitmap_paint_index;
+    if (mouse_check_button(mb_right)) _draw_index = 0;
+
+    if (!bitmap_stroke_active || bitmap_stroke_index != _draw_index) {
+        bitmap_stroke_active = true;
+        bitmap_stroke_last_x = _canvas_pixel_x;
+        bitmap_stroke_last_y = _canvas_pixel_y;
+        bitmap_stroke_index = _draw_index;
+    }
+
+    var _line_x = bitmap_stroke_last_x;
+    var _line_y = bitmap_stroke_last_y;
+    var _line_target_x = _canvas_pixel_x;
+    var _line_target_y = _canvas_pixel_y;
+    var _line_dx = abs(_line_target_x - _line_x);
+    var _line_sx = (_line_x < _line_target_x) ? 1 : -1;
+    var _line_dy = -abs(_line_target_y - _line_y);
+    var _line_sy = (_line_y < _line_target_y) ? 1 : -1;
+    var _line_error = _line_dx + _line_dy;
+    var _line_done = false;
+
+    while (!_line_done) {
+        var _pixel_offset = (_line_y * bitmap_width) + _line_x;
 
         if (bitmap_pixels[_pixel_offset] != _draw_index) {
             bitmap_pixels[_pixel_offset] = _draw_index;
             array_push(bitmap_dirty_pixels, _pixel_offset);
             bitmap_asset_dirty = true;
         }
+
+        if (_line_x == _line_target_x && _line_y == _line_target_y) {
+            _line_done = true;
+        } else {
+            var _line_error_2 = 2 * _line_error;
+
+            if (_line_error_2 >= _line_dy) {
+                _line_error += _line_dy;
+                _line_x += _line_sx;
+            }
+
+            if (_line_error_2 <= _line_dx) {
+                _line_error += _line_dx;
+                _line_y += _line_sy;
+            }
+        }
     }
+
+    bitmap_stroke_last_x = _canvas_pixel_x;
+    bitmap_stroke_last_y = _canvas_pixel_y;
+} else {
+    // Do not bridge across the tool rails or outside the image on re-entry.
+    bitmap_stroke_active = false;
 }
 
 if (point_in_rectangle(mouse_x, mouse_y, _layout.clear_x, _layout.clear_y, _layout.clear_x + 120, _layout.clear_y + 20)

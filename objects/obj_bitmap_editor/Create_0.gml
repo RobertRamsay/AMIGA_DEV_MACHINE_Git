@@ -14,6 +14,10 @@ bitmap_surface_dirty = true;
 bitmap_dirty_pixels = [];
 bitmap_asset_dirty = false;
 bitmap_buffer = buffer_create(bitmap_width * bitmap_height * 4, buffer_fixed, 1);
+bitmap_stroke_active = false;
+bitmap_stroke_last_x = 0;
+bitmap_stroke_last_y = 0;
+bitmap_stroke_index = 0;
 
 bitmap_colour_r = array_create(32, 0);
 bitmap_colour_g = array_create(32, 0);
