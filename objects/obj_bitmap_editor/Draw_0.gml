@@ -127,23 +127,25 @@ var _gradient_colour_2_x = _layout.gradient_tool_x + _layout.gradient_colour_wid
 var _gradient_colour_1 = make_color_rgb(bitmap_colour_r[bitmap_gradient_colour_1] * 17, bitmap_colour_g[bitmap_gradient_colour_1] * 17, bitmap_colour_b[bitmap_gradient_colour_1] * 17);
 var _gradient_colour_2 = make_color_rgb(bitmap_colour_r[bitmap_gradient_colour_2] * 17, bitmap_colour_g[bitmap_gradient_colour_2] * 17, bitmap_colour_b[bitmap_gradient_colour_2] * 17);
 
+draw_set_colour(c_white);
+draw_text(_gradient_colour_1_x, _layout.gradient_colour_label_y, "COL1: " + string(bitmap_gradient_colour_1));
+draw_text(_gradient_colour_2_x, _layout.gradient_colour_label_y, "COL2: " + string(bitmap_gradient_colour_2));
+
 draw_set_colour(_gradient_colour_1);
 draw_rectangle(_gradient_colour_1_x, _layout.gradient_colour_y, _gradient_colour_1_x + _layout.gradient_colour_width, _layout.gradient_colour_y + _layout.tool_height, false);
 draw_set_colour(c_white);
 draw_rectangle(_gradient_colour_1_x, _layout.gradient_colour_y, _gradient_colour_1_x + _layout.gradient_colour_width, _layout.gradient_colour_y + _layout.tool_height, true);
-draw_text(_gradient_colour_1_x + 8, _layout.gradient_colour_y + 3, "COL1: " + string(bitmap_gradient_colour_1));
 
 draw_set_colour(_gradient_colour_2);
 draw_rectangle(_gradient_colour_2_x, _layout.gradient_colour_y, _gradient_colour_2_x + _layout.gradient_colour_width, _layout.gradient_colour_y + _layout.tool_height, false);
 draw_set_colour(c_white);
 draw_rectangle(_gradient_colour_2_x, _layout.gradient_colour_y, _gradient_colour_2_x + _layout.gradient_colour_width, _layout.gradient_colour_y + _layout.tool_height, true);
-draw_text(_gradient_colour_2_x + 8, _layout.gradient_colour_y + 3, "COL2: " + string(bitmap_gradient_colour_2));
 
 draw_set_colour(bitmap_gradient_include_edge ? c_olive : c_dkgray);
 draw_rectangle(_layout.gradient_edge_x, _layout.gradient_edge_y, _layout.gradient_edge_x + _layout.gradient_edge_width, _layout.gradient_edge_y + _layout.tool_height, false);
 draw_set_colour(c_white);
 draw_rectangle(_layout.gradient_edge_x, _layout.gradient_edge_y, _layout.gradient_edge_x + _layout.gradient_edge_width, _layout.gradient_edge_y + _layout.tool_height, true);
-draw_text(_layout.gradient_edge_x + 10, _layout.gradient_edge_y + 3, bitmap_gradient_include_edge ? "INC EDGE" : "NO EDGE");
+draw_text(_layout.gradient_edge_x + 10, _layout.gradient_edge_y + 3, bitmap_gradient_include_edge ? "EAT EDGE" : "KEEP EDGE");
 
 // Canvas contents are GPU-clipped to the viewport. This prevents the final
 // scaled texel or grid line leaking over either edge.

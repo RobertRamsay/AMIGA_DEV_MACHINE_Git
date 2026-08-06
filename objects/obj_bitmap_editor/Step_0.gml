@@ -372,6 +372,53 @@ if (bitmap_gradient_active && mouse_check_button_released(mb_left)) {
         _gradient_read += 1;
     }
 
+    // KEEP EDGE fills the complete clicked region. EAT EDGE additionally
+    // consumes exactly one four-connected pixel ring around that region.
+    if (bitmap_gradient_include_edge) {
+        var _original_region_count = array_length(_gradient_region);
+        var _edge_source_index = 0;
+
+        while (_edge_source_index < _original_region_count) {
+            var _edge_source_offset = _gradient_region[_edge_source_index];
+            var _edge_source_x = _edge_source_offset mod bitmap_width;
+            var _edge_source_y = _edge_source_offset div bitmap_width;
+
+            if (_edge_source_x > 0) {
+                var _eat_left = _edge_source_offset - 1;
+                if (!_gradient_visited[_eat_left]) {
+                    _gradient_visited[_eat_left] = true;
+                    array_push(_gradient_region, _eat_left);
+                }
+            }
+
+            if (_edge_source_x < bitmap_width - 1) {
+                var _eat_right = _edge_source_offset + 1;
+                if (!_gradient_visited[_eat_right]) {
+                    _gradient_visited[_eat_right] = true;
+                    array_push(_gradient_region, _eat_right);
+                }
+            }
+
+            if (_edge_source_y > 0) {
+                var _eat_up = _edge_source_offset - bitmap_width;
+                if (!_gradient_visited[_eat_up]) {
+                    _gradient_visited[_eat_up] = true;
+                    array_push(_gradient_region, _eat_up);
+                }
+            }
+
+            if (_edge_source_y < bitmap_height - 1) {
+                var _eat_down = _edge_source_offset + bitmap_width;
+                if (!_gradient_visited[_eat_down]) {
+                    _gradient_visited[_eat_down] = true;
+                    array_push(_gradient_region, _eat_down);
+                }
+            }
+
+            _edge_source_index += 1;
+        }
+    }
+
     var _bayer_8 = [
          0, 32,  8, 40,  2, 34, 10, 42,
         48, 16, 56, 24, 50, 18, 58, 26,
@@ -394,29 +441,17 @@ if (bitmap_gradient_active && mouse_check_button_released(mb_left)) {
         var _region_offset = _gradient_region[_region_index];
         var _region_x = _region_offset mod bitmap_width;
         var _region_y = _region_offset div bitmap_width;
-        var _is_edge = (_region_x == 0 || _region_x == bitmap_width - 1 || _region_y == 0 || _region_y == bitmap_height - 1);
 
-        if (!_is_edge) {
-            // Test against the completed region map, not pixels already
-            // recoloured earlier in this loop.
-            _is_edge = !_gradient_visited[_region_offset - 1]
-                || !_gradient_visited[_region_offset + 1]
-                || !_gradient_visited[_region_offset - bitmap_width]
-                || !_gradient_visited[_region_offset + bitmap_width];
-        }
+        var _gradient_projection = (((_region_x - bitmap_gradient_start_x) * _gradient_dx)
+            + ((_region_y - bitmap_gradient_start_y) * _gradient_dy)) / _gradient_length_sq;
+        _gradient_projection = clamp(_gradient_projection, 0, 1);
+        var _bayer_value = (_bayer_8[((_region_y mod 8) * 8) + (_region_x mod 8)] + 0.5) / 64;
+        var _gradient_colour = (_gradient_projection >= _bayer_value) ? bitmap_gradient_colour_2 : bitmap_gradient_colour_1;
 
-        if (bitmap_gradient_include_edge || !_is_edge) {
-            var _gradient_projection = (((_region_x - bitmap_gradient_start_x) * _gradient_dx)
-                + ((_region_y - bitmap_gradient_start_y) * _gradient_dy)) / _gradient_length_sq;
-            _gradient_projection = clamp(_gradient_projection, 0, 1);
-            var _bayer_value = (_bayer_8[((_region_y mod 8) * 8) + (_region_x mod 8)] + 0.5) / 64;
-            var _gradient_colour = (_gradient_projection >= _bayer_value) ? bitmap_gradient_colour_2 : bitmap_gradient_colour_1;
-
-            if (bitmap_pixels[_region_offset] != _gradient_colour) {
-                bitmap_pixels[_region_offset] = _gradient_colour;
-                array_push(bitmap_dirty_pixels, _region_offset);
-                bitmap_asset_dirty = true;
-            }
+        if (bitmap_pixels[_region_offset] != _gradient_colour) {
+            bitmap_pixels[_region_offset] = _gradient_colour;
+            array_push(bitmap_dirty_pixels, _region_offset);
+            bitmap_asset_dirty = true;
         }
 
         _region_index += 1;
