@@ -284,9 +284,11 @@ if (is_macro) {
     }
 }
 
-var _label_button_x = node_x + node_width + 6;
+// Matches the label box drawn in Draw_0.gml — left of the node body, same
+// 140px width, so the click zone lines up with what's actually on screen.
+var _label_button_width = 140;
+var _label_button_x = node_x - 4 - _label_button_width;
 var _label_button_y = node_y;
-var _label_button_width = 80;
 var _label_button_height = 20;
 
 var _over_label_button = point_in_rectangle(_world_mouse_x, _world_mouse_y, _label_button_x, _label_button_y, _label_button_x + _label_button_width, _label_button_y + _label_button_height);
