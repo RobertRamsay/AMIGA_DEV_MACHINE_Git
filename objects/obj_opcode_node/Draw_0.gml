@@ -163,19 +163,29 @@ if (is_macro) {
         _asset_field_text = _asset_field_label + operand_edit_text;
     }
 
+    if (macro_type == "COPPER_BAR") {
+        _asset_field_text = "Click to edit colours";
+    }
+
     draw_text(_asset_field_dx + 4, _asset_field_dy + 2, _asset_field_text);
 
     var _info_text = "asset not found";
 
     if (macro_type == "SETBKG") {
         _info_text = "hex colour 000-FFF -> COLOR00";
+    } else if (macro_type == "COPPER_BAR") {
+        var _cprbar_range_text = "full height";
+
+        if (!macro_cprbar_equidistant) {
+            _cprbar_range_text = "vp " + string(macro_cprbar_vp_start) + "-" + string(macro_cprbar_vp_end);
+        }
+
+        _info_text = string(macro_cprbar_band_count) + " bands, COLOR" + string(macro_cprbar_target_register) + ", " + _cprbar_range_text;
     } else {
         var _asset_for_info = scr_asset_find_by_name(macro_asset_name);
 
         if (_asset_for_info != undefined) {
-            if (_asset_for_info.type == "COPPER_BAR") {
-                _info_text = string(array_length(_asset_for_info.bands)) + " colour bands";
-            } else if (_asset_for_info.type == "SPRITE") {
+            if (_asset_for_info.type == "SPRITE") {
                 _info_text = "sprite: ch" + string(_asset_for_info.channel) + ", " + string(_asset_for_info.height) + " rows";
             } else {
                 _info_text = _asset_for_info.type + " asset";

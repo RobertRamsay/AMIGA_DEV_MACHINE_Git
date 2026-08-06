@@ -1,15 +1,42 @@
 /// @desc scr_emit_macro_copper_bar(_node)
-/// Looks up _node.macro_asset_name in global.asset_list and expands into
-/// the full CPU-construction sequence: write each WAIT/MOVE band pair into
-/// a chip-RAM buffer, terminate the list, point COP1LC at it, then enable
-/// Copper DMA. Returns a struct { text, is_valid }, same shape as
-/// scr_emit_opcode_line — text may (and here, will) contain several lines.
+/// Fully self-contained now — no shared named asset. Reads the node's own
+/// macro_cprbar_* fields (band count, target COLOR register, equidistant
+/// full-height or an explicit VP range, and each band's own hex colour)
+/// and expands into the full CPU-construction sequence: write each
+/// WAIT/MOVE band pair into a chip-RAM buffer, terminate the list, point
+/// COP1LC at it, then enable Copper DMA. Returns a struct { text, is_valid
+/// }, same shape as scr_emit_opcode_line — text may (and here, will)
+/// contain several lines.
 function scr_emit_macro_copper_bar(_node) {
-    var _asset = scr_asset_find_by_name(_node.macro_asset_name);
+    var _band_count = _node.macro_cprbar_band_count;
 
-    if (_asset == undefined) {
-        var _error_result = { text : "; ERROR: copper bar asset '" + _node.macro_asset_name + "' not found", is_valid : false };
+    if (_band_count < 1 || _band_count > 16) {
+        var _error_result = { text : "; ERROR: CPRBAR band count must be 1-16 (currently " + string(_band_count) + ")", is_valid : false };
         return _error_result;
+    }
+
+    var _vp_start = _node.macro_cprbar_vp_start;
+    var _vp_end = _node.macro_cprbar_vp_end;
+
+    if (_node.macro_cprbar_equidistant) {
+        // Full visible PAL raster height — same range this codebase's
+        // original sky+water default gradient spanned end to end.
+        _vp_start = 44;
+        _vp_end = 200;
+    } else if (_vp_start >= _vp_end) {
+        var _error_result = { text : "; ERROR: CPRBAR VP start must be less than VP end (currently " + string(_vp_start) + " to " + string(_vp_end) + ")", is_valid : false };
+        return _error_result;
+    }
+
+    var _band_index = 0;
+
+    while (_band_index < _band_count) {
+        if (!scr_is_valid_hex_colour(_node.macro_cprbar_bands[_band_index])) {
+            var _error_result = { text : "; ERROR: CPRBAR band " + string(_band_index + 1) + " colour must be 1-3 hex digits (currently '" + _node.macro_cprbar_bands[_band_index] + "')", is_valid : false };
+            return _error_result;
+        }
+
+        _band_index += 1;
     }
 
     // Spread each macro instance's buffer out by uid so multiple copper
@@ -22,14 +49,24 @@ function scr_emit_macro_copper_bar(_node) {
         _lines += _node.node_label + ":\n";
     }
 
+    // Each COLORxx register is 2 bytes apart from COLOR00 ($DFF180 = offset
+    // 384 decimal), so the target register just shifts the base offset.
+    var _register_offset = 384 + (_node.macro_cprbar_target_register * 2);
     var _copper_offset = 0;
-    var _band_count = array_length(_asset.bands);
     var _b = 0;
 
     while (_b < _band_count) {
-        var _band = _asset.bands[_b];
-        var _wait_longword = ((_band.vp * 256 + 1) * 65536) + 65280;
-        var _move_longword = (384 * 65536) + _band.colour;
+        var _t = 0;
+
+        if (_band_count > 1) {
+            _t = _b / (_band_count - 1);
+        }
+
+        var _vp = floor(_vp_start + (_vp_end - _vp_start) * _t);
+        var _colour = scr_hex_string_to_number(_node.macro_cprbar_bands[_b]);
+
+        var _wait_longword = ((_vp * 256 + 1) * 65536) + 65280;
+        var _move_longword = (_register_offset * 65536) + _colour;
 
         _lines += "\tMOVE.L #" + string(_wait_longword) + "," + string(_buffer_base + _copper_offset) + ".L\n";
         _copper_offset += 4;

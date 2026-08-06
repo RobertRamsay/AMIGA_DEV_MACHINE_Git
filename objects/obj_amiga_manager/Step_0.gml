@@ -1,6 +1,6 @@
 // The bitmap editor and colour picker are both modal: do not pan, build,
 // undo, click controls or mutate the graph behind either of them.
-if (instance_exists(obj_bitmap_editor) || instance_exists(obj_colour_picker)) {
+if (instance_exists(obj_bitmap_editor) || instance_exists(obj_colour_picker) || instance_exists(obj_cprbar_editor)) {
     exit;
 }
 

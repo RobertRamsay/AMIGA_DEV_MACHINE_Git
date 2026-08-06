@@ -43,7 +43,14 @@ if (_should_commit) {
 
     if (instance_exists(target_instance_id)) {
         scr_push_undo_snapshot();
-        target_instance_id.macro_asset_name = _hex_text;
+
+        if (target_array_index == -1) {
+            variable_instance_set(target_instance_id, target_variable_name, _hex_text);
+        } else {
+            var _target_array = variable_instance_get(target_instance_id, target_variable_name);
+            _target_array[@ target_array_index] = _hex_text;
+        }
+
         scr_set_status_message("Colour set: #" + _hex_text);
     }
 

@@ -34,6 +34,21 @@ macro_type = "";
 macro_asset_name = "";
 preview_collapsed = true;
 
+// COPPER_BAR macro nodes are fully self-contained — no shared named asset,
+// every field lives on the node itself. bands is always all 16 slots, fully
+// initialised; only the first macro_cprbar_band_count of them are used.
+macro_cprbar_band_count = 4;
+macro_cprbar_target_register = 0;
+macro_cprbar_equidistant = true;
+macro_cprbar_vp_start = 44;
+macro_cprbar_vp_end = 200;
+macro_cprbar_bands = [
+    "000", "000", "000", "000",
+    "000", "000", "000", "000",
+    "000", "000", "000", "000",
+    "000", "000", "000", "000"
+];
+
 // Opcode data — fully populated, no partial/optional fields
 opcode_mnemonic = "MOVE";
 opcode_size = "W";

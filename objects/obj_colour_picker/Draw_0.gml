@@ -11,7 +11,7 @@ draw_rectangle(panel_x, panel_y, panel_x + panel_width, panel_y + panel_height, 
 var _hex_digits = "0123456789ABCDEF";
 var _hex_text = string_char_at(_hex_digits, colour_r + 1) + string_char_at(_hex_digits, colour_g + 1) + string_char_at(_hex_digits, colour_b + 1);
 
-draw_text(panel_x + 12, panel_y + 10, "Colour to set");
+draw_text(panel_x + 12, panel_y + 10, picker_title);
 
 var _preview_size = 40;
 var _preview_x = panel_x + panel_width - _preview_size - 12;

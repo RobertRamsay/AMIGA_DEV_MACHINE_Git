@@ -1,4 +1,4 @@
-if (instance_exists(obj_bitmap_editor) || instance_exists(obj_colour_picker)) {
+if (instance_exists(obj_bitmap_editor) || instance_exists(obj_colour_picker) || instance_exists(obj_cprbar_editor)) {
     exit;
 }
 
@@ -162,6 +162,9 @@ if (is_macro) {
 
     if (macro_type == "SETBKG") {
         _asset_resolved = scr_is_valid_hex_colour(macro_asset_name);
+    } else if (macro_type == "COPPER_BAR") {
+        // Self-contained now — no shared named asset to fail to resolve.
+        _asset_resolved = true;
     }
 
     slot_src_is_valid = _asset_resolved;
@@ -177,22 +180,11 @@ if (is_macro) {
 
     if (_over_asset_field && mouse_check_button_pressed(mb_left) && _can_start_asset_edit) {
         if (macro_type == "SETBKG") {
-            var _new_picker = instance_create_layer(0, 0, "Instances", obj_colour_picker);
-            _new_picker.target_instance_id = id;
-
-            var _current_hex = macro_asset_name;
-
-            if (scr_is_valid_hex_colour(_current_hex)) {
-                // Left-pad to 3 digits so a colour typed as e.g. "F00" maps
-                // its digits onto R/G/B in the expected order.
-                while (string_length(_current_hex) < 3) {
-                    _current_hex = "0" + _current_hex;
-                }
-
-                _new_picker.colour_r = scr_hex_string_to_number(string_copy(_current_hex, 1, 1));
-                _new_picker.colour_g = scr_hex_string_to_number(string_copy(_current_hex, 2, 1));
-                _new_picker.colour_b = scr_hex_string_to_number(string_copy(_current_hex, 3, 1));
-            }
+            scr_colour_picker_open(id, "macro_asset_name", -1, "SETBKG colour");
+        } else if (macro_type == "COPPER_BAR") {
+            var _new_cprbar_editor = instance_create_layer(0, 0, "Instances", obj_cprbar_editor);
+            _new_cprbar_editor.target_node_id = id;
+            scr_push_undo_snapshot();
         } else {
             global.operand_edit_owner_uid = uid;
             operand_editing_slot = "macro_asset";
