@@ -32,22 +32,24 @@ if (surface_exists(bitmap_surface) && bitmap_surface_dirty) {
     bitmap_dirty_pixels = [];
 }
 
-// Ordinary brush strokes update only the pixels that actually changed.
+// Ordinary brush strokes update only the changed RGBA buffer entries, then
+// upload through the same path used by palette refreshes. Keeping one texture
+// path avoids the one-texel disagreement between draw_point and buffer pixels.
 if (surface_exists(bitmap_surface) && array_length(bitmap_dirty_pixels) > 0) {
-    surface_set_target(bitmap_surface);
     var _dirty_index = 0;
 
     while (_dirty_index < array_length(bitmap_dirty_pixels)) {
         var _pixel_offset = bitmap_dirty_pixels[_dirty_index];
-        var _pixel_x = _pixel_offset mod bitmap_width;
-        var _pixel_y = _pixel_offset div bitmap_width;
         var _pixel_index = bitmap_pixels[_pixel_offset];
-        draw_set_colour(make_color_rgb(bitmap_colour_r[_pixel_index] * 17, bitmap_colour_g[_pixel_index] * 17, bitmap_colour_b[_pixel_index] * 17));
-        draw_point(_pixel_x, _pixel_y);
+        var _pixel_r = bitmap_colour_r[_pixel_index] * 17;
+        var _pixel_g = bitmap_colour_g[_pixel_index] * 17;
+        var _pixel_b = bitmap_colour_b[_pixel_index] * 17;
+        var _packed_rgba = _pixel_r + (_pixel_g << 8) + (_pixel_b << 16) + 4278190080;
+        buffer_poke(bitmap_buffer, _pixel_offset * 4, buffer_u32, _packed_rgba);
         _dirty_index += 1;
     }
 
-    surface_reset_target();
+    buffer_set_surface(bitmap_buffer, bitmap_surface, 0);
     bitmap_dirty_pixels = [];
 }
 
