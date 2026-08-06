@@ -103,9 +103,11 @@ if (operand_editing_slot == "node_label") {
 // Labels remain visible after editing. The badge is drawn before the text so
 // the edit pulse cannot cover the entered name.
 if (_label_display_text != "" || operand_editing_slot == "node_label") {
-    var _label_box_x1 = _dx + node_width + 4;
+    // Label now lives on the left side of the node, with its text right
+    // justified so it reads as hugging the node's left edge.
+    var _label_box_x2 = _dx - 4;
     var _label_box_y1 = _dy;
-    var _label_box_x2 = _label_box_x1 + _lab_width;
+    var _label_box_x1 = _label_box_x2 - _lab_width;
     var _label_box_y2 = _label_box_y1 + 20;
     var _label_border_colour = c_white;
     var _label_text_colour = c_white;
@@ -125,7 +127,9 @@ if (_label_display_text != "" || operand_editing_slot == "node_label") {
     draw_set_colour(_label_border_colour);
     draw_rectangle(_label_box_x1 - _label_grow, _label_box_y1 - _label_grow, _label_box_x2 + _label_grow, _label_box_y2 + _label_grow, true);
     draw_set_colour(_label_text_colour);
-    draw_text(_label_box_x1 + 4, _label_box_y1 + 2, _label_display_text);
+    draw_set_halign(fa_right);
+    draw_text(_label_box_x2 - 4, _label_box_y1 + 2, _label_display_text);
+    draw_set_halign(fa_left);
     draw_set_colour(c_white);
 }
 

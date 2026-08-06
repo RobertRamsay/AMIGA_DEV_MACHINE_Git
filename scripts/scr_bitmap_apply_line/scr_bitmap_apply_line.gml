@@ -44,6 +44,7 @@ function scr_bitmap_apply_line(_editor, _x0, _y0, _x1, _y1, _colour_index, _use_
                     && _stamp_y >= 0 && _stamp_y < _editor.bitmap_height) {
                         var _pixel_offset = (_stamp_y * _editor.bitmap_width) + _stamp_x;
                         var _stamp_colour = _colour_index;
+                        var _stamp_pixel_skipped = false;
 
                         if (_use_dither) {
                             var _dither_first = false;
@@ -62,17 +63,22 @@ function scr_bitmap_apply_line(_editor, _x0, _y0, _x1, _y1, _colour_index, _use_
                                 _dither_first = !_dither_first;
                             }
 
-                            var _dither_second = _editor.bitmap_dither_use_colour_2
-                                ? _editor.bitmap_gradient_colour_2
-                                : 0;
-                            _stamp_colour = _dither_first
-                                ? _editor.bitmap_gradient_colour_1
-                                : _dither_second;
+                            if (_dither_first) {
+                                _stamp_colour = _editor.bitmap_gradient_colour_1;
+                            } else if (_editor.bitmap_dither_use_colour_2) {
+                                _stamp_colour = _editor.bitmap_gradient_colour_2;
+                            } else {
+                                // COL1 / TRANSP pairing — the "transparent" half of
+                                // the dither leaves the existing canvas pixel showing
+                                // through, rather than painting COLOR00 over it.
+                                _stamp_pixel_skipped = true;
+                            }
                         }
 
                         // Transparency lock protects COLOR00 canvas pixels.
                         // Opaque pixels may still be recoloured or erased.
-                        if ((!_editor.bitmap_transparency_lock || _editor.bitmap_pixels[_pixel_offset] != 0)
+                        if (!_stamp_pixel_skipped
+                        && (!_editor.bitmap_transparency_lock || _editor.bitmap_pixels[_pixel_offset] != 0)
                         && _editor.bitmap_pixels[_pixel_offset] != _stamp_colour) {
                             _editor.bitmap_pixels[_pixel_offset] = _stamp_colour;
                             array_push(_editor.bitmap_dirty_pixels, _pixel_offset);

@@ -1,0 +1,71 @@
+diff --git a/objects/obj_opcode_node/Draw_0.gml b/objects/obj_opcode_node/Draw_0.gml
+index ffbc71f..75cfa2d 100644
+--- a/objects/obj_opcode_node/Draw_0.gml
++++ b/objects/obj_opcode_node/Draw_0.gml
+@@ -103,9 +103,11 @@ if (operand_editing_slot == "node_label") {
+ // Labels remain visible after editing. The badge is drawn before the text so
+ // the edit pulse cannot cover the entered name.
+ if (_label_display_text != "" || operand_editing_slot == "node_label") {
+-    var _label_box_x1 = _dx + node_width + 4;
++    // Label now lives on the left side of the node, with its text right
++    // justified so it reads as hugging the node's left edge.
++    var _label_box_x2 = _dx - 4;
+     var _label_box_y1 = _dy;
+-    var _label_box_x2 = _label_box_x1 + _lab_width;
++    var _label_box_x1 = _label_box_x2 - _lab_width;
+     var _label_box_y2 = _label_box_y1 + 20;
+     var _label_border_colour = c_white;
+     var _label_text_colour = c_white;
+@@ -125,7 +127,9 @@ if (_label_display_text != "" || operand_editing_slot == "node_label") {
+     draw_set_colour(_label_border_colour);
+     draw_rectangle(_label_box_x1 - _label_grow, _label_box_y1 - _label_grow, _label_box_x2 + _label_grow, _label_box_y2 + _label_grow, true);
+     draw_set_colour(_label_text_colour);
+-    draw_text(_label_box_x1 + 4, _label_box_y1 + 2, _label_display_text);
++    draw_set_halign(fa_right);
++    draw_text(_label_box_x2 - 4, _label_box_y1 + 2, _label_display_text);
++    draw_set_halign(fa_left);
+     draw_set_colour(c_white);
+ }
+ 
+diff --git a/scripts/scr_bitmap_apply_line/scr_bitmap_apply_line.gml b/scripts/scr_bitmap_apply_line/scr_bitmap_apply_line.gml
+index 2c555b1..83183cc 100644
+--- a/scripts/scr_bitmap_apply_line/scr_bitmap_apply_line.gml
++++ b/scripts/scr_bitmap_apply_line/scr_bitmap_apply_line.gml
+@@ -44,6 +44,7 @@ function scr_bitmap_apply_line(_editor, _x0, _y0, _x1, _y1, _colour_index, _use_
+                     && _stamp_y >= 0 && _stamp_y < _editor.bitmap_height) {
+                         var _pixel_offset = (_stamp_y * _editor.bitmap_width) + _stamp_x;
+                         var _stamp_colour = _colour_index;
++                        var _stamp_pixel_skipped = false;
+ 
+                         if (_use_dither) {
+                             var _dither_first = false;
+@@ -62,17 +63,22 @@ function scr_bitmap_apply_line(_editor, _x0, _y0, _x1, _y1, _colour_index, _use_
+                                 _dither_first = !_dither_first;
+                             }
+ 
+-                            var _dither_second = _editor.bitmap_dither_use_colour_2
+-                                ? _editor.bitmap_gradient_colour_2
+-                                : 0;
+-                            _stamp_colour = _dither_first
+-                                ? _editor.bitmap_gradient_colour_1
+-                                : _dither_second;
++                            if (_dither_first) {
++                                _stamp_colour = _editor.bitmap_gradient_colour_1;
++                            } else if (_editor.bitmap_dither_use_colour_2) {
++                                _stamp_colour = _editor.bitmap_gradient_colour_2;
++                            } else {
++                                // COL1 / TRANSP pairing — the "transparent" half of
++                                // the dither leaves the existing canvas pixel showing
++                                // through, rather than painting COLOR00 over it.
++                                _stamp_pixel_skipped = true;
++                            }
+                         }
+ 
+                         // Transparency lock protects COLOR00 canvas pixels.
+                         // Opaque pixels may still be recoloured or erased.
+-                        if ((!_editor.bitmap_transparency_lock || _editor.bitmap_pixels[_pixel_offset] != 0)
++                        if (!_stamp_pixel_skipped
++                        && (!_editor.bitmap_transparency_lock || _editor.bitmap_pixels[_pixel_offset] != 0)
+                         && _editor.bitmap_pixels[_pixel_offset] != _stamp_colour) {
+                             _editor.bitmap_pixels[_pixel_offset] = _stamp_colour;
+                             array_push(_editor.bitmap_dirty_pixels, _pixel_offset);
