@@ -84,9 +84,15 @@ function scr_amiga_start_adf_build(_bin_path, _project_path, _volume_name, _uses
     var _batch_file = file_text_open_write(_batch_path);
     file_text_write_string(_batch_file, "@echo off\r\n");
     file_text_write_string(_batch_file, "cd /D \"%~dp0\"\r\n");
-    file_text_write_string(_batch_file, "\"" + global.xdftool_path + "\" " + _xdf_args + " > \"" + _log_path + "\" 2>&1\r\n");
+    // move (below) and other cmd.exe builtins are far less tolerant of
+    // forward slashes than xdftool.exe or Win32 file APIs are. LOCALAPPDATA
+    // gives a backslash path and GML appends forward slashes onto it, so
+    // normalise every path here before it reaches cmd.exe.
+    var _xdftool_command_line = "\"" + string_replace_all(global.xdftool_path, "/", "\\") + "\" " + string_replace_all(_xdf_args, "/", "\\") + " > \"" + string_replace_all(_log_path, "/", "\\") + "\" 2>&1";
+    file_text_write_string(_batch_file, _xdftool_command_line + "\r\n");
     file_text_write_string(_batch_file, "if errorlevel 1 exit /b %errorlevel%\r\n");
-    file_text_write_string(_batch_file, "move /Y \"" + _working_adf_path + "\" \"" + _adf_path + "\" >> \"" + _log_path + "\" 2>&1\r\n");
+    var _move_command_line = "move /Y \"" + string_replace_all(_working_adf_path, "/", "\\") + "\" \"" + string_replace_all(_adf_path, "/", "\\") + "\" >> \"" + string_replace_all(_log_path, "/", "\\") + "\" 2>&1";
+    file_text_write_string(_batch_file, _move_command_line + "\r\n");
     file_text_close(_batch_file);
 
     // Create the log before launch so a missing/unchanged log distinguishes a
@@ -98,7 +104,7 @@ function scr_amiga_start_adf_build(_bin_path, _project_path, _volume_name, _uses
     // Give cmd.exe the build directory separately as its working directory.
     // The /C command is now just a simple filename, with no nested quoted path
     // for ShellExecute or cmd.exe to misparse. SW_HIDE prevents a popup.
-    var _batch_started = execute_shell_simple("cmd.exe", "/D /C build_adf.bat", "open", 0, _build_dir);
+    var _batch_started = execute_shell_simple("cmd.exe", "/D /C build_adf.bat", "open", 5, _build_dir);
     if (!_batch_started) {
         show_debug_message("scr_amiga_start_adf_build: could not launch cmd.exe for " + _batch_path);
     }
