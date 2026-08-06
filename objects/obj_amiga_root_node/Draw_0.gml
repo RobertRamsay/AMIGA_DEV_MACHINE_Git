@@ -19,7 +19,14 @@ draw_set_colour(c_white);
 draw_rectangle(_dx + 1, _dy + 1, _dx + node_width - 1, _dy + node_height - 1, true);
 draw_set_halign(fa_center);
 draw_set_valign(fa_middle);
-draw_text(_dx + (node_width / 2), _dy + (node_height / 2), root_type);
+
+var _root_display_text = root_type;
+
+if (root_type == "INIT") {
+    _root_display_text = "INIT/BUILD";
+}
+
+draw_text(_dx + (node_width / 2), _dy + (node_height / 2), _root_display_text);
 draw_set_halign(fa_left);
 draw_set_valign(fa_top);
 

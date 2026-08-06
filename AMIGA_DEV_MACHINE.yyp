@@ -231,6 +231,7 @@
     {"id":{"name":"scr_amiga_run_sprite_test","path":"scripts/scr_amiga_run_sprite_test/scr_amiga_run_sprite_test.yy",},},
     {"id":{"name":"scr_amiga_start_adf_build","path":"scripts/scr_amiga_start_adf_build/scr_amiga_start_adf_build.yy",},},
     {"id":{"name":"scr_amiga_start_build","path":"scripts/scr_amiga_start_build/scr_amiga_start_build.yy",},},
+    {"id":{"name":"scr_amiga_trigger_build","path":"scripts/scr_amiga_trigger_build/scr_amiga_trigger_build.yy",},},
     {"id":{"name":"scr_apply_wedge_preview","path":"scripts/scr_apply_wedge_preview/scr_apply_wedge_preview.yy",},},
     {"id":{"name":"scr_asset_define_bitmap","path":"scripts/scr_asset_define_bitmap/scr_asset_define_bitmap.yy",},},
     {"id":{"name":"scr_asset_define_copper_bar","path":"scripts/scr_asset_define_copper_bar/scr_asset_define_copper_bar.yy",},},

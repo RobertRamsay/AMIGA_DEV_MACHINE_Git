@@ -50,3 +50,12 @@ if (root_type == "ORG") {
 
     continues_from_root_uid = scr_find_nearest_left_root(id);
 }
+
+if (root_type == "INIT") {
+    var _over_init_body = point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y, node_x + node_width, node_y + node_height);
+
+    if (_over_init_body && mouse_check_button_pressed(mb_left) && !global.left_click_pickup_handled_this_frame) {
+        global.left_click_pickup_handled_this_frame = true;
+        scr_amiga_trigger_build();
+    }
+}
