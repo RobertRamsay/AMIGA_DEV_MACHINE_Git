@@ -59,7 +59,25 @@ if (_over_canvas) {
 
 if (point_in_rectangle(mouse_x, mouse_y, _layout.grid_toggle_x, _layout.grid_toggle_y, _layout.grid_toggle_x + 120, _layout.grid_toggle_y + 20)
 && mouse_check_button_pressed(mb_left)) {
-    bitmap_grid_enabled = !bitmap_grid_enabled;
+    if (bitmap_grid_size == 0) bitmap_grid_size = 4;
+    else if (bitmap_grid_size == 4) bitmap_grid_size = 8;
+    else if (bitmap_grid_size == 8) bitmap_grid_size = 16;
+    else if (bitmap_grid_size == 16) bitmap_grid_size = 32;
+    else bitmap_grid_size = 0;
+}
+
+var _brush_sizes = [1, 3, 5, 7, 9];
+var _brush_button_index = 0;
+
+while (_brush_button_index < array_length(_brush_sizes)) {
+    var _brush_button_x = _layout.brush_x + _brush_button_index * (_layout.brush_button_width + _layout.brush_button_gap);
+
+    if (point_in_rectangle(mouse_x, mouse_y, _brush_button_x, _layout.brush_y, _brush_button_x + _layout.brush_button_width, _layout.brush_y + _layout.brush_button_height)
+    && mouse_check_button_pressed(mb_left)) {
+        bitmap_brush_size = _brush_sizes[_brush_button_index];
+    }
+
+    _brush_button_index += 1;
 }
 
 var _tool_names = ["DRAW", "LINE", "FILL"];
@@ -138,10 +156,16 @@ while (_swatch_index < 32) {
     var _swatch_x = _layout.swatch_x + _swatch_col * (_layout.swatch_width + _layout.swatch_gap);
     var _swatch_y = _layout.swatch_y + _swatch_row * (_layout.swatch_height + _layout.swatch_gap);
 
-    if (point_in_rectangle(mouse_x, mouse_y, _swatch_x, _swatch_y, _swatch_x + _layout.swatch_width, _swatch_y + _layout.swatch_height)
-    && mouse_check_button_pressed(mb_left)) {
-        bitmap_paint_index = _swatch_index;
-        bitmap_palette_edit_index = _swatch_index;
+    if (point_in_rectangle(mouse_x, mouse_y, _swatch_x, _swatch_y, _swatch_x + _layout.swatch_width, _swatch_y + _layout.swatch_height)) {
+        if (mouse_check_button_pressed(mb_left)) {
+            bitmap_paint_index = _swatch_index;
+            bitmap_palette_edit_index = _swatch_index;
+            bitmap_gradient_colour_1 = _swatch_index;
+        }
+
+        if (mouse_check_button_pressed(mb_right)) {
+            bitmap_gradient_colour_2 = _swatch_index;
+        }
     }
 
     _swatch_index += 1;

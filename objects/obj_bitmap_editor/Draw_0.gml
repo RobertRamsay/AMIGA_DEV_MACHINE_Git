@@ -96,11 +96,27 @@ draw_set_colour(c_white);
 draw_rectangle(_layout.clear_x, _layout.clear_y, _layout.clear_x + 120, _layout.clear_y + 20, true);
 draw_text(_layout.clear_x + 8, _layout.clear_y + 1, "CLEAR (0)");
 
-draw_set_colour(bitmap_grid_enabled ? c_olive : c_dkgray);
+draw_set_colour(bitmap_grid_size > 0 ? c_olive : c_dkgray);
 draw_rectangle(_layout.grid_toggle_x, _layout.grid_toggle_y, _layout.grid_toggle_x + 120, _layout.grid_toggle_y + 20, false);
 draw_set_colour(c_white);
 draw_rectangle(_layout.grid_toggle_x, _layout.grid_toggle_y, _layout.grid_toggle_x + 120, _layout.grid_toggle_y + 20, true);
-draw_text(_layout.grid_toggle_x + 8, _layout.grid_toggle_y + 1, bitmap_grid_enabled ? "GRID: ON" : "GRID: OFF");
+draw_text(_layout.grid_toggle_x + 8, _layout.grid_toggle_y + 1, bitmap_grid_size > 0 ? "GRID: " + string(bitmap_grid_size) + "x" + string(bitmap_grid_size) : "GRID: OFF");
+
+draw_set_colour(c_white);
+draw_text(_layout.brush_label_x, _layout.brush_label_y, "BRUSH");
+var _brush_sizes = [1, 3, 5, 7, 9];
+var _brush_button_index = 0;
+
+while (_brush_button_index < array_length(_brush_sizes)) {
+    var _brush_size = _brush_sizes[_brush_button_index];
+    var _brush_button_x = _layout.brush_x + _brush_button_index * (_layout.brush_button_width + _layout.brush_button_gap);
+    draw_set_colour(bitmap_brush_size == _brush_size ? c_olive : c_dkgray);
+    draw_rectangle(_brush_button_x, _layout.brush_y, _brush_button_x + _layout.brush_button_width, _layout.brush_y + _layout.brush_button_height, false);
+    draw_set_colour(c_white);
+    draw_rectangle(_brush_button_x, _layout.brush_y, _brush_button_x + _layout.brush_button_width, _layout.brush_y + _layout.brush_button_height, true);
+    draw_text(_brush_button_x + 6, _layout.brush_y + 1, string(_brush_size));
+    _brush_button_index += 1;
+}
 
 var _tool_names = ["DRAW", "LINE", "FILL"];
 var _tool_index = 0;
@@ -183,14 +199,37 @@ if (bitmap_tool == "LINE" && bitmap_line_active) {
     var _preview_error = _preview_dx + _preview_dy;
     var _preview_done = false;
     var _preview_colour_index = bitmap_line_index;
+    var _preview_brush_radius = bitmap_brush_size div 2;
+    var _preview_brush_limit = bitmap_brush_size * 0.5;
+    var _preview_brush_limit_sq = _preview_brush_limit * _preview_brush_limit;
 
     draw_set_alpha(0.78);
     draw_set_colour(make_color_rgb(bitmap_colour_r[_preview_colour_index] * 17, bitmap_colour_g[_preview_colour_index] * 17, bitmap_colour_b[_preview_colour_index] * 17));
 
     while (!_preview_done) {
-        var _preview_cell_x = _layout.display_x + (_preview_line_x * bitmap_zoom) - bitmap_scroll_x;
-        var _preview_cell_y = _layout.display_y + (_preview_line_y * bitmap_zoom) - bitmap_scroll_y;
-        draw_rectangle(_preview_cell_x, _preview_cell_y, _preview_cell_x + bitmap_zoom, _preview_cell_y + bitmap_zoom, false);
+        var _preview_brush_y = -_preview_brush_radius;
+
+        while (_preview_brush_y <= _preview_brush_radius) {
+            var _preview_brush_x = -_preview_brush_radius;
+
+            while (_preview_brush_x <= _preview_brush_radius) {
+                if ((_preview_brush_x * _preview_brush_x) + (_preview_brush_y * _preview_brush_y) <= _preview_brush_limit_sq) {
+                    var _preview_stamp_x = _preview_line_x + _preview_brush_x;
+                    var _preview_stamp_y = _preview_line_y + _preview_brush_y;
+
+                    if (_preview_stamp_x >= 0 && _preview_stamp_x < bitmap_width
+                    && _preview_stamp_y >= 0 && _preview_stamp_y < bitmap_height) {
+                        var _preview_cell_x = _layout.display_x + (_preview_stamp_x * bitmap_zoom) - bitmap_scroll_x;
+                        var _preview_cell_y = _layout.display_y + (_preview_stamp_y * bitmap_zoom) - bitmap_scroll_y;
+                        draw_rectangle(_preview_cell_x, _preview_cell_y, _preview_cell_x + bitmap_zoom, _preview_cell_y + bitmap_zoom, false);
+                    }
+                }
+
+                _preview_brush_x += 1;
+            }
+
+            _preview_brush_y += 1;
+        }
 
         if (_preview_line_x == _preview_target_x && _preview_line_y == _preview_target_y) {
             _preview_done = true;
@@ -218,25 +257,29 @@ if (bitmap_tool == "GRADIENT" && bitmap_gradient_active) {
     draw_set_alpha(1);
 }
 
-// Optional pixel grid, disabled by default.
-if (bitmap_grid_enabled) {
+// Optional 4, 8, 16 or 32-pixel tile grid, disabled by default.
+if (bitmap_grid_size > 0) {
     draw_set_alpha(0.22);
     draw_set_colour(c_white);
-    var _first_col = floor(bitmap_scroll_x / bitmap_zoom);
+    var _first_col = floor(floor(bitmap_scroll_x / bitmap_zoom) / bitmap_grid_size) * bitmap_grid_size;
     var _last_col = min(bitmap_width, _first_col + ceil(_layout.canvas_width / bitmap_zoom) + 1);
+    var _grid_top = max(_layout.canvas_y, _layout.display_y - bitmap_scroll_y);
+    var _grid_bottom = min(_layout.canvas_y + _layout.canvas_height, _layout.display_y - bitmap_scroll_y + _layout.content_height);
     var _grid_col = _first_col;
     while (_grid_col <= _last_col) {
         var _line_x = _layout.display_x + (_grid_col * bitmap_zoom) - bitmap_scroll_x;
-        if (_line_x >= _layout.canvas_x && _line_x <= _layout.canvas_x + _layout.canvas_width) draw_line(_line_x, _layout.canvas_y, _line_x, _layout.canvas_y + min(_layout.canvas_height, _layout.content_height));
-        _grid_col += 1;
+        if (_line_x >= _layout.canvas_x && _line_x <= _layout.canvas_x + _layout.canvas_width) draw_line(_line_x, _grid_top, _line_x, _grid_bottom);
+        _grid_col += bitmap_grid_size;
     }
-    var _first_row = floor(bitmap_scroll_y / bitmap_zoom);
+    var _first_row = floor(floor(bitmap_scroll_y / bitmap_zoom) / bitmap_grid_size) * bitmap_grid_size;
     var _last_row = min(bitmap_height, _first_row + ceil(_layout.canvas_height / bitmap_zoom) + 1);
+    var _grid_left = max(_layout.canvas_x, _layout.display_x - bitmap_scroll_x);
+    var _grid_right = min(_layout.canvas_x + _layout.canvas_width, _layout.display_x - bitmap_scroll_x + _layout.content_width);
     var _grid_row = _first_row;
     while (_grid_row <= _last_row) {
         var _line_y = _layout.display_y + (_grid_row * bitmap_zoom) - bitmap_scroll_y;
-        if (_line_y >= _layout.canvas_y && _line_y <= _layout.canvas_y + _layout.canvas_height) draw_line(_layout.canvas_x, _line_y, _layout.canvas_x + min(_layout.canvas_width, _layout.content_width), _line_y);
-        _grid_row += 1;
+        if (_line_y >= _layout.canvas_y && _line_y <= _layout.canvas_y + _layout.canvas_height) draw_line(_grid_left, _line_y, _grid_right, _line_y);
+        _grid_row += bitmap_grid_size;
     }
     draw_set_alpha(1);
 }
