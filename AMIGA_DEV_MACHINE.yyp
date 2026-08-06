@@ -195,6 +195,7 @@
     {"$GMIncludedFile":"","%Name":"LICENSE","CopyToMask":-1,"filePath":"datafiles/vasmm68k_mot_Win64","name":"LICENSE","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"vasmm68k_mot.exe","CopyToMask":-1,"filePath":"datafiles/vasmm68k_mot_Win64","name":"vasmm68k_mot.exe","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"vobjdump.exe","CopyToMask":-1,"filePath":"datafiles/vasmm68k_mot_Win64","name":"vobjdump.exe","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
+    {"$GMIncludedFile":"","%Name":"xdftool.exe","CopyToMask":-1,"filePath":"datafiles/xdftool","name":"xdftool.exe","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
   ],
   "isEcma":false,
   "LibraryEmitters":[],

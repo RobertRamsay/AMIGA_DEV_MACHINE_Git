@@ -1011,4 +1011,114 @@ callroms done.
 [InitCode] calling InitResident (100 01 "bootloader.resource").
 [InitCode] calling InitResident (99 01 "processor.resource").
 [InitCode] calling InitResident (94 81 "oop.library").
-[InitCode] calling InitResident (92
+[InitCode] calling InitResident (92 81 "hiddclass.hidd").
+[InitCode] calling InitResident (80 01 "cia.resource").
+[InitCode] calling InitResident (80 01 "FileSystem.resource").
+[InitCode] calling InitResident (70 81 "battclock.resource").
+[InitCode] calling InitResident (66 81 "graphics.hidd").
+[InitCode] calling InitResident (65 81 "graphics.library").
+[InitCode] calling InitResident (64 81 "layers.library").
+[InitCode] calling InitResident (50 81 "timer.device").
+PAL mode V=50.0000Hz H=15625.0881Hz (227x312+1) IDX=10 (PAL) D=0 RTG=0/0
+target_graphics_buffer_update - clearing buffer
+[InitCode] calling InitResident (48 81 "card.resource").
+[InitCode] calling InitResident (45 81 "keyboard.hidd").
+[InitCode] calling InitResident (45 81 "mouse.hidd").
+[InitCode] calling InitResident (45 01 "misc.resource").
+[InitCode] calling InitResident (44 81 "keyboard.device").
+[InitCode] calling InitResident (44 81 "gameport.device").
+[InitCode] calling InitResident (40 81 "partition.library").
+[InitCode] calling InitResident (40 81 "amigakbd.hidd").
+[InitCode] calling InitResident (40 81 "amigamouse.hidd").
+[InitCode] calling InitResident (40 81 "keymap.library").
+[InitCode] calling InitResident (39 81 "disk.resource").
+[InitCode] calling InitResident (35 81 "trackdisk.device").
+[TaskRes] NewAddTask(0x00aab658).
+[TaskRes] NewAddTask: task @ 0x00aab658.
+[TaskRes] TaskResAddTask: taskentry @ 0x00aafd00 for 'trackdisk.device'.
+[InitCode] calling InitResident (30 81 "input.device").
+[TaskRes] NewAddTask(0x00ab00a0).
+[TaskRes] NewAddTask: task @ 0x00ab00a0.
+[TaskRes] TaskResAddTask: taskentry @ 0x00ab7e30 for 'input.device'.
+[InitCode] calling InitResident (15 81 "intuition.library").
+[TaskRes] NewAddTask(0x00ad8bb0).
+[TaskRes] NewAddTask: task @ 0x00ad8bb0.
+[TaskRes] TaskResAddTask: taskentry @ 0x00add098 for 'Intuition menu handler'.
+[TaskRes] NewAddTask(0x00add2c0).
+[TaskRes] NewAddTask: task @ 0x00add2c0.
+[TaskRes] TaskResAddTask: taskentry @ 0x00ae17a8 for 'Screennotify Handler >>'.
+[InitCode] calling InitResident (9 81 "amigavideo.hidd").
+[InitCode] calling InitResident (5 81 "cd.device").
+[InitCode] calling InitResident (4 81 "console.device").
+[TaskRes] NewAddTask(0x00afb948).
+[TaskRes] NewAddTask: task @ 0x00afb948.
+[TaskRes] TaskResAddTask: taskentry @ 0x00affec0 for 'console.device'.
+[InitCode] calling InitResident (4 81 "ata.device").
+[TaskRes] NewAddTask(0x00b03de8).
+[TaskRes] NewAddTask: task @ 0x00b03de8.
+[TaskRes] TaskResAddTask: taskentry @ 0x00b08478 for 'ATA.daemon'.
+[InitCode] calling InitResident (4 81 "ata_gayle.hidd").
+[ATA] Gayle ID=00. Possible IDE port=00000000..
+[InitCode] calling InitResident (0 81 "gadtools.library").
+[InitCode] calling InitResident (0 81 "mathieeesingbas.library").
+[InitCode] calling InitResident (0 81 "freeanim.library").
+[InitCode] calling InitResident (0 81 "lowlevel.library").
+[InitCode] calling InitResident (-1 01 "afs-handler").
+[InitCode] calling InitResident (-1 01 "cdfs-handler").
+[InitCode] calling InitResident (-9 01 "romboot").
+romtaginit.
+romtaginit done.
+[InitCode] calling InitResident (-10 81 "uaegfx.hidd").
+[InitCode] calling InitResident (-45 01 "alert.hook..
+").
+[InitCode] calling InitResident (-49 01 "ATA boot wait").
+[InitCode] calling InitResident (-50 01 "dosboot.resource").
+Display Size: 640x512 Offset: 74x36
+First: 44 Last: 300 MinV: 26 MaxV: 313 Min: 26
+Warning: Bad playfield pointer 0007ffe2
+fs_emu_audio_resume_stream 0
+EMU: Ungrab input
+Received SDL_QUIT
+fs_ml_quit called
+libfsemu on_quit: no quit function
+Received SDL_QUIT
+fs_ml_quit already called
+calling amiga_quit
+uae_quit
+UAE: Stopping
+ -- stub -- close_joystick 
+ -- stub -- close_mouse 
+ -- stub -- close_kb 
+ -- stub -- gui_exit 
+mapped_free indirect Filesystem autoconfig
+hdf_close_target
+hdf_close_target
+hdf_close_target
+hdf_close_target
+hdf_close_target
+hdf_close_target
+hdf_close_target
+mapped_free nondirect Slow memory
+mapped_free nondirect Kickstart ROM
+mapped_free nondirect Chip memory
+mapped_free nondirect Non-autoconfig RAM #1
+mapped_free nondirect Non-autoconfig RAM #2
+ -- stub -- machdep_free 
+real_main returned
+calling filesys_flush_cache
+flushing all file streams
+[CORE] Return from amiga_main
+fs_ml_quit already called
+calling fs_ml_stop because emu thread is done
+fs_emu_run: main loop is done
+fs_emu_run: waiting for emulation thread to stop
+fs_emu_run: emulation thread stopped
+OPENAL: fs_emu_audio_shutdown
+OPENAL: Stopping stream 0
+OPENAL: Stopping stream 1
+OPENAL: alcDestroyContext
+OPENAL: alcCloseDevice
+fs_emu_run: returning
+fs-uae shutting down, fs_emu_run returned
+state dir C:/Users/me/OneDrive/Desktop/Amiga_Dev_Machine/GIT/AMIGA_DEV_MACHINE_Git/datafiles/fsuae/Save States\Default was removed because it was empty
+end of main function
