@@ -339,7 +339,7 @@ if (global.sprite_editor_open) {
         }
     }
 
-    if (mouse_check_button(mb_left) && global.sprite_editing_field == "") {
+    if ((mouse_check_button(mb_left) || mouse_check_button(mb_right)) && global.sprite_editing_field == "") {
         var _over_grid = point_in_rectangle(mouse_x, mouse_y, _layout.grid_x, _layout.grid_y, _layout.grid_x + _layout.grid_width, _layout.grid_y + _layout.grid_height);
 
         if (_over_grid) {
@@ -347,7 +347,13 @@ if (global.sprite_editor_open) {
             var _cell_row = floor((mouse_y - _layout.grid_y) / _layout.cell_size);
 
             if (_cell_col >= 0 && _cell_col < 16 && _cell_row >= 0 && _cell_row < global.sprite_height) {
-                global.sprite_pixels[(_cell_row * 16) + _cell_col] = global.sprite_paint_index;
+                var _draw_index = global.sprite_paint_index;
+
+                if (mouse_check_button(mb_right)) {
+                    _draw_index = 0;
+                }
+
+                global.sprite_pixels[(_cell_row * 16) + _cell_col] = _draw_index;
             }
         }
     }
@@ -412,5 +418,21 @@ if (global.sprite_editor_open) {
         if (keyboard_check_pressed(vk_escape)) {
             global.sprite_editing_field = "";
         }
+    }
+
+    // Keep the build-time asset synchronized without requiring the editor to
+    // close. F5 after a paint, erase, or palette drag now uses the values that
+    // are visibly present in the open editor.
+    if (mouse_check_button_released(mb_left) || mouse_check_button_released(mb_right)) {
+        scr_asset_define_sprite(
+            "TestSprite",
+            global.sprite_channel,
+            global.sprite_height,
+            global.sprite_address,
+            global.sprite_pixels,
+            global.sprite_colour_r,
+            global.sprite_colour_g,
+            global.sprite_colour_b
+        );
     }
 }

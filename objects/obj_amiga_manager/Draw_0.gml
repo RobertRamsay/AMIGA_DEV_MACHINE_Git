@@ -231,7 +231,7 @@ if (global.sprite_editor_open) {
     }
 
     draw_set_colour(c_white);
-    draw_text(_layout.swatch_x, _layout.swatch_row_y + _layout.swatch_height + 2, "click swatch = paint + edit colour");
+    draw_text(_layout.swatch_x, _layout.swatch_row_y + _layout.swatch_height + 2, "left=paint/edit  right on grid=erase");
 
     var _row = 0;
 

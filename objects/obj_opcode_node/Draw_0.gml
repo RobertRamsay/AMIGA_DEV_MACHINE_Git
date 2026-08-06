@@ -49,11 +49,6 @@ if (operand_editing_slot == "node_label") {
     draw_set_colour(c_white);
 }
 
-if (_label_display_text != "") {
-    draw_set_colour(c_yellow);
-    draw_text(_dx + node_width + 6, _dy + 2, _label_display_text);
-    draw_set_colour(c_white);
-}
 
 
 if (is_macro) {
