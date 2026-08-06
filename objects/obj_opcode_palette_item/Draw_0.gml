@@ -8,6 +8,10 @@ if (palette_mnemonic == "CPRBAR") {
     _body_colour = make_color_rgb(200, 110, 20);
 }
 
+if (palette_mnemonic == "SETBKG") {
+    _body_colour = make_color_rgb(150, 150, 40);
+}
+
 draw_set_colour(_body_colour);
 draw_rectangle(palette_x, palette_y, palette_x + palette_width, palette_y + palette_height, false);
 draw_set_colour(c_white);

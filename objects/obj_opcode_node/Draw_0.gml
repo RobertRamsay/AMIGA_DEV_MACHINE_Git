@@ -31,6 +31,10 @@ if (is_macro) {
             _header_colour = make_color_rgb(35, 95, 125);
             break;
 
+        case "SETBKG":
+            _header_colour = make_color_rgb(150, 150, 40);
+            break;
+
         default:
             _header_colour = make_color_rgb(90, 50, 110);
             break;
@@ -155,16 +159,21 @@ if (is_macro) {
 
     draw_text(_asset_field_dx + 4, _asset_field_dy + 2, _asset_field_text);
 
-    var _asset_for_info = scr_asset_find_by_name(macro_asset_name);
     var _info_text = "asset not found";
 
-    if (_asset_for_info != undefined) {
-        if (_asset_for_info.type == "COPPER_BAR") {
-            _info_text = string(array_length(_asset_for_info.bands)) + " colour bands";
-        } else if (_asset_for_info.type == "SPRITE") {
-            _info_text = "sprite: ch" + string(_asset_for_info.channel) + ", " + string(_asset_for_info.height) + " rows";
-        } else {
-            _info_text = _asset_for_info.type + " asset";
+    if (macro_type == "SETBKG") {
+        _info_text = "hex colour 000-FFF -> COLOR00";
+    } else {
+        var _asset_for_info = scr_asset_find_by_name(macro_asset_name);
+
+        if (_asset_for_info != undefined) {
+            if (_asset_for_info.type == "COPPER_BAR") {
+                _info_text = string(array_length(_asset_for_info.bands)) + " colour bands";
+            } else if (_asset_for_info.type == "SPRITE") {
+                _info_text = "sprite: ch" + string(_asset_for_info.channel) + ", " + string(_asset_for_info.height) + " rows";
+            } else {
+                _info_text = _asset_for_info.type + " asset";
+            }
         }
     }
 

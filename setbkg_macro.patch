@@ -1,0 +1,193 @@
+diff --git a/AMIGA_DEV_MACHINE.yyp b/AMIGA_DEV_MACHINE.yyp
+index bf9e396..b9c2edc 100644
+--- a/AMIGA_DEV_MACHINE.yyp
++++ b/AMIGA_DEV_MACHINE.yyp
+@@ -253,6 +253,7 @@
+     {"id":{"name":"scr_emit_macro_bitmap_display","path":"scripts/scr_emit_macro_bitmap_display/scr_emit_macro_bitmap_display.yy",},},
+     {"id":{"name":"scr_emit_macro_copper_bar","path":"scripts/scr_emit_macro_copper_bar/scr_emit_macro_copper_bar.yy",},},
+     {"id":{"name":"scr_emit_macro_line","path":"scripts/scr_emit_macro_line/scr_emit_macro_line.yy",},},
++    {"id":{"name":"scr_emit_macro_setbkg","path":"scripts/scr_emit_macro_setbkg/scr_emit_macro_setbkg.yy",},},
+     {"id":{"name":"scr_emit_macro_sprite_display","path":"scripts/scr_emit_macro_sprite_display/scr_emit_macro_sprite_display.yy",},},
+     {"id":{"name":"scr_emit_opcode_line","path":"scripts/scr_emit_opcode_line/scr_emit_opcode_line.yy",},},
+     {"id":{"name":"scr_find_nearest_left_root","path":"scripts/scr_find_nearest_left_root/scr_find_nearest_left_root.yy",},},
+diff --git a/objects/obj_amiga_manager/Create_0.gml b/objects/obj_amiga_manager/Create_0.gml
+index 64423da..4825ac7 100644
+--- a/objects/obj_amiga_manager/Create_0.gml
++++ b/objects/obj_amiga_manager/Create_0.gml
+@@ -197,6 +197,18 @@ _cprbar_palette_instance.palette_display_label = "CPRBAR";
+ _cprbar_palette_instance.palette_x = 310;
+ _cprbar_palette_instance.base_palette_y = 40;
+ 
++var _setbkg_palette_instance = instance_create_layer(
++    400,
++    40,
++    "Instances",
++    obj_opcode_palette_item
++);
++
++_setbkg_palette_instance.palette_mnemonic = "SETBKG";
++_setbkg_palette_instance.palette_display_label = "SETBKG";
++_setbkg_palette_instance.palette_x = 400;
++_setbkg_palette_instance.base_palette_y = 40;
++
+ 
+ // ============================================================================
+ // 10. BUILD STATE MACHINE
+diff --git a/objects/obj_opcode_node/Draw_0.gml b/objects/obj_opcode_node/Draw_0.gml
+index 75cfa2d..aa882c2 100644
+--- a/objects/obj_opcode_node/Draw_0.gml
++++ b/objects/obj_opcode_node/Draw_0.gml
+@@ -31,6 +31,10 @@ if (is_macro) {
+             _header_colour = make_color_rgb(35, 95, 125);
+             break;
+ 
++        case "SETBKG":
++            _header_colour = make_color_rgb(150, 150, 40);
++            break;
++
+         default:
+             _header_colour = make_color_rgb(90, 50, 110);
+             break;
+@@ -155,16 +159,21 @@ if (is_macro) {
+ 
+     draw_text(_asset_field_dx + 4, _asset_field_dy + 2, _asset_field_text);
+ 
+-    var _asset_for_info = scr_asset_find_by_name(macro_asset_name);
+     var _info_text = "asset not found";
+ 
+-    if (_asset_for_info != undefined) {
+-        if (_asset_for_info.type == "COPPER_BAR") {
+-            _info_text = string(array_length(_asset_for_info.bands)) + " colour bands";
+-        } else if (_asset_for_info.type == "SPRITE") {
+-            _info_text = "sprite: ch" + string(_asset_for_info.channel) + ", " + string(_asset_for_info.height) + " rows";
+-        } else {
+-            _info_text = _asset_for_info.type + " asset";
++    if (macro_type == "SETBKG") {
++        _info_text = "hex colour 000-FFF -> COLOR00";
++    } else {
++        var _asset_for_info = scr_asset_find_by_name(macro_asset_name);
++
++        if (_asset_for_info != undefined) {
++            if (_asset_for_info.type == "COPPER_BAR") {
++                _info_text = string(array_length(_asset_for_info.bands)) + " colour bands";
++            } else if (_asset_for_info.type == "SPRITE") {
++                _info_text = "sprite: ch" + string(_asset_for_info.channel) + ", " + string(_asset_for_info.height) + " rows";
++            } else {
++                _info_text = _asset_for_info.type + " asset";
++            }
+         }
+     }
+ 
+diff --git a/objects/obj_opcode_palette_item/Draw_0.gml b/objects/obj_opcode_palette_item/Draw_0.gml
+index 67ac025..48c20d8 100644
+--- a/objects/obj_opcode_palette_item/Draw_0.gml
++++ b/objects/obj_opcode_palette_item/Draw_0.gml
+@@ -8,6 +8,10 @@ if (palette_mnemonic == "CPRBAR") {
+     _body_colour = make_color_rgb(200, 110, 20);
+ }
+ 
++if (palette_mnemonic == "SETBKG") {
++    _body_colour = make_color_rgb(150, 150, 40);
++}
++
+ draw_set_colour(_body_colour);
+ draw_rectangle(palette_x, palette_y, palette_x + palette_width, palette_y + palette_height, false);
+ draw_set_colour(c_white);
+diff --git a/objects/obj_opcode_palette_item/Step_0.gml b/objects/obj_opcode_palette_item/Step_0.gml
+index 19022f5..8fa4bf5 100644
+--- a/objects/obj_opcode_palette_item/Step_0.gml
++++ b/objects/obj_opcode_palette_item/Step_0.gml
+@@ -28,6 +28,10 @@ if (_over_item && mouse_check_button_pressed(mb_left) && !global.left_click_pick
+             _new_node.is_macro = true;
+             _new_node.macro_type = "COPPER_BAR";
+             _new_node.macro_asset_name = "SunriseWater";
++        } else if (palette_mnemonic == "SETBKG") {
++            _new_node.is_macro = true;
++            _new_node.macro_type = "SETBKG";
++            _new_node.macro_asset_name = "000";
+         } else {
+             _new_node.opcode_mnemonic = palette_mnemonic;
+ 
+diff --git a/scripts/scr_emit_macro_line/scr_emit_macro_line.gml b/scripts/scr_emit_macro_line/scr_emit_macro_line.gml
+index 104e0e2..9d2b4bc 100644
+--- a/scripts/scr_emit_macro_line/scr_emit_macro_line.gml
++++ b/scripts/scr_emit_macro_line/scr_emit_macro_line.gml
+@@ -13,6 +13,10 @@ function scr_emit_macro_line(_node) {
+         return scr_emit_macro_bitmap_display(_node);
+     }
+ 
++    if (_node.macro_type == "SETBKG") {
++        return scr_emit_macro_setbkg(_node);
++    }
++
+     var _error_result = { text : "; ERROR: unknown macro type '" + _node.macro_type + "'", is_valid : false };
+     return _error_result;
+ }
+diff --git a/scripts/scr_emit_macro_setbkg/scr_emit_macro_setbkg.gml b/scripts/scr_emit_macro_setbkg/scr_emit_macro_setbkg.gml
+new file mode 100644
+index 0000000..ad1195f
+--- /dev/null
++++ b/scripts/scr_emit_macro_setbkg/scr_emit_macro_setbkg.gml
+@@ -0,0 +1,43 @@
++/// @desc scr_emit_macro_setbkg(_node)
++/// Writes _node.macro_asset_name — a 1-4 digit OCS/ECS hex colour, e.g.
++/// "000" for black or "F00" for red — straight into COLOR00 ($DFF180).
++/// Amiga has no separate border register the way C64 splits $D020/$D021:
++/// COLOR00 covers both background and border at once. Returns a struct
++/// { text, is_valid }, same shape as scr_emit_opcode_line.
++function scr_emit_macro_setbkg(_node) {
++    var _colour_text = _node.macro_asset_name;
++    var _text_length = string_length(_colour_text);
++    var _is_valid_hex = (_text_length >= 1) && (_text_length <= 4);
++    var _char_index = 1;
++
++    while (_char_index <= _text_length && _is_valid_hex) {
++        var _this_char = string_upper(string_copy(_colour_text, _char_index, 1));
++
++        if (string_pos(_this_char, "0123456789ABCDEF") == 0) {
++            _is_valid_hex = false;
++        }
++
++        _char_index += 1;
++    }
++
++    if (!_is_valid_hex) {
++        var _error_result = { text : "; ERROR: SETBKG colour must be 1-4 hex digits, e.g. 000 or F00 (asset field is currently '" + _colour_text + "')", is_valid : false };
++        return _error_result;
++    }
++
++    var _colour_value = scr_hex_string_to_number(_colour_text);
++
++    var _lines = "";
++
++    if (_node.node_label != "") {
++        _lines += _node.node_label + ":\n";
++    }
++
++    // 14676352 = $DFF180 = COLOR00, matching the decimal-literal convention
++    // every other macro emitter in this codebase already uses for absolute
++    // custom-chip addresses.
++    _lines += "\tMOVE.W #" + string(_colour_value) + ",14676352.L";
++
++    var _result = { text : _lines, is_valid : true };
++    return _result;
++}
+diff --git a/scripts/scr_emit_macro_setbkg/scr_emit_macro_setbkg.yy b/scripts/scr_emit_macro_setbkg/scr_emit_macro_setbkg.yy
+new file mode 100644
+index 0000000..8ed0dbc
+--- /dev/null
++++ b/scripts/scr_emit_macro_setbkg/scr_emit_macro_setbkg.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_emit_macro_setbkg",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_emit_macro_setbkg",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}

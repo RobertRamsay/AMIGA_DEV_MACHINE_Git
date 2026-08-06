@@ -197,6 +197,18 @@ _cprbar_palette_instance.palette_display_label = "CPRBAR";
 _cprbar_palette_instance.palette_x = 310;
 _cprbar_palette_instance.base_palette_y = 40;
 
+var _setbkg_palette_instance = instance_create_layer(
+    400,
+    40,
+    "Instances",
+    obj_opcode_palette_item
+);
+
+_setbkg_palette_instance.palette_mnemonic = "SETBKG";
+_setbkg_palette_instance.palette_display_label = "SETBKG";
+_setbkg_palette_instance.palette_x = 400;
+_setbkg_palette_instance.base_palette_y = 40;
+
 
 // ============================================================================
 // 10. BUILD STATE MACHINE

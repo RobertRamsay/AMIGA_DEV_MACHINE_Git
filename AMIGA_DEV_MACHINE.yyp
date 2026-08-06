@@ -253,6 +253,7 @@
     {"id":{"name":"scr_emit_macro_bitmap_display","path":"scripts/scr_emit_macro_bitmap_display/scr_emit_macro_bitmap_display.yy",},},
     {"id":{"name":"scr_emit_macro_copper_bar","path":"scripts/scr_emit_macro_copper_bar/scr_emit_macro_copper_bar.yy",},},
     {"id":{"name":"scr_emit_macro_line","path":"scripts/scr_emit_macro_line/scr_emit_macro_line.yy",},},
+    {"id":{"name":"scr_emit_macro_setbkg","path":"scripts/scr_emit_macro_setbkg/scr_emit_macro_setbkg.yy",},},
     {"id":{"name":"scr_emit_macro_sprite_display","path":"scripts/scr_emit_macro_sprite_display/scr_emit_macro_sprite_display.yy",},},
     {"id":{"name":"scr_emit_opcode_line","path":"scripts/scr_emit_opcode_line/scr_emit_opcode_line.yy",},},
     {"id":{"name":"scr_find_nearest_left_root","path":"scripts/scr_find_nearest_left_root/scr_find_nearest_left_root.yy",},},
