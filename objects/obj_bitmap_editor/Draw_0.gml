@@ -116,6 +116,35 @@ while (_tool_index < array_length(_tool_names)) {
     _tool_index += 1;
 }
 
+draw_set_colour(bitmap_tool == "GRADIENT" ? c_olive : c_dkgray);
+draw_rectangle(_layout.gradient_tool_x, _layout.gradient_tool_y, _layout.gradient_tool_x + _layout.gradient_tool_width, _layout.gradient_tool_y + _layout.tool_height, false);
+draw_set_colour(c_white);
+draw_rectangle(_layout.gradient_tool_x, _layout.gradient_tool_y, _layout.gradient_tool_x + _layout.gradient_tool_width, _layout.gradient_tool_y + _layout.tool_height, true);
+draw_text(_layout.gradient_tool_x + 10, _layout.gradient_tool_y + 3, "GRADIENT FILL");
+
+var _gradient_colour_1_x = _layout.gradient_tool_x;
+var _gradient_colour_2_x = _layout.gradient_tool_x + _layout.gradient_colour_width + _layout.tool_gap;
+var _gradient_colour_1 = make_color_rgb(bitmap_colour_r[bitmap_gradient_colour_1] * 17, bitmap_colour_g[bitmap_gradient_colour_1] * 17, bitmap_colour_b[bitmap_gradient_colour_1] * 17);
+var _gradient_colour_2 = make_color_rgb(bitmap_colour_r[bitmap_gradient_colour_2] * 17, bitmap_colour_g[bitmap_gradient_colour_2] * 17, bitmap_colour_b[bitmap_gradient_colour_2] * 17);
+
+draw_set_colour(_gradient_colour_1);
+draw_rectangle(_gradient_colour_1_x, _layout.gradient_colour_y, _gradient_colour_1_x + _layout.gradient_colour_width, _layout.gradient_colour_y + _layout.tool_height, false);
+draw_set_colour(c_white);
+draw_rectangle(_gradient_colour_1_x, _layout.gradient_colour_y, _gradient_colour_1_x + _layout.gradient_colour_width, _layout.gradient_colour_y + _layout.tool_height, true);
+draw_text(_gradient_colour_1_x + 8, _layout.gradient_colour_y + 3, "COL1: " + string(bitmap_gradient_colour_1));
+
+draw_set_colour(_gradient_colour_2);
+draw_rectangle(_gradient_colour_2_x, _layout.gradient_colour_y, _gradient_colour_2_x + _layout.gradient_colour_width, _layout.gradient_colour_y + _layout.tool_height, false);
+draw_set_colour(c_white);
+draw_rectangle(_gradient_colour_2_x, _layout.gradient_colour_y, _gradient_colour_2_x + _layout.gradient_colour_width, _layout.gradient_colour_y + _layout.tool_height, true);
+draw_text(_gradient_colour_2_x + 8, _layout.gradient_colour_y + 3, "COL2: " + string(bitmap_gradient_colour_2));
+
+draw_set_colour(bitmap_gradient_include_edge ? c_olive : c_dkgray);
+draw_rectangle(_layout.gradient_edge_x, _layout.gradient_edge_y, _layout.gradient_edge_x + _layout.gradient_edge_width, _layout.gradient_edge_y + _layout.tool_height, false);
+draw_set_colour(c_white);
+draw_rectangle(_layout.gradient_edge_x, _layout.gradient_edge_y, _layout.gradient_edge_x + _layout.gradient_edge_width, _layout.gradient_edge_y + _layout.tool_height, true);
+draw_text(_layout.gradient_edge_x + 10, _layout.gradient_edge_y + 3, bitmap_gradient_include_edge ? "INC EDGE" : "NO EDGE");
+
 // Canvas contents are GPU-clipped to the viewport. This prevents the final
 // scaled texel or grid line leaking over either edge.
 draw_set_colour(make_color_rgb(22, 22, 22));
@@ -170,6 +199,20 @@ if (bitmap_tool == "LINE" && bitmap_line_active) {
         }
     }
 
+    draw_set_alpha(1);
+}
+
+// Gradient direction preview. The first endpoint is also the flood-fill seed.
+if (bitmap_tool == "GRADIENT" && bitmap_gradient_active) {
+    var _gradient_preview_x1 = _layout.display_x + (bitmap_gradient_start_x * bitmap_zoom) - bitmap_scroll_x + (bitmap_zoom * 0.5);
+    var _gradient_preview_y1 = _layout.display_y + (bitmap_gradient_start_y * bitmap_zoom) - bitmap_scroll_y + (bitmap_zoom * 0.5);
+    var _gradient_preview_x2 = _layout.display_x + (bitmap_gradient_end_x * bitmap_zoom) - bitmap_scroll_x + (bitmap_zoom * 0.5);
+    var _gradient_preview_y2 = _layout.display_y + (bitmap_gradient_end_y * bitmap_zoom) - bitmap_scroll_y + (bitmap_zoom * 0.5);
+    draw_set_alpha(0.9);
+    draw_set_colour(c_yellow);
+    draw_line_width(_gradient_preview_x1, _gradient_preview_y1, _gradient_preview_x2, _gradient_preview_y2, 2);
+    draw_circle(_gradient_preview_x1, _gradient_preview_y1, max(2, bitmap_zoom * 0.35), false);
+    draw_circle(_gradient_preview_x2, _gradient_preview_y2, max(2, bitmap_zoom * 0.35), true);
     draw_set_alpha(1);
 }
 
@@ -257,5 +300,5 @@ draw_text_ext(_layout.right_x, _layout.slider_b_y + 38, "32 colours = five hardw
 
 draw_set_colour(c_white);
 draw_text(_layout.panel_x + 12, _layout.help_line_1_y, "LEFT: use selected tool     RIGHT: use tool with COLOR00     ALT+LEFT: pick pen     MIDDLE or SPACE+LEFT: pan");
-draw_text(_layout.panel_x + 12, _layout.help_line_2_y, "WHEEL: zoom     1x: native view     DRAW: freehand     LINE: drag and release     FILL: connected area");
+draw_text(_layout.panel_x + 12, _layout.help_line_2_y, "WHEEL: zoom     DRAW: freehand     LINE: drag/release     FILL: connected area     GRADIENT: drag direction");
 draw_set_colour(c_white);

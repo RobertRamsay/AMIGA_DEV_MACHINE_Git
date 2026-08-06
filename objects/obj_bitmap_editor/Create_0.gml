@@ -32,6 +32,14 @@ bitmap_line_start_y = 0;
 bitmap_line_end_x = 0;
 bitmap_line_end_y = 0;
 bitmap_line_index = 1;
+bitmap_gradient_colour_1 = 1;
+bitmap_gradient_colour_2 = 2;
+bitmap_gradient_include_edge = false;
+bitmap_gradient_active = false;
+bitmap_gradient_start_x = 0;
+bitmap_gradient_start_y = 0;
+bitmap_gradient_end_x = 0;
+bitmap_gradient_end_y = 0;
 
 bitmap_colour_r = array_create(32, 0);
 bitmap_colour_g = array_create(32, 0);

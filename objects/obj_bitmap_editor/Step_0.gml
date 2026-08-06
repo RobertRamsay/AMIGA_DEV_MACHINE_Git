@@ -73,9 +73,36 @@ while (_tool_index < array_length(_tool_names)) {
         bitmap_tool = _tool_names[_tool_index];
         bitmap_stroke_active = false;
         bitmap_line_active = false;
+        bitmap_gradient_active = false;
     }
 
     _tool_index += 1;
+}
+
+if (point_in_rectangle(mouse_x, mouse_y, _layout.gradient_tool_x, _layout.gradient_tool_y, _layout.gradient_tool_x + _layout.gradient_tool_width, _layout.gradient_tool_y + _layout.tool_height)
+&& mouse_check_button_pressed(mb_left)) {
+    bitmap_tool = "GRADIENT";
+    bitmap_stroke_active = false;
+    bitmap_line_active = false;
+    bitmap_gradient_active = false;
+}
+
+var _gradient_colour_1_x = _layout.gradient_tool_x;
+var _gradient_colour_2_x = _layout.gradient_tool_x + _layout.gradient_colour_width + _layout.tool_gap;
+
+if (point_in_rectangle(mouse_x, mouse_y, _gradient_colour_1_x, _layout.gradient_colour_y, _gradient_colour_1_x + _layout.gradient_colour_width, _layout.gradient_colour_y + _layout.tool_height)
+&& mouse_check_button_pressed(mb_left)) {
+    bitmap_gradient_colour_1 = bitmap_paint_index;
+}
+
+if (point_in_rectangle(mouse_x, mouse_y, _gradient_colour_2_x, _layout.gradient_colour_y, _gradient_colour_2_x + _layout.gradient_colour_width, _layout.gradient_colour_y + _layout.tool_height)
+&& mouse_check_button_pressed(mb_left)) {
+    bitmap_gradient_colour_2 = bitmap_paint_index;
+}
+
+if (point_in_rectangle(mouse_x, mouse_y, _layout.gradient_edge_x, _layout.gradient_edge_y, _layout.gradient_edge_x + _layout.gradient_edge_width, _layout.gradient_edge_y + _layout.tool_height)
+&& mouse_check_button_pressed(mb_left)) {
+    bitmap_gradient_include_edge = !bitmap_gradient_include_edge;
 }
 
 // Middle-drag, or Space + left-drag, pans the magnified image.
@@ -274,6 +301,128 @@ if (bitmap_tool == "FILL" && _over_canvas && _canvas_pixel_valid
 
         bitmap_asset_dirty = true;
     }
+}
+
+// GRADIENT: first point chooses the contiguous area and gradient origin;
+// release chooses direction/length, then an 8x8 Bayer threshold fills it.
+if (bitmap_tool == "GRADIENT" && _over_canvas && _canvas_pixel_valid
+&& !keyboard_check(vk_alt) && !keyboard_check(vk_space)
+&& mouse_check_button_pressed(mb_left)) {
+    bitmap_gradient_active = true;
+    bitmap_gradient_start_x = _canvas_pixel_x;
+    bitmap_gradient_start_y = _canvas_pixel_y;
+    bitmap_gradient_end_x = _canvas_pixel_x;
+    bitmap_gradient_end_y = _canvas_pixel_y;
+}
+
+if (bitmap_gradient_active && mouse_check_button(mb_left)) {
+    if (_over_canvas && _canvas_pixel_valid) {
+        bitmap_gradient_end_x = _canvas_pixel_x;
+        bitmap_gradient_end_y = _canvas_pixel_y;
+    }
+}
+
+if (bitmap_gradient_active && mouse_check_button_released(mb_left)) {
+    var _gradient_target = bitmap_pixels[(bitmap_gradient_start_y * bitmap_width) + bitmap_gradient_start_x];
+    var _gradient_start_offset = (bitmap_gradient_start_y * bitmap_width) + bitmap_gradient_start_x;
+    var _gradient_queue = [_gradient_start_offset];
+    var _gradient_region = [];
+    var _gradient_visited = array_create(bitmap_width * bitmap_height, false);
+    var _gradient_read = 0;
+    _gradient_visited[_gradient_start_offset] = true;
+
+    while (_gradient_read < array_length(_gradient_queue)) {
+        var _gradient_offset = _gradient_queue[_gradient_read];
+        var _gradient_x = _gradient_offset mod bitmap_width;
+        var _gradient_y = _gradient_offset div bitmap_width;
+        array_push(_gradient_region, _gradient_offset);
+
+        if (_gradient_x > 0) {
+            var _gradient_left = _gradient_offset - 1;
+            if (!_gradient_visited[_gradient_left] && bitmap_pixels[_gradient_left] == _gradient_target) {
+                _gradient_visited[_gradient_left] = true;
+                array_push(_gradient_queue, _gradient_left);
+            }
+        }
+
+        if (_gradient_x < bitmap_width - 1) {
+            var _gradient_right = _gradient_offset + 1;
+            if (!_gradient_visited[_gradient_right] && bitmap_pixels[_gradient_right] == _gradient_target) {
+                _gradient_visited[_gradient_right] = true;
+                array_push(_gradient_queue, _gradient_right);
+            }
+        }
+
+        if (_gradient_y > 0) {
+            var _gradient_up = _gradient_offset - bitmap_width;
+            if (!_gradient_visited[_gradient_up] && bitmap_pixels[_gradient_up] == _gradient_target) {
+                _gradient_visited[_gradient_up] = true;
+                array_push(_gradient_queue, _gradient_up);
+            }
+        }
+
+        if (_gradient_y < bitmap_height - 1) {
+            var _gradient_down = _gradient_offset + bitmap_width;
+            if (!_gradient_visited[_gradient_down] && bitmap_pixels[_gradient_down] == _gradient_target) {
+                _gradient_visited[_gradient_down] = true;
+                array_push(_gradient_queue, _gradient_down);
+            }
+        }
+
+        _gradient_read += 1;
+    }
+
+    var _bayer_8 = [
+         0, 32,  8, 40,  2, 34, 10, 42,
+        48, 16, 56, 24, 50, 18, 58, 26,
+        12, 44,  4, 36, 14, 46,  6, 38,
+        60, 28, 52, 20, 62, 30, 54, 22,
+         3, 35, 11, 43,  1, 33,  9, 41,
+        51, 19, 59, 27, 49, 17, 57, 25,
+        15, 47,  7, 39, 13, 45,  5, 37,
+        63, 31, 55, 23, 61, 29, 53, 21
+    ];
+
+    var _gradient_dx = bitmap_gradient_end_x - bitmap_gradient_start_x;
+    var _gradient_dy = bitmap_gradient_end_y - bitmap_gradient_start_y;
+    var _gradient_length_sq = (_gradient_dx * _gradient_dx) + (_gradient_dy * _gradient_dy);
+    if (_gradient_length_sq < 1) _gradient_length_sq = 1;
+
+    var _region_index = 0;
+
+    while (_region_index < array_length(_gradient_region)) {
+        var _region_offset = _gradient_region[_region_index];
+        var _region_x = _region_offset mod bitmap_width;
+        var _region_y = _region_offset div bitmap_width;
+        var _is_edge = (_region_x == 0 || _region_x == bitmap_width - 1 || _region_y == 0 || _region_y == bitmap_height - 1);
+
+        if (!_is_edge) {
+            // Test against the completed region map, not pixels already
+            // recoloured earlier in this loop.
+            _is_edge = !_gradient_visited[_region_offset - 1]
+                || !_gradient_visited[_region_offset + 1]
+                || !_gradient_visited[_region_offset - bitmap_width]
+                || !_gradient_visited[_region_offset + bitmap_width];
+        }
+
+        if (bitmap_gradient_include_edge || !_is_edge) {
+            var _gradient_projection = (((_region_x - bitmap_gradient_start_x) * _gradient_dx)
+                + ((_region_y - bitmap_gradient_start_y) * _gradient_dy)) / _gradient_length_sq;
+            _gradient_projection = clamp(_gradient_projection, 0, 1);
+            var _bayer_value = (_bayer_8[((_region_y mod 8) * 8) + (_region_x mod 8)] + 0.5) / 64;
+            var _gradient_colour = (_gradient_projection >= _bayer_value) ? bitmap_gradient_colour_2 : bitmap_gradient_colour_1;
+
+            if (bitmap_pixels[_region_offset] != _gradient_colour) {
+                bitmap_pixels[_region_offset] = _gradient_colour;
+                array_push(bitmap_dirty_pixels, _region_offset);
+                bitmap_asset_dirty = true;
+            }
+        }
+
+        _region_index += 1;
+    }
+
+    bitmap_gradient_active = false;
 }
 
 if (point_in_rectangle(mouse_x, mouse_y, _layout.clear_x, _layout.clear_y, _layout.clear_x + 120, _layout.clear_y + 20)
