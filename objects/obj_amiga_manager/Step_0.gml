@@ -210,8 +210,8 @@ if (_over_kill_fsuae_button && mouse_check_button_pressed(mb_left)) {
     scr_set_status_message("FS-UAE killed.");
 }
 
-var _save_workspace_button_x = 430;
-var _save_workspace_button_y = 20;
+var _save_workspace_button_x = 110;
+var _save_workspace_button_y = 44;
 var _save_workspace_button_width = 150;
 var _save_workspace_button_height = 16;
 
@@ -226,8 +226,8 @@ if (_over_save_workspace_button && mouse_check_button_pressed(mb_left)) {
     }
 }
 
-var _load_workspace_button_x = 430;
-var _load_workspace_button_y = 44;
+var _load_workspace_button_x = 110;
+var _load_workspace_button_y = 20;
 var _load_workspace_button_width = 150;
 var _load_workspace_button_height = 16;
 
