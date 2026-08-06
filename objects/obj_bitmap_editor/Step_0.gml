@@ -74,6 +74,82 @@ if (point_in_rectangle(mouse_x, mouse_y, _layout.grid_toggle_x, _layout.grid_tog
 
 var _brush_sizes = [1, 3, 5, 7, 9];
 var _brush_button_index = 0;
+var _shortcut_flip_x = false;
+
+// Plain-key tool shortcuts. Modifiers are excluded so Ctrl+C/V, Ctrl+L and
+// Alt colour picking retain their existing meanings.
+if (!_ctrl_held && !keyboard_check(vk_alt)) {
+    var _shortcut_tool_changed = false;
+
+    if (keyboard_check_pressed(ord("D"))) {
+        bitmap_tool = "DRAW";
+        _shortcut_tool_changed = true;
+    }
+
+    if (keyboard_check_pressed(ord("F"))) {
+        bitmap_tool = "FILL";
+        _shortcut_tool_changed = true;
+    }
+
+    if (keyboard_check_pressed(ord("G"))) {
+        bitmap_tool = "GRADIENT";
+        _shortcut_tool_changed = true;
+    }
+
+    if (keyboard_check_pressed(ord("L"))) {
+        bitmap_tool = "LINE";
+        _shortcut_tool_changed = true;
+    }
+
+    if (keyboard_check_pressed(ord("C"))) {
+        bitmap_tool = "DITHER";
+        bitmap_dither_pattern = "CHECKER";
+        _shortcut_tool_changed = true;
+    }
+
+    if (keyboard_check_pressed(ord("T"))) {
+        bitmap_transparency_lock = !bitmap_transparency_lock;
+    }
+
+    if (keyboard_check_pressed(ord("X"))) {
+        _shortcut_flip_x = true;
+    }
+
+    if (_shortcut_tool_changed) {
+        bitmap_stroke_active = false;
+        bitmap_line_active = false;
+        bitmap_gradient_active = false;
+    }
+
+    // Windows virtual-key codes 219 and 221 are [ and ]. The ord() checks
+    // retain compatibility with runners that expose punctuation as ASCII.
+    var _brush_smaller_pressed = keyboard_check_pressed(219)
+        || keyboard_check_pressed(ord("["));
+    var _brush_larger_pressed = keyboard_check_pressed(221)
+        || keyboard_check_pressed(ord("]"));
+
+    if (_brush_smaller_pressed || _brush_larger_pressed) {
+        var _current_brush_index = 0;
+        var _brush_search_index = 0;
+
+        while (_brush_search_index < array_length(_brush_sizes)) {
+            if (_brush_sizes[_brush_search_index] == bitmap_brush_size) {
+                _current_brush_index = _brush_search_index;
+            }
+            _brush_search_index += 1;
+        }
+
+        if (_brush_smaller_pressed) {
+            _current_brush_index = max(0, _current_brush_index - 1);
+        }
+
+        if (_brush_larger_pressed) {
+            _current_brush_index = min(array_length(_brush_sizes) - 1, _current_brush_index + 1);
+        }
+
+        bitmap_brush_size = _brush_sizes[_current_brush_index];
+    }
+}
 
 while (_brush_button_index < array_length(_brush_sizes)) {
     var _brush_button_x = _layout.brush_x + _brush_button_index * (_layout.brush_button_width + _layout.brush_button_gap);
@@ -631,8 +707,9 @@ if (point_in_rectangle(mouse_x, mouse_y, _layout.clear_x, _layout.clear_y, _layo
     bitmap_asset_dirty = true;
 }
 
-if (point_in_rectangle(mouse_x, mouse_y, _layout.flip_x, _layout.flip_y, _layout.flip_x + _layout.flip_width, _layout.flip_y + _layout.tool_height)
-&& mouse_check_button_pressed(mb_left)) {
+if (_shortcut_flip_x
+|| (point_in_rectangle(mouse_x, mouse_y, _layout.flip_x, _layout.flip_y, _layout.flip_x + _layout.flip_width, _layout.flip_y + _layout.tool_height)
+&& mouse_check_button_pressed(mb_left))) {
     scr_bitmap_push_undo(id);
     var _flip_y = 0;
 
@@ -657,7 +734,7 @@ if (point_in_rectangle(mouse_x, mouse_y, _layout.flip_x, _layout.flip_y, _layout
 }
 
 // Commit after a stroke or palette adjustment, matching the sprite editor.
-if (bitmap_asset_dirty && (mouse_check_button_released(mb_left) || mouse_check_button_released(mb_right))) {
+if (bitmap_asset_dirty && (_shortcut_flip_x || mouse_check_button_released(mb_left) || mouse_check_button_released(mb_right))) {
     scr_asset_define_bitmap("TestBitmap", bitmap_pixels, bitmap_colour_r, bitmap_colour_g, bitmap_colour_b);
     bitmap_asset_dirty = false;
 }
