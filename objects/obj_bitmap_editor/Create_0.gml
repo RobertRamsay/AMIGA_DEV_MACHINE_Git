@@ -38,6 +38,7 @@ bitmap_line_start_y = 0;
 bitmap_line_end_x = 0;
 bitmap_line_end_y = 0;
 bitmap_line_index = 1;
+bitmap_line_use_dither = false;
 bitmap_gradient_colour_1 = 1;
 bitmap_gradient_colour_2 = 2;
 bitmap_gradient_include_edge = false;
@@ -49,6 +50,7 @@ bitmap_gradient_end_y = 0;
 bitmap_dither_pattern = "CHECKER";
 bitmap_dither_use_colour_2 = false;
 bitmap_dither_invert = false;
+bitmap_use_dither = false;
 bitmap_transparency_lock = false;
 
 bitmap_colour_r = array_create(32, 0);

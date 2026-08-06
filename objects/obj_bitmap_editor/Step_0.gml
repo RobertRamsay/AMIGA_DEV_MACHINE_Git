@@ -102,9 +102,8 @@ if (!_ctrl_held && !keyboard_check(vk_alt)) {
     }
 
     if (keyboard_check_pressed(ord("C"))) {
-        bitmap_tool = "DITHER";
+        bitmap_use_dither = true;
         bitmap_dither_pattern = "CHECKER";
-        _shortcut_tool_changed = true;
     }
 
     if (keyboard_check_pressed(ord("T"))) {
@@ -189,10 +188,7 @@ if (point_in_rectangle(mouse_x, mouse_y, _layout.gradient_tool_x, _layout.gradie
 
 if (point_in_rectangle(mouse_x, mouse_y, _layout.dither_tool_x, _layout.dither_tool_y, _layout.dither_tool_x + _layout.dither_tool_width, _layout.dither_tool_y + _layout.tool_height)
 && mouse_check_button_pressed(mb_left)) {
-    bitmap_tool = "DITHER";
-    bitmap_stroke_active = false;
-    bitmap_line_active = false;
-    bitmap_gradient_active = false;
+    bitmap_use_dither = !bitmap_use_dither;
 }
 
 if (point_in_rectangle(mouse_x, mouse_y, _layout.dither_pair_x, _layout.dither_pair_y, _layout.dither_pair_x + _layout.dither_pair_width, _layout.dither_pair_y + _layout.tool_height)
@@ -258,6 +254,12 @@ if (point_in_rectangle(mouse_x, mouse_y, _layout.left_x, _layout.file_y, _layout
 
 if (point_in_rectangle(mouse_x, mouse_y, _utility_x_2, _layout.file_y, _utility_x_2 + _layout.utility_button_width, _layout.file_y + _layout.utility_button_height)
 && mouse_check_button_pressed(mb_left)) scr_bitmap_save_native(id);
+
+if (point_in_rectangle(mouse_x, mouse_y, _layout.left_x, _layout.iff_y, _layout.left_x + _layout.utility_button_width, _layout.iff_y + _layout.utility_button_height)
+&& mouse_check_button_pressed(mb_left)) scr_bitmap_load_iff(id);
+
+if (point_in_rectangle(mouse_x, mouse_y, _utility_x_2, _layout.iff_y, _utility_x_2 + _layout.utility_button_width, _layout.iff_y + _layout.utility_button_height)
+&& mouse_check_button_pressed(mb_left)) scr_bitmap_save_iff(id);
 
 if (point_in_rectangle(mouse_x, mouse_y, _layout.left_x, _layout.output_y, _layout.left_x + _layout.utility_button_width, _layout.output_y + _layout.utility_button_height)
 && mouse_check_button_pressed(mb_left)) scr_bitmap_export_png(id);
@@ -428,7 +430,7 @@ if (_over_canvas && _canvas_pixel_valid && keyboard_check(vk_alt)
 // DRAW: continuous freehand using the same exact line routine as LINE.
 var _stroke_can_draw = _over_canvas && _canvas_pixel_valid
     && !canvas_panning && !keyboard_check(vk_space)
-    && !keyboard_check(vk_alt) && (bitmap_tool == "DRAW" || bitmap_tool == "DITHER")
+    && !keyboard_check(vk_alt) && bitmap_tool == "DRAW"
     && (mouse_check_button(mb_left) || mouse_check_button(mb_right));
 
 if (_stroke_can_draw) {
@@ -443,7 +445,7 @@ if (_stroke_can_draw) {
         bitmap_stroke_index = _draw_index;
     }
 
-    scr_bitmap_apply_line(id, bitmap_stroke_last_x, bitmap_stroke_last_y, _canvas_pixel_x, _canvas_pixel_y, _draw_index, bitmap_tool == "DITHER" && !mouse_check_button(mb_right));
+    scr_bitmap_apply_line(id, bitmap_stroke_last_x, bitmap_stroke_last_y, _canvas_pixel_x, _canvas_pixel_y, _draw_index, bitmap_use_dither && !mouse_check_button(mb_right));
 
     bitmap_stroke_last_x = _canvas_pixel_x;
     bitmap_stroke_last_y = _canvas_pixel_y;
@@ -463,6 +465,7 @@ if (bitmap_tool == "LINE" && _over_canvas && _canvas_pixel_valid
     bitmap_line_end_x = _canvas_pixel_x;
     bitmap_line_end_y = _canvas_pixel_y;
     bitmap_line_index = mouse_check_button_pressed(mb_right) ? 0 : bitmap_paint_index;
+    bitmap_line_use_dither = bitmap_use_dither && !mouse_check_button_pressed(mb_right);
 }
 
 if (bitmap_line_active && (mouse_check_button(mb_left) || mouse_check_button(mb_right))) {
@@ -473,7 +476,7 @@ if (bitmap_line_active && (mouse_check_button(mb_left) || mouse_check_button(mb_
 }
 
 if (bitmap_line_active && (mouse_check_button_released(mb_left) || mouse_check_button_released(mb_right))) {
-    scr_bitmap_apply_line(id, bitmap_line_start_x, bitmap_line_start_y, bitmap_line_end_x, bitmap_line_end_y, bitmap_line_index);
+    scr_bitmap_apply_line(id, bitmap_line_start_x, bitmap_line_start_y, bitmap_line_end_x, bitmap_line_end_y, bitmap_line_index, bitmap_line_use_dither);
     bitmap_line_active = false;
 }
 

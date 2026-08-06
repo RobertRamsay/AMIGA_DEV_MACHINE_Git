@@ -163,11 +163,11 @@ draw_set_colour(c_white);
 draw_rectangle(_layout.gradient_edge_x, _layout.gradient_edge_y, _layout.gradient_edge_x + _layout.gradient_edge_width, _layout.gradient_edge_y + _layout.tool_height, true);
 draw_text(_layout.gradient_edge_x + 10, _layout.gradient_edge_y + 3, bitmap_gradient_include_edge ? "EAT EDGE (GROW)" : "KEEP EDGE (STOP)");
 
-draw_set_colour(bitmap_tool == "DITHER" ? c_olive : c_dkgray);
+draw_set_colour(bitmap_use_dither ? c_olive : c_dkgray);
 draw_rectangle(_layout.dither_tool_x, _layout.dither_tool_y, _layout.dither_tool_x + _layout.dither_tool_width, _layout.dither_tool_y + _layout.tool_height, false);
 draw_set_colour(c_white);
 draw_rectangle(_layout.dither_tool_x, _layout.dither_tool_y, _layout.dither_tool_x + _layout.dither_tool_width, _layout.dither_tool_y + _layout.tool_height, true);
-draw_text(_layout.dither_tool_x + 10, _layout.dither_tool_y + 3, "DITHER DRAW");
+draw_text(_layout.dither_tool_x + 10, _layout.dither_tool_y + 3, bitmap_use_dither ? "USE DITHER: YES" : "USE DITHER: NO");
 
 draw_set_colour(c_dkgray);
 draw_rectangle(_layout.dither_pair_x, _layout.dither_pair_y, _layout.dither_pair_x + _layout.dither_pair_width, _layout.dither_pair_y + _layout.tool_height, false);
@@ -214,6 +214,15 @@ draw_rectangle(_layout.left_x, _layout.file_y, _layout.left_x + _layout.utility_
 draw_rectangle(_utility_x_2, _layout.file_y, _utility_x_2 + _layout.utility_button_width, _layout.file_y + _layout.utility_button_height, true);
 draw_text(_layout.left_x + 8, _layout.file_y + 3, "LOAD BMP");
 draw_text(_utility_x_2 + 8, _layout.file_y + 3, "SAVE BMP");
+
+draw_set_colour(make_color_rgb(55, 50, 100));
+draw_rectangle(_layout.left_x, _layout.iff_y, _layout.left_x + _layout.utility_button_width, _layout.iff_y + _layout.utility_button_height, false);
+draw_rectangle(_utility_x_2, _layout.iff_y, _utility_x_2 + _layout.utility_button_width, _layout.iff_y + _layout.utility_button_height, false);
+draw_set_colour(c_white);
+draw_rectangle(_layout.left_x, _layout.iff_y, _layout.left_x + _layout.utility_button_width, _layout.iff_y + _layout.utility_button_height, true);
+draw_rectangle(_utility_x_2, _layout.iff_y, _utility_x_2 + _layout.utility_button_width, _layout.iff_y + _layout.utility_button_height, true);
+draw_text(_layout.left_x + 8, _layout.iff_y + 3, "LOAD IFF");
+draw_text(_utility_x_2 + 8, _layout.iff_y + 3, "SAVE IFF");
 
 draw_set_colour(make_color_rgb(55, 85, 55));
 draw_rectangle(_layout.left_x, _layout.output_y, _layout.left_x + _layout.utility_button_width, _layout.output_y + _layout.utility_button_height, false);
