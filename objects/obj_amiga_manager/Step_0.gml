@@ -185,7 +185,12 @@ if (build_state == "waiting_to_launch_fsuae") {
 
     if (build_wait_timer >= 15) {
         show_debug_message("obj_amiga_manager: previous FS-UAE sessions closed — launching new session");
-        var _uae_args = "--floppy_drive_0=\"" + build_adf_path + "\" --kickstart_file=\"" + global.kickstart_path + "\"";
+
+        // Kickstart picker is disabled for now (see the F5 handler above) —
+        // don't pass --kickstart_file at all, so FS-UAE always uses its own
+        // bundled default rather than picking up something stale left over
+        // in settings.ini from earlier testing. Revisit together.
+        var _uae_args = "--floppy_drive_0=\"" + build_adf_path + "\"";
         execute_shell_simple(global.fsuae_path, _uae_args);
         build_state = "idle";
     }
