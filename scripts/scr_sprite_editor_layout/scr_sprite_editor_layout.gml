@@ -4,8 +4,8 @@
 /// as scr_amiga_find_insert_point: one shared implementation, not two that
 /// could quietly drift out of sync with each other.
 function scr_sprite_editor_layout() {
-    var _panel_x = 380;
-    var _panel_y = 60;
+    var _panel_x = global.sprite_editor_x;
+    var _panel_y = global.sprite_editor_y;
     var _panel_width = 260;
     var _cell_size = 14;
     var _grid_x = _panel_x + 18;
@@ -23,6 +23,10 @@ function scr_sprite_editor_layout() {
         panel_y : _panel_y,
         panel_width : _panel_width,
         panel_height : _panel_height,
+        header_x : _panel_x,
+        header_y : _panel_y,
+        header_width : _panel_width,
+        header_height : 20,
         cell_size : _cell_size,
         grid_x : _grid_x,
         grid_y : _grid_y,

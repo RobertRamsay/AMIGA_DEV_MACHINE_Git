@@ -153,7 +153,16 @@ if (global.sprite_editor_open) {
     draw_set_alpha(1);
     draw_set_colour(c_white);
     draw_rectangle(_layout.panel_x, _layout.panel_y, _layout.panel_x + _layout.panel_width, _layout.panel_y + _layout.panel_height, true);
-    draw_text(_layout.panel_x + 6, _layout.panel_y + 2, "SPRITE EDITOR");
+
+    var _over_editor_header = point_in_rectangle(mouse_x, mouse_y, _layout.header_x, _layout.header_y, _layout.header_x + _layout.header_width, _layout.header_y + _layout.header_height);
+    var _over_editor_close = point_in_rectangle(mouse_x, mouse_y, _layout.close_x, _layout.close_y, _layout.close_x + 16, _layout.close_y + 16);
+    var _header_text = "SPRITE EDITOR";
+
+    if ((_over_editor_header && !_over_editor_close) || global.sprite_editor_dragging) {
+        _header_text = "SPRITE EDITOR - Grab to drag";
+    }
+
+    draw_text(_layout.panel_x + 6, _layout.panel_y + 2, _header_text);
 
     draw_set_colour(c_red);
     draw_rectangle(_layout.close_x, _layout.close_y, _layout.close_x + 16, _layout.close_y + 16, false);

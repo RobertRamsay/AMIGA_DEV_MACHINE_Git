@@ -259,9 +259,27 @@ if (global.sprite_editor_open) {
     var _layout = scr_sprite_editor_layout();
 
     var _over_close = point_in_rectangle(mouse_x, mouse_y, _layout.close_x, _layout.close_y, _layout.close_x + 16, _layout.close_y + 16);
+    var _over_editor_header = point_in_rectangle(mouse_x, mouse_y, _layout.header_x, _layout.header_y, _layout.header_x + _layout.header_width, _layout.header_y + _layout.header_height);
+
+    if (_over_editor_header && !_over_close && mouse_check_button_pressed(mb_left)) {
+        global.sprite_editor_dragging = true;
+        global.sprite_editor_drag_offset_x = mouse_x - global.sprite_editor_x;
+        global.sprite_editor_drag_offset_y = mouse_y - global.sprite_editor_y;
+    }
+
+    if (global.sprite_editor_dragging) {
+        if (mouse_check_button(mb_left)) {
+            global.sprite_editor_x = clamp(mouse_x - global.sprite_editor_drag_offset_x, 0, room_width - _layout.panel_width);
+            global.sprite_editor_y = clamp(mouse_y - global.sprite_editor_drag_offset_y, 0, room_height - _layout.header_height);
+            _layout = scr_sprite_editor_layout();
+        } else {
+            global.sprite_editor_dragging = false;
+        }
+    }
 
     if (_over_close && mouse_check_button_pressed(mb_left)) {
         global.sprite_editor_open = false;
+        global.sprite_editor_dragging = false;
     }
 
     var _over_channel_minus = point_in_rectangle(mouse_x, mouse_y, _layout.channel_minus_x, _layout.channel_row_y, _layout.channel_minus_x + 16, _layout.channel_row_y + 16);

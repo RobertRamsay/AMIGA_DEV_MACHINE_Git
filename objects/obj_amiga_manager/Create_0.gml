@@ -363,6 +363,11 @@ scr_asset_define_copper_bar(
 // ============================================================================
 
 global.sprite_editor_open = false;
+global.sprite_editor_x = 380;
+global.sprite_editor_y = 60;
+global.sprite_editor_dragging = false;
+global.sprite_editor_drag_offset_x = 0;
+global.sprite_editor_drag_offset_y = 0;
 global.sprite_channel = 0;
 global.sprite_height = 16;
 global.sprite_address = 262144;
