@@ -1,0 +1,19 @@
+diff --git a/objects/obj_opcode_node/Step_0.gml b/objects/obj_opcode_node/Step_0.gml
+index c2a7ba9..cbbe68a 100644
+--- a/objects/obj_opcode_node/Step_0.gml
++++ b/objects/obj_opcode_node/Step_0.gml
+@@ -374,9 +374,12 @@ if (operand_editing_slot != "" && global.operand_edit_owner_uid == uid) {
+         var _click_on_active_zone = false;
+ 
+         if (operand_editing_slot == "node_label") {
+-            var _lbl_zone_x = node_x + node_width + 6;
++            // Matches the label box's new left-side position — same values
++            // used where editing starts, and the same box Draw_0.gml draws.
++            var _lbl_zone_width = 140;
++            var _lbl_zone_x = node_x - 4 - _lbl_zone_width;
+             var _lbl_zone_y = node_y;
+-            _click_on_active_zone = point_in_rectangle(_world_mouse_x, _world_mouse_y, _lbl_zone_x, _lbl_zone_y, _lbl_zone_x + 80, _lbl_zone_y + 20);
++            _click_on_active_zone = point_in_rectangle(_world_mouse_x, _world_mouse_y, _lbl_zone_x, _lbl_zone_y, _lbl_zone_x + _lbl_zone_width, _lbl_zone_y + 20);
+         } else if (operand_editing_slot == "macro_asset") {
+             _click_on_active_zone = point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y + 20, node_x + node_width, node_y + 40);
+         } else if (operand_editing_slot == "src") {
