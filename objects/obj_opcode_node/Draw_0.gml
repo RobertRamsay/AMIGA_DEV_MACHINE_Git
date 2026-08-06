@@ -34,11 +34,6 @@ if (operand_editing_slot == "node_label") {
     _label_display_text = operand_edit_text;
 }
 
-if (_label_display_text != "") {
-    draw_set_colour(c_yellow);
-    draw_text(_dx + node_width + 6, _dy + 2, _label_display_text);
-    draw_set_colour(c_white);
-}
 
 var _labWidth=140;
 
@@ -53,6 +48,13 @@ if (operand_editing_slot == "node_label") {
     draw_rectangle(_dx + node_width + 4 - _pulse_grow, _dy - _pulse_grow, _dx + node_width + _labWidth + _pulse_grow, _dy + 20 + _pulse_grow, true);
     draw_set_colour(c_white);
 }
+
+if (_label_display_text != "") {
+    draw_set_colour(c_yellow);
+    draw_text(_dx + node_width + 6, _dy + 2, _label_display_text);
+    draw_set_colour(c_white);
+}
+
 
 if (is_macro) {
     var _asset_field_dx = node_x + global.pan_x;
