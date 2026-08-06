@@ -28,6 +28,9 @@ function scr_amiga_run_sprite_test() {
     _org_instance.root_type = "ORG";
     _org_instance.node_x = scr_snap_to_grid(_org_x, global.grid_size);
     _org_instance.node_y = scr_snap_to_grid(_org_y, global.grid_size);
+    // Link it now so an immediate F5 build includes the sprite macro. Do not
+    // depend on the ORG Step event running before the manager's build handler.
+    _org_instance.continues_from_root_uid = _init_instance.uid;
 
     var _init_cursor_y = _init_instance.node_y + _init_instance.node_height;
 
