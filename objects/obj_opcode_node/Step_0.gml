@@ -1,3 +1,7 @@
+if (instance_exists(obj_bitmap_editor)) {
+    exit;
+}
+
 // World-space mouse — mouse minus the current pan offset, since node_x/node_y
 // are always stored in true world space regardless of how far the view has panned.
 var _world_mouse_x = mouse_x - global.pan_x;

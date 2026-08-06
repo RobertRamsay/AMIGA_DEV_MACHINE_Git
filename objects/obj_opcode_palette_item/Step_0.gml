@@ -1,3 +1,7 @@
+if (instance_exists(obj_bitmap_editor)) {
+    exit;
+}
+
 var _over_item = point_in_rectangle(mouse_x, mouse_y, palette_x, palette_y, palette_x + palette_width, palette_y + palette_height);
 
 if (_over_item && mouse_check_button_pressed(mb_left) && !global.left_click_pickup_handled_this_frame) {

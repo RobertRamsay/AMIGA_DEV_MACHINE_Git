@@ -1,5 +1,12 @@
 depth = -100000;
 
+// The bitmap editor is a modal workspace. Hide the graph, palette, preview
+// and status UI while it owns the screen; their Step events also pause.
+with (obj_amiga_manager) visible = false;
+with (obj_opcode_node) visible = false;
+with (obj_amiga_root_node) visible = false;
+with (obj_opcode_palette_item) visible = false;
+
 bitmap_width = 320;
 bitmap_height = 256;
 bitmap_pixels = array_create(bitmap_width * bitmap_height, 0);
@@ -41,7 +48,7 @@ while (_palette_i < 32) {
     _palette_i += 1;
 }
 
-panel_width = min(1280, room_width - 40);
+panel_width = min(1600, room_width - 20);
 panel_height = min(1024, room_height - 40);
 panel_x = floor((room_width - panel_width) / 2);
 panel_y = floor((room_height - panel_height) / 2);

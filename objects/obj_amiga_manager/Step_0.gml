@@ -1,3 +1,9 @@
+// The bitmap editor is modal: do not pan, build, undo, click controls or
+// mutate the graph behind it.
+if (instance_exists(obj_bitmap_editor)) {
+    exit;
+}
+
 global.right_click_delete_handled_this_frame = false;
 global.left_click_pickup_handled_this_frame = false;
 

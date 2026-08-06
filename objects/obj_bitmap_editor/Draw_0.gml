@@ -105,11 +105,15 @@ draw_text(_layout.grid_toggle_x + 8, _layout.grid_toggle_y + 1, bitmap_grid_enab
 draw_text_ext(_layout.left_x, _layout.grid_toggle_y + 34, "LEFT: paint\nALT+LEFT: pick pen\nRIGHT: COLOR00\nMIDDLE: pan\nSPACE+LEFT: pan\nWHEEL: zoom", 18, 130);
 draw_text_ext(_layout.left_x, _layout.grid_toggle_y + 158, "1x shows the native image. 3x is the default editing view.", 18, 130);
 
-// Clipped viewport by selecting only the visible source region.
+// Canvas contents are GPU-clipped to the viewport. This prevents the final
+// scaled texel or grid line leaking over either edge.
 draw_set_colour(make_color_rgb(22, 22, 22));
 draw_rectangle(_layout.canvas_x, _layout.canvas_y, _layout.canvas_x + _layout.canvas_width, _layout.canvas_y + _layout.canvas_height, false);
 draw_set_colour(c_white);
 draw_rectangle(_layout.canvas_x, _layout.canvas_y, _layout.canvas_x + _layout.canvas_width, _layout.canvas_y + _layout.canvas_height, true);
+
+var _previous_scissor = gpu_get_scissor();
+gpu_set_scissor(_layout.canvas_x + 1, _layout.canvas_y + 1, _layout.canvas_width - 2, _layout.canvas_height - 2);
 
 if (surface_exists(bitmap_surface)) {
     var _source_x = bitmap_scroll_x / bitmap_zoom;
@@ -145,6 +149,8 @@ if (bitmap_grid_enabled) {
     }
     draw_set_alpha(1);
 }
+
+gpu_set_scissor(_previous_scissor);
 
 // Right palette rail: all 32 OCS/ECS colour registers.
 draw_set_colour(c_white);

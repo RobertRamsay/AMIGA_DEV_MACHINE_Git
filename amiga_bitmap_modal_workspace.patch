@@ -1,0 +1,134 @@
+diff --git a/objects/obj_amiga_manager/Step_0.gml b/objects/obj_amiga_manager/Step_0.gml
+index 1d6a47d..55c1ae0 100644
+--- a/objects/obj_amiga_manager/Step_0.gml
++++ b/objects/obj_amiga_manager/Step_0.gml
+@@ -1,3 +1,9 @@
++// The bitmap editor is modal: do not pan, build, undo, click controls or
++// mutate the graph behind it.
++if (instance_exists(obj_bitmap_editor)) {
++    exit;
++}
++
+ global.right_click_delete_handled_this_frame = false;
+ global.left_click_pickup_handled_this_frame = false;
+ 
+diff --git a/objects/obj_amiga_root_node/Step_0.gml b/objects/obj_amiga_root_node/Step_0.gml
+index be50b8c..bdb1833 100644
+--- a/objects/obj_amiga_root_node/Step_0.gml
++++ b/objects/obj_amiga_root_node/Step_0.gml
+@@ -1,3 +1,7 @@
++if (instance_exists(obj_bitmap_editor)) {
++    exit;
++}
++
+ var _world_mouse_x = mouse_x - global.pan_x;
+ var _world_mouse_y = mouse_y - global.pan_y;
+ 
+diff --git a/objects/obj_bitmap_editor/Create_0.gml b/objects/obj_bitmap_editor/Create_0.gml
+index 434caf3..82a9e09 100644
+--- a/objects/obj_bitmap_editor/Create_0.gml
++++ b/objects/obj_bitmap_editor/Create_0.gml
+@@ -1,5 +1,12 @@
+ depth = -100000;
+ 
++// The bitmap editor is a modal workspace. Hide the graph, palette, preview
++// and status UI while it owns the screen; their Step events also pause.
++with (obj_amiga_manager) visible = false;
++with (obj_opcode_node) visible = false;
++with (obj_amiga_root_node) visible = false;
++with (obj_opcode_palette_item) visible = false;
++
+ bitmap_width = 320;
+ bitmap_height = 256;
+ bitmap_pixels = array_create(bitmap_width * bitmap_height, 0);
+@@ -41,7 +48,7 @@ while (_palette_i < 32) {
+     _palette_i += 1;
+ }
+ 
+-panel_width = min(1280, room_width - 40);
++panel_width = min(1600, room_width - 20);
+ panel_height = min(1024, room_height - 40);
+ panel_x = floor((room_width - panel_width) / 2);
+ panel_y = floor((room_height - panel_height) / 2);
+diff --git a/objects/obj_bitmap_editor/Destroy_0.gml b/objects/obj_bitmap_editor/Destroy_0.gml
+index 8fe4c2c..9855b10 100644
+--- a/objects/obj_bitmap_editor/Destroy_0.gml
++++ b/objects/obj_bitmap_editor/Destroy_0.gml
+@@ -5,3 +5,9 @@ if (surface_exists(bitmap_surface)) {
+ if (buffer_exists(bitmap_buffer)) {
+     buffer_delete(bitmap_buffer);
+ }
++
++// Restore the normal node workspace when the modal editor closes.
++with (obj_amiga_manager) visible = true;
++with (obj_opcode_node) visible = true;
++with (obj_amiga_root_node) visible = true;
++with (obj_opcode_palette_item) visible = true;
+diff --git a/objects/obj_bitmap_editor/Draw_0.gml b/objects/obj_bitmap_editor/Draw_0.gml
+index 17fa2f4..f2e4ef0 100644
+--- a/objects/obj_bitmap_editor/Draw_0.gml
++++ b/objects/obj_bitmap_editor/Draw_0.gml
+@@ -105,12 +105,16 @@ draw_text(_layout.grid_toggle_x + 8, _layout.grid_toggle_y + 1, bitmap_grid_enab
+ draw_text_ext(_layout.left_x, _layout.grid_toggle_y + 34, "LEFT: paint\nALT+LEFT: pick pen\nRIGHT: COLOR00\nMIDDLE: pan\nSPACE+LEFT: pan\nWHEEL: zoom", 18, 130);
+ draw_text_ext(_layout.left_x, _layout.grid_toggle_y + 158, "1x shows the native image. 3x is the default editing view.", 18, 130);
+ 
+-// Clipped viewport by selecting only the visible source region.
++// Canvas contents are GPU-clipped to the viewport. This prevents the final
++// scaled texel or grid line leaking over either edge.
+ draw_set_colour(make_color_rgb(22, 22, 22));
+ draw_rectangle(_layout.canvas_x, _layout.canvas_y, _layout.canvas_x + _layout.canvas_width, _layout.canvas_y + _layout.canvas_height, false);
+ draw_set_colour(c_white);
+ draw_rectangle(_layout.canvas_x, _layout.canvas_y, _layout.canvas_x + _layout.canvas_width, _layout.canvas_y + _layout.canvas_height, true);
+ 
++var _previous_scissor = gpu_get_scissor();
++gpu_set_scissor(_layout.canvas_x + 1, _layout.canvas_y + 1, _layout.canvas_width - 2, _layout.canvas_height - 2);
++
+ if (surface_exists(bitmap_surface)) {
+     var _source_x = bitmap_scroll_x / bitmap_zoom;
+     var _source_y = bitmap_scroll_y / bitmap_zoom;
+@@ -146,6 +150,8 @@ if (bitmap_grid_enabled) {
+     draw_set_alpha(1);
+ }
+ 
++gpu_set_scissor(_previous_scissor);
++
+ // Right palette rail: all 32 OCS/ECS colour registers.
+ draw_set_colour(c_white);
+ draw_text(_layout.right_x, _layout.right_y, "AMIGA 12-BIT PALETTE");
+diff --git a/objects/obj_opcode_node/Step_0.gml b/objects/obj_opcode_node/Step_0.gml
+index 319d287..407fda2 100644
+--- a/objects/obj_opcode_node/Step_0.gml
++++ b/objects/obj_opcode_node/Step_0.gml
+@@ -1,3 +1,7 @@
++if (instance_exists(obj_bitmap_editor)) {
++    exit;
++}
++
+ // World-space mouse — mouse minus the current pan offset, since node_x/node_y
+ // are always stored in true world space regardless of how far the view has panned.
+ var _world_mouse_x = mouse_x - global.pan_x;
+diff --git a/objects/obj_opcode_palette_item/Step_0.gml b/objects/obj_opcode_palette_item/Step_0.gml
+index f2b3697..19022f5 100644
+--- a/objects/obj_opcode_palette_item/Step_0.gml
++++ b/objects/obj_opcode_palette_item/Step_0.gml
+@@ -1,3 +1,7 @@
++if (instance_exists(obj_bitmap_editor)) {
++    exit;
++}
++
+ var _over_item = point_in_rectangle(mouse_x, mouse_y, palette_x, palette_y, palette_x + palette_width, palette_y + palette_height);
+ 
+ if (_over_item && mouse_check_button_pressed(mb_left) && !global.left_click_pickup_handled_this_frame) {
+diff --git a/scripts/scr_bitmap_editor_layout/scr_bitmap_editor_layout.gml b/scripts/scr_bitmap_editor_layout/scr_bitmap_editor_layout.gml
+index a66e41c..6c6946b 100644
+--- a/scripts/scr_bitmap_editor_layout/scr_bitmap_editor_layout.gml
++++ b/scripts/scr_bitmap_editor_layout/scr_bitmap_editor_layout.gml
+@@ -1,7 +1,7 @@
+ /// @desc scr_bitmap_editor_layout(_editor)
+ /// Shared responsive geometry for bitmap-editor Step and Draw events.
+ function scr_bitmap_editor_layout(_editor) {
+-    _editor.panel_width = min(1280, room_width - 40);
++    _editor.panel_width = min(1600, room_width - 20);
+     _editor.panel_height = min(1024, room_height - 40);
+     _editor.panel_x = clamp(_editor.panel_x, 0, room_width - _editor.panel_width);
+     _editor.panel_y = clamp(_editor.panel_y, 0, room_height - 20);

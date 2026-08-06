@@ -1,7 +1,7 @@
 /// @desc scr_bitmap_editor_layout(_editor)
 /// Shared responsive geometry for bitmap-editor Step and Draw events.
 function scr_bitmap_editor_layout(_editor) {
-    _editor.panel_width = min(1280, room_width - 40);
+    _editor.panel_width = min(1600, room_width - 20);
     _editor.panel_height = min(1024, room_height - 40);
     _editor.panel_x = clamp(_editor.panel_x, 0, room_width - _editor.panel_width);
     _editor.panel_y = clamp(_editor.panel_y, 0, room_height - 20);

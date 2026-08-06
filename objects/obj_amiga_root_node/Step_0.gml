@@ -1,3 +1,7 @@
+if (instance_exists(obj_bitmap_editor)) {
+    exit;
+}
+
 var _world_mouse_x = mouse_x - global.pan_x;
 var _world_mouse_y = mouse_y - global.pan_y;
 
