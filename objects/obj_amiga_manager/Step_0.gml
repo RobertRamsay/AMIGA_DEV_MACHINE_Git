@@ -77,10 +77,14 @@ if (build_state == "waiting_for_adf") {
         build_adf_ready_timer += 1;
 
         if (build_adf_ready_timer >= 30) {
-            show_debug_message("obj_amiga_manager: disk.adf ready after " + string(build_wait_timer) + " frames — launching FS-UAE");
-            var _uae_args = "--floppy_drive_0=\"" + build_adf_path + "\" --kickstart_file=\"" + global.kickstart_path + "\"";
-            execute_shell_simple(global.fsuae_path, _uae_args);
-            build_state = "idle";
+            show_debug_message("obj_amiga_manager: disk.adf ready after " + string(build_wait_timer) + " frames — closing previous FS-UAE sessions");
+
+            // Close any emulator left behind by an earlier F5 run. taskkill
+            // returns immediately, so use a short state-machine delay before
+            // launching the replacement process.
+            execute_shell_simple("taskkill.exe", "/F /T /IM fs-uae.exe", "open", 0);
+            build_state = "waiting_to_launch_fsuae";
+            build_wait_timer = 0;
         }
     } else {
         build_adf_ready_timer = 0;
@@ -89,6 +93,17 @@ if (build_state == "waiting_for_adf") {
             show_debug_message("Build timed out waiting for xdftool to produce disk.adf.");
             build_state = "idle";
         }
+    }
+}
+
+if (build_state == "waiting_to_launch_fsuae") {
+    build_wait_timer += 1;
+
+    if (build_wait_timer >= 15) {
+        show_debug_message("obj_amiga_manager: previous FS-UAE sessions closed — launching new session");
+        var _uae_args = "--floppy_drive_0=\"" + build_adf_path + "\" --kickstart_file=\"" + global.kickstart_path + "\"";
+        execute_shell_simple(global.fsuae_path, _uae_args);
+        build_state = "idle";
     }
 }
 
