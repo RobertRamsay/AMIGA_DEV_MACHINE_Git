@@ -9,20 +9,27 @@ function scr_amiga_start_adf_build(_bin_path, _project_path, _volume_name, _uses
     }
 
     var _adf_path = _build_dir + "/disk.adf";
+    var _working_adf_path = _build_dir + "/disk.building.adf";
 
     if (file_exists(_adf_path)) {
         file_delete(_adf_path);
     }
 
-    var _xdf_args = "\"" + _adf_path + "\" create ";
+    if (file_exists(_working_adf_path)) {
+        file_delete(_working_adf_path);
+    }
+
+    // Build under a temporary name. xdftool creates a full-size image before
+    // it has written the directories and files, so disk.adf must not become
+    // visible to the manager until the complete command list has succeeded.
+    var _xdf_args = "\"" + _working_adf_path + "\" create ";
 
     if (_uses_dos_loader) {
         var _startup_path = _build_dir + "/startup-sequence";
         var _startup_file = file_text_open_write(_startup_path);
-        // Startup-sequence runs from SYS:S, while the executable is stored in
-        // the volume root. Use an explicit device path so AmigaDOS/AROS does
-        // not search for S:main and report "object not found".
-        file_text_write_string(_startup_file, "SYS:main\n");
+        // The executable is stored in the floppy root. DF0: is unambiguous
+        // even when the replacement AROS ROM assigns SYS: somewhere else.
+        file_text_write_string(_startup_file, "DF0:main\n");
         file_text_close(_startup_file);
 
         // `boot install` normally loads boot2x3x.bin from amitools' Python
@@ -68,7 +75,19 @@ function scr_amiga_start_adf_build(_bin_path, _project_path, _volume_name, _uses
         _xdf_args += "+ boot write \"" + _bin_path + "\"";
     }
 
-    execute_shell_simple(global.xdftool_path, _xdf_args);
+    // The GameMaker shell call is asynchronous. Run xdftool inside a small
+    // batch and atomically publish the finished image under disk.adf only when
+    // xdftool exits successfully. The manager can now use file_exists() as a
+    // genuine completion signal instead of guessing with a fixed delay.
+    var _batch_path = _build_dir + "/build_adf.bat";
+    var _batch_file = file_text_open_write(_batch_path);
+    file_text_write_string(_batch_file, "@echo off\r\n");
+    file_text_write_string(_batch_file, "\"" + global.xdftool_path + "\" " + _xdf_args + "\r\n");
+    file_text_write_string(_batch_file, "if errorlevel 1 exit /b %errorlevel%\r\n");
+    file_text_write_string(_batch_file, "move /Y \"" + _working_adf_path + "\" \"" + _adf_path + "\" >nul\r\n");
+    file_text_close(_batch_file);
+
+    execute_shell_simple("cmd.exe", "/C \"\"" + _batch_path + "\"\"");
 
     return _adf_path;
 }

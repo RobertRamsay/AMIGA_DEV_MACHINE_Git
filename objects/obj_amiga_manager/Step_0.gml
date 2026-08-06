@@ -103,17 +103,11 @@ if (build_state == "waiting_for_adf") {
     build_wait_timer += 1;
 
     if (file_exists(build_adf_path)) {
-        // xdftool is asynchronous: `create` immediately makes a full-size ADF
-        // visible, before format, file writes and boot installation finish.
-        // File size therefore cannot signal completion. DOS-loaded bitmap
-        // builds also start a bundled Python executable and perform several
-        // filesystem operations, so give that route a longer settling time.
+        // scr_amiga_start_adf_build publishes disk.adf only after xdftool has
+        // completed every write and installed the boot block. Retain a short
+        // filesystem settling delay, but no long guessed build delay is needed.
         build_adf_ready_timer += 1;
-        var _adf_settle_frames = 90;
-
-        if (build_uses_dos_loader) {
-            _adf_settle_frames = 240;
-        }
+        var _adf_settle_frames = 30;
 
         if (build_adf_ready_timer >= _adf_settle_frames) {
             show_debug_message("obj_amiga_manager: disk.adf ready after " + string(build_wait_timer) + " frames — closing previous FS-UAE sessions");
@@ -128,7 +122,10 @@ if (build_state == "waiting_for_adf") {
     } else {
         build_adf_ready_timer = 0;
 
-        if (build_wait_timer > build_timeout_frames) {
+        // The bundled one-file xdftool may need extra time for extraction on
+        // its first run. It now publishes disk.adf only on completion.
+        var _adf_timeout_frames = build_uses_dos_loader ? 1800 : build_timeout_frames;
+        if (build_wait_timer > _adf_timeout_frames) {
             show_debug_message("Build timed out waiting for xdftool to produce disk.adf.");
             build_state = "idle";
         }
