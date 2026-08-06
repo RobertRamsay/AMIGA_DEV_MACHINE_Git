@@ -1,0 +1,196 @@
+diff --git a/objects/obj_opcode_node/Draw_0.gml b/objects/obj_opcode_node/Draw_0.gml
+index 3a9701d..2ca81f3 100644
+--- a/objects/obj_opcode_node/Draw_0.gml
++++ b/objects/obj_opcode_node/Draw_0.gml
+@@ -29,28 +29,41 @@ if (is_macro) {
+ draw_text(_dx + 6, _dy, _header_text);
+ 
+ var _label_display_text = node_label;
++var _lab_width = 140;
+ 
+ if (operand_editing_slot == "node_label") {
+     _label_display_text = operand_edit_text;
+ }
+ 
++// Labels remain visible after editing. The badge is drawn before the text so
++// the edit pulse cannot cover the entered name.
++if (_label_display_text != "" || operand_editing_slot == "node_label") {
++    var _label_box_x1 = _dx + node_width + 4;
++    var _label_box_y1 = _dy;
++    var _label_box_x2 = _label_box_x1 + _lab_width;
++    var _label_box_y2 = _label_box_y1 + 20;
++    var _label_border_colour = c_white;
++    var _label_text_colour = c_white;
++    var _label_background_colour = c_dkgray;
++    var _label_grow = 0;
++
++    if (operand_editing_slot == "node_label") {
++        var _pulse_t = (sin(current_time * 0.006) + 1) / 2;
++        _label_border_colour = merge_colour(c_black, c_yellow, _pulse_t);
++        _label_text_colour = c_yellow;
++        _label_background_colour = merge_colour(c_dkgray, _label_border_colour, 0.3);
++        _label_grow = _pulse_t * 3;
++    }
+ 
+-var _labWidth=140;
+-
+-if (operand_editing_slot == "node_label") {
+-    var _pulse_t = (sin(current_time * 0.006) + 1) / 2;
+-    var _pulse_colour = merge_colour(c_black, c_yellow, _pulse_t);
+-    var _pulse_grow = _pulse_t * 3;
+-
+-    draw_set_colour( merge_colour(c_dkgray, _pulse_colour, 0.3));
+-	draw_rectangle(_dx + node_width + 4 - _pulse_grow, _dy - _pulse_grow, _dx + node_width + _labWidth + _pulse_grow, _dy + 20 + _pulse_grow, false);
+-	draw_set_colour(_pulse_colour);
+-    draw_rectangle(_dx + node_width + 4 - _pulse_grow, _dy - _pulse_grow, _dx + node_width + _labWidth + _pulse_grow, _dy + 20 + _pulse_grow, true);
++    draw_set_colour(_label_background_colour);
++    draw_rectangle(_label_box_x1 - _label_grow, _label_box_y1 - _label_grow, _label_box_x2 + _label_grow, _label_box_y2 + _label_grow, false);
++    draw_set_colour(_label_border_colour);
++    draw_rectangle(_label_box_x1 - _label_grow, _label_box_y1 - _label_grow, _label_box_x2 + _label_grow, _label_box_y2 + _label_grow, true);
++    draw_set_colour(_label_text_colour);
++    draw_text(_label_box_x1 + 4, _label_box_y1 + 2, _label_display_text);
+     draw_set_colour(c_white);
+ }
+ 
+-
+-
+ if (is_macro) {
+     var _asset_field_dx = node_x + global.pan_x;
+     var _asset_field_dy = node_y + global.pan_y + 20;
+diff --git a/scripts/scr_capture_snapshot/scr_capture_snapshot.gml b/scripts/scr_capture_snapshot/scr_capture_snapshot.gml
+index 69bfb17..cb0fc3a 100644
+--- a/scripts/scr_capture_snapshot/scr_capture_snapshot.gml
++++ b/scripts/scr_capture_snapshot/scr_capture_snapshot.gml
+@@ -4,7 +4,13 @@ function scr_capture_snapshot() {
+     var _root_array = [];
+ 
+     with (obj_amiga_root_node) {
+-        var _root_data = { uid : uid, root_type : root_type, node_x : node_x, node_y : node_y };
++        var _root_data = {
++            uid : uid,
++            root_type : root_type,
++            node_x : node_x,
++            node_y : node_y,
++            continues_from_root_uid : continues_from_root_uid
++        };
+         array_push(_root_array, _root_data);
+     }
+ 
+@@ -15,8 +21,14 @@ function scr_capture_snapshot() {
+             uid : uid,
+             node_x : node_x,
+             node_y : node_y,
++            node_width : node_width,
++            node_height : node_height,
+             is_connected : is_connected,
+             root_uid : root_uid,
++            is_macro : is_macro,
++            macro_type : macro_type,
++            macro_asset_name : macro_asset_name,
++            preview_collapsed : preview_collapsed,
+             opcode_mnemonic : opcode_mnemonic,
+             opcode_size : opcode_size,
+             addressing_mode_src : addressing_mode_src,
+diff --git a/scripts/scr_restore_snapshot/scr_restore_snapshot.gml b/scripts/scr_restore_snapshot/scr_restore_snapshot.gml
+index d7eb492..a5014ee 100644
+--- a/scripts/scr_restore_snapshot/scr_restore_snapshot.gml
++++ b/scripts/scr_restore_snapshot/scr_restore_snapshot.gml
+@@ -1,7 +1,9 @@
+ /// @desc scr_restore_snapshot(_snapshot)
+-/// Destroys the current graph and rebuilds it exactly from _snapshot,
+-/// including original uids so root_uid membership stays correct.
++/// Destroys the current graph and rebuilds it from _snapshot. Original uids
++/// preserve membership, then a final pass snaps and restacks the graph.
+ function scr_restore_snapshot(_snapshot) {
++    global.operand_edit_owner_uid = -1;
++
+     with (obj_opcode_node) {
+         instance_destroy();
+     }
+@@ -16,12 +18,17 @@ function scr_restore_snapshot(_snapshot) {
+ 
+     while (_r < _root_count) {
+         var _root_data = _root_array[_r];
+-        var _new_root = instance_create_layer(_root_data.node_x, _root_data.node_y, "Instances", obj_amiga_root_node);
++        var _root_x = scr_snap_to_grid(_root_data.node_x, global.grid_size);
++        var _root_y = scr_snap_to_grid(_root_data.node_y, global.grid_size);
++        var _new_root = instance_create_layer(_root_x, _root_y, "Instances", obj_amiga_root_node);
+ 
+         _new_root.uid = _root_data.uid;
+         _new_root.root_type = _root_data.root_type;
+-        _new_root.node_x = _root_data.node_x;
+-        _new_root.node_y = _root_data.node_y;
++        _new_root.node_x = _root_x;
++        _new_root.node_y = _root_y;
++        _new_root.x = _root_x;
++        _new_root.y = _root_y;
++        _new_root.continues_from_root_uid = _root_data.continues_from_root_uid;
+ 
+         _r += 1;
+     }
+@@ -37,8 +44,14 @@ function scr_restore_snapshot(_snapshot) {
+         _new_node.uid = _node_data.uid;
+         _new_node.node_x = _node_data.node_x;
+         _new_node.node_y = _node_data.node_y;
++        _new_node.node_width = _node_data.node_width;
++        _new_node.node_height = _node_data.node_height;
+         _new_node.is_connected = _node_data.is_connected;
+         _new_node.root_uid = _node_data.root_uid;
++        _new_node.is_macro = _node_data.is_macro;
++        _new_node.macro_type = _node_data.macro_type;
++        _new_node.macro_asset_name = _node_data.macro_asset_name;
++        _new_node.preview_collapsed = _node_data.preview_collapsed;
+         _new_node.opcode_mnemonic = _node_data.opcode_mnemonic;
+         _new_node.opcode_size = _node_data.opcode_size;
+         _new_node.addressing_mode_src = _node_data.addressing_mode_src;
+@@ -59,4 +72,50 @@ function scr_restore_snapshot(_snapshot) {
+ 
+         _n += 1;
+     }
++
++    // A snapshot may be captured while a drag or wedge preview is active.
++    // Rebuild connected stacks from their roots and snap loose nodes.
++    with (obj_amiga_root_node) {
++        var _stack_root_uid = uid;
++        var _stack_x = scr_snap_to_grid(node_x, global.grid_size);
++        var _stack_y = scr_snap_to_grid(node_y, global.grid_size);
++        var _stack_members = [];
++
++        node_x = _stack_x;
++        node_y = _stack_y;
++        x = _stack_x;
++        y = _stack_y;
++
++        with (obj_opcode_node) {
++            if (is_connected && root_uid == _stack_root_uid) {
++                array_push(_stack_members, id);
++            }
++        }
++
++        array_sort(_stack_members, function(_a, _b) {
++            return _a.node_y - _b.node_y;
++        });
++
++        var _stack_cursor_y = _stack_y + node_height;
++        var _stack_index = 0;
++
++        while (_stack_index < array_length(_stack_members)) {
++            var _stack_node = _stack_members[_stack_index];
++            _stack_node.node_x = _stack_x;
++            _stack_node.node_y = _stack_cursor_y;
++            _stack_node.x = _stack_x;
++            _stack_node.y = _stack_cursor_y;
++            _stack_cursor_y += _stack_node.node_height;
++            _stack_index += 1;
++        }
++    }
++
++    with (obj_opcode_node) {
++        if (!is_connected) {
++            node_x = scr_snap_to_grid(node_x, global.grid_size);
++            node_y = scr_snap_to_grid(node_y, global.grid_size);
++            x = node_x;
++            y = node_y;
++        }
++    }
+ }
