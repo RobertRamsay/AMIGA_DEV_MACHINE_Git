@@ -126,7 +126,7 @@ if (point_in_rectangle(mouse_x, mouse_y, _layout.dither_pair_x, _layout.dither_p
 
 if (point_in_rectangle(mouse_x, mouse_y, _layout.dither_pattern_x, _layout.dither_pattern_y, _layout.dither_pattern_x + _layout.dither_pattern_width, _layout.dither_pattern_y + _layout.tool_height)
 && mouse_check_button_pressed(mb_left)) {
-    var _dither_patterns = ["CHECKER", "INTERLACE", "BAYER1", "BAYER2", "BAYER3", "BAYER5", "BAYER6", "BAYER7", "BAYER8"];
+    var _dither_patterns = ["CHECKER", "INTERLACE", "BAYER1", "BAYER2", "BAYER3", "BAYER5", "BAYER6", "BAYER7"];
     var _dither_pattern_index = 0;
     var _dither_search_index = 0;
 
@@ -144,6 +144,11 @@ if (point_in_rectangle(mouse_x, mouse_y, _layout.dither_pattern_x, _layout.dithe
 if (point_in_rectangle(mouse_x, mouse_y, _layout.dither_invert_x, _layout.dither_invert_y, _layout.dither_invert_x + _layout.dither_invert_width, _layout.dither_invert_y + _layout.tool_height)
 && mouse_check_button_pressed(mb_left)) {
     bitmap_dither_invert = !bitmap_dither_invert;
+}
+
+if (point_in_rectangle(mouse_x, mouse_y, _layout.transparency_lock_x, _layout.transparency_lock_y, _layout.transparency_lock_x + _layout.transparency_lock_width, _layout.transparency_lock_y + _layout.tool_height)
+&& mouse_check_button_pressed(mb_left)) {
+    bitmap_transparency_lock = !bitmap_transparency_lock;
 }
 
 var _gradient_colour_1_x = _layout.gradient_tool_x;
@@ -173,10 +178,10 @@ if (point_in_rectangle(mouse_x, mouse_y, _utility_x_2, _layout.history_y, _utili
 && mouse_check_button_pressed(mb_left)) scr_bitmap_redo(id);
 
 if (point_in_rectangle(mouse_x, mouse_y, _layout.left_x, _layout.file_y, _layout.left_x + _layout.utility_button_width, _layout.file_y + _layout.utility_button_height)
-&& mouse_check_button_pressed(mb_left)) scr_bitmap_save_native(id);
+&& mouse_check_button_pressed(mb_left)) scr_bitmap_load_native(id);
 
 if (point_in_rectangle(mouse_x, mouse_y, _utility_x_2, _layout.file_y, _utility_x_2 + _layout.utility_button_width, _layout.file_y + _layout.utility_button_height)
-&& mouse_check_button_pressed(mb_left)) scr_bitmap_load_native(id);
+&& mouse_check_button_pressed(mb_left)) scr_bitmap_save_native(id);
 
 if (point_in_rectangle(mouse_x, mouse_y, _layout.left_x, _layout.output_y, _layout.left_x + _layout.utility_button_width, _layout.output_y + _layout.utility_button_height)
 && mouse_check_button_pressed(mb_left)) scr_bitmap_export_png(id);

@@ -70,7 +70,10 @@ function scr_bitmap_apply_line(_editor, _x0, _y0, _x1, _y1, _colour_index, _use_
                                 : _dither_second;
                         }
 
-                        if (_editor.bitmap_pixels[_pixel_offset] != _stamp_colour) {
+                        // Transparency lock protects COLOR00 canvas pixels.
+                        // Opaque pixels may still be recoloured or erased.
+                        if ((!_editor.bitmap_transparency_lock || _editor.bitmap_pixels[_pixel_offset] != 0)
+                        && _editor.bitmap_pixels[_pixel_offset] != _stamp_colour) {
                             _editor.bitmap_pixels[_pixel_offset] = _stamp_colour;
                             array_push(_editor.bitmap_dirty_pixels, _pixel_offset);
                             _editor.bitmap_asset_dirty = true;

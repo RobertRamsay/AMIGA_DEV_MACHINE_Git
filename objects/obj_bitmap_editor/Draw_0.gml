@@ -181,6 +181,12 @@ draw_text(_layout.dither_pair_x + 10, _layout.dither_pair_y + 3, bitmap_dither_u
 draw_text(_layout.dither_pattern_x + 10, _layout.dither_pattern_y + 3, "DITHER: " + bitmap_dither_pattern);
 draw_text(_layout.dither_invert_x + 10, _layout.dither_invert_y + 3, bitmap_dither_invert ? "INVERT: YES" : "INVERT: NO");
 
+draw_set_colour(bitmap_transparency_lock ? c_olive : c_dkgray);
+draw_rectangle(_layout.transparency_lock_x, _layout.transparency_lock_y, _layout.transparency_lock_x + _layout.transparency_lock_width, _layout.transparency_lock_y + _layout.tool_height, false);
+draw_set_colour(c_white);
+draw_rectangle(_layout.transparency_lock_x, _layout.transparency_lock_y, _layout.transparency_lock_x + _layout.transparency_lock_width, _layout.transparency_lock_y + _layout.tool_height, true);
+draw_text(_layout.transparency_lock_x + 10, _layout.transparency_lock_y + 3, bitmap_transparency_lock ? "TRANSPARENCY LOCK: ON" : "TRANSPARENCY LOCK: OFF");
+
 draw_set_colour(make_color_rgb(65, 55, 85));
 draw_rectangle(_layout.flip_x, _layout.flip_y, _layout.flip_x + _layout.flip_width, _layout.flip_y + _layout.tool_height, false);
 draw_set_colour(c_white);
@@ -206,8 +212,8 @@ draw_rectangle(_utility_x_2, _layout.file_y, _utility_x_2 + _layout.utility_butt
 draw_set_colour(c_white);
 draw_rectangle(_layout.left_x, _layout.file_y, _layout.left_x + _layout.utility_button_width, _layout.file_y + _layout.utility_button_height, true);
 draw_rectangle(_utility_x_2, _layout.file_y, _utility_x_2 + _layout.utility_button_width, _layout.file_y + _layout.utility_button_height, true);
-draw_text(_layout.left_x + 8, _layout.file_y + 3, "SAVE EDITABLE");
-draw_text(_utility_x_2 + 8, _layout.file_y + 3, "LOAD EDITABLE");
+draw_text(_layout.left_x + 8, _layout.file_y + 3, "LOAD BMP");
+draw_text(_utility_x_2 + 8, _layout.file_y + 3, "SAVE BMP");
 
 draw_set_colour(make_color_rgb(55, 85, 55));
 draw_rectangle(_layout.left_x, _layout.output_y, _layout.left_x + _layout.utility_button_width, _layout.output_y + _layout.utility_button_height, false);
@@ -401,5 +407,5 @@ draw_text_ext(_layout.right_x, _layout.slider_b_y + 38, "32 colours = five hardw
 
 draw_set_colour(c_white);
 draw_text(_layout.panel_x + 12, _layout.help_line_1_y, "LEFT: tool     RIGHT: COLOR00     ALT+CANVAS: pick     ALT+L/R SWATCH: COL1/COL2     CTRL+C/V SWATCH: copy/paste     SPACE: pan");
-draw_text(_layout.panel_x + 12, _layout.help_line_2_y, "CTRL+Z/Y: undo/redo     CTRL+S/L: save/load     WHEEL: zoom     DITHER: COL1 with transparency or COL2");
+draw_text(_layout.panel_x + 12, _layout.help_line_2_y, "CTRL+Z/Y: undo/redo     CTRL+S/L: save/load     WHEEL: zoom     TRANSPARENCY LOCK: protect COLOR00 pixels");
 draw_set_colour(c_white);
