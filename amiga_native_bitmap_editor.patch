@@ -1,0 +1,660 @@
+diff --git a/AMIGA_DEV_MACHINE.yyp b/AMIGA_DEV_MACHINE.yyp
+index c875adf..19cd8b3 100644
+--- a/AMIGA_DEV_MACHINE.yyp
++++ b/AMIGA_DEV_MACHINE.yyp
+@@ -206,6 +206,7 @@
+   "resources":[
+     {"id":{"name":"execute_shell_simple_ext","path":"extensions/execute_shell_simple_ext/execute_shell_simple_ext.yy",},},
+     {"id":{"name":"obj_amiga_manager","path":"objects/obj_amiga_manager/obj_amiga_manager.yy",},},
++    {"id":{"name":"obj_bitmap_editor","path":"objects/obj_bitmap_editor/obj_bitmap_editor.yy",},},
+     {"id":{"name":"obj_amiga_root_node","path":"objects/obj_amiga_root_node/obj_amiga_root_node.yy",},},
+     {"id":{"name":"obj_opcode_node","path":"objects/obj_opcode_node/obj_opcode_node.yy",},},
+     {"id":{"name":"obj_opcode_palette_item","path":"objects/obj_opcode_palette_item/obj_opcode_palette_item.yy",},},
+@@ -224,6 +225,7 @@
+     {"id":{"name":"scr_amiga_restore_wedge_shifts","path":"scripts/scr_amiga_restore_wedge_shifts/scr_amiga_restore_wedge_shifts.yy",},},
+     {"id":{"name":"scr_amiga_run_sprite_test","path":"scripts/scr_amiga_run_sprite_test/scr_amiga_run_sprite_test.yy",},},
+     {"id":{"name":"scr_amiga_start_adf_build","path":"scripts/scr_amiga_start_adf_build/scr_amiga_start_adf_build.yy",},},
++    {"id":{"name":"scr_asset_define_bitmap","path":"scripts/scr_asset_define_bitmap/scr_asset_define_bitmap.yy",},},
+     {"id":{"name":"scr_amiga_start_build","path":"scripts/scr_amiga_start_build/scr_amiga_start_build.yy",},},
+     {"id":{"name":"scr_apply_wedge_preview","path":"scripts/scr_apply_wedge_preview/scr_apply_wedge_preview.yy",},},
+     {"id":{"name":"scr_asset_define_copper_bar","path":"scripts/scr_asset_define_copper_bar/scr_asset_define_copper_bar.yy",},},
+@@ -273,6 +275,7 @@
+     {"id":{"name":"scr_snap_to_grid","path":"scripts/scr_snap_to_grid/scr_snap_to_grid.yy",},},
+     {"id":{"name":"scr_split_lines","path":"scripts/scr_split_lines/scr_split_lines.yy",},},
+     {"id":{"name":"scr_sprite_editor_layout","path":"scripts/scr_sprite_editor_layout/scr_sprite_editor_layout.yy",},},
++    {"id":{"name":"scr_bitmap_editor_layout","path":"scripts/scr_bitmap_editor_layout/scr_bitmap_editor_layout.yy",},},
+     {"id":{"name":"scr_try_stack_connect","path":"scripts/scr_try_stack_connect/scr_try_stack_connect.yy",},},
+     {"id":{"name":"scr_undo","path":"scripts/scr_undo/scr_undo.yy",},},
+     {"id":{"name":"scr_validate_node_addressing","path":"scripts/scr_validate_node_addressing/scr_validate_node_addressing.yy",},},
+@@ -286,4 +289,4 @@
+   "TextureGroups":[
+     {"$GMTextureGroup":"","%Name":"Default","autocrop":true,"border":2,"compressFormat":"bz2","customOptions":"","directory":"","groupParent":null,"isScaled":true,"loadType":"default","mipsToGenerate":0,"name":"Default","resourceType":"GMTextureGroup","resourceVersion":"2.0","targets":-1,},
+   ],
+-}
+\ No newline at end of file
++}
+diff --git a/objects/obj_amiga_manager/Draw_0.gml b/objects/obj_amiga_manager/Draw_0.gml
+index 26214fa..7f568aa 100644
+--- a/objects/obj_amiga_manager/Draw_0.gml
++++ b/objects/obj_amiga_manager/Draw_0.gml
+@@ -98,6 +98,12 @@ draw_set_colour(c_white);
+ draw_rectangle(_macro_xpos, 84, _macro_xpos+_macro_but_width, 100, true);
+ draw_text(312, 82, "TEST SPR");
+ 
++draw_set_colour(make_color_rgb(35, 55, 85));
++draw_rectangle(_macro_xpos, 104, _macro_xpos+_macro_but_width, 120, false);
++draw_set_colour(c_white);
++draw_rectangle(_macro_xpos, 104, _macro_xpos+_macro_but_width, 120, true);
++draw_text(312, 102, "BITMAP EDIT");
++
+ if (keyboard_check(vk_control)) {
+     var _hud_text = "Undo: " + string(array_length(global.undo_stack)) + "   Redo: " + string(array_length(global.redo_stack));
+     var _hud_x = mouse_x + 16;
+diff --git a/objects/obj_amiga_manager/Step_0.gml b/objects/obj_amiga_manager/Step_0.gml
+index 25b31e7..1d6a47d 100644
+--- a/objects/obj_amiga_manager/Step_0.gml
++++ b/objects/obj_amiga_manager/Step_0.gml
+@@ -140,6 +140,21 @@ if (_over_sprite_test_button && mouse_check_button_pressed(mb_left)) {
+     scr_amiga_run_sprite_test();
+ }
+ 
++var _bitmap_editor_button_x = 310;
++var _bitmap_editor_button_y = 104;
++var _bitmap_editor_button_width = 100;
++var _bitmap_editor_button_height = 16;
++
++var _over_bitmap_editor_button = point_in_rectangle(mouse_x, mouse_y, _bitmap_editor_button_x, _bitmap_editor_button_y, _bitmap_editor_button_x + _bitmap_editor_button_width, _bitmap_editor_button_y + _bitmap_editor_button_height);
++
++if (_over_bitmap_editor_button && mouse_check_button_pressed(mb_left)) {
++    if (instance_exists(obj_bitmap_editor)) {
++        with (obj_bitmap_editor) instance_destroy();
++    } else {
++        instance_create_layer(0, 0, "Instances", obj_bitmap_editor);
++    }
++}
++
+ if (keyboard_check_pressed(ord("H")) && global.operand_edit_owner_uid == -1) {
+     if (global.value_display_mode == "HEX") {
+         global.value_display_mode = "DEC";
+diff --git a/objects/obj_bitmap_editor/Create_0.gml b/objects/obj_bitmap_editor/Create_0.gml
+new file mode 100644
+index 0000000..9676b9e
+--- /dev/null
++++ b/objects/obj_bitmap_editor/Create_0.gml
+@@ -0,0 +1,47 @@
++depth = -100000;
++
++bitmap_width = 320;
++bitmap_height = 256;
++bitmap_pixels = array_create(bitmap_width * bitmap_height, 0);
++bitmap_zoom = 3;
++bitmap_scroll_x = 0;
++bitmap_scroll_y = 0;
++bitmap_paint_index = 1;
++bitmap_palette_edit_index = 1;
++bitmap_surface = -1;
++bitmap_surface_dirty = true;
++
++bitmap_colour_r = array_create(32, 0);
++bitmap_colour_g = array_create(32, 0);
++bitmap_colour_b = array_create(32, 0);
++
++// A useful, unmistakably 12-bit starter palette. Every component is 0-F.
++var _default_palette = [
++    $000, $FFF, $F00, $0F0, $00F, $FF0, $0FF, $F0F,
++    $888, $444, $800, $080, $008, $880, $088, $808,
++    $F88, $8F8, $88F, $FC8, $8FC, $C8F, $F80, $0F8,
++    $08F, $80F, $F08, $8F0, $0CF, $C0F, $FC0, $CCC
++];
++
++var _palette_i = 0;
++
++while (_palette_i < 32) {
++    var _colour_word = _default_palette[_palette_i];
++    bitmap_colour_r[_palette_i] = (_colour_word >> 8) & 15;
++    bitmap_colour_g[_palette_i] = (_colour_word >> 4) & 15;
++    bitmap_colour_b[_palette_i] = _colour_word & 15;
++    _palette_i += 1;
++}
++
++panel_width = min(1280, room_width - 40);
++panel_height = min(1024, room_height - 40);
++panel_x = floor((room_width - panel_width) / 2);
++panel_y = floor((room_height - panel_height) / 2);
++panel_dragging = false;
++panel_drag_offset_x = 0;
++panel_drag_offset_y = 0;
++canvas_panning = false;
++pan_mouse_x = 0;
++pan_mouse_y = 0;
++
++scr_asset_define_bitmap("TestBitmap", bitmap_pixels, bitmap_colour_r, bitmap_colour_g, bitmap_colour_b);
+diff --git a/objects/obj_bitmap_editor/Destroy_0.gml b/objects/obj_bitmap_editor/Destroy_0.gml
+new file mode 100644
+index 0000000..b4f0439
+--- /dev/null
++++ b/objects/obj_bitmap_editor/Destroy_0.gml
+@@ -0,0 +1,3 @@
++if (surface_exists(bitmap_surface)) {
++    surface_free(bitmap_surface);
++}
+diff --git a/objects/obj_bitmap_editor/Draw_0.gml b/objects/obj_bitmap_editor/Draw_0.gml
+new file mode 100644
+index 0000000..d7a28a1
+--- /dev/null
++++ b/objects/obj_bitmap_editor/Draw_0.gml
+@@ -0,0 +1,167 @@
++var _layout = scr_bitmap_editor_layout(id);
++
++// Rebuild the native 320x256 preview only after pixels or palette change.
++if (!surface_exists(bitmap_surface)) {
++    bitmap_surface = surface_create(bitmap_width, bitmap_height);
++    bitmap_surface_dirty = true;
++}
++
++if (surface_exists(bitmap_surface) && bitmap_surface_dirty) {
++    surface_set_target(bitmap_surface);
++    draw_clear_alpha(c_black, 1);
++
++    var _pixel_y = 0;
++    while (_pixel_y < bitmap_height) {
++        var _pixel_x = 0;
++        while (_pixel_x < bitmap_width) {
++            var _pixel_index = bitmap_pixels[(_pixel_y * bitmap_width) + _pixel_x];
++            draw_set_colour(make_color_rgb(bitmap_colour_r[_pixel_index] * 17, bitmap_colour_g[_pixel_index] * 17, bitmap_colour_b[_pixel_index] * 17));
++            draw_point(_pixel_x, _pixel_y);
++            _pixel_x += 1;
++        }
++        _pixel_y += 1;
++    }
++
++    surface_reset_target();
++    bitmap_surface_dirty = false;
++}
++
++draw_set_alpha(0.97);
++draw_set_colour(c_black);
++draw_rectangle(_layout.panel_x, _layout.panel_y, _layout.panel_x + _layout.panel_width, _layout.panel_y + _layout.panel_height, false);
++draw_set_alpha(1);
++draw_set_colour(c_white);
++draw_rectangle(_layout.panel_x, _layout.panel_y, _layout.panel_x + _layout.panel_width, _layout.panel_y + _layout.panel_height, true);
++
++draw_set_colour(make_color_rgb(35, 55, 85));
++draw_rectangle(_layout.header_x + 1, _layout.header_y + 1, _layout.header_x + _layout.header_width - 1, _layout.header_y + _layout.header_height, false);
++draw_set_colour(c_white);
++var _header_text = "BITMAP EDITOR - 320x256 LOWRES, 5 BITPLANES, 32 COLOURS";
++if (point_in_rectangle(mouse_x, mouse_y, _layout.header_x, _layout.header_y, _layout.header_x + _layout.header_width, _layout.header_y + _layout.header_height) || panel_dragging) {
++    _header_text += " - Grab to drag";
++}
++draw_text(_layout.panel_x + 8, _layout.panel_y + 3, _header_text);
++
++draw_set_colour(c_red);
++draw_rectangle(_layout.close_x, _layout.close_y, _layout.close_x + 18, _layout.close_y + 18, false);
++draw_set_colour(c_white);
++draw_rectangle(_layout.close_x, _layout.close_y, _layout.close_x + 18, _layout.close_y + 18, true);
++draw_text(_layout.close_x + 5, _layout.close_y, "X");
++
++// Left tool rail.
++draw_text(_layout.left_x, _layout.left_y, "TOOLS");
++draw_text(_layout.left_x, _layout.left_y + 18, "ZOOM " + string(bitmap_zoom) + "x");
++var _zoom_level = 1;
++while (_zoom_level <= 6) {
++    var _zoom_x = _layout.zoom_x + ((_zoom_level - 1) mod 3) * 42;
++    var _zoom_y = _layout.zoom_y + ((_zoom_level - 1) div 3) * 22;
++    draw_set_colour(bitmap_zoom == _zoom_level ? c_olive : c_dkgray);
++    draw_rectangle(_zoom_x, _zoom_y, _zoom_x + 36, _zoom_y + 18, false);
++    draw_set_colour(c_white);
++    draw_rectangle(_zoom_x, _zoom_y, _zoom_x + 36, _zoom_y + 18, true);
++    draw_text(_zoom_x + 10, _zoom_y, string(_zoom_level) + "x");
++    _zoom_level += 1;
++}
++
++draw_set_colour(c_maroon);
++draw_rectangle(_layout.clear_x, _layout.clear_y, _layout.clear_x + 120, _layout.clear_y + 20, false);
++draw_set_colour(c_white);
++draw_rectangle(_layout.clear_x, _layout.clear_y, _layout.clear_x + 120, _layout.clear_y + 20, true);
++draw_text(_layout.clear_x + 8, _layout.clear_y + 1, "CLEAR TO COLOR00");
++draw_text_ext(_layout.left_x, _layout.clear_y + 36, "LEFT: paint\nRIGHT: COLOR00\nMIDDLE: pan\nSPACE+LEFT: pan\nWHEEL: zoom", 18, 130);
++draw_text_ext(_layout.left_x, _layout.clear_y + 142, "1x shows the native image. 3x is the default editing view.", 18, 130);
++
++// Clipped viewport by selecting only the visible source region.
++draw_set_colour(make_color_rgb(22, 22, 22));
++draw_rectangle(_layout.canvas_x, _layout.canvas_y, _layout.canvas_x + _layout.canvas_width, _layout.canvas_y + _layout.canvas_height, false);
++draw_set_colour(c_white);
++draw_rectangle(_layout.canvas_x, _layout.canvas_y, _layout.canvas_x + _layout.canvas_width, _layout.canvas_y + _layout.canvas_height, true);
++
++if (surface_exists(bitmap_surface)) {
++    var _source_x = bitmap_scroll_x / bitmap_zoom;
++    var _source_y = bitmap_scroll_y / bitmap_zoom;
++    var _source_width = min(bitmap_width - _source_x, _layout.canvas_width / bitmap_zoom);
++    var _source_height = min(bitmap_height - _source_y, _layout.canvas_height / bitmap_zoom);
++    draw_surface_part_ext(bitmap_surface, _source_x, _source_y, _source_width, _source_height, _layout.display_x, _layout.display_y, bitmap_zoom, bitmap_zoom, c_white, 1);
++}
++
++// Pixel grid only at useful editing magnifications.
++if (bitmap_zoom >= 3) {
++    draw_set_alpha(0.22);
++    draw_set_colour(c_white);
++    var _first_col = floor(bitmap_scroll_x / bitmap_zoom);
++    var _last_col = min(bitmap_width, _first_col + ceil(_layout.canvas_width / bitmap_zoom) + 1);
++    var _grid_col = _first_col;
++    while (_grid_col <= _last_col) {
++        var _line_x = _layout.display_x + (_grid_col * bitmap_zoom) - bitmap_scroll_x;
++        if (_line_x >= _layout.canvas_x && _line_x <= _layout.canvas_x + _layout.canvas_width) draw_line(_line_x, _layout.canvas_y, _line_x, _layout.canvas_y + min(_layout.canvas_height, _layout.content_height));
++        _grid_col += 1;
++    }
++    var _first_row = floor(bitmap_scroll_y / bitmap_zoom);
++    var _last_row = min(bitmap_height, _first_row + ceil(_layout.canvas_height / bitmap_zoom) + 1);
++    var _grid_row = _first_row;
++    while (_grid_row <= _last_row) {
++        var _line_y = _layout.display_y + (_grid_row * bitmap_zoom) - bitmap_scroll_y;
++        if (_line_y >= _layout.canvas_y && _line_y <= _layout.canvas_y + _layout.canvas_height) draw_line(_layout.canvas_x, _line_y, _layout.canvas_x + min(_layout.canvas_width, _layout.content_width), _line_y);
++        _grid_row += 1;
++    }
++    draw_set_alpha(1);
++}
++
++// Right palette rail: all 32 OCS/ECS colour registers.
++draw_set_colour(c_white);
++draw_text(_layout.right_x, _layout.right_y, "AMIGA 12-BIT PALETTE");
++var _swatch_index = 0;
++while (_swatch_index < 32) {
++    var _swatch_col = _swatch_index mod 4;
++    var _swatch_row = _swatch_index div 4;
++    var _swatch_x = _layout.swatch_x + _swatch_col * (_layout.swatch_width + _layout.swatch_gap);
++    var _swatch_y = _layout.swatch_y + _swatch_row * (_layout.swatch_height + _layout.swatch_gap);
++    draw_set_colour(make_color_rgb(bitmap_colour_r[_swatch_index] * 17, bitmap_colour_g[_swatch_index] * 17, bitmap_colour_b[_swatch_index] * 17));
++    draw_rectangle(_swatch_x, _swatch_y, _swatch_x + _layout.swatch_width, _swatch_y + _layout.swatch_height, false);
++    draw_set_colour(bitmap_paint_index == _swatch_index ? c_yellow : c_white);
++    draw_rectangle(_swatch_x, _swatch_y, _swatch_x + _layout.swatch_width, _swatch_y + _layout.swatch_height, true);
++    draw_text(_swatch_x + 3, _swatch_y + 2, string(_swatch_index));
++    _swatch_index += 1;
++}
++
++var _edit_index = bitmap_palette_edit_index;
++var _hex_digits = "0123456789ABCDEF";
++var _hex_text = string_char_at(_hex_digits, bitmap_colour_r[_edit_index] + 1)
++    + string_char_at(_hex_digits, bitmap_colour_g[_edit_index] + 1)
++    + string_char_at(_hex_digits, bitmap_colour_b[_edit_index] + 1);
++draw_set_colour(c_white);
++draw_text(_layout.right_x, _layout.slider_r_y - 24, "COLOR" + string(_edit_index) + "  #" + _hex_text);
++draw_set_colour(make_color_rgb(bitmap_colour_r[_edit_index] * 17, bitmap_colour_g[_edit_index] * 17, bitmap_colour_b[_edit_index] * 17));
++draw_rectangle(_layout.preview_x, _layout.preview_y, _layout.preview_x + _layout.preview_width, _layout.preview_y + _layout.preview_height, false);
++draw_set_colour(c_white);
++draw_rectangle(_layout.preview_x, _layout.preview_y, _layout.preview_x + _layout.preview_width, _layout.preview_y + _layout.preview_height, true);
++
++var _channel = 0;
++while (_channel < 3) {
++    var _slider_y = _layout.slider_r_y;
++    var _selected = bitmap_colour_r[_edit_index];
++    var _label = "R";
++    if (_channel == 1) { _slider_y = _layout.slider_g_y; _selected = bitmap_colour_g[_edit_index]; _label = "G"; }
++    if (_channel == 2) { _slider_y = _layout.slider_b_y; _selected = bitmap_colour_b[_edit_index]; _label = "B"; }
++    draw_set_colour(c_white);
++    draw_text(_layout.slider_x - 18, _slider_y, _label);
++    var _step = 0;
++    while (_step < 16) {
++        var _segment_x = _layout.slider_x + _step * _layout.slider_step_width;
++        var _segment_colour = make_color_rgb(_step * 17, 0, 0);
++        if (_channel == 1) _segment_colour = make_color_rgb(0, _step * 17, 0);
++        if (_channel == 2) _segment_colour = make_color_rgb(0, 0, _step * 17);
++        draw_set_colour(_segment_colour);
++        draw_rectangle(_segment_x, _slider_y, _segment_x + _layout.slider_step_width, _slider_y + _layout.slider_height, false);
++        draw_set_colour(_step == _selected ? c_yellow : c_dkgray);
++        draw_rectangle(_segment_x, _slider_y, _segment_x + _layout.slider_step_width, _slider_y + _layout.slider_height, true);
++        _step += 1;
++    }
++    draw_set_colour(c_white);
++    draw_text(_layout.slider_x + _layout.slider_width + 4, _slider_y, string_char_at(_hex_digits, _selected + 1));
++    _channel += 1;
++}
++
++draw_text_ext(_layout.right_x, _layout.slider_b_y + 38, "32 colours = five hardware bitplanes. Bitmap payload export will use a loader rather than the current 1 KB boot block.", 18, 225);
++draw_set_colour(c_white);
+diff --git a/objects/obj_bitmap_editor/Step_0.gml b/objects/obj_bitmap_editor/Step_0.gml
+new file mode 100644
+index 0000000..e3e2992
+--- /dev/null
++++ b/objects/obj_bitmap_editor/Step_0.gml
+@@ -0,0 +1,147 @@
++var _layout = scr_bitmap_editor_layout(id);
++var _over_close = point_in_rectangle(mouse_x, mouse_y, _layout.close_x, _layout.close_y, _layout.close_x + 18, _layout.close_y + 18);
++var _over_header = point_in_rectangle(mouse_x, mouse_y, _layout.header_x, _layout.header_y, _layout.header_x + _layout.header_width, _layout.header_y + _layout.header_height);
++
++if (_over_close && mouse_check_button_pressed(mb_left)) {
++    instance_destroy();
++    exit;
++}
++
++if (_over_header && !_over_close && mouse_check_button_pressed(mb_left)) {
++    panel_dragging = true;
++    panel_drag_offset_x = mouse_x - panel_x;
++    panel_drag_offset_y = mouse_y - panel_y;
++}
++
++if (panel_dragging) {
++    if (mouse_check_button(mb_left)) {
++        panel_x = clamp(mouse_x - panel_drag_offset_x, 0, room_width - panel_width);
++        panel_y = clamp(mouse_y - panel_drag_offset_y, 0, room_height - 20);
++        _layout = scr_bitmap_editor_layout(id);
++    } else {
++        panel_dragging = false;
++    }
++}
++
++var _over_canvas = point_in_rectangle(mouse_x, mouse_y, _layout.canvas_x, _layout.canvas_y, _layout.canvas_x + _layout.canvas_width, _layout.canvas_y + _layout.canvas_height);
++
++// Six direct zoom buttons. Mouse wheel over the canvas changes one level.
++var _zoom_level = 1;
++
++while (_zoom_level <= 6) {
++    var _zoom_button_x = _layout.zoom_x + ((_zoom_level - 1) mod 3) * 42;
++    var _zoom_button_y = _layout.zoom_y + ((_zoom_level - 1) div 3) * 22;
++
++    if (point_in_rectangle(mouse_x, mouse_y, _zoom_button_x, _zoom_button_y, _zoom_button_x + 36, _zoom_button_y + 18)
++    && mouse_check_button_pressed(mb_left)) {
++        bitmap_zoom = _zoom_level;
++        _layout = scr_bitmap_editor_layout(id);
++    }
++
++    _zoom_level += 1;
++}
++
++if (_over_canvas) {
++    var _old_zoom = bitmap_zoom;
++
++    if (mouse_wheel_up()) bitmap_zoom = min(6, bitmap_zoom + 1);
++    if (mouse_wheel_down()) bitmap_zoom = max(1, bitmap_zoom - 1);
++
++    if (bitmap_zoom != _old_zoom) {
++        var _image_mouse_x = (mouse_x - _layout.display_x + bitmap_scroll_x) / _old_zoom;
++        var _image_mouse_y = (mouse_y - _layout.display_y + bitmap_scroll_y) / _old_zoom;
++        _layout = scr_bitmap_editor_layout(id);
++        bitmap_scroll_x = clamp((_image_mouse_x * bitmap_zoom) - (mouse_x - _layout.canvas_x), 0, _layout.max_scroll_x);
++        bitmap_scroll_y = clamp((_image_mouse_y * bitmap_zoom) - (mouse_y - _layout.canvas_y), 0, _layout.max_scroll_y);
++        _layout = scr_bitmap_editor_layout(id);
++    }
++}
++
++// Middle-drag, or Space + left-drag, pans the magnified image.
++var _pan_pressed = mouse_check_button_pressed(mb_middle)
++    || (keyboard_check(vk_space) && mouse_check_button_pressed(mb_left));
++
++if (_over_canvas && _pan_pressed) {
++    canvas_panning = true;
++    pan_mouse_x = mouse_x;
++    pan_mouse_y = mouse_y;
++}
++
++if (canvas_panning) {
++    var _pan_held = mouse_check_button(mb_middle)
++        || (keyboard_check(vk_space) && mouse_check_button(mb_left));
++
++    if (_pan_held) {
++        bitmap_scroll_x = clamp(bitmap_scroll_x - (mouse_x - pan_mouse_x), 0, _layout.max_scroll_x);
++        bitmap_scroll_y = clamp(bitmap_scroll_y - (mouse_y - pan_mouse_y), 0, _layout.max_scroll_y);
++        pan_mouse_x = mouse_x;
++        pan_mouse_y = mouse_y;
++    } else {
++        canvas_panning = false;
++    }
++}
++
++// Palette selection: 4 columns by 8 rows, covering COLOR00-COLOR31.
++var _swatch_index = 0;
++
++while (_swatch_index < 32) {
++    var _swatch_col = _swatch_index mod 4;
++    var _swatch_row = _swatch_index div 4;
++    var _swatch_x = _layout.swatch_x + _swatch_col * (_layout.swatch_width + _layout.swatch_gap);
++    var _swatch_y = _layout.swatch_y + _swatch_row * (_layout.swatch_height + _layout.swatch_gap);
++
++    if (point_in_rectangle(mouse_x, mouse_y, _swatch_x, _swatch_y, _swatch_x + _layout.swatch_width, _swatch_y + _layout.swatch_height)
++    && mouse_check_button_pressed(mb_left)) {
++        bitmap_paint_index = _swatch_index;
++        bitmap_palette_edit_index = _swatch_index;
++    }
++
++    _swatch_index += 1;
++}
++
++// Live 12-bit RGB sliders for the selected COLOR register.
++if (mouse_check_button(mb_left)) {
++    var _slider_value = clamp(floor((mouse_x - _layout.slider_x) / _layout.slider_step_width), 0, 15);
++    var _palette_index = bitmap_palette_edit_index;
++
++    if (point_in_rectangle(mouse_x, mouse_y, _layout.slider_x, _layout.slider_r_y, _layout.slider_x + _layout.slider_width, _layout.slider_r_y + _layout.slider_height)) {
++        bitmap_colour_r[_palette_index] = _slider_value;
++        bitmap_surface_dirty = true;
++    }
++
++    if (point_in_rectangle(mouse_x, mouse_y, _layout.slider_x, _layout.slider_g_y, _layout.slider_x + _layout.slider_width, _layout.slider_g_y + _layout.slider_height)) {
++        bitmap_colour_g[_palette_index] = _slider_value;
++        bitmap_surface_dirty = true;
++    }
++
++    if (point_in_rectangle(mouse_x, mouse_y, _layout.slider_x, _layout.slider_b_y, _layout.slider_x + _layout.slider_width, _layout.slider_b_y + _layout.slider_height)) {
++        bitmap_colour_b[_palette_index] = _slider_value;
++        bitmap_surface_dirty = true;
++    }
++}
++
++// Paint with left, erase to COLOR00 with right. At 1x this is exact pixels;
++// at higher zoom the same mapping follows the panned viewport.
++if (_over_canvas && !canvas_panning && !keyboard_check(vk_space)
++&& (mouse_check_button(mb_left) || mouse_check_button(mb_right))) {
++    var _pixel_x = floor((mouse_x - _layout.display_x + bitmap_scroll_x) / bitmap_zoom);
++    var _pixel_y = floor((mouse_y - _layout.display_y + bitmap_scroll_y) / bitmap_zoom);
++
++    if (_pixel_x >= 0 && _pixel_x < bitmap_width && _pixel_y >= 0 && _pixel_y < bitmap_height) {
++        var _draw_index = bitmap_paint_index;
++        if (mouse_check_button(mb_right)) _draw_index = 0;
++        bitmap_pixels[(_pixel_y * bitmap_width) + _pixel_x] = _draw_index;
++        bitmap_surface_dirty = true;
++    }
++}
++
++if (point_in_rectangle(mouse_x, mouse_y, _layout.clear_x, _layout.clear_y, _layout.clear_x + 120, _layout.clear_y + 20)
++&& mouse_check_button_pressed(mb_left)) {
++    bitmap_pixels = array_create(bitmap_width * bitmap_height, 0);
++    bitmap_surface_dirty = true;
++}
++
++// Commit after a stroke or palette adjustment, matching the sprite editor.
++if (mouse_check_button_released(mb_left) || mouse_check_button_released(mb_right)) {
++    scr_asset_define_bitmap("TestBitmap", bitmap_pixels, bitmap_colour_r, bitmap_colour_g, bitmap_colour_b);
++}
+diff --git a/objects/obj_bitmap_editor/obj_bitmap_editor.yy b/objects/obj_bitmap_editor/obj_bitmap_editor.yy
+new file mode 100644
+index 0000000..5739431
+--- /dev/null
++++ b/objects/obj_bitmap_editor/obj_bitmap_editor.yy
+@@ -0,0 +1,35 @@
++{
++  "$GMObject":"",
++  "%Name":"obj_bitmap_editor",
++  "eventList":[
++    {"$GMEvent":"v1","%Name":"","collisionObjectId":null,"eventNum":0,"eventType":0,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
++    {"$GMEvent":"v1","%Name":"","collisionObjectId":null,"eventNum":0,"eventType":3,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
++    {"$GMEvent":"v1","%Name":"","collisionObjectId":null,"eventNum":0,"eventType":8,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
++    {"$GMEvent":"v1","%Name":"","collisionObjectId":null,"eventNum":0,"eventType":1,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
++  ],
++  "managed":true,
++  "name":"obj_bitmap_editor",
++  "overriddenProperties":[],
++  "parent":{"name":"AMIGA_DEV_MACHINE","path":"AMIGA_DEV_MACHINE.yyp",},
++  "parentObjectId":null,
++  "persistent":false,
++  "physicsAngularDamping":0.1,
++  "physicsDensity":0.5,
++  "physicsFriction":0.2,
++  "physicsGroup":1,
++  "physicsKinematic":false,
++  "physicsLinearDamping":0.1,
++  "physicsObject":false,
++  "physicsRestitution":0.1,
++  "physicsSensor":false,
++  "physicsShape":1,
++  "physicsShapePoints":[],
++  "physicsStartAwake":true,
++  "properties":[],
++  "resourceType":"GMObject",
++  "resourceVersion":"2.0",
++  "solid":false,
++  "spriteId":null,
++  "spriteMaskId":null,
++  "visible":true,
++}
+diff --git a/scripts/scr_asset_define_bitmap/scr_asset_define_bitmap.gml b/scripts/scr_asset_define_bitmap/scr_asset_define_bitmap.gml
+new file mode 100644
+index 0000000..e413582
+--- /dev/null
++++ b/scripts/scr_asset_define_bitmap/scr_asset_define_bitmap.gml
+@@ -0,0 +1,40 @@
++/// @desc scr_asset_define_bitmap(_name, _pixels, _colour_r, _colour_g, _colour_b)
++/// Stores a native 320x256, 32-colour bitmap asset. Pixel values are chunky
++/// editor indices 0-31; the future payload writer converts them to 5 planes.
++function scr_asset_define_bitmap(_name, _pixels, _colour_r, _colour_g, _colour_b) {
++    var _pixels_copy = array_create(320 * 256, 0);
++    array_copy(_pixels_copy, 0, _pixels, 0, 320 * 256);
++
++    var _r_copy = array_create(32, 0);
++    var _g_copy = array_create(32, 0);
++    var _b_copy = array_create(32, 0);
++    array_copy(_r_copy, 0, _colour_r, 0, 32);
++    array_copy(_g_copy, 0, _colour_g, 0, 32);
++    array_copy(_b_copy, 0, _colour_b, 0, 32);
++
++    var _asset_data = {
++        name : _name,
++        type : "BITMAP",
++        width : 320,
++        height : 256,
++        depth : 5,
++        pixels : _pixels_copy,
++        colour_r : _r_copy,
++        colour_g : _g_copy,
++        colour_b : _b_copy
++    };
++
++    var _existing_index = -1;
++    var _asset_index = 0;
++
++    while (_asset_index < array_length(global.asset_list)) {
++        if (global.asset_list[_asset_index].name == _name) _existing_index = _asset_index;
++        _asset_index += 1;
++    }
++
++    if (_existing_index == -1) {
++        array_push(global.asset_list, _asset_data);
++    } else {
++        global.asset_list[_existing_index] = _asset_data;
++    }
++}
+diff --git a/scripts/scr_asset_define_bitmap/scr_asset_define_bitmap.yy b/scripts/scr_asset_define_bitmap/scr_asset_define_bitmap.yy
+new file mode 100644
+index 0000000..5cc8cb9
+--- /dev/null
++++ b/scripts/scr_asset_define_bitmap/scr_asset_define_bitmap.yy
+@@ -0,0 +1,10 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_asset_define_bitmap",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_asset_define_bitmap",
++  "parent":{"name":"AMIGA_DEV_MACHINE","path":"AMIGA_DEV_MACHINE.yyp",},
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}
+diff --git a/scripts/scr_bitmap_editor_layout/scr_bitmap_editor_layout.gml b/scripts/scr_bitmap_editor_layout/scr_bitmap_editor_layout.gml
+new file mode 100644
+index 0000000..0329739
+--- /dev/null
++++ b/scripts/scr_bitmap_editor_layout/scr_bitmap_editor_layout.gml
+@@ -0,0 +1,69 @@
++/// @desc scr_bitmap_editor_layout(_editor)
++/// Shared responsive geometry for bitmap-editor Step and Draw events.
++function scr_bitmap_editor_layout(_editor) {
++    _editor.panel_width = min(1280, room_width - 40);
++    _editor.panel_height = min(1024, room_height - 40);
++    _editor.panel_x = clamp(_editor.panel_x, 0, room_width - _editor.panel_width);
++    _editor.panel_y = clamp(_editor.panel_y, 0, room_height - 20);
++
++    var _left_width = 150;
++    var _right_width = 250;
++    var _canvas_x = _editor.panel_x + _left_width + 10;
++    var _canvas_y = _editor.panel_y + 42;
++    var _canvas_width = _editor.panel_width - _left_width - _right_width - 30;
++    var _canvas_height = _editor.panel_height - 58;
++    var _content_width = 320 * _editor.bitmap_zoom;
++    var _content_height = 256 * _editor.bitmap_zoom;
++    var _max_scroll_x = max(0, _content_width - _canvas_width);
++    var _max_scroll_y = max(0, _content_height - _canvas_height);
++
++    _editor.bitmap_scroll_x = clamp(_editor.bitmap_scroll_x, 0, _max_scroll_x);
++    _editor.bitmap_scroll_y = clamp(_editor.bitmap_scroll_y, 0, _max_scroll_y);
++
++    return {
++        panel_x : _editor.panel_x,
++        panel_y : _editor.panel_y,
++        panel_width : _editor.panel_width,
++        panel_height : _editor.panel_height,
++        header_x : _editor.panel_x,
++        header_y : _editor.panel_y,
++        header_width : _editor.panel_width,
++        header_height : 24,
++        close_x : _editor.panel_x + _editor.panel_width - 22,
++        close_y : _editor.panel_y + 3,
++        left_x : _editor.panel_x + 10,
++        left_y : _editor.panel_y + 42,
++        right_x : _editor.panel_x + _editor.panel_width - _right_width + 10,
++        right_y : _editor.panel_y + 42,
++        canvas_x : _canvas_x,
++        canvas_y : _canvas_y,
++        canvas_width : _canvas_width,
++        canvas_height : _canvas_height,
++        content_width : _content_width,
++        content_height : _content_height,
++        max_scroll_x : _max_scroll_x,
++        max_scroll_y : _max_scroll_y,
++        display_x : _canvas_x + max(0, (_canvas_width - _content_width) / 2),
++        display_y : _canvas_y + max(0, (_canvas_height - _content_height) / 2),
++        zoom_x : _editor.panel_x + 10,
++        zoom_y : _editor.panel_y + 76,
++        clear_x : _editor.panel_x + 10,
++        clear_y : _editor.panel_y + 116,
++        swatch_x : _editor.panel_x + _editor.panel_width - _right_width + 10,
++        swatch_y : _editor.panel_y + 66,
++        swatch_width : 52,
++        swatch_height : 24,
++        swatch_gap : 4,
++        slider_x : _editor.panel_x + _editor.panel_width - _right_width + 34,
++        slider_width : 192,
++        slider_step_width : 12,
++        slider_height : 18,
++        slider_r_y : _editor.panel_y + 330,
++        slider_g_y : _editor.panel_y + 358,
++        slider_b_y : _editor.panel_y + 386,
++        preview_x : _editor.panel_x + _editor.panel_width - _right_width + 10,
++        preview_y : _editor.panel_y + 330,
++        preview_width : 18,
++        preview_height : 74
++    };
++}
+diff --git a/scripts/scr_bitmap_editor_layout/scr_bitmap_editor_layout.yy b/scripts/scr_bitmap_editor_layout/scr_bitmap_editor_layout.yy
+new file mode 100644
+index 0000000..e387b1f
+--- /dev/null
++++ b/scripts/scr_bitmap_editor_layout/scr_bitmap_editor_layout.yy
+@@ -0,0 +1,10 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_bitmap_editor_layout",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_bitmap_editor_layout",
++  "parent":{"name":"AMIGA_DEV_MACHINE","path":"AMIGA_DEV_MACHINE.yyp",},
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}

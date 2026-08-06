@@ -140,6 +140,21 @@ if (_over_sprite_test_button && mouse_check_button_pressed(mb_left)) {
     scr_amiga_run_sprite_test();
 }
 
+var _bitmap_editor_button_x = 310;
+var _bitmap_editor_button_y = 104;
+var _bitmap_editor_button_width = 100;
+var _bitmap_editor_button_height = 16;
+
+var _over_bitmap_editor_button = point_in_rectangle(mouse_x, mouse_y, _bitmap_editor_button_x, _bitmap_editor_button_y, _bitmap_editor_button_x + _bitmap_editor_button_width, _bitmap_editor_button_y + _bitmap_editor_button_height);
+
+if (_over_bitmap_editor_button && mouse_check_button_pressed(mb_left)) {
+    if (instance_exists(obj_bitmap_editor)) {
+        with (obj_bitmap_editor) instance_destroy();
+    } else {
+        instance_create_layer(0, 0, "Instances", obj_bitmap_editor);
+    }
+}
+
 if (keyboard_check_pressed(ord("H")) && global.operand_edit_owner_uid == -1) {
     if (global.value_display_mode == "HEX") {
         global.value_display_mode = "DEC";

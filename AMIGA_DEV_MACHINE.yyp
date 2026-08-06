@@ -206,6 +206,7 @@
   "resources":[
     {"id":{"name":"execute_shell_simple_ext","path":"extensions/execute_shell_simple_ext/execute_shell_simple_ext.yy",},},
     {"id":{"name":"obj_amiga_manager","path":"objects/obj_amiga_manager/obj_amiga_manager.yy",},},
+    {"id":{"name":"obj_bitmap_editor","path":"objects/obj_bitmap_editor/obj_bitmap_editor.yy",},},
     {"id":{"name":"obj_amiga_root_node","path":"objects/obj_amiga_root_node/obj_amiga_root_node.yy",},},
     {"id":{"name":"obj_opcode_node","path":"objects/obj_opcode_node/obj_opcode_node.yy",},},
     {"id":{"name":"obj_opcode_palette_item","path":"objects/obj_opcode_palette_item/obj_opcode_palette_item.yy",},},
@@ -224,6 +225,7 @@
     {"id":{"name":"scr_amiga_restore_wedge_shifts","path":"scripts/scr_amiga_restore_wedge_shifts/scr_amiga_restore_wedge_shifts.yy",},},
     {"id":{"name":"scr_amiga_run_sprite_test","path":"scripts/scr_amiga_run_sprite_test/scr_amiga_run_sprite_test.yy",},},
     {"id":{"name":"scr_amiga_start_adf_build","path":"scripts/scr_amiga_start_adf_build/scr_amiga_start_adf_build.yy",},},
+    {"id":{"name":"scr_asset_define_bitmap","path":"scripts/scr_asset_define_bitmap/scr_asset_define_bitmap.yy",},},
     {"id":{"name":"scr_amiga_start_build","path":"scripts/scr_amiga_start_build/scr_amiga_start_build.yy",},},
     {"id":{"name":"scr_apply_wedge_preview","path":"scripts/scr_apply_wedge_preview/scr_apply_wedge_preview.yy",},},
     {"id":{"name":"scr_asset_define_copper_bar","path":"scripts/scr_asset_define_copper_bar/scr_asset_define_copper_bar.yy",},},
@@ -273,6 +275,7 @@
     {"id":{"name":"scr_snap_to_grid","path":"scripts/scr_snap_to_grid/scr_snap_to_grid.yy",},},
     {"id":{"name":"scr_split_lines","path":"scripts/scr_split_lines/scr_split_lines.yy",},},
     {"id":{"name":"scr_sprite_editor_layout","path":"scripts/scr_sprite_editor_layout/scr_sprite_editor_layout.yy",},},
+    {"id":{"name":"scr_bitmap_editor_layout","path":"scripts/scr_bitmap_editor_layout/scr_bitmap_editor_layout.yy",},},
     {"id":{"name":"scr_try_stack_connect","path":"scripts/scr_try_stack_connect/scr_try_stack_connect.yy",},},
     {"id":{"name":"scr_undo","path":"scripts/scr_undo/scr_undo.yy",},},
     {"id":{"name":"scr_validate_node_addressing","path":"scripts/scr_validate_node_addressing/scr_validate_node_addressing.yy",},},

@@ -98,6 +98,12 @@ draw_set_colour(c_white);
 draw_rectangle(_macro_xpos, 84, _macro_xpos+_macro_but_width, 100, true);
 draw_text(312, 82, "TEST SPR");
 
+draw_set_colour(make_color_rgb(35, 55, 85));
+draw_rectangle(_macro_xpos, 104, _macro_xpos+_macro_but_width, 120, false);
+draw_set_colour(c_white);
+draw_rectangle(_macro_xpos, 104, _macro_xpos+_macro_but_width, 120, true);
+draw_text(312, 102, "BITMAP EDIT");
+
 if (keyboard_check(vk_control)) {
     var _hud_text = "Undo: " + string(array_length(global.undo_stack)) + "   Redo: " + string(array_length(global.redo_stack));
     var _hud_x = mouse_x + 16;
