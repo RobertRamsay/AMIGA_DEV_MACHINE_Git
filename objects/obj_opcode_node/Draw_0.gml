@@ -76,7 +76,13 @@ if (is_macro) {
     var _info_text = "asset not found";
 
     if (_asset_for_info != undefined) {
-        _info_text = string(array_length(_asset_for_info.bands)) + " colour bands";
+        if (_asset_for_info.type == "COPPER_BAR") {
+            _info_text = string(array_length(_asset_for_info.bands)) + " colour bands";
+        } else if (_asset_for_info.type == "SPRITE") {
+            _info_text = "sprite: ch" + string(_asset_for_info.channel) + ", " + string(_asset_for_info.height) + " rows";
+        } else {
+            _info_text = _asset_for_info.type + " asset";
+        }
     }
 
     draw_text(_asset_field_dx + 4, _asset_field_dy + 24, _info_text);
