@@ -67,6 +67,7 @@ if (is_dragging) {
 
             if (_final_insert.found) {
                 scr_amiga_commit_insert(id, _final_insert.root_uid, _final_insert.insert_y, _final_insert.anchor_x);
+                scr_set_status_message("Node dropped in: " + scr_amiga_describe_node(id));
             } else {
                 is_connected = false;
                 root_uid = -1;
@@ -128,8 +129,10 @@ if (is_dragging) {
         global.right_click_delete_handled_this_frame = true;
 
         if (global.operand_edit_owner_uid == -1) {
+            var _deleted_descriptor = scr_amiga_describe_node(id);
             scr_push_undo_snapshot();
             scr_amiga_delete_and_close_gap(id);
+            scr_set_status_message("Node deleted: " + _deleted_descriptor);
         }
         // else: some OTHER node still has an edit open — don't delete
         // while editing is in progress anywhere.
@@ -389,6 +392,12 @@ if (operand_editing_slot != "" && global.operand_edit_owner_uid == uid) {
         if (_is_text_field) {
             if (operand_editing_slot == "node_label") {
                 node_label = operand_edit_text;
+
+                if (operand_edit_text != "") {
+                    scr_set_status_message("Label named: " + operand_edit_text);
+                } else {
+                    scr_set_status_message("Label cleared.");
+                }
             } else if (operand_editing_slot == "macro_asset") {
                 macro_asset_name = operand_edit_text;
             } else {
