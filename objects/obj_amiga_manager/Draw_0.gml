@@ -75,24 +75,27 @@ if (_preview_line_count == 0) {
 }
 
 draw_set_colour(c_white);
-draw_text(310, 2, "MACROS:");
 
+var _macro_but_width = 100;
+var _macro_xpos = 310;
+
+draw_text(_macro_xpos, 2, "MACROS:");
 draw_set_colour(c_maroon);
-draw_rectangle(310, 20, 370, 36, false);
+draw_rectangle(_macro_xpos, 20, _macro_xpos+_macro_but_width, 36, false);
 draw_set_colour(c_white);
-draw_rectangle(310, 20, 370, 36, true);
+draw_rectangle(_macro_xpos, 20, _macro_xpos+_macro_but_width, 36, true);
 draw_text(318, 18, "TEST");
 
 draw_set_colour(make_color_rgb(120, 60, 160));
-draw_rectangle(310, 64, 370, 80, false);
+draw_rectangle(_macro_xpos, 64, _macro_xpos+_macro_but_width, 80, false);
 draw_set_colour(c_white);
-draw_rectangle(310, 64, 370, 80, true);
+draw_rectangle(_macro_xpos, 64, _macro_xpos+_macro_but_width, 80, true);
 draw_text(312, 62, "SPR EDIT");
 
 draw_set_colour(c_maroon);
-draw_rectangle(310, 84, 370, 100, false);
+draw_rectangle(_macro_xpos, 84, _macro_xpos+_macro_but_width, 100, false);
 draw_set_colour(c_white);
-draw_rectangle(310, 84, 370, 100, true);
+draw_rectangle(_macro_xpos, 84, _macro_xpos+_macro_but_width, 100, true);
 draw_text(312, 82, "TEST SPR");
 
 if (keyboard_check(vk_control)) {

@@ -11,4 +11,4 @@ if (palette_mnemonic == "CPRBAR") {
 draw_set_colour(_body_colour);
 draw_rectangle(palette_x, palette_y, palette_x + palette_width, palette_y + palette_height, false);
 draw_set_colour(c_white);
-draw_text(palette_x + 15, palette_y, palette_display_label);
+draw_text(palette_x + 3, palette_y, palette_display_label);
