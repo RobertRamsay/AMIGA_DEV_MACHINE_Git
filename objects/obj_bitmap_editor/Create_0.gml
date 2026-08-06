@@ -46,6 +46,9 @@ bitmap_gradient_start_x = 0;
 bitmap_gradient_start_y = 0;
 bitmap_gradient_end_x = 0;
 bitmap_gradient_end_y = 0;
+bitmap_dither_pattern = "CHECKER";
+bitmap_dither_use_colour_2 = false;
+bitmap_dither_invert = false;
 
 bitmap_colour_r = array_create(32, 0);
 bitmap_colour_g = array_create(32, 0);

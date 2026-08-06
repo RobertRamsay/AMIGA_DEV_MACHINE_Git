@@ -163,6 +163,30 @@ draw_set_colour(c_white);
 draw_rectangle(_layout.gradient_edge_x, _layout.gradient_edge_y, _layout.gradient_edge_x + _layout.gradient_edge_width, _layout.gradient_edge_y + _layout.tool_height, true);
 draw_text(_layout.gradient_edge_x + 10, _layout.gradient_edge_y + 3, bitmap_gradient_include_edge ? "EAT EDGE (GROW)" : "KEEP EDGE (STOP)");
 
+draw_set_colour(bitmap_tool == "DITHER" ? c_olive : c_dkgray);
+draw_rectangle(_layout.dither_tool_x, _layout.dither_tool_y, _layout.dither_tool_x + _layout.dither_tool_width, _layout.dither_tool_y + _layout.tool_height, false);
+draw_set_colour(c_white);
+draw_rectangle(_layout.dither_tool_x, _layout.dither_tool_y, _layout.dither_tool_x + _layout.dither_tool_width, _layout.dither_tool_y + _layout.tool_height, true);
+draw_text(_layout.dither_tool_x + 10, _layout.dither_tool_y + 3, "DITHER DRAW");
+
+draw_set_colour(c_dkgray);
+draw_rectangle(_layout.dither_pair_x, _layout.dither_pair_y, _layout.dither_pair_x + _layout.dither_pair_width, _layout.dither_pair_y + _layout.tool_height, false);
+draw_rectangle(_layout.dither_pattern_x, _layout.dither_pattern_y, _layout.dither_pattern_x + _layout.dither_pattern_width, _layout.dither_pattern_y + _layout.tool_height, false);
+draw_rectangle(_layout.dither_invert_x, _layout.dither_invert_y, _layout.dither_invert_x + _layout.dither_invert_width, _layout.dither_invert_y + _layout.tool_height, false);
+draw_set_colour(c_white);
+draw_rectangle(_layout.dither_pair_x, _layout.dither_pair_y, _layout.dither_pair_x + _layout.dither_pair_width, _layout.dither_pair_y + _layout.tool_height, true);
+draw_rectangle(_layout.dither_pattern_x, _layout.dither_pattern_y, _layout.dither_pattern_x + _layout.dither_pattern_width, _layout.dither_pattern_y + _layout.tool_height, true);
+draw_rectangle(_layout.dither_invert_x, _layout.dither_invert_y, _layout.dither_invert_x + _layout.dither_invert_width, _layout.dither_invert_y + _layout.tool_height, true);
+draw_text(_layout.dither_pair_x + 10, _layout.dither_pair_y + 3, bitmap_dither_use_colour_2 ? "COLOURS: COL1 / COL2" : "COLOURS: COL1 / TRANSP");
+draw_text(_layout.dither_pattern_x + 10, _layout.dither_pattern_y + 3, "DITHER: " + bitmap_dither_pattern);
+draw_text(_layout.dither_invert_x + 10, _layout.dither_invert_y + 3, bitmap_dither_invert ? "INVERT: YES" : "INVERT: NO");
+
+draw_set_colour(make_color_rgb(65, 55, 85));
+draw_rectangle(_layout.flip_x, _layout.flip_y, _layout.flip_x + _layout.flip_width, _layout.flip_y + _layout.tool_height, false);
+draw_set_colour(c_white);
+draw_rectangle(_layout.flip_x, _layout.flip_y, _layout.flip_x + _layout.flip_width, _layout.flip_y + _layout.tool_height, true);
+draw_text(_layout.flip_x + 10, _layout.flip_y + 3, "FLIP X (FULL IMAGE)");
+
 var _utility_x_2 = _layout.left_x + _layout.utility_button_width + _layout.utility_button_gap;
 draw_set_colour(array_length(bitmap_undo_stack) > 0 ? c_olive : c_dkgray);
 draw_rectangle(_layout.left_x, _layout.history_y, _layout.left_x + _layout.utility_button_width, _layout.history_y + _layout.utility_button_height, false);
@@ -376,6 +400,6 @@ while (_channel < 3) {
 draw_text_ext(_layout.right_x, _layout.slider_b_y + 38, "32 colours = five hardware bitplanes. TEST BITMAP builds a bootable OFS disk and loads the 51,200-byte display through AmigaDOS.", 18, 225);
 
 draw_set_colour(c_white);
-draw_text(_layout.panel_x + 12, _layout.help_line_1_y, "LEFT: use selected tool     RIGHT: use COLOR00     ALT+LEFT: pick pen     HOLD SPACE: pan     CTRL+Z/Y: undo/redo     CTRL+S/L: save/load");
-draw_text(_layout.panel_x + 12, _layout.help_line_2_y, "WHEEL: zoom     DRAW: freehand     LINE: drag/release     FILL: connected area     GRADIENT: drag direction");
+draw_text(_layout.panel_x + 12, _layout.help_line_1_y, "LEFT: tool     RIGHT: COLOR00     ALT+CANVAS: pick     ALT+L/R SWATCH: COL1/COL2     CTRL+C/V SWATCH: copy/paste     SPACE: pan");
+draw_text(_layout.panel_x + 12, _layout.help_line_2_y, "CTRL+Z/Y: undo/redo     CTRL+S/L: save/load     WHEEL: zoom     DITHER: COL1 with transparency or COL2");
 draw_set_colour(c_white);

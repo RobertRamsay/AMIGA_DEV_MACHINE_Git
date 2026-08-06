@@ -111,6 +111,41 @@ if (point_in_rectangle(mouse_x, mouse_y, _layout.gradient_tool_x, _layout.gradie
     bitmap_gradient_active = false;
 }
 
+if (point_in_rectangle(mouse_x, mouse_y, _layout.dither_tool_x, _layout.dither_tool_y, _layout.dither_tool_x + _layout.dither_tool_width, _layout.dither_tool_y + _layout.tool_height)
+&& mouse_check_button_pressed(mb_left)) {
+    bitmap_tool = "DITHER";
+    bitmap_stroke_active = false;
+    bitmap_line_active = false;
+    bitmap_gradient_active = false;
+}
+
+if (point_in_rectangle(mouse_x, mouse_y, _layout.dither_pair_x, _layout.dither_pair_y, _layout.dither_pair_x + _layout.dither_pair_width, _layout.dither_pair_y + _layout.tool_height)
+&& mouse_check_button_pressed(mb_left)) {
+    bitmap_dither_use_colour_2 = !bitmap_dither_use_colour_2;
+}
+
+if (point_in_rectangle(mouse_x, mouse_y, _layout.dither_pattern_x, _layout.dither_pattern_y, _layout.dither_pattern_x + _layout.dither_pattern_width, _layout.dither_pattern_y + _layout.tool_height)
+&& mouse_check_button_pressed(mb_left)) {
+    var _dither_patterns = ["CHECKER", "INTERLACE", "BAYER1", "BAYER2", "BAYER3", "BAYER5", "BAYER6", "BAYER7", "BAYER8"];
+    var _dither_pattern_index = 0;
+    var _dither_search_index = 0;
+
+    while (_dither_search_index < array_length(_dither_patterns)) {
+        if (_dither_patterns[_dither_search_index] == bitmap_dither_pattern) {
+            _dither_pattern_index = _dither_search_index;
+        }
+        _dither_search_index += 1;
+    }
+
+    _dither_pattern_index = (_dither_pattern_index + 1) mod array_length(_dither_patterns);
+    bitmap_dither_pattern = _dither_patterns[_dither_pattern_index];
+}
+
+if (point_in_rectangle(mouse_x, mouse_y, _layout.dither_invert_x, _layout.dither_invert_y, _layout.dither_invert_x + _layout.dither_invert_width, _layout.dither_invert_y + _layout.tool_height)
+&& mouse_check_button_pressed(mb_left)) {
+    bitmap_dither_invert = !bitmap_dither_invert;
+}
+
 var _gradient_colour_1_x = _layout.gradient_tool_x;
 var _gradient_colour_2_x = _layout.gradient_tool_x + _layout.gradient_colour_width + _layout.tool_gap;
 
@@ -190,6 +225,42 @@ while (_swatch_index < 32) {
     var _swatch_y = _layout.swatch_y + _swatch_row * (_layout.swatch_height + _layout.swatch_gap);
 
     if (point_in_rectangle(mouse_x, mouse_y, _swatch_x, _swatch_y, _swatch_x + _layout.swatch_width, _swatch_y + _layout.swatch_height)) {
+        // Clipboard format is the native three-digit Amiga RGB word (#RGB).
+        if (_ctrl_held && keyboard_check_pressed(ord("C"))) {
+            var _copy_digits = "0123456789ABCDEF";
+            var _copy_text = "#"
+                + string_char_at(_copy_digits, bitmap_colour_r[_swatch_index] + 1)
+                + string_char_at(_copy_digits, bitmap_colour_g[_swatch_index] + 1)
+                + string_char_at(_copy_digits, bitmap_colour_b[_swatch_index] + 1);
+            clipboard_set_text(_copy_text);
+        }
+
+        if (_ctrl_held && keyboard_check_pressed(ord("V"))) {
+            var _paste_text = string_upper(string_trim(clipboard_get_text()));
+            if (string_char_at(_paste_text, 1) == "#") _paste_text = string_delete(_paste_text, 1, 1);
+
+            if (string_length(_paste_text) == 3) {
+                var _paste_digits = "0123456789ABCDEF";
+                var _paste_r = string_pos(string_char_at(_paste_text, 1), _paste_digits) - 1;
+                var _paste_g = string_pos(string_char_at(_paste_text, 2), _paste_digits) - 1;
+                var _paste_b = string_pos(string_char_at(_paste_text, 3), _paste_digits) - 1;
+
+                if (_paste_r >= 0 && _paste_g >= 0 && _paste_b >= 0
+                && (bitmap_colour_r[_swatch_index] != _paste_r
+                || bitmap_colour_g[_swatch_index] != _paste_g
+                || bitmap_colour_b[_swatch_index] != _paste_b)) {
+                    scr_bitmap_push_undo(id);
+                    bitmap_colour_r[_swatch_index] = _paste_r;
+                    bitmap_colour_g[_swatch_index] = _paste_g;
+                    bitmap_colour_b[_swatch_index] = _paste_b;
+                    bitmap_palette_edit_index = _swatch_index;
+                    bitmap_surface_dirty = true;
+                    scr_asset_define_bitmap("TestBitmap", bitmap_pixels, bitmap_colour_r, bitmap_colour_g, bitmap_colour_b);
+                    bitmap_asset_dirty = false;
+                }
+            }
+        }
+
         if (mouse_check_button_pressed(mb_left)) {
             bitmap_paint_index = _swatch_index;
             bitmap_palette_edit_index = _swatch_index;
@@ -265,7 +336,7 @@ if (_over_canvas && _canvas_pixel_valid && keyboard_check(vk_alt)
 // DRAW: continuous freehand using the same exact line routine as LINE.
 var _stroke_can_draw = _over_canvas && _canvas_pixel_valid
     && !canvas_panning && !keyboard_check(vk_space)
-    && !keyboard_check(vk_alt) && bitmap_tool == "DRAW"
+    && !keyboard_check(vk_alt) && (bitmap_tool == "DRAW" || bitmap_tool == "DITHER")
     && (mouse_check_button(mb_left) || mouse_check_button(mb_right));
 
 if (_stroke_can_draw) {
@@ -280,7 +351,7 @@ if (_stroke_can_draw) {
         bitmap_stroke_index = _draw_index;
     }
 
-    scr_bitmap_apply_line(id, bitmap_stroke_last_x, bitmap_stroke_last_y, _canvas_pixel_x, _canvas_pixel_y, _draw_index);
+    scr_bitmap_apply_line(id, bitmap_stroke_last_x, bitmap_stroke_last_y, _canvas_pixel_x, _canvas_pixel_y, _draw_index, bitmap_tool == "DITHER" && !mouse_check_button(mb_right));
 
     bitmap_stroke_last_x = _canvas_pixel_x;
     bitmap_stroke_last_y = _canvas_pixel_y;
@@ -539,6 +610,31 @@ if (point_in_rectangle(mouse_x, mouse_y, _layout.clear_x, _layout.clear_y, _layo
 && mouse_check_button_pressed(mb_left)) {
     scr_bitmap_push_undo(id);
     bitmap_pixels = array_create(bitmap_width * bitmap_height, 0);
+    bitmap_surface_dirty = true;
+    bitmap_dirty_pixels = [];
+    bitmap_asset_dirty = true;
+}
+
+if (point_in_rectangle(mouse_x, mouse_y, _layout.flip_x, _layout.flip_y, _layout.flip_x + _layout.flip_width, _layout.flip_y + _layout.tool_height)
+&& mouse_check_button_pressed(mb_left)) {
+    scr_bitmap_push_undo(id);
+    var _flip_y = 0;
+
+    while (_flip_y < bitmap_height) {
+        var _flip_x = 0;
+
+        while (_flip_x < bitmap_width div 2) {
+            var _flip_left = (_flip_y * bitmap_width) + _flip_x;
+            var _flip_right = (_flip_y * bitmap_width) + (bitmap_width - 1 - _flip_x);
+            var _flip_value = bitmap_pixels[_flip_left];
+            bitmap_pixels[_flip_left] = bitmap_pixels[_flip_right];
+            bitmap_pixels[_flip_right] = _flip_value;
+            _flip_x += 1;
+        }
+
+        _flip_y += 1;
+    }
+
     bitmap_surface_dirty = true;
     bitmap_dirty_pixels = [];
     bitmap_asset_dirty = true;
