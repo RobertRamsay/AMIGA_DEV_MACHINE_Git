@@ -103,6 +103,12 @@ preview_line_cache = [];
 
 global.status_message_log = [];
 
+// True whenever anything has changed since the last save (or since start,
+// if nothing has been saved yet). Set by the two undo-snapshot chokepoints
+// every mutation already goes through — see scr_push_undo_snapshot and
+// scr_bitmap_push_undo — and cleared by both save paths.
+global.workspace_dirty = false;
+
 // Recent colours picked in obj_colour_picker, most-recent-first, capped at
 // 8. Global and shared across every picker open (SETBKG, any CPRBAR band,
 // anything else later) rather than per-instance.

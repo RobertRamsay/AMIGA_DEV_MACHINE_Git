@@ -37,6 +37,7 @@ function scr_bitmap_push_undo(_editor) {
         array_delete(_editor.bitmap_undo_stack, 0, 1);
     }
     _editor.bitmap_redo_stack = [];
+    global.workspace_dirty = true;
 }
 
 function scr_bitmap_undo(_editor) {

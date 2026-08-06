@@ -9,4 +9,5 @@ function scr_push_undo_snapshot() {
     }
 
     global.redo_stack = [];
+    global.workspace_dirty = true;
 }

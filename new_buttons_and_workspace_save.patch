@@ -1,0 +1,536 @@
+diff --git a/AMIGA_DEV_MACHINE.yyp b/AMIGA_DEV_MACHINE.yyp
+index 4c0f188..a1f3f1a 100644
+--- a/AMIGA_DEV_MACHINE.yyp
++++ b/AMIGA_DEV_MACHINE.yyp
+@@ -270,6 +270,7 @@
+     {"id":{"name":"scr_is_valid_hex_colour","path":"scripts/scr_is_valid_hex_colour/scr_is_valid_hex_colour.yy",},},
+     {"id":{"name":"scr_load_layout","path":"scripts/scr_load_layout/scr_load_layout.yy",},},
+     {"id":{"name":"scr_load_test_setup","path":"scripts/scr_load_test_setup/scr_load_test_setup.yy",},},
++    {"id":{"name":"scr_load_workspace_from_path","path":"scripts/scr_load_workspace_from_path/scr_load_workspace_from_path.yy",},},
+     {"id":{"name":"scr_number_to_hex_string","path":"scripts/scr_number_to_hex_string/scr_number_to_hex_string.yy",},},
+     {"id":{"name":"scr_opcode_condition_family_key","path":"scripts/scr_opcode_condition_family_key/scr_opcode_condition_family_key.yy",},},
+     {"id":{"name":"scr_opcode_display_label","path":"scripts/scr_opcode_display_label/scr_opcode_display_label.yy",},},
+@@ -285,6 +286,7 @@
+     {"id":{"name":"scr_relink_around_node","path":"scripts/scr_relink_around_node/scr_relink_around_node.yy",},},
+     {"id":{"name":"scr_restore_snapshot","path":"scripts/scr_restore_snapshot/scr_restore_snapshot.yy",},},
+     {"id":{"name":"scr_save_layout","path":"scripts/scr_save_layout/scr_save_layout.yy",},},
++    {"id":{"name":"scr_save_workspace_to_path","path":"scripts/scr_save_workspace_to_path/scr_save_workspace_to_path.yy",},},
+     {"id":{"name":"scr_set_status_message","path":"scripts/scr_set_status_message/scr_set_status_message.yy",},},
+     {"id":{"name":"scr_snap_to_grid","path":"scripts/scr_snap_to_grid/scr_snap_to_grid.yy",},},
+     {"id":{"name":"scr_split_lines","path":"scripts/scr_split_lines/scr_split_lines.yy",},},
+diff --git a/objects/obj_amiga_manager/Create_0.gml b/objects/obj_amiga_manager/Create_0.gml
+index 89de71b..f0bc3df 100644
+--- a/objects/obj_amiga_manager/Create_0.gml
++++ b/objects/obj_amiga_manager/Create_0.gml
+@@ -103,6 +103,12 @@ preview_line_cache = [];
+ 
+ global.status_message_log = [];
+ 
++// True whenever anything has changed since the last save (or since start,
++// if nothing has been saved yet). Set by the two undo-snapshot chokepoints
++// every mutation already goes through — see scr_push_undo_snapshot and
++// scr_bitmap_push_undo — and cleared by both save paths.
++global.workspace_dirty = false;
++
+ // Recent colours picked in obj_colour_picker, most-recent-first, capped at
+ // 8. Global and shared across every picker open (SETBKG, any CPRBAR band,
+ // anything else later) rather than per-instance.
+diff --git a/objects/obj_amiga_manager/Draw_0.gml b/objects/obj_amiga_manager/Draw_0.gml
+index 3efdc9b..af7c7dc 100644
+--- a/objects/obj_amiga_manager/Draw_0.gml
++++ b/objects/obj_amiga_manager/Draw_0.gml
+@@ -104,6 +104,30 @@ draw_set_colour(c_white);
+ draw_rectangle(_macro_xpos, 104, _macro_xpos+_macro_but_width, 120, true);
+ draw_text(312, 102, "BITMAP EDIT");
+ 
++draw_set_colour(make_color_rgb(140, 30, 30));
++draw_rectangle(_macro_xpos, 124, _macro_xpos+_macro_but_width, 140, false);
++draw_set_colour(c_white);
++draw_rectangle(_macro_xpos, 124, _macro_xpos+_macro_but_width, 140, true);
++draw_text(312, 122, "KILL FSUAE");
++
++draw_set_colour(make_color_rgb(40, 100, 40));
++draw_rectangle(_macro_xpos, 144, _macro_xpos+_macro_but_width, 160, false);
++draw_set_colour(c_white);
++draw_rectangle(_macro_xpos, 144, _macro_xpos+_macro_but_width, 160, true);
++draw_text(312, 142, "SAVE WORKSPACE");
++
++draw_set_colour(make_color_rgb(35, 55, 85));
++draw_rectangle(_macro_xpos, 164, _macro_xpos+_macro_but_width, 180, false);
++draw_set_colour(c_white);
++draw_rectangle(_macro_xpos, 164, _macro_xpos+_macro_but_width, 180, true);
++draw_text(312, 162, "LOAD WORKSPACE");
++
++draw_set_colour(make_color_rgb(90, 20, 20));
++draw_rectangle(_macro_xpos, 184, _macro_xpos+_macro_but_width, 200, false);
++draw_set_colour(c_white);
++draw_rectangle(_macro_xpos, 184, _macro_xpos+_macro_but_width, 200, true);
++draw_text(312, 182, "QUIT");
++
+ if (keyboard_check(vk_control)) {
+     var _hud_text = "Undo: " + string(array_length(global.undo_stack)) + "   Redo: " + string(array_length(global.redo_stack));
+     var _hud_x = mouse_x + 16;
+diff --git a/objects/obj_amiga_manager/Step_0.gml b/objects/obj_amiga_manager/Step_0.gml
+index 4978d19..19e2b20 100644
+--- a/objects/obj_amiga_manager/Step_0.gml
++++ b/objects/obj_amiga_manager/Step_0.gml
+@@ -250,6 +250,69 @@ if (_over_bitmap_editor_button && mouse_check_button_pressed(mb_left)) {
+     }
+ }
+ 
++var _kill_fsuae_button_x = 310;
++var _kill_fsuae_button_y = 124;
++var _kill_fsuae_button_width = 100;
++var _kill_fsuae_button_height = 16;
++
++var _over_kill_fsuae_button = point_in_rectangle(mouse_x, mouse_y, _kill_fsuae_button_x, _kill_fsuae_button_y, _kill_fsuae_button_x + _kill_fsuae_button_width, _kill_fsuae_button_y + _kill_fsuae_button_height);
++
++if (_over_kill_fsuae_button && mouse_check_button_pressed(mb_left)) {
++    execute_shell_simple("taskkill.exe", "/F /T /IM fs-uae.exe", "open", 0);
++    scr_set_status_message("FS-UAE killed.");
++}
++
++var _save_workspace_button_x = 310;
++var _save_workspace_button_y = 144;
++var _save_workspace_button_width = 100;
++var _save_workspace_button_height = 16;
++
++var _over_save_workspace_button = point_in_rectangle(mouse_x, mouse_y, _save_workspace_button_x, _save_workspace_button_y, _save_workspace_button_x + _save_workspace_button_width, _save_workspace_button_y + _save_workspace_button_height);
++
++if (_over_save_workspace_button && mouse_check_button_pressed(mb_left)) {
++    var _save_chosen_path = get_save_filename("Workspace JSON|*.json", "workspace.json");
++
++    if (_save_chosen_path != "") {
++        scr_save_workspace_to_path(_save_chosen_path);
++        scr_set_status_message("Workspace saved: " + _save_chosen_path);
++    }
++}
++
++var _load_workspace_button_x = 310;
++var _load_workspace_button_y = 164;
++var _load_workspace_button_width = 100;
++var _load_workspace_button_height = 16;
++
++var _over_load_workspace_button = point_in_rectangle(mouse_x, mouse_y, _load_workspace_button_x, _load_workspace_button_y, _load_workspace_button_x + _load_workspace_button_width, _load_workspace_button_y + _load_workspace_button_height);
++
++if (_over_load_workspace_button && mouse_check_button_pressed(mb_left)) {
++    var _load_chosen_path = get_open_filename("Workspace JSON|*.json", "");
++
++    if (_load_chosen_path != "") {
++        scr_load_workspace_from_path(_load_chosen_path);
++        scr_set_status_message("Workspace loaded: " + _load_chosen_path);
++    }
++}
++
++var _quit_button_x = 310;
++var _quit_button_y = 184;
++var _quit_button_width = 100;
++var _quit_button_height = 16;
++
++var _over_quit_button = point_in_rectangle(mouse_x, mouse_y, _quit_button_x, _quit_button_y, _quit_button_x + _quit_button_width, _quit_button_y + _quit_button_height);
++
++if (_over_quit_button && mouse_check_button_pressed(mb_left)) {
++    var _should_quit = true;
++
++    if (global.workspace_dirty) {
++        _should_quit = show_question("You have unsaved changes. Quit anyway?");
++    }
++
++    if (_should_quit) {
++        game_end();
++    }
++}
++
+ if (keyboard_check_pressed(ord("H")) && global.operand_edit_owner_uid == -1) {
+     if (global.value_display_mode == "HEX") {
+         global.value_display_mode = "DEC";
+diff --git a/scripts/scr_bitmap_history/scr_bitmap_history.gml b/scripts/scr_bitmap_history/scr_bitmap_history.gml
+index 902914a..08470f4 100644
+--- a/scripts/scr_bitmap_history/scr_bitmap_history.gml
++++ b/scripts/scr_bitmap_history/scr_bitmap_history.gml
+@@ -37,6 +37,7 @@ function scr_bitmap_push_undo(_editor) {
+         array_delete(_editor.bitmap_undo_stack, 0, 1);
+     }
+     _editor.bitmap_redo_stack = [];
++    global.workspace_dirty = true;
+ }
+ 
+ function scr_bitmap_undo(_editor) {
+diff --git a/scripts/scr_load_layout/scr_load_layout.gml b/scripts/scr_load_layout/scr_load_layout.gml
+index 336d287..74d51a5 100644
+--- a/scripts/scr_load_layout/scr_load_layout.gml
++++ b/scripts/scr_load_layout/scr_load_layout.gml
+@@ -1,81 +1,9 @@
+ /// @desc scr_load_layout()
++/// Quick autoload from a fixed path (Ctrl+L). For loading a named,
++/// user-chosen file, see the LOAD WORKSPACE button, which calls the same
++/// underlying scr_load_workspace_from_path with a path from a file dialog
++/// instead.
+ function scr_load_layout() {
+     var _save_path = global.current_project_path + "/autosave_layout.json";
+-
+-    if (!file_exists(_save_path)) {
+-        show_debug_message("No saved layout found at " + _save_path);
+-        return;
+-    }
+-
+-    var _file = file_text_open_read(_save_path);
+-    var _json_text = "";
+-
+-    while (!file_text_eof(_file)) {
+-        _json_text += file_text_read_string(_file);
+-        file_text_readln(_file);
+-    }
+-
+-    file_text_close(_file);
+-
+-    var _save_data = json_parse(_json_text);
+-
+-    with (obj_opcode_node) {
+-        instance_destroy();
+-    }
+-
+-    with (obj_amiga_root_node) {
+-        instance_destroy();
+-    }
+-
+-    var _root_array = _save_data.roots;
+-    var _root_count = array_length(_root_array);
+-    var _r = 0;
+-
+-    while (_r < _root_count) {
+-        var _root_data = _root_array[_r];
+-        var _new_root = instance_create_layer(_root_data.node_x, _root_data.node_y, "Instances", obj_amiga_root_node);
+-
+-        _new_root.uid = _root_data.uid;
+-        _new_root.root_type = _root_data.root_type;
+-        _new_root.node_x = _root_data.node_x;
+-        _new_root.node_y = _root_data.node_y;
+-
+-        _r += 1;
+-    }
+-
+-    var _node_array = _save_data.nodes;
+-    var _node_count = array_length(_node_array);
+-    var _n = 0;
+-
+-    while (_n < _node_count) {
+-        var _node_data = _node_array[_n];
+-        var _new_node = instance_create_layer(_node_data.node_x, _node_data.node_y, "Instances", obj_opcode_node);
+-
+-        _new_node.uid = _node_data.uid;
+-        _new_node.node_x = _node_data.node_x;
+-        _new_node.node_y = _node_data.node_y;
+-        _new_node.is_connected = _node_data.is_connected;
+-        _new_node.root_uid = _node_data.root_uid;
+-        _new_node.opcode_mnemonic = _node_data.opcode_mnemonic;
+-        _new_node.opcode_size = _node_data.opcode_size;
+-        _new_node.addressing_mode_src = _node_data.addressing_mode_src;
+-        _new_node.addressing_mode_dst = _node_data.addressing_mode_dst;
+-        _new_node.operand_src = _node_data.operand_src;
+-        _new_node.operand_dst = _node_data.operand_dst;
+-        _new_node.operand_label_src = _node_data.operand_label_src;
+-        _new_node.operand_label_dst = _node_data.operand_label_dst;
+-        _new_node.node_label = _node_data.node_label;
+-
+-        _new_node.operand_extra_src.displacement = _node_data.displacement_src;
+-        _new_node.operand_extra_src.index_register = _node_data.index_register_src;
+-        _new_node.operand_extra_src.index_register_is_address = _node_data.index_register_is_address_src;
+-
+-        _new_node.operand_extra_dst.displacement = _node_data.displacement_dst;
+-        _new_node.operand_extra_dst.index_register = _node_data.index_register_dst;
+-        _new_node.operand_extra_dst.index_register_is_address = _node_data.index_register_is_address_dst;
+-
+-        _n += 1;
+-    }
+-
+-    show_debug_message("Loaded layout from " + _save_path);
+-}
+\ No newline at end of file
++    scr_load_workspace_from_path(_save_path);
++}
+diff --git a/scripts/scr_load_workspace_from_path/scr_load_workspace_from_path.gml b/scripts/scr_load_workspace_from_path/scr_load_workspace_from_path.gml
+new file mode 100644
+index 0000000..53b4037
+--- /dev/null
++++ b/scripts/scr_load_workspace_from_path/scr_load_workspace_from_path.gml
+@@ -0,0 +1,105 @@
++/// @desc scr_load_workspace_from_path(_path)
++/// Reverses scr_save_workspace_to_path — rebuilds every root, every node
++/// (all macro fields included), and restores global.asset_list. Falls
++/// back to sensible defaults for any field an older save file predates,
++/// so pre-macro saves still load without erroring.
++function scr_load_workspace_from_path(_path) {
++    if (!file_exists(_path)) {
++        show_debug_message("No workspace file found at " + _path);
++        return;
++    }
++
++    var _file = file_text_open_read(_path);
++    var _json_text = "";
++
++    while (!file_text_eof(_file)) {
++        _json_text += file_text_read_string(_file);
++        file_text_readln(_file);
++    }
++
++    file_text_close(_file);
++
++    var _save_data = json_parse(_json_text);
++
++    with (obj_opcode_node) {
++        instance_destroy();
++    }
++
++    with (obj_amiga_root_node) {
++        instance_destroy();
++    }
++
++    var _root_array = _save_data.roots;
++    var _root_count = array_length(_root_array);
++    var _r = 0;
++
++    while (_r < _root_count) {
++        var _root_data = _root_array[_r];
++        var _new_root = instance_create_layer(_root_data.node_x, _root_data.node_y, "Instances", obj_amiga_root_node);
++
++        _new_root.uid = _root_data.uid;
++        _new_root.root_type = _root_data.root_type;
++        _new_root.node_x = _root_data.node_x;
++        _new_root.node_y = _root_data.node_y;
++
++        _r += 1;
++    }
++
++    var _node_array = _save_data.nodes;
++    var _node_count = array_length(_node_array);
++    var _n = 0;
++
++    while (_n < _node_count) {
++        var _node_data = _node_array[_n];
++        var _new_node = instance_create_layer(_node_data.node_x, _node_data.node_y, "Instances", obj_opcode_node);
++
++        _new_node.uid = _node_data.uid;
++        _new_node.node_x = _node_data.node_x;
++        _new_node.node_y = _node_data.node_y;
++        _new_node.is_connected = _node_data.is_connected;
++        _new_node.root_uid = _node_data.root_uid;
++        _new_node.opcode_mnemonic = _node_data.opcode_mnemonic;
++        _new_node.opcode_size = _node_data.opcode_size;
++        _new_node.addressing_mode_src = _node_data.addressing_mode_src;
++        _new_node.addressing_mode_dst = _node_data.addressing_mode_dst;
++        _new_node.operand_src = _node_data.operand_src;
++        _new_node.operand_dst = _node_data.operand_dst;
++        _new_node.operand_label_src = _node_data.operand_label_src;
++        _new_node.operand_label_dst = _node_data.operand_label_dst;
++        _new_node.node_label = _node_data.node_label;
++
++        _new_node.operand_extra_src.displacement = _node_data.displacement_src;
++        _new_node.operand_extra_src.index_register = _node_data.index_register_src;
++        _new_node.operand_extra_src.index_register_is_address = _node_data.index_register_is_address_src;
++
++        _new_node.operand_extra_dst.displacement = _node_data.displacement_dst;
++        _new_node.operand_extra_dst.index_register = _node_data.index_register_dst;
++        _new_node.operand_extra_dst.index_register_is_address = _node_data.index_register_is_address_dst;
++
++        // Older saves predate macro fields entirely — fall back to
++        // Create_0.gml's own defaults rather than erroring on a missing key.
++        if (variable_struct_exists(_node_data, "is_macro")) {
++            _new_node.is_macro = _node_data.is_macro;
++            _new_node.macro_type = _node_data.macro_type;
++            _new_node.macro_asset_name = _node_data.macro_asset_name;
++        }
++
++        if (variable_struct_exists(_node_data, "macro_cprbar_band_count")) {
++            _new_node.macro_cprbar_band_count = _node_data.macro_cprbar_band_count;
++            _new_node.macro_cprbar_target_register = _node_data.macro_cprbar_target_register;
++            _new_node.macro_cprbar_equidistant = _node_data.macro_cprbar_equidistant;
++            _new_node.macro_cprbar_vp_start = _node_data.macro_cprbar_vp_start;
++            _new_node.macro_cprbar_vp_end = _node_data.macro_cprbar_vp_end;
++            _new_node.macro_cprbar_bands = _node_data.macro_cprbar_bands;
++        }
++
++        _n += 1;
++    }
++
++    if (variable_struct_exists(_save_data, "assets")) {
++        global.asset_list = _save_data.assets;
++    }
++
++    global.workspace_dirty = false;
++    show_debug_message("Loaded workspace from " + _path);
++}
+diff --git a/scripts/scr_load_workspace_from_path/scr_load_workspace_from_path.yy b/scripts/scr_load_workspace_from_path/scr_load_workspace_from_path.yy
+new file mode 100644
+index 0000000..78ea852
+--- /dev/null
++++ b/scripts/scr_load_workspace_from_path/scr_load_workspace_from_path.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_load_workspace_from_path",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_load_workspace_from_path",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}
+diff --git a/scripts/scr_push_undo_snapshot/scr_push_undo_snapshot.gml b/scripts/scr_push_undo_snapshot/scr_push_undo_snapshot.gml
+index 4a407da..4283d74 100644
+--- a/scripts/scr_push_undo_snapshot/scr_push_undo_snapshot.gml
++++ b/scripts/scr_push_undo_snapshot/scr_push_undo_snapshot.gml
+@@ -9,4 +9,5 @@ function scr_push_undo_snapshot() {
+     }
+ 
+     global.redo_stack = [];
++    global.workspace_dirty = true;
+ }
+diff --git a/scripts/scr_save_layout/scr_save_layout.gml b/scripts/scr_save_layout/scr_save_layout.gml
+index 9d7d041..6e12002 100644
+--- a/scripts/scr_save_layout/scr_save_layout.gml
++++ b/scripts/scr_save_layout/scr_save_layout.gml
+@@ -1,48 +1,8 @@
+ /// @desc scr_save_layout()
++/// Quick autosave to a fixed path (Ctrl+S). For a named, user-chosen save
++/// file, see the SAVE WORKSPACE button, which calls the same underlying
++/// scr_save_workspace_to_path with a path from a file dialog instead.
+ function scr_save_layout() {
+     var _save_path = global.current_project_path + "/autosave_layout.json";
+-    var _root_array = [];
+-
+-    with (obj_amiga_root_node) {
+-        var _root_data = { uid : uid, root_type : root_type, node_x : node_x, node_y : node_y };
+-        array_push(_root_array, _root_data);
+-    }
+-
+-    var _node_array = [];
+-
+-    with (obj_opcode_node) {
+-        var _node_data = {
+-            uid : uid,
+-            node_x : node_x,
+-            node_y : node_y,
+-            is_connected : is_connected,
+-            root_uid : root_uid,
+-            opcode_mnemonic : opcode_mnemonic,
+-            opcode_size : opcode_size,
+-            addressing_mode_src : addressing_mode_src,
+-            addressing_mode_dst : addressing_mode_dst,
+-            operand_src : operand_src,
+-            operand_dst : operand_dst,
+-            operand_label_src : operand_label_src,
+-            operand_label_dst : operand_label_dst,
+-            node_label : node_label,
+-            displacement_src : operand_extra_src.displacement,
+-            index_register_src : operand_extra_src.index_register,
+-            index_register_is_address_src : operand_extra_src.index_register_is_address,
+-            displacement_dst : operand_extra_dst.displacement,
+-            index_register_dst : operand_extra_dst.index_register,
+-            index_register_is_address_dst : operand_extra_dst.index_register_is_address
+-        };
+-
+-        array_push(_node_array, _node_data);
+-    }
+-
+-    var _save_data = { roots : _root_array, nodes : _node_array };
+-    var _json_text = json_stringify(_save_data);
+-
+-    var _file = file_text_open_write(_save_path);
+-    file_text_write_string(_file, _json_text);
+-    file_text_close(_file);
+-
+-    show_debug_message("Saved layout to " + _save_path);
+-}
+\ No newline at end of file
++    scr_save_workspace_to_path(_save_path);
++}
+diff --git a/scripts/scr_save_workspace_to_path/scr_save_workspace_to_path.gml b/scripts/scr_save_workspace_to_path/scr_save_workspace_to_path.gml
+new file mode 100644
+index 0000000..aa00568
+--- /dev/null
++++ b/scripts/scr_save_workspace_to_path/scr_save_workspace_to_path.gml
+@@ -0,0 +1,61 @@
++/// @desc scr_save_workspace_to_path(_path)
++/// Writes the full workspace — every root, every node (including all
++/// macro fields, previously silently dropped by this save path), and the
++/// complete global.asset_list (bitmap pixel data, sprite pixel data,
++/// palettes) — to _path as JSON.
++function scr_save_workspace_to_path(_path) {
++    var _root_array = [];
++
++    with (obj_amiga_root_node) {
++        var _root_data = { uid : uid, root_type : root_type, node_x : node_x, node_y : node_y };
++        array_push(_root_array, _root_data);
++    }
++
++    var _node_array = [];
++
++    with (obj_opcode_node) {
++        var _node_data = {
++            uid : uid,
++            node_x : node_x,
++            node_y : node_y,
++            is_connected : is_connected,
++            root_uid : root_uid,
++            opcode_mnemonic : opcode_mnemonic,
++            opcode_size : opcode_size,
++            addressing_mode_src : addressing_mode_src,
++            addressing_mode_dst : addressing_mode_dst,
++            operand_src : operand_src,
++            operand_dst : operand_dst,
++            operand_label_src : operand_label_src,
++            operand_label_dst : operand_label_dst,
++            node_label : node_label,
++            displacement_src : operand_extra_src.displacement,
++            index_register_src : operand_extra_src.index_register,
++            index_register_is_address_src : operand_extra_src.index_register_is_address,
++            displacement_dst : operand_extra_dst.displacement,
++            index_register_dst : operand_extra_dst.index_register,
++            index_register_is_address_dst : operand_extra_dst.index_register_is_address,
++            is_macro : is_macro,
++            macro_type : macro_type,
++            macro_asset_name : macro_asset_name,
++            macro_cprbar_band_count : macro_cprbar_band_count,
++            macro_cprbar_target_register : macro_cprbar_target_register,
++            macro_cprbar_equidistant : macro_cprbar_equidistant,
++            macro_cprbar_vp_start : macro_cprbar_vp_start,
++            macro_cprbar_vp_end : macro_cprbar_vp_end,
++            macro_cprbar_bands : macro_cprbar_bands
++        };
++
++        array_push(_node_array, _node_data);
++    }
++
++    var _save_data = { roots : _root_array, nodes : _node_array, assets : global.asset_list };
++    var _json_text = json_stringify(_save_data);
++
++    var _file = file_text_open_write(_path);
++    file_text_write_string(_file, _json_text);
++    file_text_close(_file);
++
++    global.workspace_dirty = false;
++    show_debug_message("Saved workspace to " + _path);
++}
+diff --git a/scripts/scr_save_workspace_to_path/scr_save_workspace_to_path.yy b/scripts/scr_save_workspace_to_path/scr_save_workspace_to_path.yy
+new file mode 100644
+index 0000000..942a01e
+--- /dev/null
++++ b/scripts/scr_save_workspace_to_path/scr_save_workspace_to_path.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_save_workspace_to_path",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_save_workspace_to_path",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}

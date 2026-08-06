@@ -104,6 +104,30 @@ draw_set_colour(c_white);
 draw_rectangle(_macro_xpos, 104, _macro_xpos+_macro_but_width, 120, true);
 draw_text(312, 102, "BITMAP EDIT");
 
+draw_set_colour(make_color_rgb(140, 30, 30));
+draw_rectangle(_macro_xpos, 124, _macro_xpos+_macro_but_width, 140, false);
+draw_set_colour(c_white);
+draw_rectangle(_macro_xpos, 124, _macro_xpos+_macro_but_width, 140, true);
+draw_text(312, 122, "KILL FSUAE");
+
+draw_set_colour(make_color_rgb(40, 100, 40));
+draw_rectangle(_macro_xpos, 144, _macro_xpos+_macro_but_width, 160, false);
+draw_set_colour(c_white);
+draw_rectangle(_macro_xpos, 144, _macro_xpos+_macro_but_width, 160, true);
+draw_text(312, 142, "SAVE WORKSPACE");
+
+draw_set_colour(make_color_rgb(35, 55, 85));
+draw_rectangle(_macro_xpos, 164, _macro_xpos+_macro_but_width, 180, false);
+draw_set_colour(c_white);
+draw_rectangle(_macro_xpos, 164, _macro_xpos+_macro_but_width, 180, true);
+draw_text(312, 162, "LOAD WORKSPACE");
+
+draw_set_colour(make_color_rgb(90, 20, 20));
+draw_rectangle(_macro_xpos, 184, _macro_xpos+_macro_but_width, 200, false);
+draw_set_colour(c_white);
+draw_rectangle(_macro_xpos, 184, _macro_xpos+_macro_but_width, 200, true);
+draw_text(312, 182, "QUIT");
+
 if (keyboard_check(vk_control)) {
     var _hud_text = "Undo: " + string(array_length(global.undo_stack)) + "   Redo: " + string(array_length(global.redo_stack));
     var _hud_x = mouse_x + 16;

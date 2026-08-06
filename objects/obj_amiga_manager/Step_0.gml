@@ -250,6 +250,69 @@ if (_over_bitmap_editor_button && mouse_check_button_pressed(mb_left)) {
     }
 }
 
+var _kill_fsuae_button_x = 310;
+var _kill_fsuae_button_y = 124;
+var _kill_fsuae_button_width = 100;
+var _kill_fsuae_button_height = 16;
+
+var _over_kill_fsuae_button = point_in_rectangle(mouse_x, mouse_y, _kill_fsuae_button_x, _kill_fsuae_button_y, _kill_fsuae_button_x + _kill_fsuae_button_width, _kill_fsuae_button_y + _kill_fsuae_button_height);
+
+if (_over_kill_fsuae_button && mouse_check_button_pressed(mb_left)) {
+    execute_shell_simple("taskkill.exe", "/F /T /IM fs-uae.exe", "open", 0);
+    scr_set_status_message("FS-UAE killed.");
+}
+
+var _save_workspace_button_x = 310;
+var _save_workspace_button_y = 144;
+var _save_workspace_button_width = 100;
+var _save_workspace_button_height = 16;
+
+var _over_save_workspace_button = point_in_rectangle(mouse_x, mouse_y, _save_workspace_button_x, _save_workspace_button_y, _save_workspace_button_x + _save_workspace_button_width, _save_workspace_button_y + _save_workspace_button_height);
+
+if (_over_save_workspace_button && mouse_check_button_pressed(mb_left)) {
+    var _save_chosen_path = get_save_filename("Workspace JSON|*.json", "workspace.json");
+
+    if (_save_chosen_path != "") {
+        scr_save_workspace_to_path(_save_chosen_path);
+        scr_set_status_message("Workspace saved: " + _save_chosen_path);
+    }
+}
+
+var _load_workspace_button_x = 310;
+var _load_workspace_button_y = 164;
+var _load_workspace_button_width = 100;
+var _load_workspace_button_height = 16;
+
+var _over_load_workspace_button = point_in_rectangle(mouse_x, mouse_y, _load_workspace_button_x, _load_workspace_button_y, _load_workspace_button_x + _load_workspace_button_width, _load_workspace_button_y + _load_workspace_button_height);
+
+if (_over_load_workspace_button && mouse_check_button_pressed(mb_left)) {
+    var _load_chosen_path = get_open_filename("Workspace JSON|*.json", "");
+
+    if (_load_chosen_path != "") {
+        scr_load_workspace_from_path(_load_chosen_path);
+        scr_set_status_message("Workspace loaded: " + _load_chosen_path);
+    }
+}
+
+var _quit_button_x = 310;
+var _quit_button_y = 184;
+var _quit_button_width = 100;
+var _quit_button_height = 16;
+
+var _over_quit_button = point_in_rectangle(mouse_x, mouse_y, _quit_button_x, _quit_button_y, _quit_button_x + _quit_button_width, _quit_button_y + _quit_button_height);
+
+if (_over_quit_button && mouse_check_button_pressed(mb_left)) {
+    var _should_quit = true;
+
+    if (global.workspace_dirty) {
+        _should_quit = show_question("You have unsaved changes. Quit anyway?");
+    }
+
+    if (_should_quit) {
+        game_end();
+    }
+}
+
 if (keyboard_check_pressed(ord("H")) && global.operand_edit_owner_uid == -1) {
     if (global.value_display_mode == "HEX") {
         global.value_display_mode = "DEC";
