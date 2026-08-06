@@ -1,0 +1,1154 @@
+fs_data_init fs-uae fs-uae.dat
+checking dat file: C:\Users\Robert\Downloads\thesettlers_amiga_win\TheSettlers\fsuae\fs-uae.exe
+no dat file: C:\Users\Robert\Downloads\thesettlers_amiga_win\TheSettlers\fsuae\fs-uae.exe
+checking dat file: C:\Users\Robert\Downloads\thesettlers_amiga_win\TheSettlers\fsuae\fs-uae.dat
+FS-UAE 2.8.3 (Built for Windows x86)
+Copyright 1995-2002 Bernd Schmidt, 1999-2015 Toni Wilen,
+2003-2007 Richard Drummond, 2006-2011 Mustafa 'GnoStiC' Tufan,
+2011-2015 Frode Solheim, and contributors.
+
+This is free software; see the file COPYING for copying conditions. There
+is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR
+PURPOSE. See the README for more copyright info, and the source code for
+a full list of contributors
+
+current directory is C:\Users\Robert\Downloads\thesettlers_amiga_win\TheSettlers\fsuae
+UAE: Initializing core derived from WinUAE 3220
+CLOCKFREQ: QPF 3.12MHz (3.12MHz, DIV=1)
+
+----------------------------------------------------------------------------
+libfsemu init
+----------------------------------------------------------------------------
+
+fs_emu_init
+current time() is: 1534154974
+localtime+timegm:  1534154974
+localtime+mktime:  1534154974
+time of day:       1534154974 + (753036 / 1000000)
+localtime offset:  3600
+calling fs_ml_init
+fs_ml_init (operating system: windows)
+successfully set timeBeginPeriod(1)
+set process priority class to ABOVE_NORMAL_PRIORITY_CLASS
+initialize dialog module
+load config file
+loading config from Default.fs-uae
+
+----------------------------------------------------------------------------
+config (Default.fs-uae)
+----------------------------------------------------------------------------
+
+amiga_model = A1200/020
+base_dir = .\
+chip_memory = 2048
+fast_memory = 8192
+floppy_drive_volume = 0
+fullscreen = 1
+hard_drive_0 = .\Hard Drives
+joystick_port_1 = nothing
+kickstart_file = .\dummyfile
+load_state = 1
+scanlines = 1
+uae_chipset = aga
+- checking C:\Users\Robert\AppData\Local\fs-uae\configurations-dir
+base specified via base_dir option
+- using base ($BASE / $FSUAE) directory ".\"
+resolve_path .\Configurations (relative)
+WARNING: did not find path
+- using "Configurations" directory "./Configurations"
+checking config file ./Configurations\Host.fs-uae
+- checking C:\Users\Robert\AppData\Local\fs-uae\data-dir
+resolve_path .\Data (relative)
+WARNING: did not find path
+- using "Data" directory "./Data"
+[I18N] Locale is set to en_GB
+[I18N] Using data dir "C:\Users\Robert\Downloads\thesettlers_amiga_win\TheSettlers\fsuae\share\fs-uae/share-dir"
+[I18N] Using locale dir "C:\Users\Robert\Downloads\thesettlers_amiga_win\TheSettlers\fsuae\share\locale"
+
+----------------------------------------------------------------------------
+fs-uae init
+----------------------------------------------------------------------------
+
+configure logging: none
+[GLIB] Version 2.44.1 (Compiled against 2.44.1)
+- checking C:\Users\Robert\AppData\Local\fs-uae\kickstarts-dir
+resolve_path .\Kickstarts (relative)
+WARNING: did not find path
+- using "Kickstarts" directory "./Kickstarts"
+- checking C:\Users\Robert\AppData\Local\fs-uae\floppies-dir
+resolve_path .\Floppies (relative)
+checking .\.\Floppies
+checking .\.\Floppies
+WARNING: did not find path
+- using "Floppies" directory "./Floppies"
+- checking C:\Users\Robert\AppData\Local\fs-uae\cdroms-dir
+resolve_path .\CD-ROMs (relative)
+checking .\.\CD-ROMs
+checking .\.\CD-ROMs
+WARNING: did not find path
+- using "CD-ROMs" directory "./CD-ROMs"
+- checking C:\Users\Robert\AppData\Local\fs-uae\hard-drives-dir
+resolve_path .\Hard Drives (relative)
+checking .\.\Hard Drives
+- found .\.\Hard Drives
+- using "Hard Drives" directory "././Hard Drives"
+[PLUGINS] Initializing
+- checking C:\Users\Robert\AppData\Local\fs-uae\plugins-dir
+resolve_path .\Plugins (relative)
+checking .\.\Plugins
+checking .\.\Plugins
+WARNING: did not find path
+- using "Plugins" directory "./Plugins"
+[PLUGINS] Loading plugins from ./Plugins
+[PLUGINS] Could not open plugins dir ./Plugins
+fs_uae_configure_amiga_model
+using PAL mode (50Hz)
+[VIDEO] fs_emu_set_video_frame_rate: 50.00 (50)
+[DISPLAY] Sync: g_fs_emu_video_sync_to_vblank = 0
+config match for "A1200/020"
+fs_uae_state_dir:
+- checking C:\Users\Robert\AppData\Local\fs-uae\save-states-dir
+resolve_path .\Save States (relative)
+checking .\.\Save States
+checking .\.\Save States
+WARNING: did not find path
+- using "Save States" directory "./Save States"
+save_states_dir: ./Save States
+save_dir_name not set, using Default
+- using state dir ./Save States\Default
+final state dir path: ./Save States\Default
+- checking C:\Users\Robert\AppData\Local\fs-uae\controllers-dir
+resolve_path .\Controllers (relative)
+checking .\.\Controllers
+checking .\.\Controllers
+WARNING: did not find path
+- using "Controllers" directory "./Controllers"
+- checking C:\Users\Robert\AppData\Local\fs-uae\logs-dir
+- checking C:\Users\Robert\AppData\Local\fs-uae\cache-dir
+resolve_path .\Cache (relative)
+checking .\.\Cache
+checking .\.\Cache
+WARNING: did not find path
+- using "Cache" directory "./Cache"
+resolve_path ./Cache\Logs (relative)
+checking .\./Cache\Logs
+checking .\./Cache\Logs
+WARNING: did not find path
+- using "Logs" directory "./Cache/Logs"
+switch to log file ./Cache/Logs\fs-uae.log.txt
+- checking C:\Users\Robert\AppData\Local\fs-uae\themes-dir
+resolve_path .\Themes (relative)
+checking .\.\Themes
+checking .\.\Themes
+WARNING: did not find path
+- using "Themes" directory "./Themes"
+themes_dir = ./Themes
+fs_emu_init_2
+THEME: Init
+THEME: Loading ""
+fs_emu_video_init
+full-scene anti-aliasing is not requested
+checking video sync mode
+not specified: no video sync
+no video sync (using timers only)
+using default video format BGRA
+using default texture format
+fs_emu_init_render
+scale: -1.00 -1.00 align: 0.50 0.50
+calling fs_ml_init_2
+fs_ml_input_init
+calling fs_ml_video_init
+[VIDEO] Using low latency vsync when full vsync is enabled
+fs_ml_mouse_init
+- adding system mouse
+MANYMOUSE: (c) 2005-2012 Ryan C. Gordon
+MANYMOUSE: Thread running
+MANYMOUSE: Adding Mouse: HID-compliant mouse (Windows XP and later WM_INPUT interface)
+MANYMOUSE: Adding Mouse: HID-Compliant Mouse (Windows XP and later WM_INPUT interface)
+MANYMOUSE: Adding Mouse: HID-compliant mouse #2 (Windows XP and later WM_INPUT interface)
+num joystick devices: 0
+read config
+fs_emu_input_init
+init_input_configs
+reading input device configs from ./Controllers
+reading input device configs from ./Data\Devs\Keyboards
+could not read directory ./Data\Devs\Keyboards
+reading input device configs from ./Controllers
+INPUT: Using default modifier key LALT
+INPUT: Initializing devices for menu
+0 Keyboard
+config name "Keyboard"
+get system config for device: Keyboard
+checked data "input/Keyboard.conf" = 3
+config file for Keyboard was not found
+did not find config for device "Keyboard"
+get system config for device: keyboard_0_0_0_0_windows
+checked data "input/keyboard_0_0_0_0_windows.conf" = 3
+config file for keyboard_0_0_0_0_windows was not found
+did not find menu config for device "keyboard_0_0_0_0_windows"
+get system config for device: keyboard
+checked data "input/keyboard.conf" = 0
+read config for keyboard for menu (from data)
+checked data "input/default_keyboard.conf" = 0
+read config for default_keyboard for menu (from data)
+error parsing "include"
+key_down (274) => action "down" (4)
+did not find action for "skip_left"
+key_left (276) => action "left" (1)
+did not find action for "default_keyboard"
+key_right (275) => action "right" (2)
+key_escape (27) => action "escape" (10)
+key_up (273) => action "up" (3)
+did not find action for "skip_right"
+key_backspace (8) => action "back" (6)
+did not find action for "secondary"
+key_return (13) => action "primary" (5)
+1 MOUSE
+config name "MOUSE"
+get system config for device: MOUSE
+checked data "input/MOUSE.conf" = 3
+config file for MOUSE was not found
+did not find config for device "MOUSE"
+get system config for device: mouse_0_0_0_0_windows
+checked data "input/mouse_0_0_0_0_windows.conf" = 3
+config file for mouse_0_0_0_0_windows was not found
+did not find menu config for device "mouse_0_0_0_0_windows"
+get system config for device: mouse
+checked data "input/mouse.conf" = 0
+read config for mouse for menu (from data)
+no config for platform menu
+did not find menu config for device "mouse"
+2 Mouse: HID-compliant mouse
+config name "Mouse: HID-compliant mouse"
+get system config for device: Mouse: HID-compliant mouse
+checked data "input/Mouse: HID-compliant mouse.conf" = 3
+config file for Mouse: HID-compliant mouse was not found
+did not find config for device "Mouse: HID-compliant mouse"
+get system config for device: mouse_hid_compliant_mouse_0_0_0_0_windows
+checked data "input/mouse_hid_compliant_mouse_0_0_0_0_windows.conf" = 3
+config file for mouse_hid_compliant_mouse_0_0_0_0_windows was not found
+did not find menu config for device "mouse_hid_compliant_mouse_0_0_0_0_windows"
+get system config for device: mouse_hid_compliant_mouse
+checked data "input/mouse_hid_compliant_mouse.conf" = 3
+config file for mouse_hid_compliant_mouse was not found
+did not find menu config for device "mouse_hid_compliant_mouse"
+3 Mouse: HID-Compliant Mouse
+config name "Mouse: HID-Compliant Mouse"
+get system config for device: Mouse: HID-Compliant Mouse
+checked data "input/Mouse: HID-Compliant Mouse.conf" = 3
+config file for Mouse: HID-Compliant Mouse was not found
+did not find config for device "Mouse: HID-Compliant Mouse"
+get system config for device: mouse_hid_compliant_mouse_0_0_0_0_windows
+checked data "input/mouse_hid_compliant_mouse_0_0_0_0_windows.conf" = 3
+config file for mouse_hid_compliant_mouse_0_0_0_0_windows was not found
+did not find menu config for device "mouse_hid_compliant_mouse_0_0_0_0_windows"
+get system config for device: mouse_hid_compliant_mouse
+checked data "input/mouse_hid_compliant_mouse.conf" = 3
+config file for mouse_hid_compliant_mouse was not found
+did not find menu config for device "mouse_hid_compliant_mouse"
+4 Mouse: HID-compliant mouse #2
+config name "Mouse: HID-compliant mouse #2"
+get system config for device: Mouse: HID-compliant mouse #2
+checked data "input/Mouse: HID-compliant mouse #2.conf" = 3
+config file for Mouse: HID-compliant mouse #2 was not found
+did not find config for device "Mouse: HID-compliant mouse #2"
+get system config for device: mouse_hid_compliant_mouse_0_0_0_0_windows
+checked data "input/mouse_hid_compliant_mouse_0_0_0_0_windows.conf" = 3
+config file for mouse_hid_compliant_mouse_0_0_0_0_windows was not found
+did not find menu config for device "mouse_hid_compliant_mouse_0_0_0_0_windows"
+get system config for device: mouse_hid_compliant_mouse
+checked data "input/mouse_hid_compliant_mouse.conf" = 3
+config file for mouse_hid_compliant_mouse was not found
+did not find menu config for device "mouse_hid_compliant_mouse"
+OPENAL: fs_emu_audio_init
+OPENAL: openal_audio_init
+[OPENAL] Opened device: OpenAL Soft
+[OPENAL] Information:
+[OPENAL] Devices:
+- OpenAL Soft
+[OPENAL] Default device: OpenAL Soft
+OPENAL: trying frequency 48000
+OPENAL: created context
+OPENAL: made context current
+openal: number of stereo sources is 2
+AUDIO: Buffer target size (ms) = 40
+fs_ml_video_create_window
+keyboard input grab: 305419896
+[SDL] Version 2.0.5 (Compiled against 2.0.5)
+[DISPLAY] 0: 1920x1080+0+0 @59
+Monitor - j 0 pos 0
+Monitor - j 1 pos 0
+Monitor - j 2 pos 0
+Monitor - j 3 pos 0
+Monitor index 0 flags 15
+Monitor: found index 0 for flag 2
+Monitor "middle-left" (flag 2) => index 0
+[SDL] Defaulting to fullscreen_mode = desktop for SDL 2
+automatic input grab: 1
+using fullscreen desktop mode
+setting (fullscreen) video mode 1920 1080
+[SDL] CreateWindow(x=0, y=0, w=1920, h=1080, flags=4131)
+[DISPLAY] Host refresh rate: 59 Hz
+fs_ml_configure_window
+hIconSmall = 0
+hIconBig = 0
+opengl vendor: ATI Technologies Inc.
+opengl renderer: Radeon RX 580 Series
+opengl version: 4.5.13521 Compatibility Profile Context 24.20.11016.4
+opengl shading language version: 4.50
+opengl extensions: GL_AMDX_debug_output GL_AMD_blend_minmax_factor GL_AMD_conservative_depth GL_AMD_debug_output GL_AMD_depth_clamp_separate GL_AMD_draw_buffers_blend GL_AMD_framebuffer_sample_positions GL_AMD_gcn_shader GL_AMD_gpu_shader_half_float GL_AMD_gpu_shader_int16 GL_AMD_gpu_shader_int64 GL_AMD_interleaved_elements GL_AMD_multi_draw_indirect GL_AMD_name_gen_delete GL_AMD_occlusion_query_event GL_AMD_performance_monitor GL_AMD_pinned_memory GL_AMD_query_buffer_object GL_AMD_sample_positions GL_AMD_seamless_cubemap_per_texture GL_AMD_shader_atomic_counter_ops GL_AMD_shader_stencil_export GL_AMD_shader_stencil_value_export GL_AMD_shader_trace GL_AMD_shader_trinary_minmax GL_AMD_sparse_texture GL_AMD_sparse_texture_pool GL_AMD_stencil_operation_extended GL_AMD_texture_cube_map_array GL_AMD_texture_texture4 GL_AMD_transform_feedback3_lines_triangles GL_AMD_transform_feedback4 GL_AMD_vertex_shader_layer GL_AMD_vertex_shader_viewport_index GL_ARB_ES2_compatibility GL_ARB_ES3_1_compatibility GL_ARB_ES3_compatibility GL_ARB_arrays_of_arrays GL_ARB_base_instance GL_ARB_bindless_texture GL_ARB_blend_func_extended GL_ARB_buffer_storage GL_ARB_clear_buffer_object GL_ARB_clear_texture GL_ARB_clip_control GL_ARB_color_buffer_float GL_ARB_compatibility GL_ARB_compressed_texture_pixel_storage GL_ARB_compute_shader GL_ARB_conditional_render_inverted GL_ARB_conservative_depth GL_ARB_copy_buffer GL_ARB_copy_image GL_ARB_cull_distance GL_ARB_debug_output GL_ARB_depth_buffer_float GL_ARB_depth_clamp GL_ARB_depth_texture GL_ARB_derivative_control GL_ARB_direct_state_access GL_ARB_draw_buffers GL_ARB_draw_buffers_blend GL_ARB_draw_elements_base_vertex GL_ARB_draw_indirect GL_ARB_draw_instanced GL_ARB_enhanced_layouts GL_ARB_explicit_attrib_location GL_ARB_explicit_uniform_location GL_ARB_fragment_coord_conventions GL_ARB_fragment_layer_viewport GL_ARB_fragment_program GL_ARB_fragment_program_shadow GL_ARB_fragment_shader GL_ARB_framebuffer_no_attachments GL_ARB_framebuffer_object GL_ARB_framebuffer_sRGB GL_ARB_geometry_shader4 GL_ARB_get_program_binary GL_ARB_get_texture_sub_image GL_ARB_gl_spirv GL_ARB_gpu_shader5 GL_ARB_gpu_shader_fp64 GL_ARB_half_float_pixel GL_ARB_half_float_vertex GL_ARB_imaging GL_ARB_indirect_parameters GL_ARB_instanced_arrays GL_ARB_internalformat_query GL_ARB_internalformat_query2 GL_ARB_invalidate_subdata GL_ARB_map_buffer_alignment GL_ARB_map_buffer_range GL_ARB_multi_bind GL_ARB_multi_draw_indirect GL_ARB_multisample GL_ARB_multitexture GL_ARB_occlusion_query GL_ARB_occlusion_query2 GL_ARB_parallel_shader_compile GL_ARB_pipeline_statistics_query GL_ARB_pixel_buffer_object GL_ARB_point_parameters GL_ARB_point_sprite GL_ARB_program_interface_query GL_ARB_provoking_vertex GL_ARB_query_buffer_object GL_ARB_robust_buffer_access_behavior GL_ARB_sample_shading GL_ARB_sampler_objects GL_ARB_seamless_cube_map GL_ARB_seamless_cubemap_per_texture GL_ARB_separate_shader_objects GL_ARB_shader_atomic_counters GL_ARB_shader_ballot GL_ARB_shader_bit_encoding GL_ARB_shader_draw_parameters GL_ARB_shader_group_vote GL_ARB_shader_image_load_store GL_ARB_shader_image_size GL_ARB_shader_objects GL_ARB_shader_precision GL_ARB_shader_stencil_export GL_ARB_shader_storage_buffer_object GL_ARB_shader_subroutine GL_ARB_shader_texture_image_samples GL_ARB_shader_texture_lod GL_ARB_shader_viewport_layer_array GL_ARB_shading_language_100 GL_ARB_shading_language_420pack GL_ARB_shading_language_packing GL_ARB_shadow GL_ARB_shadow_ambient GL_ARB_sparse_buffer GL_ARB_sparse_texture GL_ARB_spirv_extensions GL_ARB_stencil_texturing GL_ARB_sync GL_ARB_tessellation_shader GL_ARB_texture_barrier GL_ARB_texture_border_clamp GL_ARB_texture_buffer_object GL_ARB_texture_buffer_object_rgb32 GL_ARB_texture_buffer_range GL_ARB_texture_compression GL_ARB_texture_compression_bptc GL_ARB_texture_compression_rgtc GL_ARB_texture_cube_map GL_ARB_texture_cube_map_array GL_ARB_texture_env_add GL_ARB_texture_env_combine GL_ARB_texture_env_crossbar GL_ARB_texture_env_dot3 GL_ARB_texture_float GL_ARB_texture_gather GL_ARB_texture_mirror_clamp_to_edge GL_ARB_texture_mirrored_repeat GL_ARB_texture_multisample GL_ARB_texture_non_power_of_two GL_ARB_texture_query_levels GL_ARB_texture_query_lod GL_ARB_texture_rectangle GL_ARB_texture_rg GL_ARB_texture_rgb10_a2ui GL_ARB_texture_snorm GL_ARB_texture_stencil8 GL_ARB_texture_storage GL_ARB_texture_storage_multisample GL_ARB_texture_swizzle GL_ARB_texture_view GL_ARB_timer_query GL_ARB_transform_feedback2 GL_ARB_transform_feedback3 GL_ARB_transform_feedback_instanced GL_ARB_transform_feedback_overflow_query GL_ARB_transpose_matrix GL_ARB_uniform_buffer_object GL_ARB_vertex_array_bgra GL_ARB_vertex_array_object GL_ARB_vertex_attrib_64bit GL_ARB_vertex_attrib_binding GL_ARB_vertex_buffer_object GL_ARB_vertex_program GL_ARB_vertex_shader GL_ARB_vertex_type_10f_11f_11f_rev GL_ARB_vertex_type_2_10_10_10_rev GL_ARB_viewport_array GL_ARB_window_pos GL_ATI_draw_buffers GL_ATI_envmap_bumpmap GL_ATI_fragment_shader GL_ATI_separate_stencil GL_ATI_texture_compression_3dc GL_ATI_texture_env_combine3 GL_ATI_texture_float GL_ATI_texture_mirror_once GL_EXT_abgr GL_EXT_bgra GL_EXT_bindable_uniform GL_EXT_blend_color GL_EXT_blend_equation_separate GL_EXT_blend_func_separate GL_EXT_blend_minmax GL_EXT_blend_subtract GL_EXT_compiled_vertex_array GL_EXT_copy_buffer GL_EXT_copy_texture GL_EXT_depth_bounds_test GL_EXT_direct_state_access GL_EXT_draw_buffers2 GL_EXT_draw_instanced GL_EXT_draw_range_elements GL_EXT_fog_coord GL_EXT_framebuffer_blit GL_EXT_framebuffer_multisample GL_EXT_framebuffer_object GL_EXT_framebuffer_sRGB GL_EXT_geometry_shader4 GL_EXT_gpu_program_parameters GL_EXT_gpu_shader4 GL_EXT_histogram GL_EXT_multi_draw_arrays GL_EXT_packed_depth_stencil GL_EXT_packed_float GL_EXT_packed_pixels GL_EXT_pixel_buffer_object GL_EXT_point_parameters GL_EXT_polygon_offset_clamp GL_EXT_provoking_vertex GL_EXT_rescale_normal GL_EXT_secondary_color GL_EXT_separate_specular_color GL_EXT_shader_image_load_store GL_EXT_shader_integer_mix GL_EXT_shadow_funcs GL_EXT_stencil_wrap GL_EXT_subtexture GL_EXT_texgen_reflection GL_EXT_texture3D GL_EXT_texture_array GL_EXT_texture_buffer_object GL_EXT_texture_compression_bptc GL_EXT_texture_compression_latc GL_EXT_texture_compression_rgtc GL_EXT_texture_compression_s3tc GL_EXT_texture_cube_map GL_EXT_texture_edge_clamp GL_EXT_texture_env_add GL_EXT_texture_env_combine GL_EXT_texture_env_dot3 GL_EXT_texture_filter_anisotropic GL_EXT_texture_integer GL_EXT_texture_lod GL_EXT_texture_lod_bias GL_EXT_texture_mirror_clamp GL_EXT_texture_object GL_EXT_texture_rectangle GL_EXT_texture_sRGB GL_EXT_texture_sRGB_decode GL_EXT_texture_shared_exponent GL_EXT_texture_snorm GL_EXT_texture_storage GL_EXT_texture_swizzle GL_EXT_timer_query GL_EXT_transform_feedback GL_EXT_vertex_array GL_EXT_vertex_array_bgra GL_EXT_vertex_attrib_64bit GL_IBM_texture_mirrored_repeat GL_INTEL_fragment_shader_ordering GL_KHR_context_flush_control GL_KHR_debug GL_KHR_no_error GL_KHR_parallel_shader_compile GL_KHR_robust_buffer_access_behavior GL_KHR_robustness GL_KTX_buffer_region GL_NV_alpha_to_coverage_dither_control GL_NV_blend_square GL_NV_conditional_render GL_NV_copy_depth_to_color GL_NV_copy_image GL_NV_depth_buffer_float GL_NV_explicit_multisample GL_NV_float_buffer GL_NV_half_float GL_NV_primitive_restart GL_NV_texgen_reflection GL_NV_texture_barrier GL_OES_EGL_image GL_SGIS_generate_mipmap GL_SGIS_texture_edge_clamp GL_SGIS_texture_lod GL_SUN_multi_draw_arrays GL_WIN_swap_hint WGL_EXT_swap_control
+opengl max texture size (estimate): 16384x16384
+*** Setting swap interval to 0 ***
+initial input grab: 1
+init_opengl
+fs_emu_video_init_opengl
+setup_opengl
+loaded sub-texture "sidebar_edge.png"
+fs_image_destroy
+loaded sub-texture "sidebar.png"
+fs_image_destroy
+loaded sub-texture "gloss.png"
+fs_image_destroy
+loaded sub-texture "glow_left.png"
+fs_image_destroy
+loaded sub-texture "glow_top.png"
+fs_image_destroy
+loaded sub-texture "glow_top_left.png"
+fs_image_destroy
+loaded sub-texture "close.png"
+fs_image_destroy
+loaded sub-texture "volume.png"
+fs_image_destroy
+loaded sub-texture "volume_muted.png"
+fs_image_destroy
+loaded sub-texture "aspect.png"
+fs_image_destroy
+loaded sub-texture "stretch.png"
+fs_image_destroy
+loaded sub-texture "item_background.png"
+fs_image_destroy
+loaded sub-texture "top_item_background.png"
+fs_image_destroy
+loaded sub-texture "heading_strip.png"
+fs_image_destroy
+loaded sub-texture "pause_indicator.png"
+fs_image_destroy
+loaded sub-texture "logo-32.png"
+fs_image_destroy
+initializing menu
+load font from data
+font height: 32 pixels
+512 characters
+load font from data
+font height: 32 pixels
+512 characters
+[SHADERS] Initialize
+fs_ml_init_raw_input
+[RAWINPUT ]Old wndproc: ffff061f new wndproc: 00be6280
+create windows is done
+fs_uae_init_recording
+not running in record mode
+AUDIO: Stream 0,  frequency: 48000, buffers: 48 buffer size: 512 bytes
+AUDIO: Stream 1,  frequency: 44100, buffers: 48 buffer size: 28224 bytes
+adding rtg resolution 672x540
+adding rtg resolution 960x540
+adding rtg resolution 1344x1080
+adding rtg resolution 960x540
+resolution already exists
+adding rtg resolution 1920x1080
+fs_uae_init_video
+fs_uae_configure_menu
+fs_emu_run, main_function at 00406390
+emulation thread started
+thread priority set to THREAD_PRIORITY_ABOVE_NORMAL
+main function at 00406390
+amiga_main
+KB: keyboard_settrans
+SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED)
+checking OpenGL capabilities
+GL_ARB_sync extension found
+[OPENGL] Deciding video sync method
+[OPENGL] Using default sync method
+- SYNC_FINISH_SLEEP_SWAP_FINISH
+target_default_options p=03788380 type=0
+target_default_options: enabling floppy sounds
+ -- stub -- target_save_options zfile=07DBB4F0 p=03788380
+built_in_chipset_prefs, ignore = 0
+fixup_cpu
+built_in_chipset_prefs, ignore = 0
+ -- stub -- target_fixup_options 
+graphics_setup
+preinit_shm
+NATMEM: Total physical RAM 16306 MB, all RAM 32728 MB
+NATMEM: Attempting to reserve: 2048 MB
+NATMEM: jit compiler 0
+VM: Reserve  0x80000000 bytes, try address 0x80000000
+VM: Reserve  0x80000000 bytes
+VM: Reserve  0x80000000 bytes failed!
+VM: Reserve  0x80000000 bytes, try address 0x80000000
+VM: Reserve  0x80000000 bytes
+VM: Reserve  0x80000000 bytes failed!
+VM: Reserve  0x78000000 bytes, try address 0x80000000
+VM: Reserve  0x78000000 bytes, got address 0x80000000
+NATMEM: Reserved 80000000-f8000000 (0x78000000 1920M)
+ -- stub -- target_cfgfile_load 
+built_in_chipset_prefs, ignore = 0
+fixup_cpu
+built_in_chipset_prefs, ignore = 0
+ -- stub -- target_fixup_options 
+set_device_rom path=(null) romtype=262144 devnum=0
+boardromconfig 00000000
+target_default_options p=03788380 type=1
+target_default_options: enabling floppy sounds
+built_in_chipset_prefs, ignore = 0
+
+----------------------------------------------------------------------------
+uae configuration
+----------------------------------------------------------------------------
+
+fs_uae_configure_amiga_hardware
+fs_uae_load_rom_files ./Kickstarts
+configuring "Amiga 1200 (68020)", accuracy=1
+amiga_quickstart model=4 config=6 compa=0 (accuracy 1)
+set_device_rom path=(null) romtype=262144 devnum=0
+boardromconfig 00000000
+target_default_options p=03788380 type=1
+target_default_options: enabling floppy sounds
+built_in_chipset_prefs, ignore = 0
+set option "cachesize" to "0" (result: 1)
+resolve_path .\dummyfile (relative)
+checking .\.\dummyfile
+- found .\.\dummyfile
+set option "kickstart_rom_file" to "././dummyfile" (result: 1)
+set option "cpu_model" to "68020" (result: 1)
+set option "fpu_model" to "0" (result: 1)
+set option "mmu_model" to "0" (result: 1)
+set option "cpu_24bit_addressing" to "false" (result: 1)
+set option "cpu_speed" to "real" (result: 1)
+set option "blitter_cycle_exact" to "true" (result: 1)
+set option "cpu_compatible" to "true" (result: 1)
+set option "cpu_cycle_exact" to "true" (result: 1)
+set option "waiting_blits" to "true" (result: 1)
+set option "immediate_blits" to "false" (result: 1)
+set option "chipmem_size" to "4" (result: 1)
+set option "fastmem_size" to "8" (result: 1)
+set option "sound_stereo_separation" to "7" (result: 1)
+set option "sound_filter_type" to "enhanced" (result: 1)
+configure_floppies
+value for option floppy_drive_0: (null)
+set option "floppy0" to "" (result: 1)
+set option "floppy0type" to "0" (result: 1)
+value for option floppy_drive_1: (null)
+set option "floppy1" to "" (result: 1)
+set option "floppy1type" to "0" (result: 1)
+value for option floppy_drive_2: (null)
+set option "floppy2" to "" (result: 1)
+set option "floppy2type" to "0" (result: 1)
+value for option floppy_drive_3: (null)
+set option "floppy3" to "" (result: 1)
+set option "floppy3type" to "0" (result: 1)
+set option "nr_floppies" to "1" (result: 1)
+set option "floppy1" to "" (result: 1)
+set option "floppy1type" to "-1" (result: 1)
+set option "floppy2" to "" (result: 1)
+set option "floppy2type" to "-1" (result: 1)
+set option "floppy3" to "" (result: 1)
+set option "floppy3type" to "-1" (result: 1)
+set option "floppy0sound" to "0" (result: 1)
+set option "floppy1sound" to "0" (result: 1)
+set option "floppy2sound" to "0" (result: 1)
+set option "floppy3sound" to "0" (result: 1)
+set option "floppy_volume" to "100" (result: 1)
+set option "diskimage0" to "" (result: 1)
+set option "diskimage1" to "" (result: 1)
+set option "diskimage2" to "" (result: 1)
+set option "diskimage3" to "" (result: 1)
+set option "diskimage4" to "" (result: 1)
+set option "diskimage5" to "" (result: 1)
+set option "diskimage6" to "" (result: 1)
+set option "diskimage7" to "" (result: 1)
+set option "diskimage8" to "" (result: 1)
+set option "diskimage9" to "" (result: 1)
+set option "diskimage10" to "" (result: 1)
+set option "diskimage11" to "" (result: 1)
+set option "diskimage12" to "" (result: 1)
+set option "diskimage13" to "" (result: 1)
+set option "diskimage14" to "" (result: 1)
+set option "diskimage15" to "" (result: 1)
+set option "diskimage16" to "" (result: 1)
+set option "diskimage17" to "" (result: 1)
+set option "diskimage18" to "" (result: 1)
+set option "diskimage19" to "" (result: 1)
+fs_uae_configure_hard_drives
+resolve_path .\Hard Drives (relative)
+checking .\.\Hard Drives
+- found .\.\Hard Drives
+hard drive mount: ././Hard Drives
+device: DH0
+mount name: Hard Drives
+read only: 0
+boot priority: 0
+set option "filesystem2" to "rw,DH0:Hard Drives:././Hard Drives,0" (result: 1)
+set option "uaehf0" to "dir,rw,DH0:Hard Drives:././Hard Drives,0" (result: 1)
+configure_cdrom
+configuring joystick ports:
+set option "joyport0" to "none" (result: 1)
+set option "joyport1" to "none" (result: 1)
+fs_uae_configure_actions
+fs_uae_read_override_actions_for_port 0
+fs_uae_read_override_actions_for_port 1
+fs_uae_read_override_actions_for_port 2
+fs_uae_read_override_actions_for_port 3
+fs_uae_read_override_actions_for_port 4
+fs_uae_read_override_actions_for_port 5
+fs_uae_read_override_actions_for_port 6
+fs_uae_read_override_actions_for_port 7
+configuring joystick port 1 (nothing)
+nothing connected to port
+configuring joystick port 0 (auto)
+configuring joystick port 2 (nothing)
+nothing connected to port
+configuring joystick port 3 (nothing)
+nothing connected to port
+configuring joystick port 4 (nothing)
+nothing connected to port
+configuring joystick port 5 (nothing)
+nothing connected to port
+configuring joystick port 6 (nothing)
+nothing connected to port
+configuring joystick port 7 (nothing)
+nothing connected to port
+set option "statefile" to "./Save States\Default\Saved State.uss" (result: 1)
+amiga_set_save_image_dir ./Save States\Default
+- checking C:\Users\Robert\AppData\Local\fs-uae\module-ripper-dir
+resolve_path ./Cache\Modules (relative)
+checking .\./Cache\Modules
+checking .\./Cache\Modules
+WARNING: did not find path
+- using "Modules" directory "./Cache/Modules"
+amiga_set_module_ripper_dir ./Cache/Modules
+set option "sound_frequency" to "48000" (result: 1)
+amiga_set_audio_frequency: 48000
+fs_uae_set_uae_paths
+did not find "built-in" driveclick directory
+read_custom_uae_options
+WARNING: custom uae_* options used! Your warranty is now void! ;)
+(not that there was any warranty before...)
+set option "chipset" to "aga" (result: 1)
+writing uae config to ./Cache/Logs\debug.uae
+ -- stub -- target_save_options zfile=07DBB1C0 p=03788380
+
+----------------------------------------------------------------------------
+end of uae configuration
+----------------------------------------------------------------------------
+
+ -- stub -- init_joystick return 1
+ -- stub -- init_mouse return 1
+ -- stub -- init_kb return 1
+ -- stub -- gui_init 
+ -- stub -- logging_init 
+init_shm
+NATMEM: size            0x10000000
+NATMEM: z3size        + 0x00000000
+NATMEM: z3rtgmem_size + 0x00000000
+NATMEM: othersize     + 0x00000000
+NATMEM: totalsize     = 0x10000000
+Z3 REAL mapping. JIT direct compatible.
+NATMEM: JIT direct compatible: 1
+NATMEM: Our special area: 80000000-90000000 (0x10000000 256M)
+built_in_chipset_prefs, ignore = 0
+fixup_cpu
+built_in_chipset_prefs, ignore = 0
+ -- stub -- target_fixup_options 
+ -- stub -- target_run 
+ -- stub -- get_mouse_num return 0
+    (ignoring further calls to get_mouse_num)
+ -- stub -- get_joystick_num return 0
+    (ignoring further calls to get_joystick_num)
+ -- stub -- get_kb_num return 0
+    (ignoring further calls to get_kb_num)
+RTAREA located at 00F00000
+MMAN: mapped_malloc 0x00010000 start=0x00000000 UAE Boot ROM (rtarea)
+MMAN: Flags: ROMIN
+shmget of size 65536 (64k) for rtarea
+uae_shmat shmid 0 shmaddr 00000000, shmflg 0 natmem_offset = 80000000
+80f00000: VA 00F00000 - 00F10000 10000 (64k) ok (80f00000)
+uaegfx.card magic code: 00F03000-00F0313E ABI=00000000
+segtracker: install
+MMAN: mapped_malloc 0x00800000 start=0x00000000 Fast memory (fast)
+MMAN: Flags: RAM THREADSAFE
+shmget of size 8388608 (8192k) for fast
+uae_shmat shmid 1 shmaddr 00000000, shmflg 0 natmem_offset = 80000000
+80200000: VA 00200000 - 00A00020 800020 (8192k) ok (80200000)
+MMAN: mapped_malloc 0x00010000 start=0x00000000 Filesystem autoconfig (filesys)
+MMAN: Flags: IO SAFE INDIRECT
+shmget of size 65536 (64k) for filesys
+uae_shmat shmid 2 shmaddr 00000000, shmflg 0 natmem_offset = 80000000
+MMAN: mapped_malloc 0x00080000 start=0x00000000 Kickstart ROM (kick)
+MMAN: Flags: ROM THREADSAFE
+shmget of size 524288 (512k) for kick
+uae_shmat shmid 3 shmaddr 00000000, shmflg 0 natmem_offset = 80000000
+80f80000: VA 00F80000 - 01000020 80020 (512k) ok (80f80000)
+ -- stub -- my_issamepath 
+ -- stub -- my_issamepath 
+ -- stub -- my_issamepath 
+    (ignoring further calls to my_issamepath)
+MMAN: mapped_malloc 0x00200000 start=0x00000000 Chip memory (chip)
+MMAN: Flags: RAM THREADSAFE
+shmget of size 2097152 (2048k) for chip
+uae_shmat shmid 4 shmaddr 00000000, shmflg 0 natmem_offset = 80000000
+80000000: VA 00000000 - 00200000 200000 (2048k) ok (80000000)
+ROM loader.. (<none>)
+read_rom_name ././dummyfile
+Known ROM 'KS ROM v3.0 (A1200)' loaded
+ROM loader end
+cpuboard_map currprefs.cpuboard_type = 0
+uae_shmat shmid 3 shmaddr 80f80000, shmflg 0 natmem_offset = 80000000
+uae_shmat shmid 4 shmaddr 80000000, shmflg 0 natmem_offset = 80000000
+uae_shmat shmid 0 shmaddr 80f00000, shmflg 0 natmem_offset = 80000000
+MAPROM: cs_ksmirror_e0 set - mirroring kickstart at 0x00e00000
+uae_shmat shmid 3 shmaddr 80e00000, shmflg 0 natmem_offset = 80000000
+uae_shmat shmid 3 shmaddr 80b00000, shmflg 0 natmem_offset = 80000000
+uae_shmat shmid 3 shmaddr 80a80000, shmflg 0 natmem_offset = 80000000
+memory init end
+gfx_set_picasso_state 0
+drive_insert drv=01f361c4 dnum=3 fname= fake=0
+drive_insert drv=01f361c4 dnum=3 fname= fake=1
+gui_disk_image_change drive 3 <no disk>
+driveclick_insert drive=3 eject=1 click_initialized=0 wave_initialized=0 currprefs.floppyslots[drive].dfxclick=0
+gui_disk_image_change drive 3 <no disk>
+drive_insert drv=01f13bb8 dnum=2 fname= fake=0
+drive_insert drv=01f13bb8 dnum=2 fname= fake=1
+gui_disk_image_change drive 2 <no disk>
+driveclick_insert drive=2 eject=1 click_initialized=0 wave_initialized=0 currprefs.floppyslots[drive].dfxclick=0
+gui_disk_image_change drive 2 <no disk>
+drive_insert drv=01ef15ac dnum=1 fname= fake=0
+drive_insert drv=01ef15ac dnum=1 fname= fake=1
+gui_disk_image_change drive 1 <no disk>
+driveclick_insert drive=1 eject=1 click_initialized=0 wave_initialized=0 currprefs.floppyslots[drive].dfxclick=0
+gui_disk_image_change drive 1 <no disk>
+drive_insert drv=01ecefa0 dnum=0 fname= fake=0
+drive_insert drv=01ecefa0 dnum=0 fname= fake=1
+gui_disk_image_change drive 0 <no disk>
+driveclick_insert drive=0 eject=1 click_initialized=0 wave_initialized=0 currprefs.floppyslots[drive].dfxclick=0
+gui_disk_image_change drive 0 <no disk>
+No disk in drive 0.
+fixup_cpu
+CPU cycleunit: 128 (0.250)
+1870 CPU functions
+Building CPU, 45912 opcodes (2 -2 0)
+JIT: &countdown =  040d6ee0
+JIT: &build_comp = 00515640
+JIT: JIT: JIT compiler is not enabled
+CPU=68020, FPU=0, MMU=0, JIT=0. ~cycle-exact
+graphics_init
+calling reset_drawing
+init_colors
+init_sound
+CPU cycleunit: 128 (0.250)
+ -- stub -- target_reset 
+ -- stub -- my_resolvesoftlink 
+my_getvolumeinfo ././Hard Drives
+ -- stub -- filesys_addexternals 
+Initializing mainboard IDE
+init_shm
+cpuboard_map currprefs.cpuboard_type = 0
+uae_shmat shmid 3 shmaddr 80f80000, shmflg 0 natmem_offset = 80000000
+uae_shmat shmid 4 shmaddr 80000000, shmflg 0 natmem_offset = 80000000
+uae_shmat shmid 0 shmaddr 80f00000, shmflg 0 natmem_offset = 80000000
+MAPROM: cs_ksmirror_e0 set - mirroring kickstart at 0x00e00000
+uae_shmat shmid 3 shmaddr 80e00000, shmflg 0 natmem_offset = 80000000
+uae_shmat shmid 3 shmaddr 80b00000, shmflg 0 natmem_offset = 80000000
+uae_shmat shmid 3 shmaddr 80a80000, shmflg 0 natmem_offset = 80000000
+memory init end
+uae_start_tread "filesys" function at 004b8f90 arg 02d55920
+initparallel
+Reset at 00000000. Chipset mask = 00000007
+00000000    2048K/1 =    2048K Chip memory
+00200000    8704K/0 =    8704K <none>
+00A80000    1024K/2 =     512K Kickstart ROM (6C9B07D2)
+=KS ROM v3.0 (A1200) rev 39.106 (512k)
+00B80000     448K/0 =     448K <none>
+00BF0000      64K/0 =      64K CIA
+00C00000    1536K/0 =    1536K <none>
+00D80000     256K/0 =     256K Gayle (low)
+00DC0000      64K/0 =      64K Battery backed up clock (none)
+00DD0000     128K/0 =     128K Gayle (high)
+00DF0000      64K/0 =      64K Custom chipset
+00E00000     512K/1 =     512K Kickstart ROM (6C9B07D2)
+=KS ROM v3.0 (A1200) rev 39.106 (512k)
+00E80000      64K/0 =      64K Autoconfig Z2
+00E90000     448K/0 =     448K <none>
+00F00000      64K/1 =      64K UAE Boot ROM
+00F10000     448K/0 =     448K <none>
+00F80000     512K/1 =     512K Kickstart ROM (6C9B07D2)
+=KS ROM v3.0 (A1200) rev 39.106 (512k)
+01000000    4080M/0 =    4080M <none>
+uae_start_tread "ide" function at 004e0430 arg 02db3fa0
+drive_insert drv=01f361c4 dnum=3 fname= fake=0
+drive_insert drv=01f361c4 dnum=3 fname= fake=1
+gui_disk_image_change drive 3 <no disk>
+driveclick_insert drive=3 eject=1 click_initialized=0 wave_initialized=0 currprefs.floppyslots[drive].dfxclick=0
+gui_disk_image_change drive 3 <no disk>
+drive_insert drv=01f13bb8 dnum=2 fname= fake=0
+drive_insert drv=01f13bb8 dnum=2 fname= fake=1
+gui_disk_image_change drive 2 <no disk>
+driveclick_insert drive=2 eject=1 click_initialized=0 wave_initialized=0 currprefs.floppyslots[drive].dfxclick=0
+gui_disk_image_change drive 2 <no disk>
+drive_insert drv=01ef15ac dnum=1 fname= fake=0
+drive_insert drv=01ef15ac dnum=1 fname= fake=1
+gui_disk_image_change drive 1 <no disk>
+driveclick_insert drive=1 eject=1 click_initialized=0 wave_initialized=0 currprefs.floppyslots[drive].dfxclick=0
+gui_disk_image_change drive 1 <no disk>
+drive_insert drv=01ecefa0 dnum=0 fname= fake=0
+drive_insert drv=01ecefa0 dnum=0 fname= fake=1
+gui_disk_image_change drive 0 <no disk>
+driveclick_insert drive=0 eject=1 click_initialized=0 wave_initialized=0 currprefs.floppyslots[drive].dfxclick=0
+gui_disk_image_change drive 0 <no disk>
+uae_shmat shmid 3 shmaddr 80000000, shmflg 0 natmem_offset = 80000000
+uae_shmat shmid 3 shmaddr 80080000, shmflg 0 natmem_offset = 80000000
+uae_shmat shmid 3 shmaddr 80100000, shmflg 0 natmem_offset = 80000000
+uae_shmat shmid 3 shmaddr 80180000, shmflg 0 natmem_offset = 80000000
+using text cache texture size 2048x2048
+mousehack_reset
+PAL mode V=50.0000Hz H=15625.0881Hz (227x312+0) IDX=10 (PAL) D=0 RTG=0/0
+target_graphics_buffer_update - clearing buffer
+RTGFREQ: 312*50.0000 = 15600.0000 / 50.0 = 312
+fs_emu_audio_resume_stream 0
+gfx_set_picasso_state 0
+ -- stub -- fpux_restore 
+hardreset, memory cleared
+init_sound
+driveclick_init
+open_sound returning 1
+restarting audio stream 0 (buffer underrun)
+wait_for_frame_no_netplay: new frame rate 50.00 (time: 20000)
+fs_uae_reconfigure_input_ports_amiga
+sending event to set port 0 to mode 1
+trying to load state number: 1
+amiga_set_joystick_port_mode port=0 mode=1
+fs_uae_reconfigure_input_ports_host
+configuring joystick port 0
+* amiga mouse
+* using device MOUSE
+mapping mouse to port 0
+fs_emu_configure_mouse (device: MOUSE)
+did not match device #0 (Keyboard)
+matched device #1
+configuring joystick port 1
+* nothing in port
+* FIXME
+configuring joystick port 2
+* nothing in port
+* FIXME
+configuring joystick port 3
+* nothing in port
+* FIXME
+configuring joystick port 4
+* nothing in port
+* FIXME
+configuring joystick port 5
+* nothing in port
+* FIXME
+configuring joystick port 6
+* nothing in port
+* FIXME
+configuring joystick port 7
+* nothing in port
+* FIXME
+map_custom_keyboard_actions
+map_custom_joystick_actions
+map_custom_joystick_actions for Keyboard
+config name "keyboard_0_0_0_0_windows"
+get system config for device: keyboard_0_0_0_0_windows
+checked data "input/keyboard_0_0_0_0_windows.conf" = 3
+config file for keyboard_0_0_0_0_windows was not found
+did not find generic gamepad config for device "keyboard_0_0_0_0_windows"
+config name "keyboard"
+get system config for device: keyboard
+checked data "input/keyboard.conf" = 0
+read config for keyboard for universal (from data)
+checked data "input/default_keyboard.conf" = 0
+read config for default_keyboard for universal (from data)
+no config for platform universal
+did not find generic gamepad config for device "keyboard"
+map_custom_joystick_actions for MOUSE
+config name "mouse_0_0_0_0_windows"
+get system config for device: mouse_0_0_0_0_windows
+checked data "input/mouse_0_0_0_0_windows.conf" = 3
+config file for mouse_0_0_0_0_windows was not found
+did not find generic gamepad config for device "mouse_0_0_0_0_windows"
+config name "mouse"
+get system config for device: mouse
+checked data "input/mouse.conf" = 0
+read config for mouse for universal (from data)
+no config for platform universal
+did not find generic gamepad config for device "mouse"
+map_custom_joystick_actions for Mouse: HID-compliant mouse
+config name "mouse_hid_compliant_mouse_0_0_0_0_windows"
+get system config for device: mouse_hid_compliant_mouse_0_0_0_0_windows
+checked data "input/mouse_hid_compliant_mouse_0_0_0_0_windows.conf" = 3
+config file for mouse_hid_compliant_mouse_0_0_0_0_windows was not found
+did not find generic gamepad config for device "mouse_hid_compliant_mouse_0_0_0_0_windows"
+config name "mouse_hid_compliant_mouse"
+get system config for device: mouse_hid_compliant_mouse
+checked data "input/mouse_hid_compliant_mouse.conf" = 3
+config file for mouse_hid_compliant_mouse was not found
+did not find generic gamepad config for device "mouse_hid_compliant_mouse"
+map_custom_joystick_actions for Mouse: HID-Compliant Mouse
+config name "mouse_hid_compliant_mouse_0_0_0_0_windows"
+get system config for device: mouse_hid_compliant_mouse_0_0_0_0_windows
+checked data "input/mouse_hid_compliant_mouse_0_0_0_0_windows.conf" = 3
+config file for mouse_hid_compliant_mouse_0_0_0_0_windows was not found
+did not find generic gamepad config for device "mouse_hid_compliant_mouse_0_0_0_0_windows"
+config name "mouse_hid_compliant_mouse"
+get system config for device: mouse_hid_compliant_mouse
+checked data "input/mouse_hid_compliant_mouse.conf" = 3
+config file for mouse_hid_compliant_mouse was not found
+did not find generic gamepad config for device "mouse_hid_compliant_mouse"
+map_custom_joystick_actions for Mouse: HID-compliant mouse #2
+config name "mouse_hid_compliant_mouse_0_0_0_0_windows"
+get system config for device: mouse_hid_compliant_mouse_0_0_0_0_windows
+checked data "input/mouse_hid_compliant_mouse_0_0_0_0_windows.conf" = 3
+config file for mouse_hid_compliant_mouse_0_0_0_0_windows was not found
+did not find generic gamepad config for device "mouse_hid_compliant_mouse_0_0_0_0_windows"
+config name "mouse_hid_compliant_mouse"
+get system config for device: mouse_hid_compliant_mouse
+checked data "input/mouse_hid_compliant_mouse.conf" = 3
+config file for mouse_hid_compliant_mouse was not found
+did not find generic gamepad config for device "mouse_hid_compliant_mouse"
+staterestore, file './Save States\Default\Saved State 1.uss' not found
+Display Size: 640x480 Offset: 74x36
+First: 26 Last: 0 MinV: 0 MaxV: 0 Min: 26
+[VIDEO] fs_emu_set_video_frame_rate: 50.00 (50)
+[DISPLAY] Sync: g_fs_emu_video_sync_to_vblank = 0
+restarting audio stream 0 (buffer underrun)
+restarting audio stream 0 (buffer underrun)
+uae_shmat shmid 4 shmaddr 80000000, shmflg 0 natmem_offset = 80000000
+SERIAL: period=372, baud=9600, hsyncs=14, bits=8, PC=f8016e
+6888x no FPU: F201-9000 PC=00F80BD0
+B-Trap F201 at 00F80BD0 -> 00F80BF0
+uae_shmat shmid 1 shmaddr 80200000, shmflg 0 natmem_offset = 80000000
+Card 1: Z2 0x00200000 8192K RAM Fast memory
+uae_shmat shmid 2 shmaddr 80e90000, shmflg 0 natmem_offset = 80000000
+Card 2: Z2 0x00e90000   64K ROM Filesystem autoconfig
+Memory map after autoconfig:
+00000000    2048K/1 =    2048K Chip memory
+00200000    8192K/1 =    8192K Fast memory
+00A00000     512K/0 =     512K <none>
+00A80000    1024K/2 =     512K Kickstart ROM (6C9B07D2)
+=KS ROM v3.0 (A1200) rev 39.106 (512k)
+00B80000     448K/0 =     448K <none>
+00BF0000      64K/0 =      64K CIA
+00C00000    1536K/0 =    1536K <none>
+00D80000     256K/0 =     256K Gayle (low)
+00DC0000      64K/0 =      64K Battery backed up clock (MSM6242B)
+00DD0000     128K/0 =     128K Gayle (high)
+00DF0000      64K/0 =      64K Custom chipset
+00E00000     512K/1 =     512K Kickstart ROM (6C9B07D2)
+=KS ROM v3.0 (A1200) rev 39.106 (512k)
+00E80000      64K/0 =      64K <none>
+00E90000      64K/0 =      64K Filesystem autoconfig
+00EA0000     384K/0 =     384K <none>
+00F00000      64K/1 =      64K UAE Boot ROM
+00F10000     448K/0 =     448K <none>
+00F80000     512K/1 =     512K Kickstart ROM (6C9B07D2)
+=KS ROM v3.0 (A1200) rev 39.106 (512k)
+01000000    4080M/0 =    4080M <none>
+filesystem: diagentry 00200098 configdev 00000c40
+PAL mode V=50.0000Hz H=15625.0881Hz (227x312+1) IDX=10 (PAL) D=0 RTG=0/0
+target_graphics_buffer_update - clearing buffer
+Mounting uaehf.device 0 (0):
+FS: mounted virtual unit DH0 (././Hard Drives)
+FS: Hard Drives (flags=00000002,E=0,ED=1,EF=0,native='././Hard Drives') starting..
+Display Size: 724x512 Offset: 6x36
+First: 44 Last: 300 MinV: 42 MaxV: 313 Min: 26
+Display Size: 640x512 Offset: 74x36
+First: 44 Last: 300 MinV: 42 MaxV: 313 Min: 26
+6888x no FPU: F200-4000 PC=00281DD4
+B-Trap F200 at 00281DD4 -> 00281DF8
+B-Trap F017 at 00281E22 -> 00281E52
+fs_emu_audio_resume_stream 0
+Display Size: 640x400 Offset: 74x36
+First: 44 Last: 244 MinV: 42 MaxV: 313 Min: 26
+fs_emu_audio_resume_stream 0
+Display Size: 640x548 Offset: 74x0
+First: 26 Last: 320 MinV: 26 MaxV: 300 Min: 26
+Display Size: 640x512 Offset: 74x36
+First: 26 Last: 320 MinV: 44 MaxV: 300 Min: 26
+Display Size: 640x548 Offset: 74x0
+First: 26 Last: 320 MinV: 26 MaxV: 300 Min: 26
+Display Size: 640x538 Offset: 74x36
+First: 44 Last: 320 MinV: 26 MaxV: 313 Min: 26
+Display Size: 640x512 Offset: 74x36
+First: 44 Last: 300 MinV: 26 MaxV: 313 Min: 26
+EMU: Ungrab input
+EMU: Grab input
+EMU: Ungrab input
+EMU: Grab input
+EMU: Ungrab input
+EMU: Grab input
+EMU: Ungrab input
+EMU: Grab input
+EMU: Ungrab input
+EMU: Grab input
+restarting audio stream 0 (buffer underrun)
+Display Size: 640x548 Offset: 74x0
+First: 26 Last: 320 MinV: 26 MaxV: 300 Min: 26
+Display Size: 694x546 Offset: 42x12
+First: 26 Last: 320 MinV: 32 MaxV: 305 Min: 26
+EMU: Ungrab input
+EMU: Grab input
+restarting audio stream 0 (buffer underrun)
+EMU: Ungrab input
+EMU: Grab input
+EMU: Ungrab input
+EMU: Grab input
+EMU: Ungrab input
+EMU: Grab input
+fs_emu_audio_resume_stream 0
+fs_emu_audio_resume_stream 0
+waiting_blits detected PC=006067a8
+EMU: Ungrab input
+EMU: Grab input
+fs_emu_audio_resume_stream 0
+fs_emu_audio_resume_stream 0
+Display Size: 694x480 Offset: 42x12
+First: 26 Last: 272 MinV: 32 MaxV: 313 Min: 26
+Display Size: 694x492 Offset: 42x0
+First: 26 Last: 272 MinV: 26 MaxV: 313 Min: 26
+Display Size: 694x548 Offset: 42x0
+First: 26 Last: 320 MinV: 26 MaxV: 300 Min: 26
+Display Size: 640x512 Offset: 74x36
+First: 26 Last: 320 MinV: 44 MaxV: 300 Min: 26
+need_metadata_file 2 WF_ALWAYS
+- writing mode ----rwed
+need_metadata_file 6 WF_ALWAYS WF_EXISTS
+- writing mode ----rw-d
+fs_emu_audio_resume_stream 0
+special action
+ -- stub -- target_reset 
+hdf_close_target
+hdf_close_target
+hdf_close_target
+hdf_close_target
+hdf_close_target
+hdf_close_target
+hdf_close_target
+ -- stub -- my_resolvesoftlink 
+my_getvolumeinfo ././Hard Drives
+ -- stub -- filesys_addexternals 
+Initializing mainboard IDE
+init_shm
+cpuboard_map currprefs.cpuboard_type = 0
+uae_shmat shmid 3 shmaddr 80f80000, shmflg 0 natmem_offset = 80000000
+uae_shmat shmid 4 shmaddr 80000000, shmflg 0 natmem_offset = 80000000
+uae_shmat shmid 0 shmaddr 80f00000, shmflg 0 natmem_offset = 80000000
+MAPROM: cs_ksmirror_e0 set - mirroring kickstart at 0x00e00000
+uae_shmat shmid 3 shmaddr 80e00000, shmflg 0 natmem_offset = 80000000
+uae_shmat shmid 3 shmaddr 80b00000, shmflg 0 natmem_offset = 80000000
+uae_shmat shmid 3 shmaddr 80a80000, shmflg 0 natmem_offset = 80000000
+memory init end
+uae_start_tread "filesys" function at 004b8f90 arg 02d55920
+initparallel
+Reset at 00F813A6. Chipset mask = 00000007
+00000000    2048K/1 =    2048K Chip memory
+00200000    8704K/0 =    8704K <none>
+00A80000    1024K/2 =     512K Kickstart ROM (6C9B07D2)
+=KS ROM v3.0 (A1200) rev 39.106 (512k)
+00B80000     448K/0 =     448K <none>
+00BF0000      64K/0 =      64K CIA
+00C00000    1536K/0 =    1536K <none>
+00D80000     256K/0 =     256K Gayle (low)
+00DC0000      64K/0 =      64K Battery backed up clock (MSM6242B)
+00DD0000     128K/0 =     128K Gayle (high)
+00DF0000      64K/0 =      64K Custom chipset
+00E00000     512K/1 =     512K Kickstart ROM (6C9B07D2)
+=KS ROM v3.0 (A1200) rev 39.106 (512k)
+00E80000      64K/0 =      64K Autoconfig Z2
+00E90000     448K/0 =     448K <none>
+00F00000      64K/1 =      64K UAE Boot ROM
+00F10000     448K/0 =     448K <none>
+00F80000     512K/1 =     512K Kickstart ROM (6C9B07D2)
+=KS ROM v3.0 (A1200) rev 39.106 (512k)
+01000000    4080M/0 =    4080M <none>
+drive_insert drv=01f361c4 dnum=3 fname= fake=0
+drive_insert drv=01f361c4 dnum=3 fname= fake=1
+gui_disk_image_change drive 3 <no disk>
+driveclick_insert drive=3 eject=1 click_initialized=0 wave_initialized=0 currprefs.floppyslots[drive].dfxclick=0
+gui_disk_image_change drive 3 <no disk>
+drive_insert drv=01f13bb8 dnum=2 fname= fake=0
+drive_insert drv=01f13bb8 dnum=2 fname= fake=1
+gui_disk_image_change drive 2 <no disk>
+driveclick_insert drive=2 eject=1 click_initialized=0 wave_initialized=0 currprefs.floppyslots[drive].dfxclick=0
+gui_disk_image_change drive 2 <no disk>
+drive_insert drv=01ef15ac dnum=1 fname= fake=0
+drive_insert drv=01ef15ac dnum=1 fname= fake=1
+gui_disk_image_change drive 1 <no disk>
+driveclick_insert drive=1 eject=1 click_initialized=0 wave_initialized=0 currprefs.floppyslots[drive].dfxclick=0
+gui_disk_image_change drive 1 <no disk>
+drive_insert drv=01ecefa0 dnum=0 fname= fake=0
+drive_insert drv=01ecefa0 dnum=0 fname= fake=1
+gui_disk_image_change drive 0 <no disk>
+driveclick_insert drive=0 eject=1 click_initialized=0 wave_initialized=0 currprefs.floppyslots[drive].dfxclick=0
+gui_disk_image_change drive 0 <no disk>
+uae_shmat shmid 3 shmaddr 80000000, shmflg 0 natmem_offset = 80000000
+uae_shmat shmid 3 shmaddr 80080000, shmflg 0 natmem_offset = 80000000
+uae_shmat shmid 3 shmaddr 80100000, shmflg 0 natmem_offset = 80000000
+uae_shmat shmid 3 shmaddr 80180000, shmflg 0 natmem_offset = 80000000
+mousehack_reset
+PAL mode V=50.0000Hz H=15625.0881Hz (227x312+0) IDX=10 (PAL) D=0 RTG=0/0
+target_graphics_buffer_update - clearing buffer
+RTGFREQ: 312*50.0000 = 15600.0000 / 50.0 = 312
+gfx_set_picasso_state 0
+ -- stub -- fpux_restore 
+hardreset, memory cleared
+Display Size: 640x480 Offset: 74x36
+First: 44 Last: 300 MinV: 0 MaxV: 0 Min: 26
+PAL mode V=50.0000Hz H=15625.0881Hz (227x312+0) IDX=10 (PAL) D=0 RTG=0/0
+target_graphics_buffer_update - clearing buffer
+RTGFREQ: 592*50.0000 = 29600.0000 / 50.0 = 592
+Display Size: 640x480 Offset: 74x36
+First: 44 Last: 300 MinV: 0 MaxV: 0 Min: 26
+PAL mode V=50.0000Hz H=15625.0881Hz (227x312+0) IDX=10 (PAL) D=0 RTG=0/0
+target_graphics_buffer_update - clearing buffer
+RTGFREQ: 312*50.0000 = 15600.0000 / 50.0 = 312
+Display Size: 640x480 Offset: 74x36
+First: 44 Last: 300 MinV: 0 MaxV: 0 Min: 26
+uae_shmat shmid 4 shmaddr 80000000, shmflg 0 natmem_offset = 80000000
+6888x no FPU: F201-9000 PC=00F80BD0
+B-Trap F201 at 00F80BD0 -> 00F80BF0
+uae_shmat shmid 1 shmaddr 80200000, shmflg 0 natmem_offset = 80000000
+Card 1: Z2 0x00200000 8192K RAM Fast memory
+uae_shmat shmid 2 shmaddr 80e90000, shmflg 0 natmem_offset = 80000000
+Card 2: Z2 0x00e90000   64K ROM Filesystem autoconfig
+Memory map after autoconfig:
+00000000    2048K/1 =    2048K Chip memory
+00200000    8192K/1 =    8192K Fast memory
+00A00000     512K/0 =     512K <none>
+00A80000    1024K/2 =     512K Kickstart ROM (6C9B07D2)
+=KS ROM v3.0 (A1200) rev 39.106 (512k)
+00B80000     448K/0 =     448K <none>
+00BF0000      64K/0 =      64K CIA
+00C00000    1536K/0 =    1536K <none>
+00D80000     256K/0 =     256K Gayle (low)
+00DC0000      64K/0 =      64K Battery backed up clock (MSM6242B)
+00DD0000     128K/0 =     128K Gayle (high)
+00DF0000      64K/0 =      64K Custom chipset
+00E00000     512K/1 =     512K Kickstart ROM (6C9B07D2)
+=KS ROM v3.0 (A1200) rev 39.106 (512k)
+00E80000      64K/0 =      64K <none>
+00E90000      64K/0 =      64K Filesystem autoconfig
+00EA0000     384K/0 =     384K <none>
+00F00000      64K/1 =      64K UAE Boot ROM
+00F10000     448K/0 =     448K <none>
+00F80000     512K/1 =     512K Kickstart ROM (6C9B07D2)
+=KS ROM v3.0 (A1200) rev 39.106 (512k)
+01000000    4080M/0 =    4080M <none>
+fs_emu_audio_resume_stream 0
+filesystem: diagentry 00200098 configdev 00000c40
+PAL mode V=50.0000Hz H=15625.0881Hz (227x312+1) IDX=10 (PAL) D=0 RTG=0/0
+target_graphics_buffer_update - clearing buffer
+Mounting uaehf.device 0 (0):
+FS: mounted virtual unit DH0 (././Hard Drives)
+FS: Hard Drives (flags=00000002,E=0,ED=1,EF=0,native='././Hard Drives') starting..
+Display Size: 724x512 Offset: 6x36
+First: 44 Last: 300 MinV: 42 MaxV: 313 Min: 26
+Display Size: 640x512 Offset: 74x36
+First: 44 Last: 300 MinV: 42 MaxV: 313 Min: 26
+6888x no FPU: F200-4000 PC=002820B4
+B-Trap F200 at 002820B4 -> 002820D8
+B-Trap F017 at 00282102 -> 00282132
+special action
+fs_emu_audio_resume_stream 0
+Display Size: 640x400 Offset: 74x36
+First: 44 Last: 244 MinV: 42 MaxV: 313 Min: 26
+fs_emu_audio_resume_stream 0
+Display Size: 640x548 Offset: 74x0
+First: 26 Last: 320 MinV: 26 MaxV: 300 Min: 26
+Display Size: 640x512 Offset: 74x36
+First: 26 Last: 320 MinV: 44 MaxV: 300 Min: 26
+Display Size: 640x548 Offset: 74x0
+First: 26 Last: 320 MinV: 26 MaxV: 300 Min: 26
+Display Size: 640x538 Offset: 74x36
+First: 44 Last: 320 MinV: 26 MaxV: 313 Min: 26
+Display Size: 640x512 Offset: 74x36
+First: 44 Last: 300 MinV: 26 MaxV: 313 Min: 26
+Zoom: Full Frame
+Zoom: 724x566
+EMU: Enter menu
+update_main_menu
+floppy in 0: 
+EMU: Ungrab input
+update_main_menu
+floppy in 0: 
+menu shortcut intercepted by action handling
+writing screenshot to C:\Users\Robert\Desktop\fs-uae-full-1808131115-01.png
+saved screenshot
+writing screenshot to C:\Users\Robert\Desktop\fs-uae-crop-1808131115-01.png
+saved screenshot
+writing screenshot to C:\Users\Robert\Desktop\fs-uae-real-1808131115-01.png
+reading opengl frame buffer (1920 x 1080)
+saved screenshot
+menu shortcut intercepted by action handling
+Saved screenshot 1
+Volume: Muted
+menu shortcut intercepted by action handling
+menu shortcut intercepted by action handling
+Volume: 100%
+menu shortcut intercepted by action handling
+menu shortcut intercepted by action handling
+menu shortcut intercepted by action handling
+menu shortcut intercepted by action handling
+menu shortcut intercepted by action handling
+got resize event, but size was unchanged
+menu shortcut intercepted by action handling
+menu shortcut intercepted by action handling
+menu shortcut intercepted by action handling
+menu shortcut intercepted by action handling
+menu shortcut intercepted by action handling
+got resize event, but size was unchanged
+restarting audio stream 0 (buffer underrun)
+Received SDL_QUIT
+fs_ml_quit called
+libfsemu on_quit: no quit function
+Received SDL_QUIT
+fs_ml_quit already called
+calling amiga_quit
+uae_quit
+UAE: Stopping
+ -- stub -- close_joystick 
+ -- stub -- close_mouse 
+ -- stub -- close_kb 
+ -- stub -- gui_exit 
+mapped_free direct Fast memory
+mapped_free indirect Filesystem autoconfig
+hdf_close_target
+hdf_close_target
+hdf_close_target
+hdf_close_target
+hdf_close_target
+hdf_close_target
+hdf_close_target
+mapped_free direct Kickstart ROM
+mapped_free direct Chip memory
+ -- stub -- machdep_free 
+real_main returned
+calling filesys_flush_cache
+flushing all file streams
+[CORE] Return from amiga_main
+fs_ml_quit already called
+calling fs_ml_stop because emu thread is done
+fs_emu_run: main loop is done
+average fps sys: 47.9 emu: 49.8
+fs_emu_run: waiting for emulation thread to stop
+fs_emu_run: emulation thread stopped
+OPENAL: fs_emu_audio_shutdown
+OPENAL: Stopping stream 0
+OPENAL: Stopping stream 1
+OPENAL: alcDestroyContext
+OPENAL: alcCloseDevice
+fs_emu_run: returning
+fs-uae shutting down, fs_emu_run returned
+state dir ./Save States\Default was removed because it was empty
+end of main function

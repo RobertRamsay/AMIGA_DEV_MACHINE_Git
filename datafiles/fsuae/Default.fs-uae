@@ -1,0 +1,12 @@
+amiga_model = A1200/020
+chip_memory = 2048
+fast_memory = 8192
+fullscreen = 1
+base_dir =.\
+kickstart_file = .\dummyfile
+uae_chipset = aga
+floppy_drive_volume = 0
+hard_drive_0 =.\Hard Drives
+scanlines = 1
+joystick_port_1 = nothing
+load_state=1

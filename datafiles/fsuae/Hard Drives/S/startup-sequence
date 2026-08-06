@@ -1,0 +1,7 @@
+assign t: ram:
+assign env: dh0:env
+assign devs: dh0:devs
+assign libs: dh0:libs
+setpatch
+run dh0:Tools/Commodities/ModePro
+wbrun c:whdload Settlers
