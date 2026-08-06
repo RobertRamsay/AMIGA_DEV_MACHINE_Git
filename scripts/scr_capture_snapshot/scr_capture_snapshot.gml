@@ -4,7 +4,13 @@ function scr_capture_snapshot() {
     var _root_array = [];
 
     with (obj_amiga_root_node) {
-        var _root_data = { uid : uid, root_type : root_type, node_x : node_x, node_y : node_y };
+        var _root_data = {
+            uid : uid,
+            root_type : root_type,
+            node_x : node_x,
+            node_y : node_y,
+            continues_from_root_uid : continues_from_root_uid
+        };
         array_push(_root_array, _root_data);
     }
 
@@ -15,8 +21,14 @@ function scr_capture_snapshot() {
             uid : uid,
             node_x : node_x,
             node_y : node_y,
+            node_width : node_width,
+            node_height : node_height,
             is_connected : is_connected,
             root_uid : root_uid,
+            is_macro : is_macro,
+            macro_type : macro_type,
+            macro_asset_name : macro_asset_name,
+            preview_collapsed : preview_collapsed,
             opcode_mnemonic : opcode_mnemonic,
             opcode_size : opcode_size,
             addressing_mode_src : addressing_mode_src,

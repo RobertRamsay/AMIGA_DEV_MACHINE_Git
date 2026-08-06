@@ -29,27 +29,40 @@ if (is_macro) {
 draw_text(_dx + 6, _dy, _header_text);
 
 var _label_display_text = node_label;
+var _lab_width = 140;
 
 if (operand_editing_slot == "node_label") {
     _label_display_text = operand_edit_text;
 }
 
+// Labels remain visible after editing. The badge is drawn before the text so
+// the edit pulse cannot cover the entered name.
+if (_label_display_text != "" || operand_editing_slot == "node_label") {
+    var _label_box_x1 = _dx + node_width + 4;
+    var _label_box_y1 = _dy;
+    var _label_box_x2 = _label_box_x1 + _lab_width;
+    var _label_box_y2 = _label_box_y1 + 20;
+    var _label_border_colour = c_white;
+    var _label_text_colour = c_white;
+    var _label_background_colour = c_dkgray;
+    var _label_grow = 0;
 
-var _labWidth=140;
+    if (operand_editing_slot == "node_label") {
+        var _pulse_t = (sin(current_time * 0.006) + 1) / 2;
+        _label_border_colour = merge_colour(c_black, c_yellow, _pulse_t);
+        _label_text_colour = c_yellow;
+        _label_background_colour = merge_colour(c_dkgray, _label_border_colour, 0.3);
+        _label_grow = _pulse_t * 3;
+    }
 
-if (operand_editing_slot == "node_label") {
-    var _pulse_t = (sin(current_time * 0.006) + 1) / 2;
-    var _pulse_colour = merge_colour(c_black, c_yellow, _pulse_t);
-    var _pulse_grow = _pulse_t * 3;
-
-    draw_set_colour( merge_colour(c_dkgray, _pulse_colour, 0.3));
-	draw_rectangle(_dx + node_width + 4 - _pulse_grow, _dy - _pulse_grow, _dx + node_width + _labWidth + _pulse_grow, _dy + 20 + _pulse_grow, false);
-	draw_set_colour(_pulse_colour);
-    draw_rectangle(_dx + node_width + 4 - _pulse_grow, _dy - _pulse_grow, _dx + node_width + _labWidth + _pulse_grow, _dy + 20 + _pulse_grow, true);
+    draw_set_colour(_label_background_colour);
+    draw_rectangle(_label_box_x1 - _label_grow, _label_box_y1 - _label_grow, _label_box_x2 + _label_grow, _label_box_y2 + _label_grow, false);
+    draw_set_colour(_label_border_colour);
+    draw_rectangle(_label_box_x1 - _label_grow, _label_box_y1 - _label_grow, _label_box_x2 + _label_grow, _label_box_y2 + _label_grow, true);
+    draw_set_colour(_label_text_colour);
+    draw_text(_label_box_x1 + 4, _label_box_y1 + 2, _label_display_text);
     draw_set_colour(c_white);
 }
-
-
 
 if (is_macro) {
     var _asset_field_dx = node_x + global.pan_x;
