@@ -5,6 +5,12 @@
 /// the bitmap editor's own palette RGB sliders, just standalone and
 /// screen-centred rather than tied to a bitmap palette slot.
 ///
+/// depth is set deeper than obj_bitmap_editor/obj_cprbar_editor's own
+/// -100000 so this always draws on top even when opened from within one
+/// of those — without this, whichever one happened to draw last (implicit,
+/// unreliable order) would paint its own backdrop straight over the picker.
+depth = -200000;
+
 /// Write-back is generic: target_instance_id + target_variable_name name a
 /// plain instance variable to write the committed hex string into, unless
 /// target_array_index is >= 0, in which case that variable is treated as

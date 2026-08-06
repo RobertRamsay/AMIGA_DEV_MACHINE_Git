@@ -6,6 +6,11 @@
 /// directly and live — there is no separate scratch copy, so Close is a
 /// plain dismiss, not a commit; the undo snapshot taken when this editor
 /// opens covers the whole editing session in one Ctrl+Z if needed.
+///
+/// depth matches obj_bitmap_editor's own -100000 convention for modal
+/// overlays. obj_colour_picker goes deeper still (-200000) so it always
+/// draws on top of this when opened for an individual band.
+depth = -100000;
 target_node_id = noone;
 
 panel_width = 460;
