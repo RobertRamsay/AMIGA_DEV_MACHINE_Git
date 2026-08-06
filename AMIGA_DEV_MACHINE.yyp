@@ -224,6 +224,7 @@
     {"id":{"name":"scr_amiga_ensure_kickstart_path","path":"scripts/scr_amiga_ensure_kickstart_path/scr_amiga_ensure_kickstart_path.yy",},},
     {"id":{"name":"scr_amiga_explain_node","path":"scripts/scr_amiga_explain_node/scr_amiga_explain_node.yy",},},
     {"id":{"name":"scr_amiga_find_insert_point","path":"scripts/scr_amiga_find_insert_point/scr_amiga_find_insert_point.yy",},},
+    {"id":{"name":"scr_amiga_has_core_loop","path":"scripts/scr_amiga_has_core_loop/scr_amiga_has_core_loop.yy",},},
     {"id":{"name":"scr_amiga_restore_wedge_shifts","path":"scripts/scr_amiga_restore_wedge_shifts/scr_amiga_restore_wedge_shifts.yy",},},
     {"id":{"name":"scr_amiga_run_bitmap_test","path":"scripts/scr_amiga_run_bitmap_test/scr_amiga_run_bitmap_test.yy",},},
     {"id":{"name":"scr_amiga_run_sprite_test","path":"scripts/scr_amiga_run_sprite_test/scr_amiga_run_sprite_test.yy",},},

@@ -1,0 +1,99 @@
+diff --git a/AMIGA_DEV_MACHINE.yyp b/AMIGA_DEV_MACHINE.yyp
+index fe0ca1f..77c0615 100644
+--- a/AMIGA_DEV_MACHINE.yyp
++++ b/AMIGA_DEV_MACHINE.yyp
+@@ -224,6 +224,7 @@
+     {"id":{"name":"scr_amiga_ensure_kickstart_path","path":"scripts/scr_amiga_ensure_kickstart_path/scr_amiga_ensure_kickstart_path.yy",},},
+     {"id":{"name":"scr_amiga_explain_node","path":"scripts/scr_amiga_explain_node/scr_amiga_explain_node.yy",},},
+     {"id":{"name":"scr_amiga_find_insert_point","path":"scripts/scr_amiga_find_insert_point/scr_amiga_find_insert_point.yy",},},
++    {"id":{"name":"scr_amiga_has_core_loop","path":"scripts/scr_amiga_has_core_loop/scr_amiga_has_core_loop.yy",},},
+     {"id":{"name":"scr_amiga_restore_wedge_shifts","path":"scripts/scr_amiga_restore_wedge_shifts/scr_amiga_restore_wedge_shifts.yy",},},
+     {"id":{"name":"scr_amiga_run_bitmap_test","path":"scripts/scr_amiga_run_bitmap_test/scr_amiga_run_bitmap_test.yy",},},
+     {"id":{"name":"scr_amiga_run_sprite_test","path":"scripts/scr_amiga_run_sprite_test/scr_amiga_run_sprite_test.yy",},},
+diff --git a/objects/obj_amiga_manager/Step_0.gml b/objects/obj_amiga_manager/Step_0.gml
+index 83209ed..8894818 100644
+--- a/objects/obj_amiga_manager/Step_0.gml
++++ b/objects/obj_amiga_manager/Step_0.gml
+@@ -57,6 +57,12 @@ if (keyboard_check_pressed(vk_f5) && build_state == "idle") {
+ 
+     if (array_length(_node_array) == 0) {
+         scr_set_status_message("Nothing to build — add at least one node first.");
++    } else if (!scr_amiga_has_core_loop(_node_array)) {
++        // Amiga has nowhere to fall back to the way C64 returns to BASIC on
++        // RTS — a program with no branch back to an earlier label just runs
++        // off the end into unowned memory and traps. Catch that here rather
++        // than let it build clean and crash in FS-UAE.
++        scr_set_status_message("F5 - BAD BUILD (NO CORE LOOP)", c_red);
+     } else {
+         // Only the DOS-loader path (a BITMAP_DISPLAY macro anywhere in the
+         // program) needs a real Kickstart to auto-run Startup-Sequence. Plain
+diff --git a/scripts/scr_amiga_has_core_loop/scr_amiga_has_core_loop.gml b/scripts/scr_amiga_has_core_loop/scr_amiga_has_core_loop.gml
+new file mode 100644
+index 0000000..189a6b1
+--- /dev/null
++++ b/scripts/scr_amiga_has_core_loop/scr_amiga_has_core_loop.gml
+@@ -0,0 +1,45 @@
++/// @desc scr_amiga_has_core_loop(_node_array)
++/// True if at least one branch/jump instruction in _node_array targets a
++/// label defined by some node in that same array — meaning execution can
++/// return to an earlier point and hold there forever, rather than running
++/// off the end into unowned memory. Unlike C64 (which falls back to BASIC
++/// via the kernal on RTS), a plain Amiga boot program has nowhere to fall
++/// back to — with no loop, it just keeps executing whatever garbage bytes
++/// follow it until the CPU traps on an illegal instruction.
++function scr_amiga_has_core_loop(_node_array) {
++    var _label_set = {};
++    var _count = array_length(_node_array);
++    var _i = 0;
++
++    while (_i < _count) {
++        if (_node_array[_i].node_label != "") {
++            _label_set[$ _node_array[_i].node_label] = true;
++        }
++
++        _i += 1;
++    }
++
++    _i = 0;
++
++    while (_i < _count) {
++        var _node = _node_array[_i];
++
++        if (!_node.is_macro) {
++            var _target_label = "";
++
++            if (scr_is_branch_target_opcode(_node.opcode_mnemonic) && _node.addressing_mode_src == "LABEL") {
++                _target_label = _node.operand_label_src;
++            } else if (scr_is_dbcc_opcode(_node.opcode_mnemonic) && _node.addressing_mode_dst == "LABEL") {
++                _target_label = _node.operand_label_dst;
++            }
++
++            if (_target_label != "" && variable_struct_exists(_label_set, _target_label)) {
++                return true;
++            }
++        }
++
++        _i += 1;
++    }
++
++    return false;
++}
+diff --git a/scripts/scr_amiga_has_core_loop/scr_amiga_has_core_loop.yy b/scripts/scr_amiga_has_core_loop/scr_amiga_has_core_loop.yy
+new file mode 100644
+index 0000000..c9ff5a4
+--- /dev/null
++++ b/scripts/scr_amiga_has_core_loop/scr_amiga_has_core_loop.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_amiga_has_core_loop",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_amiga_has_core_loop",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}

@@ -57,6 +57,12 @@ if (keyboard_check_pressed(vk_f5) && build_state == "idle") {
 
     if (array_length(_node_array) == 0) {
         scr_set_status_message("Nothing to build — add at least one node first.");
+    } else if (!scr_amiga_has_core_loop(_node_array)) {
+        // Amiga has nowhere to fall back to the way C64 returns to BASIC on
+        // RTS — a program with no branch back to an earlier label just runs
+        // off the end into unowned memory and traps. Catch that here rather
+        // than let it build clean and crash in FS-UAE.
+        scr_set_status_message("F5 - BAD BUILD (NO CORE LOOP)", c_red);
     } else {
         // Only the DOS-loader path (a BITMAP_DISPLAY macro anywhere in the
         // program) needs a real Kickstart to auto-run Startup-Sequence. Plain
