@@ -232,6 +232,7 @@
     {"id":{"name":"scr_asset_define_sprite","path":"scripts/scr_asset_define_sprite/scr_asset_define_sprite.yy",},},
     {"id":{"name":"scr_asset_find_by_name","path":"scripts/scr_asset_find_by_name/scr_asset_find_by_name.yy",},},
     {"id":{"name":"scr_bitmap_editor_layout","path":"scripts/scr_bitmap_editor_layout/scr_bitmap_editor_layout.yy",},},
+    {"id":{"name":"scr_bitmap_apply_line","path":"scripts/scr_bitmap_apply_line/scr_bitmap_apply_line.yy",},},
     {"id":{"name":"scr_capture_snapshot","path":"scripts/scr_capture_snapshot/scr_capture_snapshot.yy",},},
     {"id":{"name":"scr_check_node_overlap","path":"scripts/scr_check_node_overlap/scr_check_node_overlap.yy",},},
     {"id":{"name":"scr_clear_wedge_preview","path":"scripts/scr_clear_wedge_preview/scr_clear_wedge_preview.yy",},},

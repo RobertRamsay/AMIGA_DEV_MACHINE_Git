@@ -94,7 +94,7 @@ draw_set_colour(c_maroon);
 draw_rectangle(_layout.clear_x, _layout.clear_y, _layout.clear_x + 120, _layout.clear_y + 20, false);
 draw_set_colour(c_white);
 draw_rectangle(_layout.clear_x, _layout.clear_y, _layout.clear_x + 120, _layout.clear_y + 20, true);
-draw_text(_layout.clear_x + 8, _layout.clear_y + 1, "CLEAR TO COLOR00");
+draw_text(_layout.clear_x + 8, _layout.clear_y + 1, "CLEAR (0)");
 
 draw_set_colour(bitmap_grid_enabled ? c_olive : c_dkgray);
 draw_rectangle(_layout.grid_toggle_x, _layout.grid_toggle_y, _layout.grid_toggle_x + 120, _layout.grid_toggle_y + 20, false);
@@ -102,8 +102,19 @@ draw_set_colour(c_white);
 draw_rectangle(_layout.grid_toggle_x, _layout.grid_toggle_y, _layout.grid_toggle_x + 120, _layout.grid_toggle_y + 20, true);
 draw_text(_layout.grid_toggle_x + 8, _layout.grid_toggle_y + 1, bitmap_grid_enabled ? "GRID: ON" : "GRID: OFF");
 
-draw_text_ext(_layout.left_x, _layout.grid_toggle_y + 34, "LEFT: paint\nALT+LEFT: pick pen\nRIGHT: COLOR00\nMIDDLE: pan\nSPACE+LEFT: pan\nWHEEL: zoom", 18, 130);
-draw_text_ext(_layout.left_x, _layout.grid_toggle_y + 158, "1x shows the native image. 3x is the default editing view.", 18, 130);
+var _tool_names = ["DRAW", "LINE", "FILL"];
+var _tool_index = 0;
+
+while (_tool_index < array_length(_tool_names)) {
+    var _tool_x = _layout.tool_x + _tool_index * (_layout.tool_width + _layout.tool_gap);
+    var _tool_name = _tool_names[_tool_index];
+    draw_set_colour(bitmap_tool == _tool_name ? c_olive : c_dkgray);
+    draw_rectangle(_tool_x, _layout.tool_y, _tool_x + _layout.tool_width, _layout.tool_y + _layout.tool_height, false);
+    draw_set_colour(c_white);
+    draw_rectangle(_tool_x, _layout.tool_y, _tool_x + _layout.tool_width, _layout.tool_y + _layout.tool_height, true);
+    draw_text(_tool_x + 10, _layout.tool_y + 3, _tool_name);
+    _tool_index += 1;
+}
 
 // Canvas contents are GPU-clipped to the viewport. This prevents the final
 // scaled texel or grid line leaking over either edge.
@@ -125,6 +136,41 @@ if (surface_exists(bitmap_surface)) {
     draw_surface_part_ext(bitmap_surface, _source_x, _source_y, _source_width, _source_height, _layout.display_x, _layout.display_y, bitmap_zoom, bitmap_zoom, c_white, 1);
     // Restore filtered rendering for UI textures and anything drawn later.
     gpu_set_texfilter(true);
+}
+
+// Exact pixel-stepped LINE preview. The committed result uses the same
+// Bresenham decisions in scr_bitmap_apply_line().
+if (bitmap_tool == "LINE" && bitmap_line_active) {
+    var _preview_line_x = bitmap_line_start_x;
+    var _preview_line_y = bitmap_line_start_y;
+    var _preview_target_x = bitmap_line_end_x;
+    var _preview_target_y = bitmap_line_end_y;
+    var _preview_dx = abs(_preview_target_x - _preview_line_x);
+    var _preview_sx = (_preview_line_x < _preview_target_x) ? 1 : -1;
+    var _preview_dy = -abs(_preview_target_y - _preview_line_y);
+    var _preview_sy = (_preview_line_y < _preview_target_y) ? 1 : -1;
+    var _preview_error = _preview_dx + _preview_dy;
+    var _preview_done = false;
+    var _preview_colour_index = bitmap_line_index;
+
+    draw_set_alpha(0.78);
+    draw_set_colour(make_color_rgb(bitmap_colour_r[_preview_colour_index] * 17, bitmap_colour_g[_preview_colour_index] * 17, bitmap_colour_b[_preview_colour_index] * 17));
+
+    while (!_preview_done) {
+        var _preview_cell_x = _layout.display_x + (_preview_line_x * bitmap_zoom) - bitmap_scroll_x;
+        var _preview_cell_y = _layout.display_y + (_preview_line_y * bitmap_zoom) - bitmap_scroll_y;
+        draw_rectangle(_preview_cell_x, _preview_cell_y, _preview_cell_x + bitmap_zoom, _preview_cell_y + bitmap_zoom, false);
+
+        if (_preview_line_x == _preview_target_x && _preview_line_y == _preview_target_y) {
+            _preview_done = true;
+        } else {
+            var _preview_error_2 = 2 * _preview_error;
+            if (_preview_error_2 >= _preview_dy) { _preview_error += _preview_dy; _preview_line_x += _preview_sx; }
+            if (_preview_error_2 <= _preview_dx) { _preview_error += _preview_dx; _preview_line_y += _preview_sy; }
+        }
+    }
+
+    draw_set_alpha(1);
 }
 
 // Optional pixel grid, disabled by default.
@@ -208,4 +254,8 @@ while (_channel < 3) {
 }
 
 draw_text_ext(_layout.right_x, _layout.slider_b_y + 38, "32 colours = five hardware bitplanes. Bitmap payload export will use a loader rather than the current 1 KB boot block.", 18, 225);
+
+draw_set_colour(c_white);
+draw_text(_layout.panel_x + 12, _layout.help_line_1_y, "LEFT: use selected tool     RIGHT: use tool with COLOR00     ALT+LEFT: pick pen     MIDDLE or SPACE+LEFT: pan");
+draw_text(_layout.panel_x + 12, _layout.help_line_2_y, "WHEEL: zoom     1x: native view     DRAW: freehand     LINE: drag and release     FILL: connected area");
 draw_set_colour(c_white);

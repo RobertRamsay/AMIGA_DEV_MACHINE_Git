@@ -25,6 +25,13 @@ bitmap_stroke_active = false;
 bitmap_stroke_last_x = 0;
 bitmap_stroke_last_y = 0;
 bitmap_stroke_index = 0;
+bitmap_tool = "DRAW";
+bitmap_line_active = false;
+bitmap_line_start_x = 0;
+bitmap_line_start_y = 0;
+bitmap_line_end_x = 0;
+bitmap_line_end_y = 0;
+bitmap_line_index = 1;
 
 bitmap_colour_r = array_create(32, 0);
 bitmap_colour_g = array_create(32, 0);
@@ -51,7 +58,7 @@ while (_palette_i < 32) {
 panel_width = min(1600, room_width - 20);
 panel_height = min(1024, room_height - 40);
 panel_x = floor((room_width - panel_width) / 2);
-panel_y = floor((room_height - panel_height) / 2);
+panel_y = max(0, floor((room_height - panel_height) / 2) - 14);
 panel_dragging = false;
 panel_drag_offset_x = 0;
 panel_drag_offset_y = 0;

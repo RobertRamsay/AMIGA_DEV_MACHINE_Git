@@ -62,6 +62,22 @@ if (point_in_rectangle(mouse_x, mouse_y, _layout.grid_toggle_x, _layout.grid_tog
     bitmap_grid_enabled = !bitmap_grid_enabled;
 }
 
+var _tool_names = ["DRAW", "LINE", "FILL"];
+var _tool_index = 0;
+
+while (_tool_index < array_length(_tool_names)) {
+    var _tool_x = _layout.tool_x + _tool_index * (_layout.tool_width + _layout.tool_gap);
+
+    if (point_in_rectangle(mouse_x, mouse_y, _tool_x, _layout.tool_y, _tool_x + _layout.tool_width, _layout.tool_y + _layout.tool_height)
+    && mouse_check_button_pressed(mb_left)) {
+        bitmap_tool = _tool_names[_tool_index];
+        bitmap_stroke_active = false;
+        bitmap_line_active = false;
+    }
+
+    _tool_index += 1;
+}
+
 // Middle-drag, or Space + left-drag, pans the magnified image.
 var _pan_pressed = mouse_check_button_pressed(mb_middle)
     || (keyboard_check(vk_space) && mouse_check_button_pressed(mb_left));
@@ -148,12 +164,10 @@ if (_over_canvas && _canvas_pixel_valid && keyboard_check(vk_alt)
     bitmap_stroke_active = false;
 }
 
-// Paint with left, erase to COLOR00 with right. Bresenham interpolation fills
-// every bitmap pixel crossed between frames, so fast mouse movement cannot
-// leave holes in a stroke.
+// DRAW: continuous freehand using the same exact line routine as LINE.
 var _stroke_can_draw = _over_canvas && _canvas_pixel_valid
     && !canvas_panning && !keyboard_check(vk_space)
-&& !keyboard_check(vk_alt)
+    && !keyboard_check(vk_alt) && bitmap_tool == "DRAW"
     && (mouse_check_button(mb_left) || mouse_check_button(mb_right));
 
 if (_stroke_can_draw) {
@@ -167,48 +181,99 @@ if (_stroke_can_draw) {
         bitmap_stroke_index = _draw_index;
     }
 
-    var _line_x = bitmap_stroke_last_x;
-    var _line_y = bitmap_stroke_last_y;
-    var _line_target_x = _canvas_pixel_x;
-    var _line_target_y = _canvas_pixel_y;
-    var _line_dx = abs(_line_target_x - _line_x);
-    var _line_sx = (_line_x < _line_target_x) ? 1 : -1;
-    var _line_dy = -abs(_line_target_y - _line_y);
-    var _line_sy = (_line_y < _line_target_y) ? 1 : -1;
-    var _line_error = _line_dx + _line_dy;
-    var _line_done = false;
-
-    while (!_line_done) {
-        var _pixel_offset = (_line_y * bitmap_width) + _line_x;
-
-        if (bitmap_pixels[_pixel_offset] != _draw_index) {
-            bitmap_pixels[_pixel_offset] = _draw_index;
-            array_push(bitmap_dirty_pixels, _pixel_offset);
-            bitmap_asset_dirty = true;
-        }
-
-        if (_line_x == _line_target_x && _line_y == _line_target_y) {
-            _line_done = true;
-        } else {
-            var _line_error_2 = 2 * _line_error;
-
-            if (_line_error_2 >= _line_dy) {
-                _line_error += _line_dy;
-                _line_x += _line_sx;
-            }
-
-            if (_line_error_2 <= _line_dx) {
-                _line_error += _line_dx;
-                _line_y += _line_sy;
-            }
-        }
-    }
+    scr_bitmap_apply_line(id, bitmap_stroke_last_x, bitmap_stroke_last_y, _canvas_pixel_x, _canvas_pixel_y, _draw_index);
 
     bitmap_stroke_last_x = _canvas_pixel_x;
     bitmap_stroke_last_y = _canvas_pixel_y;
 } else {
     // Do not bridge across the tool rails or outside the image on re-entry.
     bitmap_stroke_active = false;
+}
+
+// LINE: remember the start, show a live preview, then commit on release.
+if (bitmap_tool == "LINE" && _over_canvas && _canvas_pixel_valid
+&& !keyboard_check(vk_alt) && !keyboard_check(vk_space)
+&& (mouse_check_button_pressed(mb_left) || mouse_check_button_pressed(mb_right))) {
+    bitmap_line_active = true;
+    bitmap_line_start_x = _canvas_pixel_x;
+    bitmap_line_start_y = _canvas_pixel_y;
+    bitmap_line_end_x = _canvas_pixel_x;
+    bitmap_line_end_y = _canvas_pixel_y;
+    bitmap_line_index = mouse_check_button_pressed(mb_right) ? 0 : bitmap_paint_index;
+}
+
+if (bitmap_line_active && (mouse_check_button(mb_left) || mouse_check_button(mb_right))) {
+    if (_over_canvas && _canvas_pixel_valid) {
+        bitmap_line_end_x = _canvas_pixel_x;
+        bitmap_line_end_y = _canvas_pixel_y;
+    }
+}
+
+if (bitmap_line_active && (mouse_check_button_released(mb_left) || mouse_check_button_released(mb_right))) {
+    scr_bitmap_apply_line(id, bitmap_line_start_x, bitmap_line_start_y, bitmap_line_end_x, bitmap_line_end_y, bitmap_line_index);
+    bitmap_line_active = false;
+}
+
+// FILL: iterative four-way flood fill, safe for the complete 320x256 image.
+if (bitmap_tool == "FILL" && _over_canvas && _canvas_pixel_valid
+&& !keyboard_check(vk_alt)
+&& (mouse_check_button_pressed(mb_left) || mouse_check_button_pressed(mb_right))) {
+    var _fill_index = mouse_check_button_pressed(mb_right) ? 0 : bitmap_paint_index;
+    var _fill_start_offset = (_canvas_pixel_y * bitmap_width) + _canvas_pixel_x;
+    var _fill_target_index = bitmap_pixels[_fill_start_offset];
+
+    if (_fill_target_index != _fill_index) {
+        var _fill_queue = [_fill_start_offset];
+        var _fill_read = 0;
+        bitmap_pixels[_fill_start_offset] = _fill_index;
+        array_push(bitmap_dirty_pixels, _fill_start_offset);
+
+        while (_fill_read < array_length(_fill_queue)) {
+            var _fill_offset = _fill_queue[_fill_read];
+            var _fill_x = _fill_offset mod bitmap_width;
+            var _fill_y = _fill_offset div bitmap_width;
+
+            if (_fill_x > 0) {
+                var _fill_left = _fill_offset - 1;
+                if (bitmap_pixels[_fill_left] == _fill_target_index) {
+                    bitmap_pixels[_fill_left] = _fill_index;
+                    array_push(bitmap_dirty_pixels, _fill_left);
+                    array_push(_fill_queue, _fill_left);
+                }
+            }
+
+            if (_fill_x < bitmap_width - 1) {
+                var _fill_right = _fill_offset + 1;
+                if (bitmap_pixels[_fill_right] == _fill_target_index) {
+                    bitmap_pixels[_fill_right] = _fill_index;
+                    array_push(bitmap_dirty_pixels, _fill_right);
+                    array_push(_fill_queue, _fill_right);
+                }
+            }
+
+            if (_fill_y > 0) {
+                var _fill_up = _fill_offset - bitmap_width;
+                if (bitmap_pixels[_fill_up] == _fill_target_index) {
+                    bitmap_pixels[_fill_up] = _fill_index;
+                    array_push(bitmap_dirty_pixels, _fill_up);
+                    array_push(_fill_queue, _fill_up);
+                }
+            }
+
+            if (_fill_y < bitmap_height - 1) {
+                var _fill_down = _fill_offset + bitmap_width;
+                if (bitmap_pixels[_fill_down] == _fill_target_index) {
+                    bitmap_pixels[_fill_down] = _fill_index;
+                    array_push(bitmap_dirty_pixels, _fill_down);
+                    array_push(_fill_queue, _fill_down);
+                }
+            }
+
+            _fill_read += 1;
+        }
+
+        bitmap_asset_dirty = true;
+    }
 }
 
 if (point_in_rectangle(mouse_x, mouse_y, _layout.clear_x, _layout.clear_y, _layout.clear_x + 120, _layout.clear_y + 20)

@@ -6,12 +6,12 @@ function scr_bitmap_editor_layout(_editor) {
     _editor.panel_x = clamp(_editor.panel_x, 0, room_width - _editor.panel_width);
     _editor.panel_y = clamp(_editor.panel_y, 0, room_height - 20);
 
-    var _left_width = 150;
+    var _left_width = 300;
     var _right_width = 250;
     var _canvas_x = _editor.panel_x + _left_width + 10;
     var _canvas_y = _editor.panel_y + 42;
     var _canvas_width = _editor.panel_width - _left_width - _right_width - 30;
-    var _canvas_height = _editor.panel_height - 58;
+    var _canvas_height = _editor.panel_height - 100;
     var _content_width = 320 * _editor.bitmap_zoom;
     var _content_height = 256 * _editor.bitmap_zoom;
     var _max_scroll_x = max(0, _content_width - _canvas_width);
@@ -55,6 +55,13 @@ function scr_bitmap_editor_layout(_editor) {
         clear_y : _editor.panel_y + 170,
         grid_toggle_x : _editor.panel_x + 10,
         grid_toggle_y : _editor.panel_y + 198,
+        tool_x : _editor.panel_x + 10,
+        tool_y : _editor.panel_y + 234,
+        tool_width : 82,
+        tool_height : 24,
+        tool_gap : 8,
+        help_line_1_y : _editor.panel_y + _editor.panel_height - 42,
+        help_line_2_y : _editor.panel_y + _editor.panel_height - 22,
         swatch_x : _editor.panel_x + _editor.panel_width - _right_width + 10,
         swatch_y : _editor.panel_y + 66,
         swatch_width : 52,
