@@ -1,4 +1,4 @@
-if (instance_exists(obj_bitmap_editor)) {
+if (instance_exists(obj_bitmap_editor) || instance_exists(obj_colour_picker)) {
     exit;
 }
 
@@ -159,6 +159,11 @@ if (scr_is_dbcc_opcode(opcode_mnemonic)) {
 
 if (is_macro) {
     var _asset_resolved = (scr_asset_find_by_name(macro_asset_name) != undefined);
+
+    if (macro_type == "SETBKG") {
+        _asset_resolved = scr_is_valid_hex_colour(macro_asset_name);
+    }
+
     slot_src_is_valid = _asset_resolved;
     slot_dst_is_valid = _asset_resolved;
 
@@ -171,11 +176,30 @@ if (is_macro) {
     var _can_start_asset_edit = ((global.operand_edit_owner_uid == -1) || (global.operand_edit_owner_uid == uid)) && (operand_editing_slot != "macro_asset");
 
     if (_over_asset_field && mouse_check_button_pressed(mb_left) && _can_start_asset_edit) {
-        global.operand_edit_owner_uid = uid;
-        operand_editing_slot = "macro_asset";
-        operand_edit_text = macro_asset_name;
-        keyboard_string = "";
-        scr_set_status_message("Enter asset name, click away or enter to commit, right click to cancel");
+        if (macro_type == "SETBKG") {
+            var _new_picker = instance_create_layer(0, 0, "Instances", obj_colour_picker);
+            _new_picker.target_instance_id = id;
+
+            var _current_hex = macro_asset_name;
+
+            if (scr_is_valid_hex_colour(_current_hex)) {
+                // Left-pad to 3 digits so a colour typed as e.g. "F00" maps
+                // its digits onto R/G/B in the expected order.
+                while (string_length(_current_hex) < 3) {
+                    _current_hex = "0" + _current_hex;
+                }
+
+                _new_picker.colour_r = scr_hex_string_to_number(string_copy(_current_hex, 1, 1));
+                _new_picker.colour_g = scr_hex_string_to_number(string_copy(_current_hex, 2, 1));
+                _new_picker.colour_b = scr_hex_string_to_number(string_copy(_current_hex, 3, 1));
+            }
+        } else {
+            global.operand_edit_owner_uid = uid;
+            operand_editing_slot = "macro_asset";
+            operand_edit_text = macro_asset_name;
+            keyboard_string = "";
+            scr_set_status_message("Enter asset name, click away or enter to commit, right click to cancel");
+        }
     }
 } else {
     var _entry_for_validity = global.opcode_map[$ opcode_mnemonic];

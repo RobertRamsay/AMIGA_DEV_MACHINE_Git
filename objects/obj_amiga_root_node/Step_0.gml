@@ -1,4 +1,4 @@
-if (instance_exists(obj_bitmap_editor)) {
+if (instance_exists(obj_bitmap_editor) || instance_exists(obj_colour_picker)) {
     exit;
 }
 

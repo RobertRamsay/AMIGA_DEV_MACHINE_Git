@@ -1,0 +1,426 @@
+diff --git a/AMIGA_DEV_MACHINE.yyp b/AMIGA_DEV_MACHINE.yyp
+index b9c2edc..fe0ca1f 100644
+--- a/AMIGA_DEV_MACHINE.yyp
++++ b/AMIGA_DEV_MACHINE.yyp
+@@ -208,6 +208,7 @@
+     {"id":{"name":"obj_amiga_manager","path":"objects/obj_amiga_manager/obj_amiga_manager.yy",},},
+     {"id":{"name":"obj_amiga_root_node","path":"objects/obj_amiga_root_node/obj_amiga_root_node.yy",},},
+     {"id":{"name":"obj_bitmap_editor","path":"objects/obj_bitmap_editor/obj_bitmap_editor.yy",},},
++    {"id":{"name":"obj_colour_picker","path":"objects/obj_colour_picker/obj_colour_picker.yy",},},
+     {"id":{"name":"obj_opcode_node","path":"objects/obj_opcode_node/obj_opcode_node.yy",},},
+     {"id":{"name":"obj_opcode_palette_item","path":"objects/obj_opcode_palette_item/obj_opcode_palette_item.yy",},},
+     {"id":{"name":"Room1","path":"rooms/Room1/Room1.yy",},},
+@@ -262,6 +263,7 @@
+     {"id":{"name":"scr_hex_string_to_number","path":"scripts/scr_hex_string_to_number/scr_hex_string_to_number.yy",},},
+     {"id":{"name":"scr_is_branch_target_opcode","path":"scripts/scr_is_branch_target_opcode/scr_is_branch_target_opcode.yy",},},
+     {"id":{"name":"scr_is_dbcc_opcode","path":"scripts/scr_is_dbcc_opcode/scr_is_dbcc_opcode.yy",},},
++    {"id":{"name":"scr_is_valid_hex_colour","path":"scripts/scr_is_valid_hex_colour/scr_is_valid_hex_colour.yy",},},
+     {"id":{"name":"scr_load_layout","path":"scripts/scr_load_layout/scr_load_layout.yy",},},
+     {"id":{"name":"scr_load_test_setup","path":"scripts/scr_load_test_setup/scr_load_test_setup.yy",},},
+     {"id":{"name":"scr_number_to_hex_string","path":"scripts/scr_number_to_hex_string/scr_number_to_hex_string.yy",},},
+diff --git a/objects/obj_amiga_manager/Step_0.gml b/objects/obj_amiga_manager/Step_0.gml
+index 21507cc..83209ed 100644
+--- a/objects/obj_amiga_manager/Step_0.gml
++++ b/objects/obj_amiga_manager/Step_0.gml
+@@ -1,6 +1,6 @@
+-// The bitmap editor is modal: do not pan, build, undo, click controls or
+-// mutate the graph behind it.
+-if (instance_exists(obj_bitmap_editor)) {
++// The bitmap editor and colour picker are both modal: do not pan, build,
++// undo, click controls or mutate the graph behind either of them.
++if (instance_exists(obj_bitmap_editor) || instance_exists(obj_colour_picker)) {
+     exit;
+ }
+ 
+diff --git a/objects/obj_amiga_root_node/Step_0.gml b/objects/obj_amiga_root_node/Step_0.gml
+index bdb1833..441e15e 100644
+--- a/objects/obj_amiga_root_node/Step_0.gml
++++ b/objects/obj_amiga_root_node/Step_0.gml
+@@ -1,4 +1,4 @@
+-if (instance_exists(obj_bitmap_editor)) {
++if (instance_exists(obj_bitmap_editor) || instance_exists(obj_colour_picker)) {
+     exit;
+ }
+ 
+diff --git a/objects/obj_colour_picker/Create_0.gml b/objects/obj_colour_picker/Create_0.gml
+new file mode 100644
+index 0000000..bc5f4ce
+--- /dev/null
++++ b/objects/obj_colour_picker/Create_0.gml
+@@ -0,0 +1,28 @@
++/// @desc obj_colour_picker Create
++/// Modal RGB colour picker for macro nodes storing a raw hex colour
++/// (SETBKG today). Values are 0-15 per channel — OCS/ECS's native 12-bit
++/// colour space — using the same slider visual language as the bitmap
++/// editor's own palette RGB sliders, just standalone and screen-centred
++/// rather than tied to a bitmap palette slot.
++target_instance_id = noone;
++colour_r = 0;
++colour_g = 0;
++colour_b = 0;
++
++panel_width = 280;
++panel_height = 200;
++panel_x = (room_width - panel_width) / 2;
++panel_y = (room_height - panel_height) / 2;
++
++slider_x = panel_x + 70;
++slider_width = 192;
++slider_step_width = 12;
++slider_height = 18;
++slider_r_y = panel_y + 70;
++slider_g_y = panel_y + 98;
++slider_b_y = panel_y + 126;
++
++close_button_x = panel_x + panel_width - 76;
++close_button_y = panel_y + panel_height - 34;
++close_button_width = 64;
++close_button_height = 24;
+diff --git a/objects/obj_colour_picker/Draw_0.gml b/objects/obj_colour_picker/Draw_0.gml
+new file mode 100644
+index 0000000..1a4d934
+--- /dev/null
++++ b/objects/obj_colour_picker/Draw_0.gml
+@@ -0,0 +1,89 @@
++/// @desc obj_colour_picker Draw
++draw_set_alpha(0.75);
++draw_rectangle_colour(0, 0, room_width, room_height, c_black, c_black, c_black, c_black, false);
++draw_set_alpha(1);
++
++draw_set_colour(c_dkgray);
++draw_rectangle(panel_x, panel_y, panel_x + panel_width, panel_y + panel_height, false);
++draw_set_colour(c_white);
++draw_rectangle(panel_x, panel_y, panel_x + panel_width, panel_y + panel_height, true);
++
++var _hex_digits = "0123456789ABCDEF";
++var _hex_text = string_char_at(_hex_digits, colour_r + 1) + string_char_at(_hex_digits, colour_g + 1) + string_char_at(_hex_digits, colour_b + 1);
++
++draw_text(panel_x + 12, panel_y + 10, "Colour to set");
++
++var _preview_size = 40;
++var _preview_x = panel_x + panel_width - _preview_size - 12;
++var _preview_y = panel_y + 10;
++
++draw_set_colour(make_color_rgb(colour_r * 17, colour_g * 17, colour_b * 17));
++draw_rectangle(_preview_x, _preview_y, _preview_x + _preview_size, _preview_y + _preview_size, false);
++draw_set_colour(c_white);
++draw_rectangle(_preview_x, _preview_y, _preview_x + _preview_size, _preview_y + _preview_size, true);
++draw_text(panel_x + 12, panel_y + 32, "#" + _hex_text);
++
++var _channel = 0;
++
++while (_channel < 3) {
++    var _slider_y = slider_r_y;
++    var _selected = colour_r;
++    var _label = "R";
++
++    if (_channel == 1) {
++        _slider_y = slider_g_y;
++        _selected = colour_g;
++        _label = "G";
++    }
++
++    if (_channel == 2) {
++        _slider_y = slider_b_y;
++        _selected = colour_b;
++        _label = "B";
++    }
++
++    draw_set_colour(c_white);
++    draw_text(slider_x - 18, _slider_y, _label);
++
++    var _step = 0;
++
++    while (_step < 16) {
++        var _segment_x = slider_x + _step * slider_step_width;
++        var _segment_colour = make_color_rgb(_step * 17, 0, 0);
++
++        if (_channel == 1) {
++            _segment_colour = make_color_rgb(0, _step * 17, 0);
++        }
++
++        if (_channel == 2) {
++            _segment_colour = make_color_rgb(0, 0, _step * 17);
++        }
++
++        draw_set_colour(_segment_colour);
++        draw_rectangle(_segment_x, _slider_y, _segment_x + slider_step_width, _slider_y + slider_height, false);
++
++        var _outline_colour = c_dkgray;
++
++        if (_step == _selected) {
++            _outline_colour = c_yellow;
++        }
++
++        draw_set_colour(_outline_colour);
++        draw_rectangle(_segment_x, _slider_y, _segment_x + slider_step_width, _slider_y + slider_height, true);
++
++        _step += 1;
++    }
++
++    draw_set_colour(c_white);
++    draw_text(slider_x + slider_width + 4, _slider_y, string_char_at(_hex_digits, _selected + 1));
++
++    _channel += 1;
++}
++
++draw_set_colour(c_olive);
++draw_rectangle(close_button_x, close_button_y, close_button_x + close_button_width, close_button_y + close_button_height, false);
++draw_set_colour(c_white);
++draw_rectangle(close_button_x, close_button_y, close_button_x + close_button_width, close_button_y + close_button_height, true);
++draw_text(close_button_x + 8, close_button_y + 4, "Close");
++
++draw_text(panel_x + 12, panel_y + panel_height - 20, "Enter/Close commits — Right-click/Esc cancels");
+diff --git a/objects/obj_colour_picker/Step_0.gml b/objects/obj_colour_picker/Step_0.gml
+new file mode 100644
+index 0000000..354bb1e
+--- /dev/null
++++ b/objects/obj_colour_picker/Step_0.gml
+@@ -0,0 +1,54 @@
++/// @desc obj_colour_picker Step
++/// Modal — sliders write straight into colour_r/g/b, closing (the Close
++/// button or Enter) commits the combined hex value back onto whichever
++/// node opened this picker and destroys it. Right-click or Escape cancels
++/// without committing, matching the label/operand edit convention used
++/// elsewhere on nodes.
++if (mouse_check_button(mb_left)) {
++    var _slider_value = clamp(floor((mouse_x - slider_x) / slider_step_width), 0, 15);
++
++    if (point_in_rectangle(mouse_x, mouse_y, slider_x, slider_r_y, slider_x + slider_width, slider_r_y + slider_height)) {
++        colour_r = _slider_value;
++    }
++
++    if (point_in_rectangle(mouse_x, mouse_y, slider_x, slider_g_y, slider_x + slider_width, slider_g_y + slider_height)) {
++        colour_g = _slider_value;
++    }
++
++    if (point_in_rectangle(mouse_x, mouse_y, slider_x, slider_b_y, slider_x + slider_width, slider_b_y + slider_height)) {
++        colour_b = _slider_value;
++    }
++}
++
++var _over_close_button = point_in_rectangle(mouse_x, mouse_y, close_button_x, close_button_y, close_button_x + close_button_width, close_button_y + close_button_height);
++var _should_commit = false;
++
++if (_over_close_button && mouse_check_button_pressed(mb_left)) {
++    _should_commit = true;
++}
++
++if (keyboard_check_pressed(vk_enter)) {
++    _should_commit = true;
++}
++
++var _should_cancel = false;
++
++if (keyboard_check_pressed(vk_escape) || mouse_check_button_pressed(mb_right)) {
++    _should_cancel = true;
++}
++
++if (_should_commit) {
++    var _hex_digits = "0123456789ABCDEF";
++    var _hex_text = string_char_at(_hex_digits, colour_r + 1) + string_char_at(_hex_digits, colour_g + 1) + string_char_at(_hex_digits, colour_b + 1);
++
++    if (instance_exists(target_instance_id)) {
++        scr_push_undo_snapshot();
++        target_instance_id.macro_asset_name = _hex_text;
++        scr_set_status_message("Colour set: #" + _hex_text);
++    }
++
++    instance_destroy();
++} else if (_should_cancel) {
++    scr_set_status_message("Colour edit cancelled.");
++    instance_destroy();
++}
+diff --git a/objects/obj_colour_picker/obj_colour_picker.yy b/objects/obj_colour_picker/obj_colour_picker.yy
+new file mode 100644
+index 0000000..7d0076c
+--- /dev/null
++++ b/objects/obj_colour_picker/obj_colour_picker.yy
+@@ -0,0 +1,37 @@
++{
++  "$GMObject":"",
++  "%Name":"obj_colour_picker",
++  "eventList":[
++    {"$GMEvent":"v1","%Name":"","collisionObjectId":null,"eventNum":0,"eventType":0,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
++    {"$GMEvent":"v1","%Name":"","collisionObjectId":null,"eventNum":0,"eventType":3,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
++    {"$GMEvent":"v1","%Name":"","collisionObjectId":null,"eventNum":0,"eventType":8,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
++  ],
++  "managed":true,
++  "name":"obj_colour_picker",
++  "overriddenProperties":[],
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "parentObjectId":null,
++  "persistent":false,
++  "physicsAngularDamping":0.1,
++  "physicsDensity":0.5,
++  "physicsFriction":0.2,
++  "physicsGroup":1,
++  "physicsKinematic":false,
++  "physicsLinearDamping":0.1,
++  "physicsObject":false,
++  "physicsRestitution":0.1,
++  "physicsSensor":false,
++  "physicsShape":1,
++  "physicsShapePoints":[],
++  "physicsStartAwake":true,
++  "properties":[],
++  "resourceType":"GMObject",
++  "resourceVersion":"2.0",
++  "solid":false,
++  "spriteId":null,
++  "spriteMaskId":null,
++  "visible":true,
++}
+diff --git a/objects/obj_opcode_node/Step_0.gml b/objects/obj_opcode_node/Step_0.gml
+index cbbe68a..162cafe 100644
+--- a/objects/obj_opcode_node/Step_0.gml
++++ b/objects/obj_opcode_node/Step_0.gml
+@@ -1,4 +1,4 @@
+-if (instance_exists(obj_bitmap_editor)) {
++if (instance_exists(obj_bitmap_editor) || instance_exists(obj_colour_picker)) {
+     exit;
+ }
+ 
+@@ -159,6 +159,11 @@ if (scr_is_dbcc_opcode(opcode_mnemonic)) {
+ 
+ if (is_macro) {
+     var _asset_resolved = (scr_asset_find_by_name(macro_asset_name) != undefined);
++
++    if (macro_type == "SETBKG") {
++        _asset_resolved = scr_is_valid_hex_colour(macro_asset_name);
++    }
++
+     slot_src_is_valid = _asset_resolved;
+     slot_dst_is_valid = _asset_resolved;
+ 
+@@ -171,11 +176,30 @@ if (is_macro) {
+     var _can_start_asset_edit = ((global.operand_edit_owner_uid == -1) || (global.operand_edit_owner_uid == uid)) && (operand_editing_slot != "macro_asset");
+ 
+     if (_over_asset_field && mouse_check_button_pressed(mb_left) && _can_start_asset_edit) {
+-        global.operand_edit_owner_uid = uid;
+-        operand_editing_slot = "macro_asset";
+-        operand_edit_text = macro_asset_name;
+-        keyboard_string = "";
+-        scr_set_status_message("Enter asset name, click away or enter to commit, right click to cancel");
++        if (macro_type == "SETBKG") {
++            var _new_picker = instance_create_layer(0, 0, "Instances", obj_colour_picker);
++            _new_picker.target_instance_id = id;
++
++            var _current_hex = macro_asset_name;
++
++            if (scr_is_valid_hex_colour(_current_hex)) {
++                // Left-pad to 3 digits so a colour typed as e.g. "F00" maps
++                // its digits onto R/G/B in the expected order.
++                while (string_length(_current_hex) < 3) {
++                    _current_hex = "0" + _current_hex;
++                }
++
++                _new_picker.colour_r = scr_hex_string_to_number(string_copy(_current_hex, 1, 1));
++                _new_picker.colour_g = scr_hex_string_to_number(string_copy(_current_hex, 2, 1));
++                _new_picker.colour_b = scr_hex_string_to_number(string_copy(_current_hex, 3, 1));
++            }
++        } else {
++            global.operand_edit_owner_uid = uid;
++            operand_editing_slot = "macro_asset";
++            operand_edit_text = macro_asset_name;
++            keyboard_string = "";
++            scr_set_status_message("Enter asset name, click away or enter to commit, right click to cancel");
++        }
+     }
+ } else {
+     var _entry_for_validity = global.opcode_map[$ opcode_mnemonic];
+diff --git a/objects/obj_opcode_palette_item/Step_0.gml b/objects/obj_opcode_palette_item/Step_0.gml
+index 8fa4bf5..d36e637 100644
+--- a/objects/obj_opcode_palette_item/Step_0.gml
++++ b/objects/obj_opcode_palette_item/Step_0.gml
+@@ -1,4 +1,4 @@
+-if (instance_exists(obj_bitmap_editor)) {
++if (instance_exists(obj_bitmap_editor) || instance_exists(obj_colour_picker)) {
+     exit;
+ }
+ 
+diff --git a/scripts/scr_emit_macro_setbkg/scr_emit_macro_setbkg.gml b/scripts/scr_emit_macro_setbkg/scr_emit_macro_setbkg.gml
+index ad1195f..e151092 100644
+--- a/scripts/scr_emit_macro_setbkg/scr_emit_macro_setbkg.gml
++++ b/scripts/scr_emit_macro_setbkg/scr_emit_macro_setbkg.gml
+@@ -1,27 +1,14 @@
+ /// @desc scr_emit_macro_setbkg(_node)
+-/// Writes _node.macro_asset_name — a 1-4 digit OCS/ECS hex colour, e.g.
++/// Writes _node.macro_asset_name — a 1-3 digit OCS/ECS hex colour, e.g.
+ /// "000" for black or "F00" for red — straight into COLOR00 ($DFF180).
+ /// Amiga has no separate border register the way C64 splits $D020/$D021:
+ /// COLOR00 covers both background and border at once. Returns a struct
+ /// { text, is_valid }, same shape as scr_emit_opcode_line.
+ function scr_emit_macro_setbkg(_node) {
+     var _colour_text = _node.macro_asset_name;
+-    var _text_length = string_length(_colour_text);
+-    var _is_valid_hex = (_text_length >= 1) && (_text_length <= 4);
+-    var _char_index = 1;
+ 
+-    while (_char_index <= _text_length && _is_valid_hex) {
+-        var _this_char = string_upper(string_copy(_colour_text, _char_index, 1));
+-
+-        if (string_pos(_this_char, "0123456789ABCDEF") == 0) {
+-            _is_valid_hex = false;
+-        }
+-
+-        _char_index += 1;
+-    }
+-
+-    if (!_is_valid_hex) {
+-        var _error_result = { text : "; ERROR: SETBKG colour must be 1-4 hex digits, e.g. 000 or F00 (asset field is currently '" + _colour_text + "')", is_valid : false };
++    if (!scr_is_valid_hex_colour(_colour_text)) {
++        var _error_result = { text : "; ERROR: SETBKG colour must be 1-3 hex digits, e.g. 000 or F00 (asset field is currently '" + _colour_text + "')", is_valid : false };
+         return _error_result;
+     }
+ 
+diff --git a/scripts/scr_is_valid_hex_colour/scr_is_valid_hex_colour.gml b/scripts/scr_is_valid_hex_colour/scr_is_valid_hex_colour.gml
+new file mode 100644
+index 0000000..54a8237
+--- /dev/null
++++ b/scripts/scr_is_valid_hex_colour/scr_is_valid_hex_colour.gml
+@@ -0,0 +1,22 @@
++/// @desc scr_is_valid_hex_colour(_text)
++/// True if _text is 1-3 hex digits — a valid OCS/ECS 12-bit colour value
++/// ($0RGB, e.g. "000", "F00", "0FA"). Shared by scr_emit_macro_setbkg
++/// (build-time error text) and obj_opcode_node (live validity dots and the
++/// colour picker's initial R/G/B round-trip).
++function scr_is_valid_hex_colour(_text) {
++    var _text_length = string_length(_text);
++    var _is_valid = (_text_length >= 1) && (_text_length <= 3);
++    var _char_index = 1;
++
++    while (_char_index <= _text_length && _is_valid) {
++        var _this_char = string_upper(string_copy(_text, _char_index, 1));
++
++        if (string_pos(_this_char, "0123456789ABCDEF") == 0) {
++            _is_valid = false;
++        }
++
++        _char_index += 1;
++    }
++
++    return _is_valid;
++}
+diff --git a/scripts/scr_is_valid_hex_colour/scr_is_valid_hex_colour.yy b/scripts/scr_is_valid_hex_colour/scr_is_valid_hex_colour.yy
+new file mode 100644
+index 0000000..8fc1c4f
+--- /dev/null
++++ b/scripts/scr_is_valid_hex_colour/scr_is_valid_hex_colour.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_is_valid_hex_colour",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_is_valid_hex_colour",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}
