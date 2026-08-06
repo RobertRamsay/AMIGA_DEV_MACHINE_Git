@@ -13,6 +13,67 @@ if (is_macro) {
 draw_set_colour(_body_colour);
 draw_rectangle(_dx + 1, _dy + 1, _dx + node_width - 1, _dy + node_height - 1, false);
 
+// Dark category header. Every channel stays below 160 so the header remains
+// clearly separate from the body without competing with white text.
+var _header_colour = make_color_rgb(60, 70, 80);
+
+if (is_macro) {
+    switch (macro_type) {
+        case "COPPER_BAR":
+            _header_colour = make_color_rgb(135, 75, 25);
+            break;
+
+        case "SPRITE_DISPLAY":
+            _header_colour = make_color_rgb(95, 45, 125);
+            break;
+
+        default:
+            _header_colour = make_color_rgb(90, 50, 110);
+            break;
+    }
+} else {
+    var _header_entry = global.opcode_map[$ opcode_mnemonic];
+
+    if (_header_entry != undefined) {
+        switch (_header_entry.category) {
+            case "data_movement":
+                _header_colour = make_color_rgb(35, 75, 120);
+                break;
+
+            case "arithmetic":
+                _header_colour = make_color_rgb(120, 70, 35);
+                break;
+
+            case "logic":
+                _header_colour = make_color_rgb(45, 100, 70);
+                break;
+
+            case "shift":
+                _header_colour = make_color_rgb(80, 55, 120);
+                break;
+
+            case "bit":
+                _header_colour = make_color_rgb(100, 90, 35);
+                break;
+
+            case "branch":
+                _header_colour = make_color_rgb(125, 45, 55);
+                break;
+
+            case "system":
+                _header_colour = make_color_rgb(55, 85, 100);
+                break;
+
+            case "privileged":
+                _header_colour = make_color_rgb(110, 45, 95);
+                break;
+        }
+    }
+}
+
+draw_set_colour(_header_colour);
+draw_rectangle(_dx + 1, _dy + 1, _dx + node_width - 1, _dy + 19, false);
+
 draw_set_colour(c_white);
 draw_rectangle(_dx + 1, _dy + 1, _dx + node_width - 1, _dy + node_height - 1, true);
 
