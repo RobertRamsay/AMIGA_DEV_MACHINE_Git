@@ -416,5 +416,5 @@ draw_text_ext(_layout.right_x, _layout.slider_b_y + 38, "32 colours = five hardw
 
 draw_set_colour(c_white);
 draw_text(_layout.panel_x + 12, _layout.help_line_1_y, "LEFT: tool     RIGHT: COLOR00     ALT+CANVAS: pick     ALT+L/R SWATCH: COL1/COL2     CTRL+C/V SWATCH: copy/paste     SPACE: pan");
-draw_text(_layout.panel_x + 12, _layout.help_line_2_y, "D/F/G/L: tools     C: toggle checker dither     T: transparency lock     X: flip X     [ / ]: brush size     CTRL+Z/Y: undo/redo     I: clear Kickstart ROM");
+draw_text(_layout.panel_x + 12, _layout.help_line_2_y, "D/F/G/L: tools     C: toggle checker dither     T: transparency lock     X: flip X     [ / ]: brush size     CTRL+Z/Y: undo/redo");
 draw_set_colour(c_white);

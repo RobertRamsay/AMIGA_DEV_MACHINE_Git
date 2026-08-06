@@ -4,6 +4,16 @@ if (instance_exists(obj_bitmap_editor)) {
     exit;
 }
 
+if (keyboard_check_pressed(ord("I"))) {
+    global.kickstart_path = "";
+
+    ini_open("settings.ini");
+    ini_write_string("paths", "kickstart", "");
+    ini_close();
+
+    scr_set_status_message("Kickstart ROM cleared — you'll be prompted again on the next DOS-loader build.");
+}
+
 global.right_click_delete_handled_this_frame = false;
 global.left_click_pickup_handled_this_frame = false;
 
