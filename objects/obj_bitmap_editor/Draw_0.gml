@@ -4,26 +4,51 @@ var _layout = scr_bitmap_editor_layout(id);
 if (!surface_exists(bitmap_surface)) {
     bitmap_surface = surface_create(bitmap_width, bitmap_height);
     bitmap_surface_dirty = true;
+    bitmap_dirty_pixels = [];
 }
 
+// Full refreshes (palette edits, clear, or a recovered surface) are uploaded
+// as one packed RGBA texture instead of 81,920 individual draw calls.
 if (surface_exists(bitmap_surface) && bitmap_surface_dirty) {
-    surface_set_target(bitmap_surface);
-    draw_clear_alpha(c_black, 1);
+    buffer_seek(bitmap_buffer, buffer_seek_start, 0);
 
     var _pixel_y = 0;
     while (_pixel_y < bitmap_height) {
         var _pixel_x = 0;
         while (_pixel_x < bitmap_width) {
             var _pixel_index = bitmap_pixels[(_pixel_y * bitmap_width) + _pixel_x];
-            draw_set_colour(make_color_rgb(bitmap_colour_r[_pixel_index] * 17, bitmap_colour_g[_pixel_index] * 17, bitmap_colour_b[_pixel_index] * 17));
-            draw_point(_pixel_x, _pixel_y);
+            var _pixel_r = bitmap_colour_r[_pixel_index] * 17;
+            var _pixel_g = bitmap_colour_g[_pixel_index] * 17;
+            var _pixel_b = bitmap_colour_b[_pixel_index] * 17;
+            var _packed_rgba = _pixel_r + (_pixel_g << 8) + (_pixel_b << 16) + 4278190080;
+            buffer_write(bitmap_buffer, buffer_u32, _packed_rgba);
             _pixel_x += 1;
         }
         _pixel_y += 1;
     }
 
-    surface_reset_target();
+    buffer_set_surface(bitmap_buffer, bitmap_surface, 0);
     bitmap_surface_dirty = false;
+    bitmap_dirty_pixels = [];
+}
+
+// Ordinary brush strokes update only the pixels that actually changed.
+if (surface_exists(bitmap_surface) && array_length(bitmap_dirty_pixels) > 0) {
+    surface_set_target(bitmap_surface);
+    var _dirty_index = 0;
+
+    while (_dirty_index < array_length(bitmap_dirty_pixels)) {
+        var _pixel_offset = bitmap_dirty_pixels[_dirty_index];
+        var _pixel_x = _pixel_offset mod bitmap_width;
+        var _pixel_y = _pixel_offset div bitmap_width;
+        var _pixel_index = bitmap_pixels[_pixel_offset];
+        draw_set_colour(make_color_rgb(bitmap_colour_r[_pixel_index] * 17, bitmap_colour_g[_pixel_index] * 17, bitmap_colour_b[_pixel_index] * 17));
+        draw_point(_pixel_x, _pixel_y);
+        _dirty_index += 1;
+    }
+
+    surface_reset_target();
+    bitmap_dirty_pixels = [];
 }
 
 draw_set_alpha(0.97);
@@ -82,7 +107,11 @@ if (surface_exists(bitmap_surface)) {
     var _source_y = bitmap_scroll_y / bitmap_zoom;
     var _source_width = min(bitmap_width - _source_x, _layout.canvas_width / bitmap_zoom);
     var _source_height = min(bitmap_height - _source_y, _layout.canvas_height / bitmap_zoom);
+    // Nearest-neighbour sampling keeps Amiga pixels hard-edged at every zoom.
+    gpu_set_texfilter(false);
     draw_surface_part_ext(bitmap_surface, _source_x, _source_y, _source_width, _source_height, _layout.display_x, _layout.display_y, bitmap_zoom, bitmap_zoom, c_white, 1);
+    // Restore filtered rendering for UI textures and anything drawn later.
+    gpu_set_texfilter(true);
 }
 
 // Pixel grid only at useful editing magnifications.

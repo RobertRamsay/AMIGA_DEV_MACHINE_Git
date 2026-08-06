@@ -10,6 +10,9 @@ bitmap_paint_index = 1;
 bitmap_palette_edit_index = 1;
 bitmap_surface = -1;
 bitmap_surface_dirty = true;
+bitmap_dirty_pixels = [];
+bitmap_asset_dirty = false;
+bitmap_buffer = buffer_create(bitmap_width * bitmap_height * 4, buffer_fixed, 1);
 
 bitmap_colour_r = array_create(32, 0);
 bitmap_colour_g = array_create(32, 0);

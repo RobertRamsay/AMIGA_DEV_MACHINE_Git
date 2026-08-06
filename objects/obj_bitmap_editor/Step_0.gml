@@ -105,18 +105,27 @@ if (mouse_check_button(mb_left)) {
     var _palette_index = bitmap_palette_edit_index;
 
     if (point_in_rectangle(mouse_x, mouse_y, _layout.slider_x, _layout.slider_r_y, _layout.slider_x + _layout.slider_width, _layout.slider_r_y + _layout.slider_height)) {
-        bitmap_colour_r[_palette_index] = _slider_value;
-        bitmap_surface_dirty = true;
+        if (bitmap_colour_r[_palette_index] != _slider_value) {
+            bitmap_colour_r[_palette_index] = _slider_value;
+            bitmap_surface_dirty = true;
+            bitmap_asset_dirty = true;
+        }
     }
 
     if (point_in_rectangle(mouse_x, mouse_y, _layout.slider_x, _layout.slider_g_y, _layout.slider_x + _layout.slider_width, _layout.slider_g_y + _layout.slider_height)) {
-        bitmap_colour_g[_palette_index] = _slider_value;
-        bitmap_surface_dirty = true;
+        if (bitmap_colour_g[_palette_index] != _slider_value) {
+            bitmap_colour_g[_palette_index] = _slider_value;
+            bitmap_surface_dirty = true;
+            bitmap_asset_dirty = true;
+        }
     }
 
     if (point_in_rectangle(mouse_x, mouse_y, _layout.slider_x, _layout.slider_b_y, _layout.slider_x + _layout.slider_width, _layout.slider_b_y + _layout.slider_height)) {
-        bitmap_colour_b[_palette_index] = _slider_value;
-        bitmap_surface_dirty = true;
+        if (bitmap_colour_b[_palette_index] != _slider_value) {
+            bitmap_colour_b[_palette_index] = _slider_value;
+            bitmap_surface_dirty = true;
+            bitmap_asset_dirty = true;
+        }
     }
 }
 
@@ -130,8 +139,13 @@ if (_over_canvas && !canvas_panning && !keyboard_check(vk_space)
     if (_pixel_x >= 0 && _pixel_x < bitmap_width && _pixel_y >= 0 && _pixel_y < bitmap_height) {
         var _draw_index = bitmap_paint_index;
         if (mouse_check_button(mb_right)) _draw_index = 0;
-        bitmap_pixels[(_pixel_y * bitmap_width) + _pixel_x] = _draw_index;
-        bitmap_surface_dirty = true;
+        var _pixel_offset = (_pixel_y * bitmap_width) + _pixel_x;
+
+        if (bitmap_pixels[_pixel_offset] != _draw_index) {
+            bitmap_pixels[_pixel_offset] = _draw_index;
+            array_push(bitmap_dirty_pixels, _pixel_offset);
+            bitmap_asset_dirty = true;
+        }
     }
 }
 
@@ -139,9 +153,12 @@ if (point_in_rectangle(mouse_x, mouse_y, _layout.clear_x, _layout.clear_y, _layo
 && mouse_check_button_pressed(mb_left)) {
     bitmap_pixels = array_create(bitmap_width * bitmap_height, 0);
     bitmap_surface_dirty = true;
+    bitmap_dirty_pixels = [];
+    bitmap_asset_dirty = true;
 }
 
 // Commit after a stroke or palette adjustment, matching the sprite editor.
-if (mouse_check_button_released(mb_left) || mouse_check_button_released(mb_right)) {
+if (bitmap_asset_dirty && (mouse_check_button_released(mb_left) || mouse_check_button_released(mb_right))) {
     scr_asset_define_bitmap("TestBitmap", bitmap_pixels, bitmap_colour_r, bitmap_colour_g, bitmap_colour_b);
+    bitmap_asset_dirty = false;
 }
