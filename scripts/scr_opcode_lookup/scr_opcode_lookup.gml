@@ -1,6 +1,9 @@
 /// @desc scr_opcode_lookup(_key)
 /// Combined lookup across both tooltip banks. Falls back to the base mnemonic
-/// (text before an underscore) for privileged variants like MOVE_SR. Returns a struct or undefined.
+/// (text before an underscore) for privileged variants like MOVE_SR, and to
+/// the generic bcc/dbcc/scc entry for any of the 14 condition-code variants
+/// (BEQ, DBNE, SGT, etc. — all 42 of them share the same underlying text).
+/// Returns a struct or undefined.
 function scr_opcode_lookup(_key) {
     var _lower_key = string_lower(_key);
     var _result_first = scr_opcode_helper_68k(_lower_key);
@@ -32,7 +35,16 @@ function scr_opcode_lookup(_key) {
         }
 
         var _result_base_second = scr_opcode_helper_68k_part2(_base_key);
-        return _result_base_second;
+
+        if (_result_base_second != undefined) {
+            return _result_base_second;
+        }
+    }
+
+    var _condition_family_key = scr_opcode_condition_family_key(_lower_key);
+
+    if (_condition_family_key != "") {
+        return scr_opcode_helper_68k_part2(_condition_family_key);
     }
 
     return undefined;

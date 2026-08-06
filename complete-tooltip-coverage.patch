@@ -1,0 +1,115 @@
+diff --git a/AMIGA_DEV_MACHINE.yyp b/AMIGA_DEV_MACHINE.yyp
+index cc04b34..20600fb 100644
+--- a/AMIGA_DEV_MACHINE.yyp
++++ b/AMIGA_DEV_MACHINE.yyp
+@@ -74,6 +74,7 @@
+     {"id":{"name":"scr_opcode_helper_68k_part3","path":"scripts/scr_opcode_helper_68k_part3/scr_opcode_helper_68k_part3.yy",},},
+     {"id":{"name":"scr_opcode_helper_68k","path":"scripts/scr_opcode_helper_68k/scr_opcode_helper_68k.yy",},},
+     {"id":{"name":"scr_opcode_lookup","path":"scripts/scr_opcode_lookup/scr_opcode_lookup.yy",},},
++    {"id":{"name":"scr_opcode_condition_family_key","path":"scripts/scr_opcode_condition_family_key/scr_opcode_condition_family_key.yy",},},
+     {"id":{"name":"scr_operand_mode_uses_register_index","path":"scripts/scr_operand_mode_uses_register_index/scr_operand_mode_uses_register_index.yy",},},
+     {"id":{"name":"scr_pick_default_size","path":"scripts/scr_pick_default_size/scr_pick_default_size.yy",},},
+     {"id":{"name":"scr_push_undo_snapshot","path":"scripts/scr_push_undo_snapshot/scr_push_undo_snapshot.yy",},},
+diff --git a/scripts/scr_opcode_condition_family_key/scr_opcode_condition_family_key.gml b/scripts/scr_opcode_condition_family_key/scr_opcode_condition_family_key.gml
+new file mode 100644
+index 0000000..4283e87
+--- /dev/null
++++ b/scripts/scr_opcode_condition_family_key/scr_opcode_condition_family_key.gml
+@@ -0,0 +1,31 @@
++/// @desc scr_opcode_condition_family_key(_lower_key)
++/// If _lower_key is "b"/"db"/"s" followed by one of the 14 condition codes
++/// (eq, ne, cc, cs, ge, gt, le, lt, hi, ls, mi, pl, vc, vs), returns which
++/// generic tooltip key it belongs to ("bcc", "dbcc", or "scc"). Returns ""
++/// if it doesn't match the pattern (e.g. DBRA, which is a real distinct
++/// opcode with its own dedicated entry, not part of this family).
++function scr_opcode_condition_family_key(_lower_key) {
++    var _condition_codes = ["eq", "ne", "cc", "cs", "ge", "gt", "le", "lt", "hi", "ls", "mi", "pl", "vc", "vs"];
++    var _condition_count = array_length(_condition_codes);
++    var _c = 0;
++
++    while (_c < _condition_count) {
++        var _condition = _condition_codes[_c];
++
++        if (_lower_key == ("b" + _condition)) {
++            return "bcc";
++        }
++
++        if (_lower_key == ("db" + _condition)) {
++            return "dbcc";
++        }
++
++        if (_lower_key == ("s" + _condition)) {
++            return "scc";
++        }
++
++        _c += 1;
++    }
++
++    return "";
++}
+diff --git a/scripts/scr_opcode_condition_family_key/scr_opcode_condition_family_key.yy b/scripts/scr_opcode_condition_family_key/scr_opcode_condition_family_key.yy
+new file mode 100644
+index 0000000..4ac47c2
+--- /dev/null
++++ b/scripts/scr_opcode_condition_family_key/scr_opcode_condition_family_key.yy
+@@ -0,0 +1,13 @@
++{
++  "$GMScript":"v1",
++  "%Name":"scr_opcode_condition_family_key",
++  "isCompatibility":false,
++  "isDnD":false,
++  "name":"scr_opcode_condition_family_key",
++  "parent":{
++    "name":"AMIGA_DEV_MACHINE",
++    "path":"AMIGA_DEV_MACHINE.yyp",
++  },
++  "resourceType":"GMScript",
++  "resourceVersion":"2.0",
++}
+diff --git a/scripts/scr_opcode_helper_68k_part3/scr_opcode_helper_68k_part3.gml b/scripts/scr_opcode_helper_68k_part3/scr_opcode_helper_68k_part3.gml
+index e1fc081..701fe4e 100644
+--- a/scripts/scr_opcode_helper_68k_part3/scr_opcode_helper_68k_part3.gml
++++ b/scripts/scr_opcode_helper_68k_part3/scr_opcode_helper_68k_part3.gml
+@@ -7,7 +7,8 @@ function scr_opcode_helper_68k_part3(_key) {
+         "trapv":   { hex:"—", bytes:2, cycles:4,  format:"TRAPV",       mode:"Traps if the V (overflow) flag is set.",                            use:"Catch signed arithmetic overflow right after an ADD/SUB." },
+         "reset":   { hex:"—", bytes:2, cycles:132,format:"RESET",       mode:"Asserts the RESET line, resetting external hardware. Privileged.",  use:"Rare — resets peripheral hardware, not the CPU itself." },
+         "stop":    { hex:"—", bytes:4, cycles:4,  format:"STOP #data",  mode:"Loads SR with #data then halts until an interrupt occurs. Privileged.", use:"Low-power wait state until the next interrupt." },
+-        "illegal": { hex:"—", bytes:2, cycles:34, format:"ILLEGAL",     mode:"Forces an illegal instruction trap deliberately.",                  use:"Deliberately trigger a trap — debugging or reserved-opcode marking." }
++        "illegal": { hex:"—", bytes:2, cycles:34, format:"ILLEGAL",     mode:"Forces an illegal instruction trap deliberately.",                  use:"Deliberately trigger a trap — debugging or reserved-opcode marking." },
++        "dbra":    { hex:"—", bytes:4, cycles:10, format:"DBRA Dn,label", mode:"Branches back to label while Dn (as counter) hasn't hit -1 — unconditional, no flag test.", use:"The plain counted-loop form of DBcc — decrement Dn, loop until it wraps." }
+     };
+ 
+     var _found = variable_struct_exists(_map, _key);
+diff --git a/scripts/scr_opcode_lookup/scr_opcode_lookup.gml b/scripts/scr_opcode_lookup/scr_opcode_lookup.gml
+index 13ca40c..4d09bd6 100644
+--- a/scripts/scr_opcode_lookup/scr_opcode_lookup.gml
++++ b/scripts/scr_opcode_lookup/scr_opcode_lookup.gml
+@@ -1,6 +1,9 @@
+ /// @desc scr_opcode_lookup(_key)
+ /// Combined lookup across both tooltip banks. Falls back to the base mnemonic
+-/// (text before an underscore) for privileged variants like MOVE_SR. Returns a struct or undefined.
++/// (text before an underscore) for privileged variants like MOVE_SR, and to
++/// the generic bcc/dbcc/scc entry for any of the 14 condition-code variants
++/// (BEQ, DBNE, SGT, etc. — all 42 of them share the same underlying text).
++/// Returns a struct or undefined.
+ function scr_opcode_lookup(_key) {
+     var _lower_key = string_lower(_key);
+     var _result_first = scr_opcode_helper_68k(_lower_key);
+@@ -32,7 +35,16 @@ function scr_opcode_lookup(_key) {
+         }
+ 
+         var _result_base_second = scr_opcode_helper_68k_part2(_base_key);
+-        return _result_base_second;
++
++        if (_result_base_second != undefined) {
++            return _result_base_second;
++        }
++    }
++
++    var _condition_family_key = scr_opcode_condition_family_key(_lower_key);
++
++    if (_condition_family_key != "") {
++        return scr_opcode_helper_68k_part2(_condition_family_key);
+     }
+ 
+     return undefined;

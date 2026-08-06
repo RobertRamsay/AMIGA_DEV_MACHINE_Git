@@ -7,7 +7,8 @@ function scr_opcode_helper_68k_part3(_key) {
         "trapv":   { hex:"—", bytes:2, cycles:4,  format:"TRAPV",       mode:"Traps if the V (overflow) flag is set.",                            use:"Catch signed arithmetic overflow right after an ADD/SUB." },
         "reset":   { hex:"—", bytes:2, cycles:132,format:"RESET",       mode:"Asserts the RESET line, resetting external hardware. Privileged.",  use:"Rare — resets peripheral hardware, not the CPU itself." },
         "stop":    { hex:"—", bytes:4, cycles:4,  format:"STOP #data",  mode:"Loads SR with #data then halts until an interrupt occurs. Privileged.", use:"Low-power wait state until the next interrupt." },
-        "illegal": { hex:"—", bytes:2, cycles:34, format:"ILLEGAL",     mode:"Forces an illegal instruction trap deliberately.",                  use:"Deliberately trigger a trap — debugging or reserved-opcode marking." }
+        "illegal": { hex:"—", bytes:2, cycles:34, format:"ILLEGAL",     mode:"Forces an illegal instruction trap deliberately.",                  use:"Deliberately trigger a trap — debugging or reserved-opcode marking." },
+        "dbra":    { hex:"—", bytes:4, cycles:10, format:"DBRA Dn,label", mode:"Branches back to label while Dn (as counter) hasn't hit -1 — unconditional, no flag test.", use:"The plain counted-loop form of DBcc — decrement Dn, loop until it wraps." }
     };
 
     var _found = variable_struct_exists(_map, _key);
