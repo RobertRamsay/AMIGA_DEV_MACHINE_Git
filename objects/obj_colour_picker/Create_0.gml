@@ -25,7 +25,7 @@ colour_g = 0;
 colour_b = 0;
 
 panel_width = 280;
-panel_height = 190;
+panel_height = 222;
 panel_x = (room_width - panel_width) / 2;
 panel_y = (room_height - panel_height) / 2;
 
@@ -36,6 +36,14 @@ slider_height = 18;
 slider_r_y = panel_y + 66;
 slider_g_y = panel_y + 94;
 slider_b_y = panel_y + 122;
+
+// Global recent-colours row — up to 8 swatches, clicking one recalls it
+// into colour_r/g/b for further editing (does not commit by itself).
+recent_row_y = panel_y + 154;
+recent_swatch_width = 28;
+recent_swatch_height = 20;
+recent_swatch_gap = 4;
+recent_row_x = panel_x + 12;
 
 close_button_x = panel_x + panel_width - 76;
 close_button_y = panel_y + panel_height - 32;

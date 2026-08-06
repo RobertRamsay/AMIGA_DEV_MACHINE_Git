@@ -80,6 +80,28 @@ while (_channel < 3) {
     _channel += 1;
 }
 
+draw_set_colour(c_white);
+draw_text(recent_row_x, recent_row_y - 14, "RECENT:");
+
+var _recent_draw_index = 0;
+var _recent_draw_count = array_length(global.colour_picker_recent_hex);
+
+while (_recent_draw_index < _recent_draw_count) {
+    var _recent_x = recent_row_x + (_recent_draw_index * (recent_swatch_width + recent_swatch_gap));
+    var _recent_hex = global.colour_picker_recent_hex[_recent_draw_index];
+
+    var _recent_r = scr_hex_string_to_number(string_copy(_recent_hex, 1, 1));
+    var _recent_g = scr_hex_string_to_number(string_copy(_recent_hex, 2, 1));
+    var _recent_b = scr_hex_string_to_number(string_copy(_recent_hex, 3, 1));
+
+    draw_set_colour(make_color_rgb(_recent_r * 17, _recent_g * 17, _recent_b * 17));
+    draw_rectangle(_recent_x, recent_row_y, _recent_x + recent_swatch_width, recent_row_y + recent_swatch_height, false);
+    draw_set_colour(c_white);
+    draw_rectangle(_recent_x, recent_row_y, _recent_x + recent_swatch_width, recent_row_y + recent_swatch_height, true);
+
+    _recent_draw_index += 1;
+}
+
 draw_set_colour(c_olive);
 draw_rectangle(close_button_x, close_button_y, close_button_x + close_button_width, close_button_y + close_button_height, false);
 draw_set_colour(c_white);

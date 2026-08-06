@@ -103,6 +103,11 @@ preview_line_cache = [];
 
 global.status_message_log = [];
 
+// Recent colours picked in obj_colour_picker, most-recent-first, capped at
+// 8. Global and shared across every picker open (SETBKG, any CPRBAR band,
+// anything else later) rather than per-instance.
+global.colour_picker_recent_hex = [];
+
 global.palette_panel_bounds = {
     left   : 0,
     top    : 60,

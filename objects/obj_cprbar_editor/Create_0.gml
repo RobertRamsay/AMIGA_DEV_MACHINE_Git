@@ -13,8 +13,8 @@
 depth = -100000;
 target_node_id = noone;
 
-panel_width = 460;
-panel_height = 440;
+panel_width = 480;
+panel_height = 490;
 panel_x = (room_width - panel_width) / 2;
 panel_y = (room_height - panel_height) / 2;
 
@@ -41,11 +41,14 @@ vp_start_plus_x = panel_x + 210;
 vp_end_minus_x = panel_x + 280;
 vp_end_plus_x = panel_x + 350;
 
-swatch_area_x = panel_x + 20;
+// 16 rows stacked with zero gap between them, so the strip reads as a
+// rough vertical preview of the raster bar itself rather than a grid.
 swatch_area_y = panel_y + 172;
-swatch_columns = 4;
-swatch_size = 44;
-swatch_gap = 10;
+swatch_row_height = 16;
+swatch_bar_x = panel_x + 20;
+swatch_bar_width = 300;
+swatch_label_x = swatch_bar_x + swatch_bar_width + 8;
+swatch_label_width = 132;
 
 close_button_width = 64;
 close_button_height = 24;

@@ -76,16 +76,13 @@ draw_set_colour(_vp_row_colour);
 draw_text(vp_end_minus_x + stepper_width + 6, row_vp_y + 4, string(target_node_id.macro_cprbar_vp_end));
 scr_draw_stepper_button(vp_end_plus_x, row_vp_y, stepper_width, stepper_height, "+");
 
-// Band swatches — all 16 slots always shown, only the first band_count are
-// active (bright border) and clickable; the rest sit dimmed as a preview
-// of how much room is left under the 16-band cap.
+// Band rows — all 16 always shown, no gap between them so the strip reads
+// as a rough vertical preview of the actual raster bar. Only the first
+// band_count are active (bright label, clickable); the rest sit dimmed.
 var _swatch_index = 0;
 
 while (_swatch_index < 16) {
-    var _col = _swatch_index mod swatch_columns;
-    var _row = _swatch_index div swatch_columns;
-    var _swatch_x = swatch_area_x + _col * (swatch_size + swatch_gap);
-    var _swatch_y = swatch_area_y + _row * (swatch_size + swatch_gap);
+    var _row_y = swatch_area_y + (_swatch_index * swatch_row_height);
     var _is_active = _swatch_index < target_node_id.macro_cprbar_band_count;
     var _band_hex = target_node_id.macro_cprbar_bands[_swatch_index];
     var _swatch_colour = c_black;
@@ -104,20 +101,22 @@ while (_swatch_index < 16) {
     }
 
     draw_set_colour(_swatch_colour);
-    draw_rectangle(_swatch_x, _swatch_y, _swatch_x + swatch_size, _swatch_y + swatch_size, false);
+    draw_rectangle(swatch_bar_x, _row_y, swatch_bar_x + swatch_bar_width, _row_y + swatch_row_height, false);
 
-    var _swatch_border_colour = c_dkgray;
+    var _label_text_colour = c_gray;
 
     if (_is_active) {
-        _swatch_border_colour = c_white;
+        _label_text_colour = c_white;
     }
 
-    draw_set_colour(_swatch_border_colour);
-    draw_rectangle(_swatch_x, _swatch_y, _swatch_x + swatch_size, _swatch_y + swatch_size, true);
-    draw_text(_swatch_x + 3, _swatch_y + 2, string(_swatch_index + 1));
+    draw_set_colour(_label_text_colour);
+    draw_text(swatch_label_x, _row_y + 2, "< EDIT COL " + string(_swatch_index + 1));
 
     _swatch_index += 1;
 }
+
+draw_set_colour(c_white);
+draw_rectangle(swatch_bar_x, swatch_area_y, swatch_bar_x + swatch_bar_width, swatch_area_y + (16 * swatch_row_height), true);
 
 draw_set_colour(c_olive);
 draw_rectangle(close_button_x, close_button_y, close_button_x + close_button_width, close_button_y + close_button_height, false);

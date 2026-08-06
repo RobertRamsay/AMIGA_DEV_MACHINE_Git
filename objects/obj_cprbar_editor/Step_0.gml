@@ -52,12 +52,9 @@ if (mouse_check_button_pressed(mb_left)) {
     var _swatch_index = 0;
 
     while (_swatch_index < target_node_id.macro_cprbar_band_count) {
-        var _col = _swatch_index mod swatch_columns;
-        var _row = _swatch_index div swatch_columns;
-        var _swatch_x = swatch_area_x + _col * (swatch_size + swatch_gap);
-        var _swatch_y = swatch_area_y + _row * (swatch_size + swatch_gap);
+        var _row_y = swatch_area_y + (_swatch_index * swatch_row_height);
 
-        if (point_in_rectangle(mouse_x, mouse_y, _swatch_x, _swatch_y, _swatch_x + swatch_size, _swatch_y + swatch_size)) {
+        if (point_in_rectangle(mouse_x, mouse_y, swatch_bar_x, _row_y, swatch_label_x + swatch_label_width, _row_y + swatch_row_height)) {
             scr_colour_picker_open(target_node_id, "macro_cprbar_bands", _swatch_index, "Band " + string(_swatch_index + 1) + " colour");
         }
 

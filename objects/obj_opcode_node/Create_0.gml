@@ -40,8 +40,8 @@ preview_collapsed = true;
 macro_cprbar_band_count = 4;
 macro_cprbar_target_register = 0;
 macro_cprbar_equidistant = true;
-macro_cprbar_vp_start = 44;
-macro_cprbar_vp_end = 200;
+macro_cprbar_vp_start = 0;
+macro_cprbar_vp_end = 256;
 macro_cprbar_bands = [
     "000", "000", "000", "000",
     "000", "000", "000", "000",

@@ -19,10 +19,10 @@ function scr_emit_macro_copper_bar(_node) {
     var _vp_end = _node.macro_cprbar_vp_end;
 
     if (_node.macro_cprbar_equidistant) {
-        // Full visible PAL raster height — same range this codebase's
-        // original sky+water default gradient spanned end to end.
-        _vp_start = 44;
-        _vp_end = 200;
+        // Genuinely full height (0-256), not the old sky/water sub-range —
+        // that was only ever half of a two-zone gradient, not "full height".
+        _vp_start = 0;
+        _vp_end = 256;
     } else if (_vp_start >= _vp_end) {
         var _error_result = { text : "; ERROR: CPRBAR VP start must be less than VP end (currently " + string(_vp_start) + " to " + string(_vp_end) + ")", is_valid : false };
         return _error_result;
@@ -56,12 +56,10 @@ function scr_emit_macro_copper_bar(_node) {
     var _b = 0;
 
     while (_b < _band_count) {
-        var _t = 0;
-
-        if (_band_count > 1) {
-            _t = _b / (_band_count - 1);
-        }
-
+        // Each band starts at the beginning of its own equal zone — band i
+        // of N starts at i/N through the range, not spread across N-1
+        // intervals the way gradient control points would be.
+        var _t = _b / _band_count;
         var _vp = floor(_vp_start + (_vp_end - _vp_start) * _t);
         var _colour = scr_hex_string_to_number(_node.macro_cprbar_bands[_b]);
 
