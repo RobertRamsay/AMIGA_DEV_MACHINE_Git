@@ -12,7 +12,7 @@ is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR
 PURPOSE. See the README for more copyright info, and the source code for
 a full list of contributors
 
-current directory is C:\Users\me\AppData\Local\GameMakerStudio2-LTS2026\GMS2TEMP\AMIGA_DEV_MACHINE_294B977E_VM
+current directory is C:\Users\me\AppData\Local\GameMakerStudio2-LTS2026\GMS2TEMP\AMIGA_DEV_MACHINE_41AD641A_VM
 UAE: Initializing core derived from WinUAE 3220
 CLOCKFREQ: QPF 10.00MHz (5.00MHz, DIV=2)
 
@@ -28,10 +28,10 @@ libfsemu init
 ----------------------------------------------------------------------------
 
 fs_emu_init
-current time() is: 1786005964
-localtime+timegm:  1786005964
-localtime+mktime:  1786005964
-time of day:       1786005964 + (881714 / 1000000)
+current time() is: 1786006628
+localtime+timegm:  1786006628
+localtime+mktime:  1786006628
+time of day:       1786006628 + (680535 / 1000000)
 localtime offset:  3600
 calling fs_ml_init
 fs_ml_init (operating system: windows)
@@ -311,7 +311,7 @@ font height: 32 pixels
 512 characters
 [SHADERS] Initialize
 fs_ml_init_raw_input
-[RAWINPUT ]Old wndproc: ffff0b65 new wndproc: 00be6280
+[RAWINPUT ]Old wndproc: ffff0a0d new wndproc: 00be6280
 create windows is done
 fs_uae_init_recording
 not running in record mode
@@ -339,14 +339,14 @@ GL_ARB_sync extension found
 - SYNC_FINISH_SLEEP_SWAP_FINISH
 target_default_options p=03788380 type=0
 target_default_options: enabling floppy sounds
- -- stub -- target_save_options zfile=086CFCD8 p=03788380
+ -- stub -- target_save_options zfile=08750D50 p=03788380
 built_in_chipset_prefs, ignore = 0
 fixup_cpu
 built_in_chipset_prefs, ignore = 0
  -- stub -- target_fixup_options 
 graphics_setup
 preinit_shm
-NATMEM: Total physical RAM 16145 MB, all RAM 17299 MB
+NATMEM: Total physical RAM 16145 MB, all RAM 16866 MB
 NATMEM: Attempting to reserve: 2048 MB
 NATMEM: jit compiler 0
 VM: Reserve  0x80000000 bytes, try address 0x80000000
@@ -490,7 +490,7 @@ fs_uae_set_uae_paths
 did not find "built-in" driveclick directory
 read_custom_uae_options
 writing uae config to C:/Users/me/OneDrive/Desktop/Amiga_Dev_Machine/GIT/AMIGA_DEV_MACHINE_Git/datafiles/fsuae/Cache/Logs\debug.uae
- -- stub -- target_save_options zfile=086CFE70 p=03788380
+ -- stub -- target_save_options zfile=087506F0 p=03788380
 
 ----------------------------------------------------------------------------
 end of uae configuration
@@ -539,13 +539,13 @@ MMAN: mapped_malloc 0x00080000 start=0x00c00000 Slow memory (bogo)
 MMAN: Flags: RAM THREADSAFE
 ROM loader.. (<none>)
 read_rom_name 
-using text cache texture size 2048x2048
 MMAN: mapped_malloc 0x00080000 start=0x00000000 Extended Kickstart ROM (rom_e0)
 MMAN: Flags: ROM THREADSAFE
 ROM loader end
 cpuboard_map currprefs.cpuboard_type = 0
 memory init end
 gfx_set_picasso_state 0
+using text cache texture size 2048x2048
 drive_insert drv=01f361c4 dnum=3 fname= fake=0
 drive_insert drv=01f361c4 dnum=3 fname= fake=1
 gui_disk_image_change drive 3 <no disk>
@@ -648,7 +648,6 @@ hardreset, memory cleared
 init_sound
 driveclick_init
 open_sound returning 1
-restarting audio stream 0 (buffer underrun)
 restarting audio stream 0 (buffer underrun)
 wait_for_frame_no_netplay: new frame rate 50.00 (time: 20000)
 fs_uae_reconfigure_input_ports_amiga
@@ -1011,4 +1010,5 @@ callroms done.
 [InitCode] calling InitResident (100 81 "potgo.resource").
 [InitCode] calling InitResident (100 01 "bootloader.resource").
 [InitCode] calling InitResident (99 01 "processor.resource").
-[InitCode] calling InitResident (94 81 "oop.li
+[InitCode] calling InitResident (94 81 "oop.library").
+[InitCode] calling InitResident (92

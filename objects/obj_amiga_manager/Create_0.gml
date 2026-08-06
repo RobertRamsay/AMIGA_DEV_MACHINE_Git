@@ -114,10 +114,25 @@ build_adf_path = "";
 build_wait_timer = 0;
 build_timeout_frames = 600;
 
+
+
 global.vasm_path = "C:/Users/me/OneDrive/Desktop/Amiga_Dev_Machine/GIT/AMIGA_DEV_MACHINE_Git/datafiles/vasmm68k_mot_Win64/vasmm68k_mot.exe";
 global.xdftool_path = "C:/Users/me/AppData/Local/Python/pythoncore-3.14-64/Scripts/xdftool.exe";
 global.fsuae_path = "C:/Users/me/OneDrive/Desktop/Amiga_Dev_Machine/GIT/AMIGA_DEV_MACHINE_Git/datafiles/fsuae/fs-uae.exe";
 global.kickstart_path = "";
+
+if (!file_exists(global.vasm_path)) {
+    show_message("VASM was not found:\n" + global.vasm_path);
+}
+
+if (!file_exists(global.xdftool_path)) {
+    show_message("xdftool was not found:\n" + global.xdftool_path);
+}
+
+if (!file_exists(global.fsuae_path)) {
+    show_message("FS-UAE was not found:\n" + global.fsuae_path);
+}
+
 
 // 9. The one fixed INIT node — program entry point, spawned once, home position
 var _init_x = (room_width / 2) - 80;
