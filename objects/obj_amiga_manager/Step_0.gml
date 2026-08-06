@@ -67,7 +67,15 @@ if (build_state == "waiting_for_asm") {
         // particular, the bitmap Hunk executable is about 50 KiB, so passing
         // the file to xdftool on the first visible frame can copy a truncated
         // executable and abort xdftool before it installs the boot block.
-        var _exe_size = file_size(build_exe_path);
+        var _exe_size = -1;
+        var _exe_file = file_bin_open(build_exe_path, 0);
+
+        // The writer may briefly have the file locked. Treat that exactly like
+        // a changing size and simply try again on the next Step frame.
+        if (_exe_file >= 0) {
+            _exe_size = file_bin_size(_exe_file);
+            file_bin_close(_exe_file);
+        }
 
         if (_exe_size > 0 && _exe_size == build_exe_last_size) {
             build_exe_stable_timer += 1;
