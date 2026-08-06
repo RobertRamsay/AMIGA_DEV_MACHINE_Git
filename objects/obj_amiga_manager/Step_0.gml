@@ -41,6 +41,8 @@ if (_ctrl_held_for_undo && keyboard_check_pressed(ord("Y")) && global.operand_ed
 }
 
 if (keyboard_check_pressed(vk_f5) && build_state == "idle") {
+    scr_amiga_ensure_kickstart_path();
+
     var _node_array = scr_amiga_collect_program_nodes();
 
     var _start_result = scr_amiga_start_build(_node_array, global.current_project_path, global.current_chipset_mode);

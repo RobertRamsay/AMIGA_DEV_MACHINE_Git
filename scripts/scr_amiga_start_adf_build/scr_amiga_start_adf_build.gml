@@ -29,6 +29,11 @@ function scr_amiga_start_adf_build(_bin_path, _project_path, _volume_name, _uses
         var _startup_file = file_text_open_write(_startup_path);
         // The executable is stored in the floppy root. DF0: is unambiguous
         // even when the replacement AROS ROM assigns SYS: somewhere else.
+        // Temporary diagnostic marker — confirms whether AmigaDOS is
+        // actually invoking Startup-Sequence at boot, since AmigaDOS does
+        // not echo commands it reads from a script the way it echoes
+        // interactive input. Remove once boot is confirmed working.
+        file_text_write_string(_startup_file, "ECHO \"STARTUP-SEQUENCE RAN\"\n");
         file_text_write_string(_startup_file, "DF0:main\n");
         file_text_close(_startup_file);
 
