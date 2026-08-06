@@ -163,6 +163,38 @@ draw_set_colour(c_white);
 draw_rectangle(_layout.gradient_edge_x, _layout.gradient_edge_y, _layout.gradient_edge_x + _layout.gradient_edge_width, _layout.gradient_edge_y + _layout.tool_height, true);
 draw_text(_layout.gradient_edge_x + 10, _layout.gradient_edge_y + 3, bitmap_gradient_include_edge ? "EAT EDGE (GROW)" : "KEEP EDGE (STOP)");
 
+var _utility_x_2 = _layout.left_x + _layout.utility_button_width + _layout.utility_button_gap;
+draw_set_colour(array_length(bitmap_undo_stack) > 0 ? c_olive : c_dkgray);
+draw_rectangle(_layout.left_x, _layout.history_y, _layout.left_x + _layout.utility_button_width, _layout.history_y + _layout.utility_button_height, false);
+draw_set_colour(c_white);
+draw_rectangle(_layout.left_x, _layout.history_y, _layout.left_x + _layout.utility_button_width, _layout.history_y + _layout.utility_button_height, true);
+draw_text(_layout.left_x + 8, _layout.history_y + 3, "UNDO (" + string(array_length(bitmap_undo_stack)) + ")");
+
+draw_set_colour(array_length(bitmap_redo_stack) > 0 ? c_olive : c_dkgray);
+draw_rectangle(_utility_x_2, _layout.history_y, _utility_x_2 + _layout.utility_button_width, _layout.history_y + _layout.utility_button_height, false);
+draw_set_colour(c_white);
+draw_rectangle(_utility_x_2, _layout.history_y, _utility_x_2 + _layout.utility_button_width, _layout.history_y + _layout.utility_button_height, true);
+draw_text(_utility_x_2 + 8, _layout.history_y + 3, "REDO (" + string(array_length(bitmap_redo_stack)) + ")");
+
+draw_set_colour(make_color_rgb(35, 70, 95));
+draw_rectangle(_layout.left_x, _layout.file_y, _layout.left_x + _layout.utility_button_width, _layout.file_y + _layout.utility_button_height, false);
+draw_rectangle(_utility_x_2, _layout.file_y, _utility_x_2 + _layout.utility_button_width, _layout.file_y + _layout.utility_button_height, false);
+draw_set_colour(c_white);
+draw_rectangle(_layout.left_x, _layout.file_y, _layout.left_x + _layout.utility_button_width, _layout.file_y + _layout.utility_button_height, true);
+draw_rectangle(_utility_x_2, _layout.file_y, _utility_x_2 + _layout.utility_button_width, _layout.file_y + _layout.utility_button_height, true);
+draw_text(_layout.left_x + 8, _layout.file_y + 3, "SAVE EDITABLE");
+draw_text(_utility_x_2 + 8, _layout.file_y + 3, "LOAD EDITABLE");
+
+draw_set_colour(make_color_rgb(55, 85, 55));
+draw_rectangle(_layout.left_x, _layout.output_y, _layout.left_x + _layout.utility_button_width, _layout.output_y + _layout.utility_button_height, false);
+draw_set_colour(make_color_rgb(105, 55, 25));
+draw_rectangle(_utility_x_2, _layout.output_y, _utility_x_2 + _layout.utility_button_width, _layout.output_y + _layout.utility_button_height, false);
+draw_set_colour(c_white);
+draw_rectangle(_layout.left_x, _layout.output_y, _layout.left_x + _layout.utility_button_width, _layout.output_y + _layout.utility_button_height, true);
+draw_rectangle(_utility_x_2, _layout.output_y, _utility_x_2 + _layout.utility_button_width, _layout.output_y + _layout.utility_button_height, true);
+draw_text(_layout.left_x + 8, _layout.output_y + 3, "EXPORT PNG");
+draw_text(_utility_x_2 + 8, _layout.output_y + 3, "TEST BITMAP");
+
 // Canvas contents are GPU-clipped to the viewport. This prevents the final
 // scaled texel or grid line leaking over either edge.
 draw_set_colour(make_color_rgb(22, 22, 22));
@@ -341,9 +373,9 @@ while (_channel < 3) {
     _channel += 1;
 }
 
-draw_text_ext(_layout.right_x, _layout.slider_b_y + 38, "32 colours = five hardware bitplanes. Bitmap payload export will use a loader rather than the current 1 KB boot block.", 18, 225);
+draw_text_ext(_layout.right_x, _layout.slider_b_y + 38, "32 colours = five hardware bitplanes. TEST BITMAP builds a bootable OFS disk and loads the 51,200-byte display through AmigaDOS.", 18, 225);
 
 draw_set_colour(c_white);
-draw_text(_layout.panel_x + 12, _layout.help_line_1_y, "LEFT: use selected tool     RIGHT: use tool with COLOR00     ALT+LEFT: pick pen     MIDDLE or SPACE+LEFT: pan");
+draw_text(_layout.panel_x + 12, _layout.help_line_1_y, "LEFT: use selected tool     RIGHT: use COLOR00     ALT+LEFT: pick pen     HOLD SPACE: pan     CTRL+Z/Y: undo/redo     CTRL+S/L: save/load");
 draw_text(_layout.panel_x + 12, _layout.help_line_2_y, "WHEEL: zoom     DRAW: freehand     LINE: drag/release     FILL: connected area     GRADIENT: drag direction");
 draw_set_colour(c_white);

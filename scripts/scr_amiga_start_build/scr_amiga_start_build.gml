@@ -5,6 +5,16 @@ function scr_amiga_start_build(_node_array, _project_path, _chipset_mode) {
     var _asm_text = "";
     var _i = 0;
     var _count = array_length(_node_array);
+    var _uses_dos_loader = false;
+
+    while (_i < _count) {
+        if (_node_array[_i].is_macro && _node_array[_i].macro_type == "BITMAP_DISPLAY") {
+            _uses_dos_loader = true;
+        }
+        _i += 1;
+    }
+
+    if (_uses_dos_loader) _asm_text += "\tSECTION code,CODE\n";
 
     if (_chipset_mode == "AGA") {
         _asm_text += "; target: AGA\n";
@@ -14,6 +24,7 @@ function scr_amiga_start_build(_node_array, _project_path, _chipset_mode) {
 
     var _build_has_errors = false;
     var _error_list = [];
+    _i = 0;
 
     while (_i < _count) {
         var _node = _node_array[_i];
@@ -31,7 +42,8 @@ function scr_amiga_start_build(_node_array, _project_path, _chipset_mode) {
     var _result = {
         success : false,
         error_list : _error_list,
-        exe_path : ""
+        exe_path : "",
+        uses_dos_loader : _uses_dos_loader
     };
 
     if (_build_has_errors) {
@@ -61,7 +73,8 @@ function scr_amiga_start_build(_node_array, _project_path, _chipset_mode) {
         file_delete(_bin_path);
     }
 
-    var _vasm_args = "-Fbin -o \"" + _bin_path + "\" \"" + _asm_path + "\"";
+    var _output_format = _uses_dos_loader ? "-Fhunkexe -kick1hunks" : "-Fbin";
+    var _vasm_args = _output_format + " -o \"" + _bin_path + "\" \"" + _asm_path + "\"";
     show_debug_message("scr_amiga_start_build: launching " + global.vasm_path + " " + _vasm_args);
     execute_shell_simple(global.vasm_path, _vasm_args);
 	

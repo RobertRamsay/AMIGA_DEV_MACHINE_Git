@@ -1,0 +1,10 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_emit_macro_bitmap_display",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_emit_macro_bitmap_display",
+  "parent":{"name":"AMIGA_DEV_MACHINE","path":"AMIGA_DEV_MACHINE.yyp",},
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

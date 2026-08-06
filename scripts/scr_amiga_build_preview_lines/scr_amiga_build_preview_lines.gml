@@ -13,7 +13,22 @@ function scr_amiga_build_preview_lines() {
 
     while (_p < _count) {
         var _node = _preview_nodes[_p];
-        var _emit_result = scr_emit_opcode_line(_node);
+        var _emit_result;
+
+        // The real bitmap emitter creates 25,600 DC.W values. Keep the live
+        // preview lightweight and perform that conversion only for an F5 build.
+        if (_node.is_macro && _node.macro_type == "BITMAP_DISPLAY") {
+            var _bitmap_asset = scr_asset_find_by_name(_node.macro_asset_name);
+            var _bitmap_valid = _bitmap_asset != undefined && _bitmap_asset.type == "BITMAP";
+            _emit_result = {
+                text : _bitmap_valid
+                    ? "; 320x256 bitmap: five planes, 51,200 bytes, 32 colour registers"
+                    : "; ERROR: bitmap asset '" + _node.macro_asset_name + "' not found",
+                is_valid : _bitmap_valid
+            };
+        } else {
+            _emit_result = scr_emit_opcode_line(_node);
+        }
 
         if (_node.is_macro) {
             var _toggle_glyph = "[+]";

@@ -1,0 +1,10 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_amiga_run_bitmap_test",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_amiga_run_bitmap_test",
+  "parent":{"name":"AMIGA_DEV_MACHINE","path":"AMIGA_DEV_MACHINE.yyp",},
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

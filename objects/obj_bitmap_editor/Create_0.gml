@@ -21,6 +21,11 @@ bitmap_surface = -1;
 bitmap_surface_dirty = true;
 bitmap_dirty_pixels = [];
 bitmap_asset_dirty = false;
+bitmap_undo_stack = [];
+bitmap_redo_stack = [];
+bitmap_history_max = 24;
+bitmap_palette_drag_active = false;
+bitmap_native_path = "";
 bitmap_buffer = buffer_create(bitmap_width * bitmap_height * 4, buffer_fixed, 1);
 bitmap_stroke_active = false;
 bitmap_stroke_last_x = 0;
@@ -64,6 +69,16 @@ while (_palette_i < 32) {
     _palette_i += 1;
 }
 
+// Reopening the editor continues from the current named bitmap asset rather
+// than silently replacing it with a blank canvas.
+var _existing_bitmap = scr_asset_find_by_name("TestBitmap");
+if (_existing_bitmap != undefined && _existing_bitmap.type == "BITMAP") {
+    array_copy(bitmap_pixels, 0, _existing_bitmap.pixels, 0, 320 * 256);
+    array_copy(bitmap_colour_r, 0, _existing_bitmap.colour_r, 0, 32);
+    array_copy(bitmap_colour_g, 0, _existing_bitmap.colour_g, 0, 32);
+    array_copy(bitmap_colour_b, 0, _existing_bitmap.colour_b, 0, 32);
+}
+
 panel_width = min(1600, room_width - 20);
 panel_height = min(1024, room_height - 40);
 panel_x = floor((room_width - panel_width) / 2);
@@ -72,6 +87,7 @@ panel_dragging = false;
 panel_drag_offset_x = 0;
 panel_drag_offset_y = 0;
 canvas_panning = false;
+canvas_pan_with_space = false;
 pan_mouse_x = 0;
 pan_mouse_y = 0;
 

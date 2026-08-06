@@ -207,6 +207,7 @@ build_project_path = "";
 build_volume_name = "";
 build_exe_path = "";
 build_adf_path = "";
+build_uses_dos_loader = false;
 build_wait_timer = 0;
 build_timeout_frames = 600;
 build_adf_ready_timer = 0;

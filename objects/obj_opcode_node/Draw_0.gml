@@ -27,6 +27,10 @@ if (is_macro) {
             _header_colour = make_color_rgb(95, 45, 125);
             break;
 
+        case "BITMAP_DISPLAY":
+            _header_colour = make_color_rgb(35, 95, 125);
+            break;
+
         default:
             _header_colour = make_color_rgb(90, 50, 110);
             break;

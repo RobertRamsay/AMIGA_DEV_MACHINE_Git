@@ -49,6 +49,7 @@ if (keyboard_check_pressed(vk_f5) && build_state == "idle") {
         build_project_path = global.current_project_path;
         build_volume_name = global.current_volume_name;
         build_exe_path = _start_result.exe_path;
+        build_uses_dos_loader = _start_result.uses_dos_loader;
         build_state = "waiting_for_asm";
         build_wait_timer = 0;
     } else {
@@ -61,7 +62,7 @@ if (build_state == "waiting_for_asm") {
 
     if (file_exists(build_exe_path)) {
         show_debug_message("obj_amiga_manager: main.bin appeared after " + string(build_wait_timer) + " frames");
-        build_adf_path = scr_amiga_start_adf_build(build_exe_path, build_project_path, build_volume_name);
+        build_adf_path = scr_amiga_start_adf_build(build_exe_path, build_project_path, build_volume_name, build_uses_dos_loader);
         build_state = "waiting_for_adf";
         build_wait_timer = 0;
         build_adf_ready_timer = 0;

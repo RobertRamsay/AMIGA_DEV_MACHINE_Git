@@ -32,6 +32,10 @@ function scr_amiga_explain_node(_node) {
                 + " and uses the Copper to restore sprite and bitplane pointers each frame.";
         }
 
+        if (_node.macro_type == "BITMAP_DISPLAY") {
+            return "Converts TestBitmap into five native Amiga bitplanes, allocates chip RAM, uploads all 32 programmable 12-bit colours and opens a stable 320x256 PAL display. A Copper list restores all five bitplane pointers every frame.";
+        }
+
         return "";
     }
 

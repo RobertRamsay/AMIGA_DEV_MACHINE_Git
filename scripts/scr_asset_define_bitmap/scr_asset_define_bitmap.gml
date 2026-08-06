@@ -1,6 +1,6 @@
 /// @desc scr_asset_define_bitmap(_name, _pixels, _colour_r, _colour_g, _colour_b)
 /// Stores a native 320x256, 32-colour bitmap asset. Pixel values are chunky
-/// editor indices 0-31; the future payload writer converts them to 5 planes.
+/// editor indices 0-31; BITMAP_DISPLAY converts them to five native planes.
 function scr_asset_define_bitmap(_name, _pixels, _colour_r, _colour_g, _colour_b) {
     var _pixels_copy = array_create(320 * 256, 0);
     array_copy(_pixels_copy, 0, _pixels, 0, 320 * 256);

@@ -25,6 +25,12 @@ if (panel_dragging) {
 
 var _over_canvas = point_in_rectangle(mouse_x, mouse_y, _layout.canvas_x, _layout.canvas_y, _layout.canvas_x + _layout.canvas_width, _layout.canvas_y + _layout.canvas_height);
 
+var _ctrl_held = keyboard_check(vk_control);
+if (_ctrl_held && keyboard_check_pressed(ord("Z"))) scr_bitmap_undo(id);
+if (_ctrl_held && keyboard_check_pressed(ord("Y"))) scr_bitmap_redo(id);
+if (_ctrl_held && keyboard_check_pressed(ord("S"))) scr_bitmap_save_native(id);
+if (_ctrl_held && keyboard_check_pressed(ord("L"))) scr_bitmap_load_native(id);
+
 // Sixteen direct zoom buttons. Mouse wheel changes one level at a time.
 var _zoom_level = 1;
 
@@ -123,19 +129,45 @@ if (point_in_rectangle(mouse_x, mouse_y, _layout.gradient_edge_x, _layout.gradie
     bitmap_gradient_include_edge = !bitmap_gradient_include_edge;
 }
 
-// Middle-drag, or Space + left-drag, pans the magnified image.
+var _utility_x_2 = _layout.left_x + _layout.utility_button_width + _layout.utility_button_gap;
+
+if (point_in_rectangle(mouse_x, mouse_y, _layout.left_x, _layout.history_y, _layout.left_x + _layout.utility_button_width, _layout.history_y + _layout.utility_button_height)
+&& mouse_check_button_pressed(mb_left)) scr_bitmap_undo(id);
+
+if (point_in_rectangle(mouse_x, mouse_y, _utility_x_2, _layout.history_y, _utility_x_2 + _layout.utility_button_width, _layout.history_y + _layout.utility_button_height)
+&& mouse_check_button_pressed(mb_left)) scr_bitmap_redo(id);
+
+if (point_in_rectangle(mouse_x, mouse_y, _layout.left_x, _layout.file_y, _layout.left_x + _layout.utility_button_width, _layout.file_y + _layout.utility_button_height)
+&& mouse_check_button_pressed(mb_left)) scr_bitmap_save_native(id);
+
+if (point_in_rectangle(mouse_x, mouse_y, _utility_x_2, _layout.file_y, _utility_x_2 + _layout.utility_button_width, _layout.file_y + _layout.utility_button_height)
+&& mouse_check_button_pressed(mb_left)) scr_bitmap_load_native(id);
+
+if (point_in_rectangle(mouse_x, mouse_y, _layout.left_x, _layout.output_y, _layout.left_x + _layout.utility_button_width, _layout.output_y + _layout.utility_button_height)
+&& mouse_check_button_pressed(mb_left)) scr_bitmap_export_png(id);
+
+if (point_in_rectangle(mouse_x, mouse_y, _utility_x_2, _layout.output_y, _utility_x_2 + _layout.utility_button_width, _layout.output_y + _layout.utility_button_height)
+&& mouse_check_button_pressed(mb_left)) {
+    scr_asset_define_bitmap("TestBitmap", bitmap_pixels, bitmap_colour_r, bitmap_colour_g, bitmap_colour_b);
+    scr_amiga_run_bitmap_test();
+    instance_destroy();
+    exit;
+}
+
+// Middle-drag still works, while Space alone grabs the canvas until released.
 var _pan_pressed = mouse_check_button_pressed(mb_middle)
-    || (keyboard_check(vk_space) && mouse_check_button_pressed(mb_left));
+    || keyboard_check_pressed(vk_space);
 
 if (_over_canvas && _pan_pressed) {
     canvas_panning = true;
+    canvas_pan_with_space = keyboard_check(vk_space);
     pan_mouse_x = mouse_x;
     pan_mouse_y = mouse_y;
 }
 
 if (canvas_panning) {
     var _pan_held = mouse_check_button(mb_middle)
-        || (keyboard_check(vk_space) && mouse_check_button(mb_left));
+        || (canvas_pan_with_space && keyboard_check(vk_space));
 
     if (_pan_held) {
         bitmap_scroll_x = clamp(bitmap_scroll_x - (mouse_x - pan_mouse_x), 0, _layout.max_scroll_x);
@@ -144,6 +176,7 @@ if (canvas_panning) {
         pan_mouse_y = mouse_y;
     } else {
         canvas_panning = false;
+        canvas_pan_with_space = false;
     }
 }
 
@@ -178,6 +211,10 @@ if (mouse_check_button(mb_left)) {
 
     if (point_in_rectangle(mouse_x, mouse_y, _layout.slider_x, _layout.slider_r_y, _layout.slider_x + _layout.slider_width, _layout.slider_r_y + _layout.slider_height)) {
         if (bitmap_colour_r[_palette_index] != _slider_value) {
+            if (!bitmap_palette_drag_active) {
+                scr_bitmap_push_undo(id);
+                bitmap_palette_drag_active = true;
+            }
             bitmap_colour_r[_palette_index] = _slider_value;
             bitmap_surface_dirty = true;
             bitmap_asset_dirty = true;
@@ -186,6 +223,10 @@ if (mouse_check_button(mb_left)) {
 
     if (point_in_rectangle(mouse_x, mouse_y, _layout.slider_x, _layout.slider_g_y, _layout.slider_x + _layout.slider_width, _layout.slider_g_y + _layout.slider_height)) {
         if (bitmap_colour_g[_palette_index] != _slider_value) {
+            if (!bitmap_palette_drag_active) {
+                scr_bitmap_push_undo(id);
+                bitmap_palette_drag_active = true;
+            }
             bitmap_colour_g[_palette_index] = _slider_value;
             bitmap_surface_dirty = true;
             bitmap_asset_dirty = true;
@@ -194,12 +235,18 @@ if (mouse_check_button(mb_left)) {
 
     if (point_in_rectangle(mouse_x, mouse_y, _layout.slider_x, _layout.slider_b_y, _layout.slider_x + _layout.slider_width, _layout.slider_b_y + _layout.slider_height)) {
         if (bitmap_colour_b[_palette_index] != _slider_value) {
+            if (!bitmap_palette_drag_active) {
+                scr_bitmap_push_undo(id);
+                bitmap_palette_drag_active = true;
+            }
             bitmap_colour_b[_palette_index] = _slider_value;
             bitmap_surface_dirty = true;
             bitmap_asset_dirty = true;
         }
     }
 }
+
+if (mouse_check_button_released(mb_left)) bitmap_palette_drag_active = false;
 
 var _canvas_pixel_x = floor((mouse_x - _layout.display_x + bitmap_scroll_x) / bitmap_zoom);
 var _canvas_pixel_y = floor((mouse_y - _layout.display_y + bitmap_scroll_y) / bitmap_zoom);
@@ -226,6 +273,7 @@ if (_stroke_can_draw) {
     if (mouse_check_button(mb_right)) _draw_index = 0;
 
     if (!bitmap_stroke_active || bitmap_stroke_index != _draw_index) {
+        scr_bitmap_push_undo(id);
         bitmap_stroke_active = true;
         bitmap_stroke_last_x = _canvas_pixel_x;
         bitmap_stroke_last_y = _canvas_pixel_y;
@@ -245,6 +293,7 @@ if (_stroke_can_draw) {
 if (bitmap_tool == "LINE" && _over_canvas && _canvas_pixel_valid
 && !keyboard_check(vk_alt) && !keyboard_check(vk_space)
 && (mouse_check_button_pressed(mb_left) || mouse_check_button_pressed(mb_right))) {
+    scr_bitmap_push_undo(id);
     bitmap_line_active = true;
     bitmap_line_start_x = _canvas_pixel_x;
     bitmap_line_start_y = _canvas_pixel_y;
@@ -274,6 +323,7 @@ if (bitmap_tool == "FILL" && _over_canvas && _canvas_pixel_valid
     var _fill_target_index = bitmap_pixels[_fill_start_offset];
 
     if (_fill_target_index != _fill_index) {
+        scr_bitmap_push_undo(id);
         var _fill_queue = [_fill_start_offset];
         var _fill_read = 0;
         bitmap_pixels[_fill_start_offset] = _fill_index;
@@ -347,6 +397,7 @@ if (bitmap_gradient_active && mouse_check_button(mb_left)) {
 }
 
 if (bitmap_gradient_active && mouse_check_button_released(mb_left)) {
+    scr_bitmap_push_undo(id);
     var _gradient_target = bitmap_pixels[(bitmap_gradient_start_y * bitmap_width) + bitmap_gradient_start_x];
     var _gradient_start_offset = (bitmap_gradient_start_y * bitmap_width) + bitmap_gradient_start_x;
     var _gradient_queue = [_gradient_start_offset];
@@ -486,6 +537,7 @@ if (bitmap_gradient_active && mouse_check_button_released(mb_left)) {
 
 if (point_in_rectangle(mouse_x, mouse_y, _layout.clear_x, _layout.clear_y, _layout.clear_x + 120, _layout.clear_y + 20)
 && mouse_check_button_pressed(mb_left)) {
+    scr_bitmap_push_undo(id);
     bitmap_pixels = array_create(bitmap_width * bitmap_height, 0);
     bitmap_surface_dirty = true;
     bitmap_dirty_pixels = [];
