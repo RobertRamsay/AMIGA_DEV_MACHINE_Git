@@ -1,0 +1,11 @@
+diff --git a/scripts/scr_load_workspace_from_path/scr_load_workspace_from_path.gml b/scripts/scr_load_workspace_from_path/scr_load_workspace_from_path.gml
+index 234e5af..cc6d1bf 100644
+--- a/scripts/scr_load_workspace_from_path/scr_load_workspace_from_path.gml
++++ b/scripts/scr_load_workspace_from_path/scr_load_workspace_from_path.gml
+@@ -110,6 +110,4 @@ function scr_load_workspace_from_path(_path) {
+ 
+     global.workspace_dirty = false;
+     show_debug_message("Loaded workspace from " + _path);
+-	}
+-	
+ }

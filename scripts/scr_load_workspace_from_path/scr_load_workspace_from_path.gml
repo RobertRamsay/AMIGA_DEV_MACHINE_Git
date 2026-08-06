@@ -110,6 +110,4 @@ function scr_load_workspace_from_path(_path) {
 
     global.workspace_dirty = false;
     show_debug_message("Loaded workspace from " + _path);
-	}
-	
 }
