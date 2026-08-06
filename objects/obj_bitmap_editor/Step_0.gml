@@ -102,8 +102,21 @@ if (!_ctrl_held && !keyboard_check(vk_alt)) {
     }
 
     if (keyboard_check_pressed(ord("C"))) {
-        bitmap_use_dither = true;
-        bitmap_dither_pattern = "CHECKER";
+        bitmap_use_dither = !bitmap_use_dither;
+
+        if (bitmap_use_dither) {
+            bitmap_dither_pattern = "CHECKER";
+        }
+    }
+
+    if (keyboard_check_pressed(ord("I"))) {
+        global.kickstart_path = "";
+
+        ini_open("settings.ini");
+        ini_write_string("paths", "kickstart", "");
+        ini_close();
+
+        scr_set_status_message("Kickstart ROM cleared — you'll be prompted again on the next DOS-loader build.");
     }
 
     if (keyboard_check_pressed(ord("T"))) {

@@ -41,9 +41,26 @@ if (_ctrl_held_for_undo && keyboard_check_pressed(ord("Y")) && global.operand_ed
 }
 
 if (keyboard_check_pressed(vk_f5) && build_state == "idle") {
-    scr_amiga_ensure_kickstart_path();
-
     var _node_array = scr_amiga_collect_program_nodes();
+
+    // Only the DOS-loader path (a BITMAP_DISPLAY macro anywhere in the
+    // program) needs a real Kickstart to auto-run Startup-Sequence. Plain
+    // direct-bootblock tests boot fine on FS-UAE's built-in AROS
+    // replacement, so there's no reason to interrupt those with a prompt.
+    var _requires_kickstart = false;
+    var _node_scan_index = 0;
+    var _node_count = array_length(_node_array);
+
+    while (_node_scan_index < _node_count) {
+        if (_node_array[_node_scan_index].is_macro && _node_array[_node_scan_index].macro_type == "BITMAP_DISPLAY") {
+            _requires_kickstart = true;
+        }
+        _node_scan_index += 1;
+    }
+
+    if (_requires_kickstart) {
+        scr_amiga_ensure_kickstart_path();
+    }
 
     var _start_result = scr_amiga_start_build(_node_array, global.current_project_path, global.current_chipset_mode);
 
