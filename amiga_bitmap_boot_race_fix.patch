@@ -1,0 +1,82 @@
+diff --git a/objects/obj_amiga_manager/Create_0.gml b/objects/obj_amiga_manager/Create_0.gml
+index a483605..64423da 100644
+--- a/objects/obj_amiga_manager/Create_0.gml
++++ b/objects/obj_amiga_manager/Create_0.gml
+@@ -211,6 +211,8 @@ build_uses_dos_loader = false;
+ build_wait_timer = 0;
+ build_timeout_frames = 600;
+ build_adf_ready_timer = 0;
++build_exe_last_size = -1;
++build_exe_stable_timer = 0;
+ 
+ 
+ // ============================================================================
+diff --git a/objects/obj_amiga_manager/Step_0.gml b/objects/obj_amiga_manager/Step_0.gml
+index 9156e81..09fc3e9 100644
+--- a/objects/obj_amiga_manager/Step_0.gml
++++ b/objects/obj_amiga_manager/Step_0.gml
+@@ -52,6 +52,8 @@ if (keyboard_check_pressed(vk_f5) && build_state == "idle") {
+         build_uses_dos_loader = _start_result.uses_dos_loader;
+         build_state = "waiting_for_asm";
+         build_wait_timer = 0;
++        build_exe_last_size = -1;
++        build_exe_stable_timer = 0;
+     } else {
+         show_debug_message("Build blocked by opcode errors — see previous debug lines.");
+     }
+@@ -61,11 +63,26 @@ if (build_state == "waiting_for_asm") {
+     build_wait_timer += 1;
+ 
+     if (file_exists(build_exe_path)) {
+-        show_debug_message("obj_amiga_manager: main.bin appeared after " + string(build_wait_timer) + " frames");
+-        build_adf_path = scr_amiga_start_adf_build(build_exe_path, build_project_path, build_volume_name, build_uses_dos_loader);
+-        build_state = "waiting_for_adf";
+-        build_wait_timer = 0;
+-        build_adf_ready_timer = 0;
++        // vasm creates main.bin before it has finished writing it. In
++        // particular, the bitmap Hunk executable is about 50 KiB, so passing
++        // the file to xdftool on the first visible frame can copy a truncated
++        // executable and abort xdftool before it installs the boot block.
++        var _exe_size = file_size(build_exe_path);
++
++        if (_exe_size > 0 && _exe_size == build_exe_last_size) {
++            build_exe_stable_timer += 1;
++        } else {
++            build_exe_last_size = _exe_size;
++            build_exe_stable_timer = 0;
++        }
++
++        if (build_exe_stable_timer >= 30) {
++            show_debug_message("obj_amiga_manager: main.bin stable at " + string(_exe_size) + " bytes after " + string(build_wait_timer) + " frames");
++            build_adf_path = scr_amiga_start_adf_build(build_exe_path, build_project_path, build_volume_name, build_uses_dos_loader);
++            build_state = "waiting_for_adf";
++            build_wait_timer = 0;
++            build_adf_ready_timer = 0;
++        }
+     } else {
+         if (build_wait_timer > build_timeout_frames) {
+             show_debug_message("Build timed out waiting for vasm to produce main.bin.");
+@@ -78,12 +95,19 @@ if (build_state == "waiting_for_adf") {
+     build_wait_timer += 1;
+ 
+     if (file_exists(build_adf_path)) {
+-        // xdftool is asynchronous: `create` makes disk.adf visible before
+-        // the following format and boot-write commands have finished. Wait
+-        // for it to remain present before allowing FS-UAE to open the file.
++        // xdftool is asynchronous: `create` immediately makes a full-size ADF
++        // visible, before format, file writes and boot installation finish.
++        // File size therefore cannot signal completion. DOS-loaded bitmap
++        // builds also start a bundled Python executable and perform several
++        // filesystem operations, so give that route a longer settling time.
+         build_adf_ready_timer += 1;
++        var _adf_settle_frames = 90;
++
++        if (build_uses_dos_loader) {
++            _adf_settle_frames = 240;
++        }
+ 
+-        if (build_adf_ready_timer >= 30) {
++        if (build_adf_ready_timer >= _adf_settle_frames) {
+             show_debug_message("obj_amiga_manager: disk.adf ready after " + string(build_wait_timer) + " frames — closing previous FS-UAE sessions");
+ 
+             // Close any emulator left behind by an earlier F5 run. taskkill

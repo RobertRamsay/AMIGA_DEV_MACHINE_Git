@@ -211,6 +211,8 @@ build_uses_dos_loader = false;
 build_wait_timer = 0;
 build_timeout_frames = 600;
 build_adf_ready_timer = 0;
+build_exe_last_size = -1;
+build_exe_stable_timer = 0;
 
 
 // ============================================================================
