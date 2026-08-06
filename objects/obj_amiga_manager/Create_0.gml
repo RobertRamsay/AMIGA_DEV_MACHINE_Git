@@ -196,6 +196,7 @@ build_exe_path = "";
 build_adf_path = "";
 build_wait_timer = 0;
 build_timeout_frames = 600;
+build_adf_ready_timer = 0;
 
 
 // ============================================================================

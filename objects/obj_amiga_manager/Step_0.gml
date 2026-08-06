@@ -58,6 +58,7 @@ if (build_state == "waiting_for_asm") {
         build_adf_path = scr_amiga_start_adf_build(build_exe_path, build_project_path, build_volume_name);
         build_state = "waiting_for_adf";
         build_wait_timer = 0;
+        build_adf_ready_timer = 0;
     } else {
         if (build_wait_timer > build_timeout_frames) {
             show_debug_message("Build timed out waiting for vasm to produce main.bin.");
@@ -70,11 +71,20 @@ if (build_state == "waiting_for_adf") {
     build_wait_timer += 1;
 
     if (file_exists(build_adf_path)) {
-        show_debug_message("obj_amiga_manager: disk.adf appeared after " + string(build_wait_timer) + " frames — launching FS-UAE");
-        var _uae_args = "--floppy_drive_0=\"" + build_adf_path + "\" --kickstart_file=\"" + global.kickstart_path + "\"";
-        execute_shell_simple(global.fsuae_path, _uae_args);
-        build_state = "idle";
+        // xdftool is asynchronous: `create` makes disk.adf visible before
+        // the following format and boot-write commands have finished. Wait
+        // for it to remain present before allowing FS-UAE to open the file.
+        build_adf_ready_timer += 1;
+
+        if (build_adf_ready_timer >= 30) {
+            show_debug_message("obj_amiga_manager: disk.adf ready after " + string(build_wait_timer) + " frames — launching FS-UAE");
+            var _uae_args = "--floppy_drive_0=\"" + build_adf_path + "\" --kickstart_file=\"" + global.kickstart_path + "\"";
+            execute_shell_simple(global.fsuae_path, _uae_args);
+            build_state = "idle";
+        }
     } else {
+        build_adf_ready_timer = 0;
+
         if (build_wait_timer > build_timeout_frames) {
             show_debug_message("Build timed out waiting for xdftool to produce disk.adf.");
             build_state = "idle";
@@ -372,4 +382,3 @@ if (global.sprite_editor_open) {
         }
     }
 }
-

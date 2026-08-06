@@ -75,7 +75,9 @@ function scr_emit_macro_sprite_display(_node) {
     _lines += "\tMOVE.W #0,14676228.L\n";
     _lines += "\tMOVE.W #0,14676230.L\n";
     _lines += "\tMOVE.W #0,14676232.L\n";
-    _lines += "\tMOVE.W #0,14676236.L\n";
+    // AGA sprite palette offsets: $0011 preserves the OCS/ECS mapping where
+    // sprite pair 0/1 uses COLOR17-19. OCS/ECS safely ignore this register.
+    _lines += "\tMOVE.W #17,14676236.L\n";
     _lines += "\tMOVE.W #0,14676476.L\n";
     _lines += "\tMOVE.W #56,14676114.L\n";
     _lines += "\tMOVE.W #208,14676116.L\n";
