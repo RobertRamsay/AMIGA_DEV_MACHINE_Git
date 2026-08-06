@@ -1,0 +1,52 @@
+diff --git a/objects/obj_amiga_manager/Draw_0.gml b/objects/obj_amiga_manager/Draw_0.gml
+index ce5b5a5..61c0661 100644
+--- a/objects/obj_amiga_manager/Draw_0.gml
++++ b/objects/obj_amiga_manager/Draw_0.gml
+@@ -100,12 +100,12 @@ if (keyboard_check(vk_control)) {
+ 
+ if (global.status_message != "") {
+     var _status_bar_height = 22;
+-    var _status_bar_y = room_height - _status_bar_height;
++    var _status_bar_y = room_height - _status_bar_height - 100;
+ 
+     draw_set_alpha(0.85);
+-    draw_rectangle_colour(0, _status_bar_y, room_width, room_height, c_black, c_black, c_black, c_black, false);
++    draw_rectangle_colour(0, _status_bar_y, room_width, _status_bar_y + _status_bar_height, c_black, c_black, c_black, c_black, false);
+     draw_set_alpha(1);
+     draw_set_colour(c_white);
+-    draw_rectangle(0, _status_bar_y, room_width, room_height, true);
++    draw_rectangle(0, _status_bar_y, room_width, _status_bar_y + _status_bar_height, true);
+     draw_text(8, _status_bar_y + 3, global.status_message);
+ }
+\ No newline at end of file
+diff --git a/objects/obj_opcode_node/Draw_0.gml b/objects/obj_opcode_node/Draw_0.gml
+index 3b4bcc9..0431270 100644
+--- a/objects/obj_opcode_node/Draw_0.gml
++++ b/objects/obj_opcode_node/Draw_0.gml
+@@ -41,8 +41,12 @@ if (_label_display_text != "") {
+ }
+ 
+ if (operand_editing_slot == "node_label") {
+-    draw_set_colour(c_olive);
+-    draw_rectangle(_dx + node_width + 4, _dy, _dx + node_width + 84, _dy + 20, true);
++    var _pulse_t = (sin(current_time * 0.006) + 1) / 2;
++    var _pulse_colour = merge_colour(c_black, c_yellow, _pulse_t);
++    var _pulse_grow = _pulse_t * 3;
++
++    draw_set_colour(_pulse_colour);
++    draw_rectangle(_dx + node_width + 4 - _pulse_grow, _dy - _pulse_grow, _dx + node_width + 84 + _pulse_grow, _dy + 20 + _pulse_grow, true);
+     draw_set_colour(c_white);
+ }
+ 
+diff --git a/scripts/scr_set_status_message/scr_set_status_message.gml b/scripts/scr_set_status_message/scr_set_status_message.gml
+new file mode 100644
+index 0000000..3f3bcd5
+--- /dev/null
++++ b/scripts/scr_set_status_message/scr_set_status_message.gml
+@@ -0,0 +1,6 @@
++/// @desc scr_set_status_message(_text)
++/// Sets the reusable status/hint text drawn at the bottom of the screen.
++/// Pass "" to clear it.
++function scr_set_status_message(_text) {
++    global.status_message = _text;
++}

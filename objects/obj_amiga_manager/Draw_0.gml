@@ -100,12 +100,12 @@ if (keyboard_check(vk_control)) {
 
 if (global.status_message != "") {
     var _status_bar_height = 22;
-    var _status_bar_y = room_height - _status_bar_height;
+    var _status_bar_y = room_height - _status_bar_height - 100;
 
     draw_set_alpha(0.85);
-    draw_rectangle_colour(0, _status_bar_y, room_width, room_height, c_black, c_black, c_black, c_black, false);
+    draw_rectangle_colour(0, _status_bar_y, room_width, _status_bar_y + _status_bar_height, c_black, c_black, c_black, c_black, false);
     draw_set_alpha(1);
     draw_set_colour(c_white);
-    draw_rectangle(0, _status_bar_y, room_width, room_height, true);
+    draw_rectangle(0, _status_bar_y, room_width, _status_bar_y + _status_bar_height, true);
     draw_text(8, _status_bar_y + 3, global.status_message);
 }
