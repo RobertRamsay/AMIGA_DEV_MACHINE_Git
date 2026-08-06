@@ -135,14 +135,17 @@ if (array_length(global.status_message_log) > 0) {
     var _i = _log_count - 1;
 
     while (_i >= 0 && _line_y <= room_height - _status_line_height) {
+        var _log_entry = global.status_message_log[_i];
         var _line_colour = c_white;
 
-        if (_i == _log_count - 1) {
+        if (_log_entry.colour != undefined) {
+            _line_colour = _log_entry.colour;
+        } else if (_i == _log_count - 1) {
             _line_colour = c_yellow;
         }
 
         draw_set_colour(_line_colour);
-        draw_text(8, _line_y, global.status_message_log[_i]);
+        draw_text(8, _line_y, _log_entry.text);
 
         _line_y += _status_line_height;
         _i -= 1;

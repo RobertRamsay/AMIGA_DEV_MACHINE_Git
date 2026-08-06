@@ -97,6 +97,7 @@ if (keyboard_check_pressed(vk_f5) && build_state == "idle") {
             build_exe_stable_timer = 0;
         } else {
             show_debug_message("Build blocked by opcode errors — see previous debug lines.");
+            scr_set_status_message("WONT BUILD (ERRORS IN CODE)", c_red);
         }
     }
 }
@@ -328,6 +329,22 @@ if (_over_preview_panel) {
     if (global.preview_scroll_y < _preview_min_scroll) {
         global.preview_scroll_y = _preview_min_scroll;
     }
+}
+
+// O spawns an ORG root node at the mouse position — workspace area only,
+// not while typing into a field and not over the palette or preview panels.
+if (keyboard_check_pressed(ord("O")) && global.operand_edit_owner_uid == -1 && !_over_palette && !_over_preview_panel) {
+    scr_push_undo_snapshot();
+
+    var _org_spawn_x = mouse_x - global.pan_x;
+    var _org_spawn_y = mouse_y - global.pan_y;
+
+    var _new_org = instance_create_layer(_org_spawn_x, _org_spawn_y, "Instances", obj_amiga_root_node);
+    _new_org.root_type = "ORG";
+    _new_org.node_x = _org_spawn_x - (_new_org.node_width / 2);
+    _new_org.node_y = _org_spawn_y - (_new_org.node_height / 2);
+
+    scr_set_status_message("ORG spawned at mouse position.");
 }
 
 if (mouse_check_button_pressed(mb_left)) {

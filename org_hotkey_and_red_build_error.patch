@@ -1,0 +1,89 @@
+diff --git a/objects/obj_amiga_manager/Draw_0.gml b/objects/obj_amiga_manager/Draw_0.gml
+index 7f568aa..3efdc9b 100644
+--- a/objects/obj_amiga_manager/Draw_0.gml
++++ b/objects/obj_amiga_manager/Draw_0.gml
+@@ -135,14 +135,17 @@ if (array_length(global.status_message_log) > 0) {
+     var _i = _log_count - 1;
+ 
+     while (_i >= 0 && _line_y <= room_height - _status_line_height) {
++        var _log_entry = global.status_message_log[_i];
+         var _line_colour = c_white;
+ 
+-        if (_i == _log_count - 1) {
++        if (_log_entry.colour != undefined) {
++            _line_colour = _log_entry.colour;
++        } else if (_i == _log_count - 1) {
+             _line_colour = c_yellow;
+         }
+ 
+         draw_set_colour(_line_colour);
+-        draw_text(8, _line_y, global.status_message_log[_i]);
++        draw_text(8, _line_y, _log_entry.text);
+ 
+         _line_y += _status_line_height;
+         _i -= 1;
+diff --git a/objects/obj_amiga_manager/Step_0.gml b/objects/obj_amiga_manager/Step_0.gml
+index 0b47396..191c8fa 100644
+--- a/objects/obj_amiga_manager/Step_0.gml
++++ b/objects/obj_amiga_manager/Step_0.gml
+@@ -97,6 +97,7 @@ if (keyboard_check_pressed(vk_f5) && build_state == "idle") {
+             build_exe_stable_timer = 0;
+         } else {
+             show_debug_message("Build blocked by opcode errors — see previous debug lines.");
++            scr_set_status_message("WONT BUILD (ERRORS IN CODE)", c_red);
+         }
+     }
+ }
+@@ -330,6 +331,22 @@ if (_over_preview_panel) {
+     }
+ }
+ 
++// O spawns an ORG root node at the mouse position — workspace area only,
++// not while typing into a field and not over the palette or preview panels.
++if (keyboard_check_pressed(ord("O")) && global.operand_edit_owner_uid == -1 && !_over_palette && !_over_preview_panel) {
++    scr_push_undo_snapshot();
++
++    var _org_spawn_x = mouse_x - global.pan_x;
++    var _org_spawn_y = mouse_y - global.pan_y;
++
++    var _new_org = instance_create_layer(_org_spawn_x, _org_spawn_y, "Instances", obj_amiga_root_node);
++    _new_org.root_type = "ORG";
++    _new_org.node_x = _org_spawn_x - (_new_org.node_width / 2);
++    _new_org.node_y = _org_spawn_y - (_new_org.node_height / 2);
++
++    scr_set_status_message("ORG spawned at mouse position.");
++}
++
+ if (mouse_check_button_pressed(mb_left)) {
+     var _click_line_y = _preview_panel_y + 24 + global.preview_scroll_y;
+     var _click_line_index = 0;
+diff --git a/scripts/scr_set_status_message/scr_set_status_message.gml b/scripts/scr_set_status_message/scr_set_status_message.gml
+index 35397e0..90e3c27 100644
+--- a/scripts/scr_set_status_message/scr_set_status_message.gml
++++ b/scripts/scr_set_status_message/scr_set_status_message.gml
+@@ -1,14 +1,22 @@
+-/// @desc scr_set_status_message(_text)
++/// @desc scr_set_status_message(_text, [_colour])
+ /// Appends _text to the status message log, drawn at the bottom of the
+ /// screen with newest on top. Empty strings are ignored (harmless no-op)
+ /// rather than clearing the log — this is a history now, not a single
+ /// transient line, so there's nothing to "clear" on commit/cancel.
+-function scr_set_status_message(_text) {
++/// _colour is optional — leave it unset for the normal newest-line-yellow
++/// convention, or pass an explicit colour (e.g. c_red) to force this one
++/// line to always draw in that colour regardless of its age in the log.
++function scr_set_status_message(_text, _colour = undefined) {
+     if (_text == "") {
+         return;
+     }
+ 
+-    array_push(global.status_message_log, _text);
++    var _log_entry = {
++        text : _text,
++        colour : _colour
++    };
++
++    array_push(global.status_message_log, _log_entry);
+ 
+     var _max_log_lines = 20;
+ 
