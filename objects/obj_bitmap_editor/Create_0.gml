@@ -4,6 +4,7 @@ bitmap_width = 320;
 bitmap_height = 256;
 bitmap_pixels = array_create(bitmap_width * bitmap_height, 0);
 bitmap_zoom = 3;
+bitmap_grid_enabled = false;
 bitmap_scroll_x = 0;
 bitmap_scroll_y = 0;
 bitmap_paint_index = 1;

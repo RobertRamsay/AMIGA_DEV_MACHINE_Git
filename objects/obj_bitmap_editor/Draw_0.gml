@@ -79,14 +79,14 @@ draw_text(_layout.close_x + 5, _layout.close_y, "X");
 draw_text(_layout.left_x, _layout.left_y, "TOOLS");
 draw_text(_layout.left_x, _layout.left_y + 18, "ZOOM " + string(bitmap_zoom) + "x");
 var _zoom_level = 1;
-while (_zoom_level <= 6) {
-    var _zoom_x = _layout.zoom_x + ((_zoom_level - 1) mod 3) * 42;
-    var _zoom_y = _layout.zoom_y + ((_zoom_level - 1) div 3) * 22;
+while (_zoom_level <= 16) {
+    var _zoom_x = _layout.zoom_x + ((_zoom_level - 1) mod 4) * (_layout.zoom_button_width + _layout.zoom_button_gap_x);
+    var _zoom_y = _layout.zoom_y + ((_zoom_level - 1) div 4) * (_layout.zoom_button_height + _layout.zoom_button_gap_y);
     draw_set_colour(bitmap_zoom == _zoom_level ? c_olive : c_dkgray);
-    draw_rectangle(_zoom_x, _zoom_y, _zoom_x + 36, _zoom_y + 18, false);
+    draw_rectangle(_zoom_x, _zoom_y, _zoom_x + _layout.zoom_button_width, _zoom_y + _layout.zoom_button_height, false);
     draw_set_colour(c_white);
-    draw_rectangle(_zoom_x, _zoom_y, _zoom_x + 36, _zoom_y + 18, true);
-    draw_text(_zoom_x + 10, _zoom_y, string(_zoom_level) + "x");
+    draw_rectangle(_zoom_x, _zoom_y, _zoom_x + _layout.zoom_button_width, _zoom_y + _layout.zoom_button_height, true);
+    draw_text(_zoom_x + 4, _zoom_y, string(_zoom_level) + "x");
     _zoom_level += 1;
 }
 
@@ -95,8 +95,15 @@ draw_rectangle(_layout.clear_x, _layout.clear_y, _layout.clear_x + 120, _layout.
 draw_set_colour(c_white);
 draw_rectangle(_layout.clear_x, _layout.clear_y, _layout.clear_x + 120, _layout.clear_y + 20, true);
 draw_text(_layout.clear_x + 8, _layout.clear_y + 1, "CLEAR TO COLOR00");
-draw_text_ext(_layout.left_x, _layout.clear_y + 36, "LEFT: paint\nRIGHT: COLOR00\nMIDDLE: pan\nSPACE+LEFT: pan\nWHEEL: zoom", 18, 130);
-draw_text_ext(_layout.left_x, _layout.clear_y + 142, "1x shows the native image. 3x is the default editing view.", 18, 130);
+
+draw_set_colour(bitmap_grid_enabled ? c_olive : c_dkgray);
+draw_rectangle(_layout.grid_toggle_x, _layout.grid_toggle_y, _layout.grid_toggle_x + 120, _layout.grid_toggle_y + 20, false);
+draw_set_colour(c_white);
+draw_rectangle(_layout.grid_toggle_x, _layout.grid_toggle_y, _layout.grid_toggle_x + 120, _layout.grid_toggle_y + 20, true);
+draw_text(_layout.grid_toggle_x + 8, _layout.grid_toggle_y + 1, bitmap_grid_enabled ? "GRID: ON" : "GRID: OFF");
+
+draw_text_ext(_layout.left_x, _layout.grid_toggle_y + 34, "LEFT: paint\nALT+LEFT: pick pen\nRIGHT: COLOR00\nMIDDLE: pan\nSPACE+LEFT: pan\nWHEEL: zoom", 18, 130);
+draw_text_ext(_layout.left_x, _layout.grid_toggle_y + 158, "1x shows the native image. 3x is the default editing view.", 18, 130);
 
 // Clipped viewport by selecting only the visible source region.
 draw_set_colour(make_color_rgb(22, 22, 22));
@@ -116,8 +123,8 @@ if (surface_exists(bitmap_surface)) {
     gpu_set_texfilter(true);
 }
 
-// Pixel grid only at useful editing magnifications.
-if (bitmap_zoom >= 3) {
+// Optional pixel grid, disabled by default.
+if (bitmap_grid_enabled) {
     draw_set_alpha(0.22);
     draw_set_colour(c_white);
     var _first_col = floor(bitmap_scroll_x / bitmap_zoom);

@@ -25,14 +25,14 @@ if (panel_dragging) {
 
 var _over_canvas = point_in_rectangle(mouse_x, mouse_y, _layout.canvas_x, _layout.canvas_y, _layout.canvas_x + _layout.canvas_width, _layout.canvas_y + _layout.canvas_height);
 
-// Six direct zoom buttons. Mouse wheel over the canvas changes one level.
+// Sixteen direct zoom buttons. Mouse wheel changes one level at a time.
 var _zoom_level = 1;
 
-while (_zoom_level <= 6) {
-    var _zoom_button_x = _layout.zoom_x + ((_zoom_level - 1) mod 3) * 42;
-    var _zoom_button_y = _layout.zoom_y + ((_zoom_level - 1) div 3) * 22;
+while (_zoom_level <= 16) {
+    var _zoom_button_x = _layout.zoom_x + ((_zoom_level - 1) mod 4) * (_layout.zoom_button_width + _layout.zoom_button_gap_x);
+    var _zoom_button_y = _layout.zoom_y + ((_zoom_level - 1) div 4) * (_layout.zoom_button_height + _layout.zoom_button_gap_y);
 
-    if (point_in_rectangle(mouse_x, mouse_y, _zoom_button_x, _zoom_button_y, _zoom_button_x + 36, _zoom_button_y + 18)
+    if (point_in_rectangle(mouse_x, mouse_y, _zoom_button_x, _zoom_button_y, _zoom_button_x + _layout.zoom_button_width, _zoom_button_y + _layout.zoom_button_height)
     && mouse_check_button_pressed(mb_left)) {
         bitmap_zoom = _zoom_level;
         _layout = scr_bitmap_editor_layout(id);
@@ -44,7 +44,7 @@ while (_zoom_level <= 6) {
 if (_over_canvas) {
     var _old_zoom = bitmap_zoom;
 
-    if (mouse_wheel_up()) bitmap_zoom = min(6, bitmap_zoom + 1);
+    if (mouse_wheel_up()) bitmap_zoom = min(16, bitmap_zoom + 1);
     if (mouse_wheel_down()) bitmap_zoom = max(1, bitmap_zoom - 1);
 
     if (bitmap_zoom != _old_zoom) {
@@ -55,6 +55,11 @@ if (_over_canvas) {
         bitmap_scroll_y = clamp((_image_mouse_y * bitmap_zoom) - (mouse_y - _layout.canvas_y), 0, _layout.max_scroll_y);
         _layout = scr_bitmap_editor_layout(id);
     }
+}
+
+if (point_in_rectangle(mouse_x, mouse_y, _layout.grid_toggle_x, _layout.grid_toggle_y, _layout.grid_toggle_x + 120, _layout.grid_toggle_y + 20)
+&& mouse_check_button_pressed(mb_left)) {
+    bitmap_grid_enabled = !bitmap_grid_enabled;
 }
 
 // Middle-drag, or Space + left-drag, pans the magnified image.
@@ -129,17 +134,28 @@ if (mouse_check_button(mb_left)) {
     }
 }
 
+var _canvas_pixel_x = floor((mouse_x - _layout.display_x + bitmap_scroll_x) / bitmap_zoom);
+var _canvas_pixel_y = floor((mouse_y - _layout.display_y + bitmap_scroll_y) / bitmap_zoom);
+var _canvas_pixel_valid = _canvas_pixel_x >= 0 && _canvas_pixel_x < bitmap_width
+    && _canvas_pixel_y >= 0 && _canvas_pixel_y < bitmap_height;
+
+// Alt + left-click picks both the paint pen and palette-edit swatch.
+if (_over_canvas && _canvas_pixel_valid && keyboard_check(vk_alt)
+&& mouse_check_button_pressed(mb_left)) {
+    var _picked_index = bitmap_pixels[(_canvas_pixel_y * bitmap_width) + _canvas_pixel_x];
+    bitmap_paint_index = _picked_index;
+    bitmap_palette_edit_index = _picked_index;
+}
+
 // Paint with left, erase to COLOR00 with right. At 1x this is exact pixels;
 // at higher zoom the same mapping follows the panned viewport.
 if (_over_canvas && !canvas_panning && !keyboard_check(vk_space)
+&& !keyboard_check(vk_alt)
 && (mouse_check_button(mb_left) || mouse_check_button(mb_right))) {
-    var _pixel_x = floor((mouse_x - _layout.display_x + bitmap_scroll_x) / bitmap_zoom);
-    var _pixel_y = floor((mouse_y - _layout.display_y + bitmap_scroll_y) / bitmap_zoom);
-
-    if (_pixel_x >= 0 && _pixel_x < bitmap_width && _pixel_y >= 0 && _pixel_y < bitmap_height) {
+    if (_canvas_pixel_valid) {
         var _draw_index = bitmap_paint_index;
         if (mouse_check_button(mb_right)) _draw_index = 0;
-        var _pixel_offset = (_pixel_y * bitmap_width) + _pixel_x;
+        var _pixel_offset = (_canvas_pixel_y * bitmap_width) + _canvas_pixel_x;
 
         if (bitmap_pixels[_pixel_offset] != _draw_index) {
             bitmap_pixels[_pixel_offset] = _draw_index;
