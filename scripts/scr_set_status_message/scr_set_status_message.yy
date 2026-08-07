@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"scr_set_status_message",
   "parent":{
-    "name":"AMIGA_DEV_MACHINE",
-    "path":"AMIGA_DEV_MACHINE.yyp",
+    "name":"SCRIPTS",
+    "path":"folders/Extensions/SCRIPTS.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"scr_addressing_mode_list_from_flags",
   "parent":{
-    "name":"AMIGA_DEV_MACHINE",
-    "path":"AMIGA_DEV_MACHINE.yyp",
+    "name":"SCRIPTS",
+    "path":"folders/Extensions/SCRIPTS.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

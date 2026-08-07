@@ -4,7 +4,10 @@
   "isCompatibility":false,
   "isDnD":false,
   "name":"scr_emit_macro_bitmap_display",
-  "parent":{"name":"AMIGA_DEV_MACHINE","path":"AMIGA_DEV_MACHINE.yyp",},
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/Extensions/SCRIPTS.yy",
+  },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",
 }

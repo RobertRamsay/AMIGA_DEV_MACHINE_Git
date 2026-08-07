@@ -11,6 +11,7 @@
   "defaultScriptType":1,
   "Folders":[
     {"$GMFolder":"","%Name":"Extensions","folderPath":"folders/Extensions.yy","name":"Extensions","resourceType":"GMFolder","resourceVersion":"2.0",},
+    {"$GMFolder":"","%Name":"SCRIPTS","folderPath":"folders/Extensions/SCRIPTS.yy","name":"SCRIPTS","resourceType":"GMFolder","resourceVersion":"2.0",},
   ],
   "ForcedPrefabProjectReferences":[],
   "IncludedFiles":[
@@ -210,6 +211,7 @@
     {"id":{"name":"obj_bitmap_editor","path":"objects/obj_bitmap_editor/obj_bitmap_editor.yy",},},
     {"id":{"name":"obj_colour_picker","path":"objects/obj_colour_picker/obj_colour_picker.yy",},},
     {"id":{"name":"obj_cprbar_editor","path":"objects/obj_cprbar_editor/obj_cprbar_editor.yy",},},
+    {"id":{"name":"obj_flashSplash","path":"objects/obj_flashSplash/obj_flashSplash.yy",},},
     {"id":{"name":"obj_opcode_node","path":"objects/obj_opcode_node/obj_opcode_node.yy",},},
     {"id":{"name":"obj_opcode_palette_item","path":"objects/obj_opcode_palette_item/obj_opcode_palette_item.yy",},},
     {"id":{"name":"Room1","path":"rooms/Room1/Room1.yy",},},
