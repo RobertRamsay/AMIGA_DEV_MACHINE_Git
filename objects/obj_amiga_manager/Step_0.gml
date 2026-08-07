@@ -144,8 +144,9 @@ if (build_state == "waiting_to_launch_fsuae") {
         // don't pass --kickstart_file at all, so FS-UAE always uses its own
         // bundled default rather than picking up something stale left over
         // in settings.ini from earlier testing. Revisit together.
-        var _uae_args = "--floppy_drive_0=\"" + build_adf_path + "\"";
-        execute_shell_simple(global.fsuae_path, _uae_args);
+        var _config_path = working_directory + "fsuae/Default.fs-uae";
+		var _uae_args = "\"" + _config_path + "\" --floppy_drive_0=\"" + build_adf_path + "\"";
+		execute_shell_simple(global.fsuae_path, _uae_args);
         build_state = "idle";
     }
 }
