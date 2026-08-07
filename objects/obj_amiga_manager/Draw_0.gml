@@ -25,7 +25,7 @@ if (_has_hover) {
 var _panel_x = room_width - 360;
 var _panel_y = 60;
 var _panel_width = 350;
-var _panel_height = room_height - 80;
+var _panel_height = room_height - 60;
 
 draw_set_alpha(0.85);
 draw_rectangle_colour(_panel_x, _panel_y, _panel_x + _panel_width, _panel_y + _panel_height, c_black, c_black, c_black, c_black, false);
@@ -155,12 +155,14 @@ if (array_length(global.status_message_log) > 0) {
     var _status_bar_height = 122;
     var _status_bar_y = room_height - _status_bar_height;
     var _status_line_height = 18;
+	var _status_bar_x = 272;
+	var _status_bar_width = 1280;
 
     draw_set_alpha(0.85);
-    draw_rectangle_colour(0, _status_bar_y, room_width, room_height, c_black, c_black, c_black, c_black, false);
+    draw_rectangle_colour(_status_bar_x, _status_bar_y, _status_bar_x+_status_bar_width, room_height, c_black, c_black, c_black, c_black, false);
     draw_set_alpha(1);
     draw_set_colour(c_white);
-    draw_rectangle(0, _status_bar_y, room_width, room_height, true);
+    draw_rectangle(_status_bar_x, _status_bar_y, _status_bar_x+_status_bar_width, room_height, true);
 
     var _log_count = array_length(global.status_message_log);
     var _line_y = _status_bar_y + 4;
@@ -177,7 +179,7 @@ if (array_length(global.status_message_log) > 0) {
         }
 
         draw_set_colour(_line_colour);
-        draw_text(8, _line_y, _log_entry.text);
+        draw_text(_status_bar_x+8, _line_y, _log_entry.text);
 
         _line_y += _status_line_height;
         _i -= 1;
