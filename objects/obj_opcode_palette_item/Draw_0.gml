@@ -1,4 +1,4 @@
-var _body_colour = make_color_rgb(40, 70, 140);
+var _body_colour = make_color_rgb(40, 70, 240);
 
 if (palette_mnemonic == "ORG") {
     _body_colour = make_color_rgb(160, 40, 160);

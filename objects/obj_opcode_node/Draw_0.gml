@@ -331,7 +331,7 @@ if (_hovering_node && !is_dragging && global.operand_edit_owner_uid == -1) {
             _tip_y = mouse_y - _tip_height - 18;
         }
 */
-        draw_set_alpha(0.94);
+        draw_set_alpha(0.65);
         draw_set_colour(c_black);
         draw_rectangle(_tip_x, _tip_y, _tip_x + _tip_width, _tip_y + _tip_height, false);
         draw_set_alpha(1);

@@ -9,7 +9,7 @@ if (_has_hover) {
         var _tip_width = 700;
         var _tip_height = 100;
 
-        draw_set_alpha(0.9);
+        draw_set_alpha(0.65);
         draw_rectangle_colour(_tip_x, _tip_y, _tip_x + _tip_width, _tip_y + _tip_height, c_black, c_black, c_black, c_black, false);
         draw_set_alpha(1);
         draw_rectangle_colour(_tip_x, _tip_y, _tip_x + _tip_width, _tip_y + _tip_height, c_yellow, c_yellow, c_yellow, c_yellow, true);
@@ -27,7 +27,7 @@ var _panel_y = 60;
 var _panel_width = 350;
 var _panel_height = room_height - 60;
 
-draw_set_alpha(0.85);
+draw_set_alpha(0.65);
 draw_rectangle_colour(_panel_x, _panel_y, _panel_x + _panel_width, _panel_y + _panel_height, c_black, c_black, c_black, c_black, false);
 draw_set_alpha(1);
 draw_set_colour(c_white);
@@ -143,7 +143,7 @@ if (keyboard_check(vk_control)) {
     var _hud_width = 160;
     var _hud_height = 20;
 
-    draw_set_alpha(0.85);
+    draw_set_alpha(0.65);
     draw_rectangle_colour(_hud_x, _hud_y, _hud_x + _hud_width, _hud_y + _hud_height, c_black, c_black, c_black, c_black, false);
     draw_set_alpha(1);
     draw_set_colour(c_white);
@@ -158,7 +158,7 @@ if (array_length(global.status_message_log) > 0) {
 	var _status_bar_x = 272;
 	var _status_bar_width = 1280;
 
-    draw_set_alpha(0.85);
+    draw_set_alpha(0.65);
     draw_rectangle_colour(_status_bar_x, _status_bar_y, _status_bar_x+_status_bar_width, room_height, c_black, c_black, c_black, c_black, false);
     draw_set_alpha(1);
     draw_set_colour(c_white);

@@ -10,8 +10,8 @@
   "name":"obj_amiga_root_node",
   "overriddenProperties":[],
   "parent":{
-    "name":"AMIGA_DEV_MACHINE",
-    "path":"AMIGA_DEV_MACHINE.yyp",
+    "name":"OBJECTS",
+    "path":"folders/OBJECTS.yy",
   },
   "parentObjectId":null,
   "persistent":false,
