@@ -320,9 +320,9 @@ if (_hovering_node && !is_dragging && global.operand_edit_owner_uid == -1) {
     if (_explanation != "") {
         var _tip_width = 460;
         var _tip_height = 100;
-        var _tip_x = mouse_x + 18;
-        var _tip_y = mouse_y + 18;
-
+        var _tip_x = 272;//mouse_x + 18;
+        var _tip_y = 850;//mouse_y + 18;
+/*
         if (_tip_x + _tip_width > room_width - 8) {
             _tip_x = mouse_x - _tip_width - 18;
         }
@@ -330,7 +330,7 @@ if (_hovering_node && !is_dragging && global.operand_edit_owner_uid == -1) {
         if (_tip_y + _tip_height > room_height - 8) {
             _tip_y = mouse_y - _tip_height - 18;
         }
-
+*/
         draw_set_alpha(0.94);
         draw_set_colour(c_black);
         draw_rectangle(_tip_x, _tip_y, _tip_x + _tip_width, _tip_y + _tip_height, false);

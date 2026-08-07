@@ -60,6 +60,6 @@ var _is_hovering_palette = point_in_rectangle(mouse_x, mouse_y, palette_x, palet
 if (_is_hovering_palette) {
     global.palette_hover_mnemonic = palette_mnemonic;
     global.palette_hover_display_label = palette_display_label;
-    global.palette_hover_x = mouse_x;
-    global.palette_hover_y = mouse_y;
+    global.palette_hover_x = 256;//mouse_x;
+    global.palette_hover_y = 834;//mouse_y;
 }

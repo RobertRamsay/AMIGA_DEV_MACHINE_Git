@@ -132,10 +132,10 @@ global.palette_hover_y = 0;
 // ============================================================================
 
 palette_start_x = 10;
-palette_start_y = 100;
+palette_start_y = 82;
 palette_columns = 3;
 palette_column_width = 87;
-palette_row_height = global.grid_size + 3;
+palette_row_height = global.grid_size + 5;
 
 var _mnemonic_list = variable_struct_get_names(global.opcode_map);
 
