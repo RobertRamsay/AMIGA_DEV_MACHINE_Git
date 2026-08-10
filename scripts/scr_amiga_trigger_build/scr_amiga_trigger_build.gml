@@ -30,7 +30,7 @@ function scr_amiga_trigger_build() {
             var _node_count = array_length(_node_array);
 
             while (_node_scan_index < _node_count) {
-                if (_node_array[_node_scan_index].is_macro && (_node_array[_node_scan_index].macro_type == "BITMAP_DISPLAY" || _node_array[_node_scan_index].macro_type == "BOB_BITMAP_TEST" || _node_array[_node_scan_index].macro_type == "SPRITE_BITMAP_TEST")) {
+                if (_node_array[_node_scan_index].is_macro && (_node_array[_node_scan_index].macro_type == "BITMAP_DISPLAY" || _node_array[_node_scan_index].macro_type == "BOB_BITMAP_TEST" || _node_array[_node_scan_index].macro_type == "GET_BITMAP_BOB" || _node_array[_node_scan_index].macro_type == "SPRITE_BITMAP_TEST")) {
                     _requires_kickstart = true;
                 }
                 _node_scan_index += 1;

@@ -71,6 +71,79 @@ function scr_emit_macro_bob_bitmap_test(_node) {
     return { text : _s, is_valid : true };
 }
 
+/// GetBitmap (BOB): establish the five-plane display and make two genuinely
+/// independent Chip-RAM buffers: A2 is displayed, A4 is never displayed and
+/// remains the pristine restore source. A3 holds the mask + five BOB planes.
+function scr_emit_macro_get_bitmap_bob(_node) {
+    var _bob = scr_asset_find_by_name(_node.macro_asset_name);
+    var _bitmap = scr_asset_find_by_name("TestBitmap");
+    if (_bob == undefined || _bob.type != "BOB" || _bob.width != 32 || _bob.height != 32) return { text : "; ERROR: BOB asset must be 32x32", is_valid : false };
+    if (_bitmap == undefined || _bitmap.type != "BITMAP") return { text : "; ERROR: TestBitmap not found", is_valid : false };
+    var _saved = _node.macro_asset_name; _node.macro_asset_name = "TestBitmap";
+    var _base = scr_emit_macro_bitmap_display(_node); _node.macro_asset_name = _saved;
+    if (!_base.is_valid) return _base;
+    var _u = string(floor(_node.uid));
+    var _data = "__getbob_data_" + _u;
+    var _after = "__getbob_after_data_" + _u;
+    var _fail = "__getbob_fail_" + _u;
+    var _s = _base.text + "\n";
+    _s += "\tMOVEA.L 4.W,A6\n\tMOVE.L #51200,D0\n\tMOVE.L #65538,D1\n\tJSR -198(A6)\n\tTST.L D0\n\tBEQ.W " + _fail + "\n\tMOVEA.L D0,A4\n";
+    // Copy the editor bitmap into the pristine buffer directly from embedded
+    // program data, not from the live display buffer.
+    _s += "\tMOVEA.L A4,A1\n\tLEA __bitmap_data_" + _u + ",A0\n\tMOVE.W #12799,D0\n__getbob_bgcopy_" + _u + ":\n\tMOVE.L (A0)+,(A1)+\n\tDBRA D0,__getbob_bgcopy_" + _u + "\n";
+    _s += "\tMOVE.L #1152,D0\n\tMOVE.L #65538,D1\n\tJSR -198(A6)\n\tTST.L D0\n\tBEQ.W " + _fail + "\n\tMOVEA.L D0,A3\n\tMOVEA.L A3,A1\n\tLEA " + _data + "(PC),A0\n\tMOVE.W #287,D0\n__getbob_copy_" + _u + ":\n\tMOVE.L (A0)+,(A1)+\n\tDBRA D0,__getbob_copy_" + _u + "\n";
+    _s += "\tMOVEA.L #14675968,A5\n\tMOVE.W #33728,150(A5)\n\tMOVEQ #0,D7\n\tBRA.W " + _after + "\n" + _fail + ":\n\tBRA.W " + _fail + "\n\tEVEN\n" + _data + ":\n";
+    for (var _plane = -1; _plane < 5; _plane += 1) {
+        for (var _y = 0; _y < 32; _y += 1) {
+            _s += "\tDC.W ";
+            for (var _wc = 0; _wc < 3; _wc += 1) {
+                var _word = 0;
+                if (_wc < 2) for (var _bit = 0; _bit < 16; _bit += 1) {
+                    var _pix = _bob.pixels[_y * 32 + _wc * 16 + _bit];
+                    var _set = _plane < 0 ? (_pix != 0) : ((_pix & (1 << _plane)) != 0);
+                    if (_set) _word |= 1 << (15 - _bit);
+                }
+                if (_wc > 0) _s += ",";
+                _s += string(_word);
+            }
+            _s += "\n";
+        }
+    }
+    _s += _after + ":";
+    return { text : _s, is_valid : true };
+}
+
+/// ReplaceBitmap (BOB): wait for the next frame, then restore the full clean
+/// image from A4 into displayed A2 before DrawBOB touches it.
+function scr_emit_macro_replace_bitmap_bob(_node) {
+    var _u = string(floor(_node.uid));
+    var _vb1 = "__replace_vb1_" + _u;
+    var _vb2 = "__replace_vb2_" + _u;
+    var _wait = "__replace_wait_" + _u;
+    var _done = "__replace_done_" + _u;
+    var _s = _node.node_label != "" ? _node.node_label + ":\n" : "";
+    _s += _vb1 + ":\n\tCMPI.B #255,6(A5)\n\tBNE.S " + _vb1 + "\n" + _vb2 + ":\n\tCMPI.B #255,6(A5)\n\tBEQ.S " + _vb2 + "\n";
+    _s += _wait + ":\n\tBTST #6,2(A5)\n\tBNE.S " + _wait + "\n\tMOVE.W #2544,64(A5)\n\tCLR.W 66(A5)\n\tMOVE.W #65535,68(A5)\n\tMOVE.W #65535,70(A5)\n\tMOVE.L A4,80(A5)\n\tMOVE.L A2,84(A5)\n\tCLR.W 100(A5)\n\tCLR.W 102(A5)\n\tMOVE.W #16404,88(A5)\n";
+    _s += _done + ":\n\tBTST #6,2(A5)\n\tBNE.S " + _done;
+    return { text : _s, is_valid : true };
+}
+
+/// DrawBOB (X,Y): D7 is X in the moving test; Y is 112. The BOB uses the
+/// canonical $0FCA cookie-cut: D = (mask AND image) OR (!mask AND background).
+function scr_emit_macro_draw_bob(_node) {
+    var _u = string(floor(_node.uid));
+    var _wait = "__drawbob_wait_" + _u;
+    var _s = _node.node_label != "" ? _node.node_label + ":\n" : "";
+    _s += _wait + ":\n\tBTST #6,2(A5)\n\tBNE.S " + _wait + "\n\tMOVE.W D7,D6\n\tANDI.W #15,D6\n\tLSL.W #8,D6\n\tLSL.W #4,D6\n\tMOVE.W D6,D5\n\tORI.W #4042,D5\n\tMOVE.W D5,64(A5)\n\tMOVE.W D6,66(A5)\n\tMOVE.W #65535,68(A5)\n\tMOVE.W #65535,70(A5)\n\tCLR.W 100(A5)\n\tCLR.W 98(A5)\n\tMOVE.W #34,96(A5)\n\tMOVE.W #34,102(A5)\n\tMOVE.L A3,80(A5)\n\tMOVE.W D7,D4\n\tLSR.W #4,D4\n\tADD.W D4,D4\n\tMOVEA.L A2,A0\n\tADDA.L #4480,A0\n\tADDA.W D4,A0\n";
+    for (var _p = 0; _p < 5; _p += 1) {
+        _s += "\tMOVE.L A3,D0\n\tADD.L #" + string(192 + _p * 192) + ",D0\n\tMOVE.L D0,76(A5)\n\tMOVE.L A0,72(A5)\n\tMOVE.L A0,84(A5)\n\tMOVE.W #2051,88(A5)\n";
+        _s += "__drawbob_plane_wait_" + _u + "_" + string(_p) + ":\n\tBTST #6,2(A5)\n\tBNE.S __drawbob_plane_wait_" + _u + "_" + string(_p) + "\n";
+        if (_p < 4) _s += "\tADDA.L #10240,A0\n";
+    }
+    _s += "\tADDQ.W #1,D7\n\tCMPI.W #288,D7\n\tBLE.S __drawbob_x_ok_" + _u + "\n\tMOVEQ #0,D7\n__drawbob_x_ok_" + _u + ":";
+    return { text : _s, is_valid : true };
+}
+
 /// Five-bitplane bitmap plus a genuine hardware sprite whose POS/CTL words
 /// are changed once per video frame. Its colours come from the bitmap palette.
 function scr_emit_macro_sprite_bitmap_test(_node) {

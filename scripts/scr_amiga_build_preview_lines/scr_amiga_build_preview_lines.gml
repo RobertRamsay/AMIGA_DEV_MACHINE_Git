@@ -17,7 +17,16 @@ function scr_amiga_build_preview_lines() {
 
         // The real bitmap emitter creates 25,600 DC.W values. Keep the live
         // preview lightweight and perform that conversion only for an F5 build.
-        if (_node.is_macro && (_node.macro_type == "BITMAP_DISPLAY" || _node.macro_type == "BOB_BITMAP_TEST" || _node.macro_type == "SPRITE_BITMAP_TEST")) {
+        if (_node.is_macro && _node.macro_type == "GET_BITMAP_BOB") {
+            var _bob_preview_asset = scr_asset_find_by_name(_node.macro_asset_name);
+            var _bob_preview_valid = _bob_preview_asset != undefined && _bob_preview_asset.type == "BOB";
+            _emit_result = {
+                text : _bob_preview_valid
+                    ? "; GetBitmap (BOB)\n; allocate 51,200-byte displayed bitmap in Chip RAM\n; allocate independent 51,200-byte pristine restore bitmap\n; copy embedded TestBitmap into both buffers\n; allocate/copy BOB transparency mask plus five image planes\n; enable bitplane, Copper and Blitter DMA"
+                    : "; ERROR: BOB asset '" + _node.macro_asset_name + "' not found",
+                is_valid : _bob_preview_valid
+            };
+        } else if (_node.is_macro && (_node.macro_type == "BITMAP_DISPLAY" || _node.macro_type == "BOB_BITMAP_TEST" || _node.macro_type == "SPRITE_BITMAP_TEST")) {
             var _bitmap_asset = scr_asset_find_by_name("TestBitmap");
             if (_node.macro_type == "BITMAP_DISPLAY") _bitmap_asset = scr_asset_find_by_name(_node.macro_asset_name);
             var _bitmap_valid = _bitmap_asset != undefined && _bitmap_asset.type == "BITMAP";

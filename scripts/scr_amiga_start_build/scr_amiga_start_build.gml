@@ -8,7 +8,7 @@ function scr_amiga_start_build(_node_array, _project_path, _chipset_mode) {
     var _uses_dos_loader = false;
 
     while (_i < _count) {
-        if (_node_array[_i].is_macro && (_node_array[_i].macro_type == "BITMAP_DISPLAY" || _node_array[_i].macro_type == "BOB_BITMAP_TEST" || _node_array[_i].macro_type == "SPRITE_BITMAP_TEST")) {
+        if (_node_array[_i].is_macro && (_node_array[_i].macro_type == "BITMAP_DISPLAY" || _node_array[_i].macro_type == "BOB_BITMAP_TEST" || _node_array[_i].macro_type == "GET_BITMAP_BOB" || _node_array[_i].macro_type == "SPRITE_BITMAP_TEST")) {
             _uses_dos_loader = true;
         }
         _i += 1;

@@ -1,0 +1,202 @@
+diff --git a/objects/obj_opcode_node/Draw_0.gml b/objects/obj_opcode_node/Draw_0.gml
+index 8adc11a..1f284d3 100644
+--- a/objects/obj_opcode_node/Draw_0.gml
++++ b/objects/obj_opcode_node/Draw_0.gml
+@@ -35,6 +35,18 @@ if (is_macro) {
+             _header_colour = make_color_rgb(115, 75, 25);
+             break;
+ 
++        case "GET_BITMAP_BOB":
++            _header_colour = make_color_rgb(35, 85, 120);
++            break;
++
++        case "REPLACE_BITMAP_BOB":
++            _header_colour = make_color_rgb(45, 105, 65);
++            break;
++
++        case "DRAW_BOB":
++            _header_colour = make_color_rgb(125, 70, 25);
++            break;
++
+         case "SPRITE_BITMAP_TEST":
+             _header_colour = make_color_rgb(75, 45, 125);
+             break;
+diff --git a/scripts/scr_amiga_build_preview_lines/scr_amiga_build_preview_lines.gml b/scripts/scr_amiga_build_preview_lines/scr_amiga_build_preview_lines.gml
+index 7620e33..6188bb2 100644
+--- a/scripts/scr_amiga_build_preview_lines/scr_amiga_build_preview_lines.gml
++++ b/scripts/scr_amiga_build_preview_lines/scr_amiga_build_preview_lines.gml
+@@ -17,7 +17,16 @@ function scr_amiga_build_preview_lines() {
+ 
+         // The real bitmap emitter creates 25,600 DC.W values. Keep the live
+         // preview lightweight and perform that conversion only for an F5 build.
+-        if (_node.is_macro && (_node.macro_type == "BITMAP_DISPLAY" || _node.macro_type == "BOB_BITMAP_TEST" || _node.macro_type == "SPRITE_BITMAP_TEST")) {
++        if (_node.is_macro && _node.macro_type == "GET_BITMAP_BOB") {
++            var _bob_preview_asset = scr_asset_find_by_name(_node.macro_asset_name);
++            var _bob_preview_valid = _bob_preview_asset != undefined && _bob_preview_asset.type == "BOB";
++            _emit_result = {
++                text : _bob_preview_valid
++                    ? "; GetBitmap (BOB)\n; allocate 51,200-byte displayed bitmap in Chip RAM\n; allocate independent 51,200-byte pristine restore bitmap\n; copy embedded TestBitmap into both buffers\n; allocate/copy BOB transparency mask plus five image planes\n; enable bitplane, Copper and Blitter DMA"
++                    : "; ERROR: BOB asset '" + _node.macro_asset_name + "' not found",
++                is_valid : _bob_preview_valid
++            };
++        } else if (_node.is_macro && (_node.macro_type == "BITMAP_DISPLAY" || _node.macro_type == "BOB_BITMAP_TEST" || _node.macro_type == "SPRITE_BITMAP_TEST")) {
+             var _bitmap_asset = scr_asset_find_by_name("TestBitmap");
+             if (_node.macro_type == "BITMAP_DISPLAY") _bitmap_asset = scr_asset_find_by_name(_node.macro_asset_name);
+             var _bitmap_valid = _bitmap_asset != undefined && _bitmap_asset.type == "BITMAP";
+diff --git a/scripts/scr_amiga_run_motion_test/scr_amiga_run_motion_test.gml b/scripts/scr_amiga_run_motion_test/scr_amiga_run_motion_test.gml
+index 8a12ae4..c2abb7b 100644
+--- a/scripts/scr_amiga_run_motion_test/scr_amiga_run_motion_test.gml
++++ b/scripts/scr_amiga_run_motion_test/scr_amiga_run_motion_test.gml
+@@ -37,7 +37,27 @@ function scr_amiga_run_bob_bitmap_test() {
+     var _bob = scr_asset_find_by_name("TestBob");
+     if (_bob == undefined || _bob.type != "BOB") scr_asset_define_bob("TestBob", 32, 32, array_create(1024, 0));
+     scr_amiga_get_shared_bitmap_palette();
+-    scr_amiga_run_motion_test("BOB_BITMAP_TEST", "TestBob", "BOB-BMP test loaded — masked BOB, background restored, one pixel per frame.");
++    with (obj_opcode_node) instance_destroy();
++    with (obj_amiga_root_node) instance_destroy();
++    var _ix = (room_width / 2) - 320;
++    var _iy = room_height / 4;
++    var _init = instance_create_layer(_ix, _iy, "Instances", obj_amiga_root_node);
++    _init.root_type = "INIT"; _init.node_x = scr_snap_to_grid(_ix, global.grid_size); _init.node_y = scr_snap_to_grid(_iy, global.grid_size);
++    var _org = instance_create_layer(_init.node_x + 240, _init.node_y, "Instances", obj_amiga_root_node);
++    _org.root_type = "ORG"; _org.node_x = scr_snap_to_grid(_init.node_x + 240, global.grid_size); _org.node_y = _init.node_y; _org.continues_from_root_uid = _init.uid;
++    var _cy = _org.node_y + _org.node_height;
++    var _types = ["GET_BITMAP_BOB", "REPLACE_BITMAP_BOB", "DRAW_BOB"];
++    for (var _i = 0; _i < 3; _i += 1) {
++        var _m = instance_create_layer(_org.node_x, _cy, "Instances", obj_opcode_node);
++        _m.node_x = _org.node_x; _m.node_y = _cy; _m.node_height = 100; _m.is_macro = true;
++        _m.macro_type = _types[_i]; _m.macro_asset_name = "TestBob"; _m.is_connected = true; _m.root_uid = _org.uid;
++        if (_i == 1) _m.node_label = "bobloop";
++        _cy += _m.node_height;
++    }
++    var _bra = instance_create_layer(_org.node_x, _cy, "Instances", obj_opcode_node);
++    _bra.node_x = _org.node_x; _bra.node_y = _cy; _bra.opcode_mnemonic = "BRA"; _bra.opcode_size = "W";
++    _bra.addressing_mode_src = "LABEL"; _bra.operand_label_src = "bobloop"; _bra.is_connected = true; _bra.root_uid = _org.uid;
++    scr_set_status_message("BOB-BMP test loaded — GetBitmap, ReplaceBitmap and DrawBOB are individually expandable.");
+ }
+ 
+ function scr_amiga_run_sprite_bitmap_test() {
+diff --git a/scripts/scr_amiga_start_build/scr_amiga_start_build.gml b/scripts/scr_amiga_start_build/scr_amiga_start_build.gml
+index afb5318..d8d2d71 100644
+--- a/scripts/scr_amiga_start_build/scr_amiga_start_build.gml
++++ b/scripts/scr_amiga_start_build/scr_amiga_start_build.gml
+@@ -8,7 +8,7 @@ function scr_amiga_start_build(_node_array, _project_path, _chipset_mode) {
+     var _uses_dos_loader = false;
+ 
+     while (_i < _count) {
+-        if (_node_array[_i].is_macro && (_node_array[_i].macro_type == "BITMAP_DISPLAY" || _node_array[_i].macro_type == "BOB_BITMAP_TEST" || _node_array[_i].macro_type == "SPRITE_BITMAP_TEST")) {
++        if (_node_array[_i].is_macro && (_node_array[_i].macro_type == "BITMAP_DISPLAY" || _node_array[_i].macro_type == "BOB_BITMAP_TEST" || _node_array[_i].macro_type == "GET_BITMAP_BOB" || _node_array[_i].macro_type == "SPRITE_BITMAP_TEST")) {
+             _uses_dos_loader = true;
+         }
+         _i += 1;
+diff --git a/scripts/scr_amiga_trigger_build/scr_amiga_trigger_build.gml b/scripts/scr_amiga_trigger_build/scr_amiga_trigger_build.gml
+index 31545c5..a113e74 100644
+--- a/scripts/scr_amiga_trigger_build/scr_amiga_trigger_build.gml
++++ b/scripts/scr_amiga_trigger_build/scr_amiga_trigger_build.gml
+@@ -30,7 +30,7 @@ function scr_amiga_trigger_build() {
+             var _node_count = array_length(_node_array);
+ 
+             while (_node_scan_index < _node_count) {
+-                if (_node_array[_node_scan_index].is_macro && (_node_array[_node_scan_index].macro_type == "BITMAP_DISPLAY" || _node_array[_node_scan_index].macro_type == "BOB_BITMAP_TEST" || _node_array[_node_scan_index].macro_type == "SPRITE_BITMAP_TEST")) {
++                if (_node_array[_node_scan_index].is_macro && (_node_array[_node_scan_index].macro_type == "BITMAP_DISPLAY" || _node_array[_node_scan_index].macro_type == "BOB_BITMAP_TEST" || _node_array[_node_scan_index].macro_type == "GET_BITMAP_BOB" || _node_array[_node_scan_index].macro_type == "SPRITE_BITMAP_TEST")) {
+                     _requires_kickstart = true;
+                 }
+                 _node_scan_index += 1;
+diff --git a/scripts/scr_emit_macro_bitmap_motion/scr_emit_macro_bitmap_motion.gml b/scripts/scr_emit_macro_bitmap_motion/scr_emit_macro_bitmap_motion.gml
+index 31375da..3ba309d 100644
+--- a/scripts/scr_emit_macro_bitmap_motion/scr_emit_macro_bitmap_motion.gml
++++ b/scripts/scr_emit_macro_bitmap_motion/scr_emit_macro_bitmap_motion.gml
+@@ -71,6 +71,79 @@ function scr_emit_macro_bob_bitmap_test(_node) {
+     return { text : _s, is_valid : true };
+ }
+ 
++/// GetBitmap (BOB): establish the five-plane display and make two genuinely
++/// independent Chip-RAM buffers: A2 is displayed, A4 is never displayed and
++/// remains the pristine restore source. A3 holds the mask + five BOB planes.
++function scr_emit_macro_get_bitmap_bob(_node) {
++    var _bob = scr_asset_find_by_name(_node.macro_asset_name);
++    var _bitmap = scr_asset_find_by_name("TestBitmap");
++    if (_bob == undefined || _bob.type != "BOB" || _bob.width != 32 || _bob.height != 32) return { text : "; ERROR: BOB asset must be 32x32", is_valid : false };
++    if (_bitmap == undefined || _bitmap.type != "BITMAP") return { text : "; ERROR: TestBitmap not found", is_valid : false };
++    var _saved = _node.macro_asset_name; _node.macro_asset_name = "TestBitmap";
++    var _base = scr_emit_macro_bitmap_display(_node); _node.macro_asset_name = _saved;
++    if (!_base.is_valid) return _base;
++    var _u = string(floor(_node.uid));
++    var _data = "__getbob_data_" + _u;
++    var _after = "__getbob_after_data_" + _u;
++    var _fail = "__getbob_fail_" + _u;
++    var _s = _base.text + "\n";
++    _s += "\tMOVEA.L 4.W,A6\n\tMOVE.L #51200,D0\n\tMOVE.L #65538,D1\n\tJSR -198(A6)\n\tTST.L D0\n\tBEQ.W " + _fail + "\n\tMOVEA.L D0,A4\n";
++    // Copy the editor bitmap into the pristine buffer directly from embedded
++    // program data, not from the live display buffer.
++    _s += "\tMOVEA.L A4,A1\n\tLEA __bitmap_data_" + _u + ",A0\n\tMOVE.W #12799,D0\n__getbob_bgcopy_" + _u + ":\n\tMOVE.L (A0)+,(A1)+\n\tDBRA D0,__getbob_bgcopy_" + _u + "\n";
++    _s += "\tMOVE.L #1152,D0\n\tMOVE.L #65538,D1\n\tJSR -198(A6)\n\tTST.L D0\n\tBEQ.W " + _fail + "\n\tMOVEA.L D0,A3\n\tMOVEA.L A3,A1\n\tLEA " + _data + "(PC),A0\n\tMOVE.W #287,D0\n__getbob_copy_" + _u + ":\n\tMOVE.L (A0)+,(A1)+\n\tDBRA D0,__getbob_copy_" + _u + "\n";
++    _s += "\tMOVEA.L #14675968,A5\n\tMOVE.W #33728,150(A5)\n\tMOVEQ #0,D7\n\tBRA.W " + _after + "\n" + _fail + ":\n\tBRA.W " + _fail + "\n\tEVEN\n" + _data + ":\n";
++    for (var _plane = -1; _plane < 5; _plane += 1) {
++        for (var _y = 0; _y < 32; _y += 1) {
++            _s += "\tDC.W ";
++            for (var _wc = 0; _wc < 3; _wc += 1) {
++                var _word = 0;
++                if (_wc < 2) for (var _bit = 0; _bit < 16; _bit += 1) {
++                    var _pix = _bob.pixels[_y * 32 + _wc * 16 + _bit];
++                    var _set = _plane < 0 ? (_pix != 0) : ((_pix & (1 << _plane)) != 0);
++                    if (_set) _word |= 1 << (15 - _bit);
++                }
++                if (_wc > 0) _s += ",";
++                _s += string(_word);
++            }
++            _s += "\n";
++        }
++    }
++    _s += _after + ":";
++    return { text : _s, is_valid : true };
++}
++
++/// ReplaceBitmap (BOB): wait for the next frame, then restore the full clean
++/// image from A4 into displayed A2 before DrawBOB touches it.
++function scr_emit_macro_replace_bitmap_bob(_node) {
++    var _u = string(floor(_node.uid));
++    var _vb1 = "__replace_vb1_" + _u;
++    var _vb2 = "__replace_vb2_" + _u;
++    var _wait = "__replace_wait_" + _u;
++    var _done = "__replace_done_" + _u;
++    var _s = _node.node_label != "" ? _node.node_label + ":\n" : "";
++    _s += _vb1 + ":\n\tCMPI.B #255,6(A5)\n\tBNE.S " + _vb1 + "\n" + _vb2 + ":\n\tCMPI.B #255,6(A5)\n\tBEQ.S " + _vb2 + "\n";
++    _s += _wait + ":\n\tBTST #6,2(A5)\n\tBNE.S " + _wait + "\n\tMOVE.W #2544,64(A5)\n\tCLR.W 66(A5)\n\tMOVE.W #65535,68(A5)\n\tMOVE.W #65535,70(A5)\n\tMOVE.L A4,80(A5)\n\tMOVE.L A2,84(A5)\n\tCLR.W 100(A5)\n\tCLR.W 102(A5)\n\tMOVE.W #16404,88(A5)\n";
++    _s += _done + ":\n\tBTST #6,2(A5)\n\tBNE.S " + _done;
++    return { text : _s, is_valid : true };
++}
++
++/// DrawBOB (X,Y): D7 is X in the moving test; Y is 112. The BOB uses the
++/// canonical $0FCA cookie-cut: D = (mask AND image) OR (!mask AND background).
++function scr_emit_macro_draw_bob(_node) {
++    var _u = string(floor(_node.uid));
++    var _wait = "__drawbob_wait_" + _u;
++    var _s = _node.node_label != "" ? _node.node_label + ":\n" : "";
++    _s += _wait + ":\n\tBTST #6,2(A5)\n\tBNE.S " + _wait + "\n\tMOVE.W D7,D6\n\tANDI.W #15,D6\n\tLSL.W #8,D6\n\tLSL.W #4,D6\n\tMOVE.W D6,D5\n\tORI.W #4042,D5\n\tMOVE.W D5,64(A5)\n\tMOVE.W D6,66(A5)\n\tMOVE.W #65535,68(A5)\n\tMOVE.W #65535,70(A5)\n\tCLR.W 100(A5)\n\tCLR.W 98(A5)\n\tMOVE.W #34,96(A5)\n\tMOVE.W #34,102(A5)\n\tMOVE.L A3,80(A5)\n\tMOVE.W D7,D4\n\tLSR.W #4,D4\n\tADD.W D4,D4\n\tMOVEA.L A2,A0\n\tADDA.L #4480,A0\n\tADDA.W D4,A0\n";
++    for (var _p = 0; _p < 5; _p += 1) {
++        _s += "\tMOVE.L A3,D0\n\tADD.L #" + string(192 + _p * 192) + ",D0\n\tMOVE.L D0,76(A5)\n\tMOVE.L A0,72(A5)\n\tMOVE.L A0,84(A5)\n\tMOVE.W #2051,88(A5)\n";
++        _s += "__drawbob_plane_wait_" + _u + "_" + string(_p) + ":\n\tBTST #6,2(A5)\n\tBNE.S __drawbob_plane_wait_" + _u + "_" + string(_p) + "\n";
++        if (_p < 4) _s += "\tADDA.L #10240,A0\n";
++    }
++    _s += "\tADDQ.W #1,D7\n\tCMPI.W #288,D7\n\tBLE.S __drawbob_x_ok_" + _u + "\n\tMOVEQ #0,D7\n__drawbob_x_ok_" + _u + ":";
++    return { text : _s, is_valid : true };
++}
++
+ /// Five-bitplane bitmap plus a genuine hardware sprite whose POS/CTL words
+ /// are changed once per video frame. Its colours come from the bitmap palette.
+ function scr_emit_macro_sprite_bitmap_test(_node) {
+diff --git a/scripts/scr_emit_macro_line/scr_emit_macro_line.gml b/scripts/scr_emit_macro_line/scr_emit_macro_line.gml
+index 6f03a99..a34df3c 100644
+--- a/scripts/scr_emit_macro_line/scr_emit_macro_line.gml
++++ b/scripts/scr_emit_macro_line/scr_emit_macro_line.gml
+@@ -15,6 +15,9 @@ function scr_emit_macro_line(_node) {
+ 
+     if (_node.macro_type == "BOB_BITMAP_TEST") return scr_emit_macro_bob_bitmap_test(_node);
+     if (_node.macro_type == "SPRITE_BITMAP_TEST") return scr_emit_macro_sprite_bitmap_test(_node);
++    if (_node.macro_type == "GET_BITMAP_BOB") return scr_emit_macro_get_bitmap_bob(_node);
++    if (_node.macro_type == "REPLACE_BITMAP_BOB") return scr_emit_macro_replace_bitmap_bob(_node);
++    if (_node.macro_type == "DRAW_BOB") return scr_emit_macro_draw_bob(_node);
+ 
+     if (_node.macro_type == "SETBKG") {
+         return scr_emit_macro_setbkg(_node);
