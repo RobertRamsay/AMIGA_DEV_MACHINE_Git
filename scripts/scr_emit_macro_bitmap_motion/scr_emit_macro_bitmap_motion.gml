@@ -39,7 +39,7 @@ function scr_emit_macro_bob_bitmap_test(_node) {
     _s += "\tMOVE.W #2544,64(A5)\n\tCLR.W 66(A5)\n\tMOVE.W #65535,68(A5)\n\tMOVE.W #65535,70(A5)\n";
     _s += "\tMOVE.L A4,80(A5)\n\tMOVE.L A2,84(A5)\n\tCLR.W 100(A5)\n\tCLR.W 102(A5)\n\tMOVE.W #16404,88(A5)\n";
     // Horizontal shift and screen word offset for the 32-pixel cookie-cut.
-    _s += _draw_wait + ":\n\tBTST #6,2(A5)\n\tBNE.S " + _draw_wait + "\n\tMOVE.W D7,D6\n\tANDI.W #15,D6\n\tLSL.W #12,D6\n\tMOVE.W D6,D5\n\tORI.W #4042,D5\n\tMOVE.W D5,64(A5)\n\tMOVE.W D6,66(A5)\n";
+    _s += _draw_wait + ":\n\tBTST #6,2(A5)\n\tBNE.S " + _draw_wait + "\n\tMOVE.W D7,D6\n\tANDI.W #15,D6\n\tLSL.W #8,D6\n\tLSL.W #4,D6\n\tMOVE.W D6,D5\n\tORI.W #4042,D5\n\tMOVE.W D5,64(A5)\n\tMOVE.W D6,66(A5)\n";
     _s += "\tMOVE.W #65535,68(A5)\n\tMOVE.W #65535,70(A5)\n\tCLR.W 100(A5)\n\tCLR.W 98(A5)\n\tMOVE.W #34,96(A5)\n\tMOVE.W #34,102(A5)\n";
     _s += "\tMOVE.L A3,80(A5)\n\tMOVE.W D7,D4\n\tLSR.W #4,D4\n\tADD.W D4,D4\n\tMOVEA.L A2,A0\n\tADDA.L #4480,A0\n\tADDA.W D4,A0\n";
     for (var _p = 0; _p < 5; _p += 1) {
