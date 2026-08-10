@@ -255,6 +255,9 @@ while (_gradient_slot < 12) {
 
     if (_over_gradient_slot && mouse_check_button_pressed(mb_left)) {
         bitmap_gradient_custom_colours[_gradient_slot] = bitmap_gradient_colour_1;
+        if (_gradient_slot >= bitmap_gradient_custom_count) {
+            bitmap_gradient_custom_count = _gradient_slot + 1;
+        }
         bitmap_gradient_custom_active = true;
         bitmap_asset_dirty = true;
     }
