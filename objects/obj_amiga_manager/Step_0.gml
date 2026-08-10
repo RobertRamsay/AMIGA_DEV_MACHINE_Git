@@ -338,7 +338,7 @@ var _preview_panel_y = 60;
 var _preview_panel_width = 350;
 var _preview_panel_height = room_height - 60;
 var _preview_line_height = 16;
-var _preview_content_top = _preview_panel_y + 24;
+var _preview_content_top = _preview_panel_y + 56;
 var _preview_content_bottom = _preview_panel_y + _preview_panel_height - 8;
 var _preview_viewport_height = _preview_content_bottom - _preview_content_top;
 var _preview_list_height = array_length(preview_line_cache) * _preview_line_height;
@@ -370,9 +370,9 @@ if (_over_preview_panel) {
     }
 }
 
-var _collapse_x = _preview_panel_x + _preview_panel_width - 126;
-var _collapse_y = _preview_panel_y + 3;
-if (mouse_check_button_pressed(mb_left) && point_in_rectangle(mouse_x, mouse_y, _collapse_x, _collapse_y, _preview_panel_x + _preview_panel_width - 4, _collapse_y + 17)) {
+var _collapse_x = _preview_panel_x + 6;
+var _collapse_y = _preview_panel_y + 24;
+if (mouse_check_button_pressed(mb_left) && point_in_rectangle(mouse_x, mouse_y, _collapse_x, _collapse_y, _preview_panel_x + _preview_panel_width - 16, _collapse_y + 17)) {
     with (obj_opcode_node) {
         if (is_macro) preview_collapsed = true;
     }
@@ -434,7 +434,7 @@ if (keyboard_check_pressed(ord("O")) && global.operand_edit_owner_uid == -1 && !
 }
 
 if (mouse_check_button_pressed(mb_left) && !_preview_scroll_consumed) {
-    var _click_line_y = _preview_panel_y + 24 + global.preview_scroll_y;
+    var _click_line_y = _preview_content_top + global.preview_scroll_y;
     var _click_line_index = 0;
     var _click_line_count = array_length(preview_line_cache);
 

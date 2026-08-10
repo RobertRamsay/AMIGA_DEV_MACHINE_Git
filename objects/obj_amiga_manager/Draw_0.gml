@@ -36,28 +36,30 @@ draw_set_colour(c_white);
 draw_rectangle(_panel_x, _panel_y, _panel_x + _panel_width, _panel_y + _panel_height, true);
 draw_text(_panel_x + 6, _panel_y + 4, "COMPILED PROGRAM PREVIEW");
 
-var _collapse_x = _panel_x + _panel_width - 126;
-var _collapse_y = _panel_y + 3;
+var _collapse_x = _panel_x + 6;
+var _collapse_y = _panel_y + 24;
 draw_set_colour(make_color_rgb(55, 65, 90));
-draw_rectangle(_collapse_x, _collapse_y, _panel_x + _panel_width - 4, _collapse_y + 17, false);
+draw_rectangle(_collapse_x, _collapse_y, _panel_x + _panel_width - 16, _collapse_y + 17, false);
 draw_set_colour(c_white);
-draw_rectangle(_collapse_x, _collapse_y, _panel_x + _panel_width - 4, _collapse_y + 17, true);
+draw_rectangle(_collapse_x, _collapse_y, _panel_x + _panel_width - 16, _collapse_y + 17, true);
 draw_text(_collapse_x + 5, _collapse_y, "COLLAPSE ALL");
 
-var _line_y = _panel_y + 24 + global.preview_scroll_y;
+// Row 1 is the title, row 2 is COLLAPSE ALL, row 3 is intentionally blank.
+// Code begins on row 4.
+var _line_y = _panel_y + 56 + global.preview_scroll_y;
 var _line_height = 16;
 var _preview_line_count = array_length(preview_line_cache);
 
 if (_preview_line_count == 0) {
     draw_set_colour(c_red);
-    draw_text(_panel_x + 6, _panel_y + 24, "(NO CODE ADDED YET)");
+    draw_text(_panel_x + 6, _panel_y + 56, "(NO CODE ADDED YET)");
     draw_set_colour(c_white);
 } else {
     var _p = 0;
 
     while (_p < _preview_line_count) {
         var _line_data = preview_line_cache[_p];
-        var _is_visible = (_line_y >= _panel_y + 20) && (_line_y <= _panel_y + _panel_height - _line_height);
+        var _is_visible = (_line_y >= _panel_y + 56) && (_line_y <= _panel_y + _panel_height - _line_height);
 
         if (_is_visible) {
             var _line_colour = c_white;
@@ -88,7 +90,7 @@ if (_preview_line_count == 0) {
 // of the wrapped line cache and follows mouse-wheel or drag scrolling.
 var _track_x1 = _panel_x + _panel_width - 11;
 var _track_x2 = _panel_x + _panel_width - 3;
-var _track_y1 = _panel_y + 24;
+var _track_y1 = _panel_y + 56;
 var _track_y2 = _panel_y + _panel_height - 8;
 var _track_h = _track_y2 - _track_y1;
 var _viewport_h = _track_h;

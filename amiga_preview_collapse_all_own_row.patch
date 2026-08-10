@@ -1,0 +1,86 @@
+diff --git a/objects/obj_amiga_manager/Draw_0.gml b/objects/obj_amiga_manager/Draw_0.gml
+index caf94dc..a12b49c 100644
+--- a/objects/obj_amiga_manager/Draw_0.gml
++++ b/objects/obj_amiga_manager/Draw_0.gml
+@@ -36,28 +36,30 @@ draw_set_colour(c_white);
+ draw_rectangle(_panel_x, _panel_y, _panel_x + _panel_width, _panel_y + _panel_height, true);
+ draw_text(_panel_x + 6, _panel_y + 4, "COMPILED PROGRAM PREVIEW");
+ 
+-var _collapse_x = _panel_x + _panel_width - 126;
+-var _collapse_y = _panel_y + 3;
++var _collapse_x = _panel_x + 6;
++var _collapse_y = _panel_y + 24;
+ draw_set_colour(make_color_rgb(55, 65, 90));
+-draw_rectangle(_collapse_x, _collapse_y, _panel_x + _panel_width - 4, _collapse_y + 17, false);
++draw_rectangle(_collapse_x, _collapse_y, _panel_x + _panel_width - 16, _collapse_y + 17, false);
+ draw_set_colour(c_white);
+-draw_rectangle(_collapse_x, _collapse_y, _panel_x + _panel_width - 4, _collapse_y + 17, true);
++draw_rectangle(_collapse_x, _collapse_y, _panel_x + _panel_width - 16, _collapse_y + 17, true);
+ draw_text(_collapse_x + 5, _collapse_y, "COLLAPSE ALL");
+ 
+-var _line_y = _panel_y + 24 + global.preview_scroll_y;
++// Row 1 is the title, row 2 is COLLAPSE ALL, row 3 is intentionally blank.
++// Code begins on row 4.
++var _line_y = _panel_y + 56 + global.preview_scroll_y;
+ var _line_height = 16;
+ var _preview_line_count = array_length(preview_line_cache);
+ 
+ if (_preview_line_count == 0) {
+     draw_set_colour(c_red);
+-    draw_text(_panel_x + 6, _panel_y + 24, "(NO CODE ADDED YET)");
++    draw_text(_panel_x + 6, _panel_y + 56, "(NO CODE ADDED YET)");
+     draw_set_colour(c_white);
+ } else {
+     var _p = 0;
+ 
+     while (_p < _preview_line_count) {
+         var _line_data = preview_line_cache[_p];
+-        var _is_visible = (_line_y >= _panel_y + 20) && (_line_y <= _panel_y + _panel_height - _line_height);
++        var _is_visible = (_line_y >= _panel_y + 56) && (_line_y <= _panel_y + _panel_height - _line_height);
+ 
+         if (_is_visible) {
+             var _line_colour = c_white;
+@@ -88,7 +90,7 @@ if (_preview_line_count == 0) {
+ // of the wrapped line cache and follows mouse-wheel or drag scrolling.
+ var _track_x1 = _panel_x + _panel_width - 11;
+ var _track_x2 = _panel_x + _panel_width - 3;
+-var _track_y1 = _panel_y + 24;
++var _track_y1 = _panel_y + 56;
+ var _track_y2 = _panel_y + _panel_height - 8;
+ var _track_h = _track_y2 - _track_y1;
+ var _viewport_h = _track_h;
+diff --git a/objects/obj_amiga_manager/Step_0.gml b/objects/obj_amiga_manager/Step_0.gml
+index 9652727..454b0b2 100644
+--- a/objects/obj_amiga_manager/Step_0.gml
++++ b/objects/obj_amiga_manager/Step_0.gml
+@@ -338,7 +338,7 @@ var _preview_panel_y = 60;
+ var _preview_panel_width = 350;
+ var _preview_panel_height = room_height - 60;
+ var _preview_line_height = 16;
+-var _preview_content_top = _preview_panel_y + 24;
++var _preview_content_top = _preview_panel_y + 56;
+ var _preview_content_bottom = _preview_panel_y + _preview_panel_height - 8;
+ var _preview_viewport_height = _preview_content_bottom - _preview_content_top;
+ var _preview_list_height = array_length(preview_line_cache) * _preview_line_height;
+@@ -370,9 +370,9 @@ if (_over_preview_panel) {
+     }
+ }
+ 
+-var _collapse_x = _preview_panel_x + _preview_panel_width - 126;
+-var _collapse_y = _preview_panel_y + 3;
+-if (mouse_check_button_pressed(mb_left) && point_in_rectangle(mouse_x, mouse_y, _collapse_x, _collapse_y, _preview_panel_x + _preview_panel_width - 4, _collapse_y + 17)) {
++var _collapse_x = _preview_panel_x + 6;
++var _collapse_y = _preview_panel_y + 24;
++if (mouse_check_button_pressed(mb_left) && point_in_rectangle(mouse_x, mouse_y, _collapse_x, _collapse_y, _preview_panel_x + _preview_panel_width - 16, _collapse_y + 17)) {
+     with (obj_opcode_node) {
+         if (is_macro) preview_collapsed = true;
+     }
+@@ -434,7 +434,7 @@ if (keyboard_check_pressed(ord("O")) && global.operand_edit_owner_uid == -1 && !
+ }
+ 
+ if (mouse_check_button_pressed(mb_left) && !_preview_scroll_consumed) {
+-    var _click_line_y = _preview_panel_y + 24 + global.preview_scroll_y;
++    var _click_line_y = _preview_content_top + global.preview_scroll_y;
+     var _click_line_index = 0;
+     var _click_line_count = array_length(preview_line_cache);
+ 
