@@ -1,0 +1,10 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_asset_define_bob",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_asset_define_bob",
+  "parent":{"name":"SCRIPTS","path":"folders/Extensions/SCRIPTS.yy",},
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

@@ -13,6 +13,9 @@ function scr_emit_macro_line(_node) {
         return scr_emit_macro_bitmap_display(_node);
     }
 
+    if (_node.macro_type == "BOB_BITMAP_TEST") return scr_emit_macro_bob_bitmap_test(_node);
+    if (_node.macro_type == "SPRITE_BITMAP_TEST") return scr_emit_macro_sprite_bitmap_test(_node);
+
     if (_node.macro_type == "SETBKG") {
         return scr_emit_macro_setbkg(_node);
     }

@@ -1,6 +1,6 @@
 // The bitmap editor and colour picker are both modal: do not pan, build,
 // undo, click controls or mutate the graph behind either of them.
-if (instance_exists(obj_bitmap_editor) || instance_exists(obj_colour_picker) || instance_exists(obj_cprbar_editor)) {
+if (instance_exists(obj_bitmap_editor) || instance_exists(obj_bob_editor) || instance_exists(obj_colour_picker) || instance_exists(obj_cprbar_editor)) {
     exit;
 }
 
@@ -197,6 +197,19 @@ if (_over_bitmap_editor_button && mouse_check_button_pressed(mb_left)) {
         instance_create_layer(0, 0, "Instances", obj_bitmap_editor);
     }
 }
+
+var _bob_editor_button_x = top_ui_editor_2_x;
+var _over_bob_editor_button = point_in_rectangle(mouse_x, mouse_y, _bob_editor_button_x, top_ui_row_1_y, _bob_editor_button_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height);
+if (_over_bob_editor_button && mouse_check_button_pressed(mb_left)) {
+    if (instance_exists(obj_bob_editor)) with (obj_bob_editor) instance_destroy();
+    else instance_create_layer(0, 0, "Instances", obj_bob_editor);
+}
+
+var _over_bob_test = point_in_rectangle(mouse_x, mouse_y, top_ui_test_2_x, top_ui_row_1_y, top_ui_test_2_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height);
+if (_over_bob_test && mouse_check_button_pressed(mb_left)) scr_amiga_run_bob_bitmap_test();
+
+var _over_sprite_bitmap_test = point_in_rectangle(mouse_x, mouse_y, top_ui_test_2_x, top_ui_row_2_y, top_ui_test_2_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height);
+if (_over_sprite_bitmap_test && mouse_check_button_pressed(mb_left)) scr_amiga_run_sprite_bitmap_test();
 
 var _kill_fsuae_button_x = top_ui_system_x;
 var _kill_fsuae_button_y = top_ui_row_1_y;

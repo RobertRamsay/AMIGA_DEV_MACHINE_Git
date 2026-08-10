@@ -91,6 +91,15 @@ draw_set_colour(c_white);
 draw_rectangle(top_ui_test_x, top_ui_row_2_y, top_ui_test_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height, true);
 draw_text(top_ui_test_x + 4, top_ui_row_2_y - 2, "TEST SPRITE");
 
+draw_set_colour(c_maroon);
+draw_rectangle(top_ui_test_2_x, top_ui_row_1_y, top_ui_test_2_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, false);
+draw_rectangle(top_ui_test_2_x, top_ui_row_2_y, top_ui_test_2_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height, false);
+draw_set_colour(c_white);
+draw_rectangle(top_ui_test_2_x, top_ui_row_1_y, top_ui_test_2_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, true);
+draw_rectangle(top_ui_test_2_x, top_ui_row_2_y, top_ui_test_2_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height, true);
+draw_text(top_ui_test_2_x + 4, top_ui_row_1_y - 2, "TEST BOB-BMP");
+draw_text(top_ui_test_2_x + 4, top_ui_row_2_y - 2, "TEST SPR-BMP");
+
 draw_set_colour(c_white);
 draw_text(top_ui_macro_x, 2, "MACROS:");
 
@@ -106,6 +115,12 @@ draw_rectangle(top_ui_editor_x, top_ui_row_2_y, top_ui_editor_x + top_ui_button_
 draw_set_colour(c_white);
 draw_rectangle(top_ui_editor_x, top_ui_row_2_y, top_ui_editor_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height, true);
 draw_text(top_ui_editor_x + 4, top_ui_row_2_y - 2, "BITMAP EDIT");
+
+draw_set_colour(make_color_rgb(75, 65, 35));
+draw_rectangle(top_ui_editor_2_x, top_ui_row_1_y, top_ui_editor_2_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, false);
+draw_set_colour(c_white);
+draw_rectangle(top_ui_editor_2_x, top_ui_row_1_y, top_ui_editor_2_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, true);
+draw_text(top_ui_editor_2_x + 4, top_ui_row_1_y - 2, "BOB EDIT");
 
 // SAVE/LOAD moved to their own column off to the side, and widened —
 // they're used often enough to want more room and less chance of a

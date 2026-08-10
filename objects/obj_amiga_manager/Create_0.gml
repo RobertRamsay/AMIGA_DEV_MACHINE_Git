@@ -188,9 +188,11 @@ top_ui_row_2_y = 44;
 top_ui_button_width = 100;
 top_ui_button_height = 16;
 top_ui_test_x = 310;
-top_ui_macro_x = 430;
-top_ui_editor_x = 530;
-top_ui_system_x = 650;
+top_ui_test_2_x = 414;
+top_ui_macro_x = 530;
+top_ui_editor_x = 630;
+top_ui_editor_2_x = 734;
+top_ui_system_x = 850;
 
 var _org_palette_instance = instance_create_layer(
     palette_start_x,

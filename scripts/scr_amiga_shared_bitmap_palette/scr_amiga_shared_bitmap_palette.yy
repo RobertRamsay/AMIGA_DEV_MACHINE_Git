@@ -1,0 +1,10 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_amiga_shared_bitmap_palette",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_amiga_shared_bitmap_palette",
+  "parent":{"name":"SCRIPTS","path":"folders/Extensions/SCRIPTS.yy",},
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

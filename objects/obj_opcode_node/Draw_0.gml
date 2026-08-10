@@ -31,6 +31,14 @@ if (is_macro) {
             _header_colour = make_color_rgb(35, 95, 125);
             break;
 
+        case "BOB_BITMAP_TEST":
+            _header_colour = make_color_rgb(115, 75, 25);
+            break;
+
+        case "SPRITE_BITMAP_TEST":
+            _header_colour = make_color_rgb(75, 45, 125);
+            break;
+
         case "SETBKG":
             _header_colour = make_color_rgb(150, 150, 40);
             break;
