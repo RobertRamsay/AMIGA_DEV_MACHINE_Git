@@ -23,9 +23,12 @@ fade=0;
 }
 	
 	draw_sprite_ext(spr_ADM_SmallLogo,0,1550,-2,.6,.6,0,c_white,1-fade);
-	draw_set_alpha(1-fade);
-	draw_text(1625,22,"VERSION: "+string(GM_version));
-	draw_text(1625,38,"POLYTRICITY (C)2026");
-	
-	draw_set_alpha(1);
+    draw_set_alpha(1-fade);
+    draw_set_halign(fa_right)
+    draw_text(1910,10,"(C) POLYTRICITY  2026");
+    draw_text(1910,24,"VERSION: "+string(GM_version));
+    
+    
+    draw_set_alpha(1);
+    draw_set_halign(fa_left)
 	
