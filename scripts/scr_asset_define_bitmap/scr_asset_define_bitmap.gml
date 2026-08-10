@@ -1,7 +1,8 @@
-/// @desc scr_asset_define_bitmap(_name, _pixels, _colour_r, _colour_g, _colour_b)
+/// @desc scr_asset_define_bitmap(_name, _pixels, _colour_r, _colour_g, _colour_b, [_gradient_custom_active], [_gradient_custom_colours], [_gradient_custom_count])
 /// Stores a native 320x256, 32-colour bitmap asset. Pixel values are chunky
 /// editor indices 0-31; BITMAP_DISPLAY converts them to five native planes.
-function scr_asset_define_bitmap(_name, _pixels, _colour_r, _colour_g, _colour_b) {
+function scr_asset_define_bitmap(_name, _pixels, _colour_r, _colour_g, _colour_b,
+    _gradient_custom_active = undefined, _gradient_custom_colours = undefined, _gradient_custom_count = undefined) {
     var _pixels_copy = array_create(320 * 256, 0);
     array_copy(_pixels_copy, 0, _pixels, 0, 320 * 256);
 
@@ -23,6 +24,17 @@ function scr_asset_define_bitmap(_name, _pixels, _colour_r, _colour_g, _colour_b
         colour_g : _g_copy,
         colour_b : _b_copy
     };
+
+    if (!is_undefined(_gradient_custom_active)) {
+        _asset_data.gradient_custom_active = _gradient_custom_active;
+    }
+    if (is_array(_gradient_custom_colours) && array_length(_gradient_custom_colours) == 12) {
+        _asset_data.gradient_custom_colours = array_create(12, 0);
+        array_copy(_asset_data.gradient_custom_colours, 0, _gradient_custom_colours, 0, 12);
+    }
+    if (!is_undefined(_gradient_custom_count)) {
+        _asset_data.gradient_custom_count = clamp(_gradient_custom_count, 1, 12);
+    }
 
     var _existing_index = -1;
     var _asset_index = 0;

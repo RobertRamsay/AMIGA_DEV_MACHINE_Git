@@ -28,7 +28,8 @@ function scr_bitmap_restore_snapshot(_editor, _snapshot) {
     _editor.bitmap_line_active = false;
     _editor.bitmap_gradient_active = false;
     _editor.bitmap_asset_dirty = false;
-    scr_asset_define_bitmap("TestBitmap", _editor.bitmap_pixels, _editor.bitmap_colour_r, _editor.bitmap_colour_g, _editor.bitmap_colour_b);
+    scr_asset_define_bitmap("TestBitmap", _editor.bitmap_pixels, _editor.bitmap_colour_r, _editor.bitmap_colour_g, _editor.bitmap_colour_b,
+        _editor.bitmap_gradient_custom_active, _editor.bitmap_gradient_custom_colours, _editor.bitmap_gradient_custom_count);
 }
 
 function scr_bitmap_push_undo(_editor) {

@@ -41,6 +41,9 @@ bitmap_line_index = 1;
 bitmap_line_use_dither = false;
 bitmap_gradient_colour_1 = 1;
 bitmap_gradient_colour_2 = 2;
+bitmap_gradient_custom_active = false;
+bitmap_gradient_custom_colours = array_create(12, bitmap_gradient_colour_1);
+bitmap_gradient_custom_count = 12;
 bitmap_gradient_include_edge = false;
 bitmap_gradient_active = false;
 bitmap_gradient_start_x = 0;
@@ -83,6 +86,17 @@ if (_existing_bitmap != undefined && _existing_bitmap.type == "BITMAP") {
     array_copy(bitmap_colour_r, 0, _existing_bitmap.colour_r, 0, 32);
     array_copy(bitmap_colour_g, 0, _existing_bitmap.colour_g, 0, 32);
     array_copy(bitmap_colour_b, 0, _existing_bitmap.colour_b, 0, 32);
+    if (variable_struct_exists(_existing_bitmap, "gradient_custom_active")) {
+        bitmap_gradient_custom_active = _existing_bitmap.gradient_custom_active;
+    }
+    if (variable_struct_exists(_existing_bitmap, "gradient_custom_colours")
+    && is_array(_existing_bitmap.gradient_custom_colours)
+    && array_length(_existing_bitmap.gradient_custom_colours) == 12) {
+        array_copy(bitmap_gradient_custom_colours, 0, _existing_bitmap.gradient_custom_colours, 0, 12);
+    }
+    if (variable_struct_exists(_existing_bitmap, "gradient_custom_count")) {
+        bitmap_gradient_custom_count = clamp(_existing_bitmap.gradient_custom_count, 1, 12);
+    }
 }
 
 panel_width = min(1600, room_width - 20);
@@ -97,4 +111,5 @@ canvas_pan_with_space = false;
 pan_mouse_x = 0;
 pan_mouse_y = 0;
 
-scr_asset_define_bitmap("TestBitmap", bitmap_pixels, bitmap_colour_r, bitmap_colour_g, bitmap_colour_b);
+scr_asset_define_bitmap("TestBitmap", bitmap_pixels, bitmap_colour_r, bitmap_colour_g, bitmap_colour_b,
+    bitmap_gradient_custom_active, bitmap_gradient_custom_colours, bitmap_gradient_custom_count);

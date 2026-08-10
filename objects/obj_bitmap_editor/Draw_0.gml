@@ -157,6 +157,35 @@ draw_rectangle(_gradient_colour_2_x, _layout.gradient_colour_y, _gradient_colour
 draw_set_colour(c_white);
 draw_rectangle(_gradient_colour_2_x, _layout.gradient_colour_y, _gradient_colour_2_x + _layout.gradient_colour_width, _layout.gradient_colour_y + _layout.tool_height, true);
 
+draw_set_colour(bitmap_gradient_custom_active ? make_color_rgb(20, 80, 70) : c_dkgray);
+draw_rectangle(_layout.gradient_custom_toggle_x, _layout.gradient_custom_toggle_y,
+    _layout.gradient_custom_toggle_x + _layout.gradient_custom_toggle_width, _layout.gradient_custom_toggle_y + _layout.tool_height, false);
+draw_set_colour(bitmap_gradient_custom_active ? c_aqua : c_white);
+draw_rectangle(_layout.gradient_custom_toggle_x, _layout.gradient_custom_toggle_y,
+    _layout.gradient_custom_toggle_x + _layout.gradient_custom_toggle_width, _layout.gradient_custom_toggle_y + _layout.tool_height, true);
+draw_text(_layout.gradient_custom_toggle_x + 10, _layout.gradient_custom_toggle_y + 3,
+    bitmap_gradient_custom_active ? "CUSTOM GRADIENT: ON" : "CUSTOM GRADIENT: OFF (COL1 / COL2)");
+
+var _gradient_slot = 0;
+while (_gradient_slot < 12) {
+    var _gradient_slot_x = _layout.gradient_custom_slots_x
+        + _gradient_slot * (_layout.gradient_custom_slot_width + _layout.gradient_custom_slot_gap);
+    var _gradient_slot_colour_index = bitmap_gradient_custom_colours[_gradient_slot];
+    var _gradient_slot_colour = make_color_rgb(bitmap_colour_r[_gradient_slot_colour_index] * 17,
+        bitmap_colour_g[_gradient_slot_colour_index] * 17, bitmap_colour_b[_gradient_slot_colour_index] * 17);
+    var _gradient_slot_hover = point_in_rectangle(mouse_x, mouse_y, _gradient_slot_x, _layout.gradient_custom_slots_y,
+        _gradient_slot_x + _layout.gradient_custom_slot_width, _layout.gradient_custom_slots_y + _layout.gradient_custom_slot_height);
+
+    draw_set_colour(_gradient_slot_colour);
+    draw_rectangle(_gradient_slot_x, _layout.gradient_custom_slots_y,
+        _gradient_slot_x + _layout.gradient_custom_slot_width, _layout.gradient_custom_slots_y + _layout.gradient_custom_slot_height, false);
+    draw_set_colour((_gradient_slot == bitmap_gradient_custom_count - 1) ? c_yellow : (_gradient_slot_hover ? c_white : c_gray));
+    draw_rectangle(_gradient_slot_x, _layout.gradient_custom_slots_y,
+        _gradient_slot_x + _layout.gradient_custom_slot_width, _layout.gradient_custom_slots_y + _layout.gradient_custom_slot_height, true);
+
+    _gradient_slot += 1;
+}
+
 draw_set_colour(bitmap_gradient_include_edge ? c_olive : c_dkgray);
 draw_rectangle(_layout.gradient_edge_x, _layout.gradient_edge_y, _layout.gradient_edge_x + _layout.gradient_edge_width, _layout.gradient_edge_y + _layout.tool_height, false);
 draw_set_colour(c_white);
@@ -416,5 +445,5 @@ draw_text_ext(_layout.right_x, _layout.slider_b_y + 38, "32 colours = five hardw
 
 draw_set_colour(c_white);
 draw_text(_layout.panel_x + 12, _layout.help_line_1_y, "LEFT: tool     RIGHT: COLOR00     ALT+CANVAS: pick     ALT+L/R SWATCH: COL1/COL2     CTRL+C/V SWATCH: copy/paste     SPACE: pan");
-draw_text(_layout.panel_x + 12, _layout.help_line_2_y, "D/F/G/L: tools     C: toggle checker dither     T: transparency lock     X: flip X     [ / ]: brush size     CTRL+Z/Y: undo/redo");
+draw_text(_layout.panel_x + 12, _layout.help_line_2_y, "D/F/G/L: tools     C: checker dither     T: transparency lock     X: flip X     [ / ]: brush     CTRL+Z/Y: undo/redo     GRAD SLOTS L:set COL1 / R:end");
 draw_set_colour(c_white);

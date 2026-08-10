@@ -7,9 +7,12 @@ function scr_bitmap_save_native(_editor) {
 
     var _data = scr_bitmap_capture_snapshot(_editor);
     _data.format = "AMIGA_DEV_MACHINE_BITMAP";
-    _data.version = 1;
+    _data.version = 2;
     _data.width = _editor.bitmap_width;
     _data.height = _editor.bitmap_height;
+    _data.gradient_custom_active = _editor.bitmap_gradient_custom_active;
+    _data.gradient_custom_colours = _editor.bitmap_gradient_custom_colours;
+    _data.gradient_custom_count = _editor.bitmap_gradient_custom_count;
     var _file = file_text_open_write(_path);
     file_text_write_string(_file, json_stringify(_data));
     file_text_close(_file);
@@ -50,6 +53,19 @@ function scr_bitmap_load_native(_editor) {
 
     scr_bitmap_push_undo(_editor);
     scr_bitmap_restore_snapshot(_editor, _data);
+    if (variable_struct_exists(_data, "gradient_custom_active")) {
+        _editor.bitmap_gradient_custom_active = _data.gradient_custom_active;
+    }
+    if (variable_struct_exists(_data, "gradient_custom_colours")
+    && is_array(_data.gradient_custom_colours)
+    && array_length(_data.gradient_custom_colours) == 12) {
+        array_copy(_editor.bitmap_gradient_custom_colours, 0, _data.gradient_custom_colours, 0, 12);
+    }
+    if (variable_struct_exists(_data, "gradient_custom_count")) {
+        _editor.bitmap_gradient_custom_count = clamp(_data.gradient_custom_count, 1, 12);
+    }
+    scr_asset_define_bitmap("TestBitmap", _editor.bitmap_pixels, _editor.bitmap_colour_r, _editor.bitmap_colour_g, _editor.bitmap_colour_b,
+        _editor.bitmap_gradient_custom_active, _editor.bitmap_gradient_custom_colours, _editor.bitmap_gradient_custom_count);
     _editor.bitmap_native_path = _path;
     show_message("Bitmap loaded:\n" + _path);
     return true;
@@ -398,7 +414,8 @@ function scr_bitmap_load_iff(_editor) {
     _editor.bitmap_surface_dirty = true;
     _editor.bitmap_dirty_pixels = [];
     _editor.bitmap_asset_dirty = false;
-    scr_asset_define_bitmap("TestBitmap", _editor.bitmap_pixels, _editor.bitmap_colour_r, _editor.bitmap_colour_g, _editor.bitmap_colour_b);
+    scr_asset_define_bitmap("TestBitmap", _editor.bitmap_pixels, _editor.bitmap_colour_r, _editor.bitmap_colour_g, _editor.bitmap_colour_b,
+        _editor.bitmap_gradient_custom_active, _editor.bitmap_gradient_custom_colours, _editor.bitmap_gradient_custom_count);
     show_message("IFF ILBM loaded:\n" + _path);
     return true;
 }

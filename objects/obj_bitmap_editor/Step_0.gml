@@ -239,6 +239,34 @@ if (point_in_rectangle(mouse_x, mouse_y, _gradient_colour_2_x, _layout.gradient_
     bitmap_gradient_colour_2 = bitmap_paint_index;
 }
 
+if (point_in_rectangle(mouse_x, mouse_y, _layout.gradient_custom_toggle_x, _layout.gradient_custom_toggle_y,
+    _layout.gradient_custom_toggle_x + _layout.gradient_custom_toggle_width, _layout.gradient_custom_toggle_y + _layout.tool_height)
+&& mouse_check_button_pressed(mb_left)) {
+    bitmap_gradient_custom_active = !bitmap_gradient_custom_active;
+    bitmap_asset_dirty = true;
+}
+
+var _gradient_slot = 0;
+while (_gradient_slot < 12) {
+    var _gradient_slot_x = _layout.gradient_custom_slots_x
+        + _gradient_slot * (_layout.gradient_custom_slot_width + _layout.gradient_custom_slot_gap);
+    var _over_gradient_slot = point_in_rectangle(mouse_x, mouse_y, _gradient_slot_x, _layout.gradient_custom_slots_y,
+        _gradient_slot_x + _layout.gradient_custom_slot_width, _layout.gradient_custom_slots_y + _layout.gradient_custom_slot_height);
+
+    if (_over_gradient_slot && mouse_check_button_pressed(mb_left)) {
+        bitmap_gradient_custom_colours[_gradient_slot] = bitmap_gradient_colour_1;
+        bitmap_gradient_custom_active = true;
+        bitmap_asset_dirty = true;
+    }
+
+    if (_over_gradient_slot && mouse_check_button_pressed(mb_right)) {
+        bitmap_gradient_custom_count = _gradient_slot + 1;
+        bitmap_asset_dirty = true;
+    }
+
+    _gradient_slot += 1;
+}
+
 if (point_in_rectangle(mouse_x, mouse_y, _layout.gradient_edge_x, _layout.gradient_edge_y, _layout.gradient_edge_x + _layout.gradient_edge_width, _layout.gradient_edge_y + _layout.tool_height)
 && mouse_check_button_pressed(mb_left)) {
     bitmap_gradient_include_edge = !bitmap_gradient_include_edge;
@@ -269,7 +297,8 @@ if (point_in_rectangle(mouse_x, mouse_y, _layout.left_x, _layout.output_y, _layo
 
 if (point_in_rectangle(mouse_x, mouse_y, _utility_x_2, _layout.output_y, _utility_x_2 + _layout.utility_button_width, _layout.output_y + _layout.utility_button_height)
 && mouse_check_button_pressed(mb_left)) {
-    scr_asset_define_bitmap("TestBitmap", bitmap_pixels, bitmap_colour_r, bitmap_colour_g, bitmap_colour_b);
+    scr_asset_define_bitmap("TestBitmap", bitmap_pixels, bitmap_colour_r, bitmap_colour_g, bitmap_colour_b,
+        bitmap_gradient_custom_active, bitmap_gradient_custom_colours, bitmap_gradient_custom_count);
     scr_amiga_run_bitmap_test();
     instance_destroy();
     exit;
@@ -341,7 +370,8 @@ while (_swatch_index < 32) {
                     bitmap_colour_b[_swatch_index] = _paste_b;
                     bitmap_palette_edit_index = _swatch_index;
                     bitmap_surface_dirty = true;
-                    scr_asset_define_bitmap("TestBitmap", bitmap_pixels, bitmap_colour_r, bitmap_colour_g, bitmap_colour_b);
+                    scr_asset_define_bitmap("TestBitmap", bitmap_pixels, bitmap_colour_r, bitmap_colour_g, bitmap_colour_b,
+                        bitmap_gradient_custom_active, bitmap_gradient_custom_colours, bitmap_gradient_custom_count);
                     bitmap_asset_dirty = false;
                 }
             }
@@ -679,6 +709,16 @@ if (bitmap_gradient_active && mouse_check_button_released(mb_left)) {
     var _gradient_length_sq = (_gradient_dx * _gradient_dx) + (_gradient_dy * _gradient_dy);
     if (_gradient_length_sq < 1) _gradient_length_sq = 1;
 
+    var _gradient_stops;
+    var _gradient_stop_count;
+    if (bitmap_gradient_custom_active) {
+        _gradient_stop_count = clamp(bitmap_gradient_custom_count, 1, 12);
+        _gradient_stops = bitmap_gradient_custom_colours;
+    } else {
+        _gradient_stop_count = 2;
+        _gradient_stops = [bitmap_gradient_colour_1, bitmap_gradient_colour_2];
+    }
+
     var _region_index = 0;
 
     while (_region_index < array_length(_gradient_region)) {
@@ -690,7 +730,17 @@ if (bitmap_gradient_active && mouse_check_button_released(mb_left)) {
             + ((_region_y - bitmap_gradient_start_y) * _gradient_dy)) / _gradient_length_sq;
         _gradient_projection = clamp(_gradient_projection, 0, 1);
         var _bayer_value = (_bayer_8[((_region_y mod 8) * 8) + (_region_x mod 8)] + 0.5) / 64;
-        var _gradient_colour = (_gradient_projection >= _bayer_value) ? bitmap_gradient_colour_2 : bitmap_gradient_colour_1;
+        var _gradient_colour;
+        if (_gradient_stop_count == 1) {
+            _gradient_colour = _gradient_stops[0];
+        } else {
+            var _gradient_segment = _gradient_projection * (_gradient_stop_count - 1);
+            var _gradient_segment_index = clamp(floor(_gradient_segment), 0, _gradient_stop_count - 2);
+            var _gradient_segment_fraction = _gradient_segment - _gradient_segment_index;
+            _gradient_colour = (_gradient_segment_fraction >= _bayer_value)
+                ? _gradient_stops[_gradient_segment_index + 1]
+                : _gradient_stops[_gradient_segment_index];
+        }
 
         if (bitmap_pixels[_region_offset] != _gradient_colour) {
             bitmap_pixels[_region_offset] = _gradient_colour;
@@ -741,6 +791,7 @@ if (_shortcut_flip_x
 
 // Commit after a stroke or palette adjustment, matching the sprite editor.
 if (bitmap_asset_dirty && (_shortcut_flip_x || mouse_check_button_released(mb_left) || mouse_check_button_released(mb_right))) {
-    scr_asset_define_bitmap("TestBitmap", bitmap_pixels, bitmap_colour_r, bitmap_colour_g, bitmap_colour_b);
+    scr_asset_define_bitmap("TestBitmap", bitmap_pixels, bitmap_colour_r, bitmap_colour_g, bitmap_colour_b,
+        bitmap_gradient_custom_active, bitmap_gradient_custom_colours, bitmap_gradient_custom_count);
     bitmap_asset_dirty = false;
 }
