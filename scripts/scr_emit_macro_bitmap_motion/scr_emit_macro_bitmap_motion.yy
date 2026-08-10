@@ -1,1 +1,1 @@
-{"$GMScript":"v1","%Name":"scr_emit_macro_bitmap_motion","isCompatibility":false,"isDnD":false,"name":"scr_emit_macro_bitmap_motion","parent":{"name":"SCRIPTS","path":"folders/SCRIPTS.yy"},"resourceType":"GMScript","resourceVersion":"2.0"}
+{"$GMScript":"v1","%Name":"scr_emit_macro_bitmap_motion","isCompatibility":false,"isDnD":false,"name":"scr_emit_macro_bitmap_motion","parent":{"name":"SCRIPTS","path":"folders/Extensions/SCRIPTS.yy"},"resourceType":"GMScript","resourceVersion":"2.0"}

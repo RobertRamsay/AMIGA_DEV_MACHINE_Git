@@ -1,1 +1,1 @@
-{"$GMScript":"v1","%Name":"scr_amiga_run_motion_test","isCompatibility":false,"isDnD":false,"name":"scr_amiga_run_motion_test","parent":{"name":"SCRIPTS","path":"folders/SCRIPTS.yy"},"resourceType":"GMScript","resourceVersion":"2.0"}
+{"$GMScript":"v1","%Name":"scr_amiga_run_motion_test","isCompatibility":false,"isDnD":false,"name":"scr_amiga_run_motion_test","parent":{"name":"SCRIPTS","path":"folders/Extensions/SCRIPTS.yy"},"resourceType":"GMScript","resourceVersion":"2.0"}

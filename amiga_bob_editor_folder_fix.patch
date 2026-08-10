@@ -1,0 +1,14 @@
+diff --git a/scripts/scr_amiga_run_motion_test/scr_amiga_run_motion_test.yy b/scripts/scr_amiga_run_motion_test/scr_amiga_run_motion_test.yy
+index 8bb52f2..7152547 100644
+--- a/scripts/scr_amiga_run_motion_test/scr_amiga_run_motion_test.yy
++++ b/scripts/scr_amiga_run_motion_test/scr_amiga_run_motion_test.yy
+@@ -1 +1 @@
+-{"$GMScript":"v1","%Name":"scr_amiga_run_motion_test","isCompatibility":false,"isDnD":false,"name":"scr_amiga_run_motion_test","parent":{"name":"SCRIPTS","path":"folders/SCRIPTS.yy"},"resourceType":"GMScript","resourceVersion":"2.0"}
++{"$GMScript":"v1","%Name":"scr_amiga_run_motion_test","isCompatibility":false,"isDnD":false,"name":"scr_amiga_run_motion_test","parent":{"name":"SCRIPTS","path":"folders/Extensions/SCRIPTS.yy"},"resourceType":"GMScript","resourceVersion":"2.0"}
+diff --git a/scripts/scr_emit_macro_bitmap_motion/scr_emit_macro_bitmap_motion.yy b/scripts/scr_emit_macro_bitmap_motion/scr_emit_macro_bitmap_motion.yy
+index b80b644..8749c05 100644
+--- a/scripts/scr_emit_macro_bitmap_motion/scr_emit_macro_bitmap_motion.yy
++++ b/scripts/scr_emit_macro_bitmap_motion/scr_emit_macro_bitmap_motion.yy
+@@ -1 +1 @@
+-{"$GMScript":"v1","%Name":"scr_emit_macro_bitmap_motion","isCompatibility":false,"isDnD":false,"name":"scr_emit_macro_bitmap_motion","parent":{"name":"SCRIPTS","path":"folders/SCRIPTS.yy"},"resourceType":"GMScript","resourceVersion":"2.0"}
++{"$GMScript":"v1","%Name":"scr_emit_macro_bitmap_motion","isCompatibility":false,"isDnD":false,"name":"scr_emit_macro_bitmap_motion","parent":{"name":"SCRIPTS","path":"folders/Extensions/SCRIPTS.yy"},"resourceType":"GMScript","resourceVersion":"2.0"}
