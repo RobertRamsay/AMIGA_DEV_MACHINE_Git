@@ -1,0 +1,101 @@
+diff --git a/objects/obj_amiga_manager/Step_0.gml b/objects/obj_amiga_manager/Step_0.gml
+index c20c050..b0286dc 100644
+--- a/objects/obj_amiga_manager/Step_0.gml
++++ b/objects/obj_amiga_manager/Step_0.gml
+@@ -327,6 +327,10 @@ if (_over_palette) {
+     }
+ }
+ 
++// Wrapping uses real rendered pixel widths, so select the same font used by
++// Draw before rebuilding the cache. This avoids fixed character-count guesses
++// with the variable-width Future font.
++draw_set_font(font_Future);
+ preview_line_cache = scr_amiga_build_preview_lines();
+ 
+ var _preview_panel_x = room_width - 360;
+diff --git a/scripts/scr_amiga_build_preview_lines/scr_amiga_build_preview_lines.gml b/scripts/scr_amiga_build_preview_lines/scr_amiga_build_preview_lines.gml
+index 86186e6..725e414 100644
+--- a/scripts/scr_amiga_build_preview_lines/scr_amiga_build_preview_lines.gml
++++ b/scripts/scr_amiga_build_preview_lines/scr_amiga_build_preview_lines.gml
+@@ -5,6 +5,45 @@
+ /// full generated instructions, indented, underneath. Regular nodes are
+ /// unaffected. Returns an array of structs:
+ /// { text, is_error, is_macro_header, node_id, indent }
++function scr_amiga_wrap_preview_text(_text, _max_width) {
++    var _wrapped = [];
++    var _remaining = _text;
++
++    if (_remaining == "") return [""];
++
++    while (string_width(_remaining) > _max_width) {
++        var _length = string_length(_remaining);
++        var _fit = 1;
++
++        while (_fit < _length && string_width(string_copy(_remaining, 1, _fit + 1)) <= _max_width) {
++            _fit += 1;
++        }
++
++        // Prefer the last complete word that fits. A single assembler label
++        // can itself exceed the panel, so fall back to a hard character break.
++        var _break_at = 0;
++        var _scan = _fit;
++        while (_scan > 1) {
++            if (string_char_at(_remaining, _scan) == " ") {
++                _break_at = _scan;
++                break;
++            }
++            _scan -= 1;
++        }
++
++        if (_break_at > 0) {
++            array_push(_wrapped, string_copy(_remaining, 1, _break_at - 1));
++            _remaining = string_trim(string_copy(_remaining, _break_at + 1, _length - _break_at));
++        } else {
++            array_push(_wrapped, string_copy(_remaining, 1, _fit));
++            _remaining = string_copy(_remaining, _fit + 1, _length - _fit);
++        }
++    }
++
++    array_push(_wrapped, _remaining);
++    return _wrapped;
++}
++
+ function scr_amiga_build_preview_lines() {
+     var _lines = [];
+     var _preview_nodes = scr_amiga_collect_program_nodes();
+@@ -53,7 +92,10 @@ function scr_amiga_build_preview_lines() {
+                 _header_text += " (" + _node.node_label + ")";
+             }
+ 
+-            array_push(_lines, { text : _header_text, is_error : !_emit_result.is_valid, is_macro_header : true, node_id : _node, indent : false });
++            var _wrapped_header = scr_amiga_wrap_preview_text(_header_text, 338);
++            for (var _wh = 0; _wh < array_length(_wrapped_header); _wh += 1) {
++                array_push(_lines, { text : _wrapped_header[_wh], is_error : !_emit_result.is_valid, is_macro_header : true, node_id : _node, indent : false });
++            }
+ 
+             if (!_node.preview_collapsed) {
+                 var _sub_lines = scr_split_lines(_emit_result.text);
+@@ -61,7 +103,10 @@ function scr_amiga_build_preview_lines() {
+                 var _s = 0;
+ 
+                 while (_s < _sub_count) {
+-                    array_push(_lines, { text : _sub_lines[_s], is_error : !_emit_result.is_valid, is_macro_header : false, node_id : noone, indent : true });
++                    var _wrapped_sub = scr_amiga_wrap_preview_text(_sub_lines[_s], 326);
++                    for (var _ws = 0; _ws < array_length(_wrapped_sub); _ws += 1) {
++                        array_push(_lines, { text : _wrapped_sub[_ws], is_error : !_emit_result.is_valid, is_macro_header : false, node_id : noone, indent : true });
++                    }
+                     _s += 1;
+                 }
+             }
+@@ -71,7 +116,10 @@ function scr_amiga_build_preview_lines() {
+             var _pl = 0;
+ 
+             while (_pl < _plain_count) {
+-                array_push(_lines, { text : _plain_lines[_pl], is_error : !_emit_result.is_valid, is_macro_header : false, node_id : noone, indent : false });
++                var _wrapped_plain = scr_amiga_wrap_preview_text(_plain_lines[_pl], 338);
++                for (var _wp = 0; _wp < array_length(_wrapped_plain); _wp += 1) {
++                    array_push(_lines, { text : _wrapped_plain[_wp], is_error : !_emit_result.is_valid, is_macro_header : false, node_id : noone, indent : false });
++                }
+                 _pl += 1;
+             }
+         }
