@@ -46,7 +46,7 @@ function scr_amiga_run_bob_bitmap_test() {
     var _org = instance_create_layer(_init.node_x + 240, _init.node_y, "Instances", obj_amiga_root_node);
     _org.root_type = "ORG"; _org.node_x = scr_snap_to_grid(_init.node_x + 240, global.grid_size); _org.node_y = _init.node_y; _org.continues_from_root_uid = _init.uid;
     var _cy = _org.node_y + _org.node_height;
-    var _types = ["GET_BITMAP_BOB", "REPLACE_BITMAP_BOB", "DRAW_BOB"];
+    var _types = ["GET_BITMAP_BOB", "DRAW_BOB", "REPLACE_BITMAP_BOB"];
     for (var _i = 0; _i < 3; _i += 1) {
         var _m = instance_create_layer(_org.node_x, _cy, "Instances", obj_opcode_node);
         _m.node_x = _org.node_x; _m.node_y = _cy; _m.node_height = 100; _m.is_macro = true;

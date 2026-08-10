@@ -22,7 +22,7 @@ function scr_amiga_build_preview_lines() {
             var _bob_preview_valid = _bob_preview_asset != undefined && _bob_preview_asset.type == "BOB";
             _emit_result = {
                 text : _bob_preview_valid
-                    ? "; GetBitmap (BOB)\n; allocate 51,200-byte displayed bitmap in Chip RAM\n; allocate independent 51,200-byte pristine restore bitmap\n; copy embedded TestBitmap into both buffers\n; allocate/copy BOB transparency mask plus five image planes\n; enable bitplane, Copper and Blitter DMA"
+                    ? "; GetBitmap (BOB)\n; allocate 51,200-byte displayed bitmap in Chip RAM\n; derive BOB width, height and padded word width\n; allocate five-plane rectangular save-under buffer\n; allocate/copy BOB transparency mask plus five image planes\n; enable bitplane, Copper and Blitter DMA"
                     : "; ERROR: BOB asset '" + _node.macro_asset_name + "' not found",
                 is_valid : _bob_preview_valid
             };
