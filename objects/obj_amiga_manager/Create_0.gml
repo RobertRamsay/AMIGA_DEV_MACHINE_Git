@@ -181,6 +181,17 @@ while (_i < _mnemonic_count) {
 // 8. ORG PALETTE ENTRY
 // ============================================================================
 
+// Shared top-strip geometry. ORG and LOAD/SAVE retain their established
+// positions; the remaining controls are grouped by purpose from left to right.
+top_ui_row_1_y = 20;
+top_ui_row_2_y = 44;
+top_ui_button_width = 100;
+top_ui_button_height = 16;
+top_ui_test_x = 310;
+top_ui_macro_x = 430;
+top_ui_editor_x = 530;
+top_ui_system_x = 650;
+
 var _org_palette_instance = instance_create_layer(
     palette_start_x,
     20,
@@ -195,33 +206,32 @@ _org_palette_instance.base_palette_y = 20;
 
 // ============================================================================
 // 9. MACROS PANEL
-// CPRBAR lives here rather than in the ORG row.
-// The MACROS header and TEST button are handled by the manager.
+// CPRBAR and SETBKG occupy the dedicated MACROS column.
 // ============================================================================
 
 var _cprbar_palette_instance = instance_create_layer(
-    310,
-    40,
+    top_ui_macro_x,
+    top_ui_row_1_y,
     "Instances",
     obj_opcode_palette_item
 );
 
 _cprbar_palette_instance.palette_mnemonic = "CPRBAR";
 _cprbar_palette_instance.palette_display_label = "CPRBAR";
-_cprbar_palette_instance.palette_x = 310;
-_cprbar_palette_instance.base_palette_y = 40;
+_cprbar_palette_instance.palette_x = top_ui_macro_x;
+_cprbar_palette_instance.base_palette_y = top_ui_row_1_y;
 
 var _setbkg_palette_instance = instance_create_layer(
-    400,
-    40,
+    top_ui_macro_x,
+    top_ui_row_2_y,
     "Instances",
     obj_opcode_palette_item
 );
 
 _setbkg_palette_instance.palette_mnemonic = "SETBKG";
 _setbkg_palette_instance.palette_display_label = "SETBKG";
-_setbkg_palette_instance.palette_x = 400;
-_setbkg_palette_instance.base_palette_y = 40;
+_setbkg_palette_instance.palette_x = top_ui_macro_x;
+_setbkg_palette_instance.base_palette_y = top_ui_row_2_y;
 
 
 // ============================================================================

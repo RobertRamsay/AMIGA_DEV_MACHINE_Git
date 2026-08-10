@@ -462,3 +462,39 @@ draw_set_colour(c_white);
 draw_text(_layout.panel_x + 12, _layout.help_line_1_y, "LEFT: tool     RIGHT: COLOR00     ALT+CANVAS: pick     ALT+GRAD SLOT: edit colour     ALT+L/R SWATCH: COL1/COL2     CTRL+C/V: copy/paste     SPACE: pan");
 draw_text(_layout.panel_x + 12, _layout.help_line_2_y, "D/F/G/L: tools     C: checker dither     T: transparency lock     X: flip X     [ / ]: brush     CTRL+Z/Y: undo/redo     GRAD SLOTS L:set COL1 / R:end");
 draw_set_colour(c_white);
+
+// Floating native-resolution overview, drawn last so it behaves like a real
+// window above every editor control. Nearest-neighbour sampling is explicit,
+// although this draw is already a true 1:1 surface copy.
+draw_set_alpha(0.96);
+draw_set_colour(c_black);
+draw_rectangle(bitmap_preview_window_x, bitmap_preview_window_y,
+    bitmap_preview_window_x + bitmap_preview_window_width,
+    bitmap_preview_window_y + bitmap_preview_window_height, false);
+draw_set_alpha(1);
+draw_set_colour(c_white);
+draw_rectangle(bitmap_preview_window_x, bitmap_preview_window_y,
+    bitmap_preview_window_x + bitmap_preview_window_width,
+    bitmap_preview_window_y + bitmap_preview_window_height, true);
+
+draw_set_colour(make_color_rgb(45, 65, 95));
+draw_rectangle(bitmap_preview_window_x + 1, bitmap_preview_window_y + 1,
+    bitmap_preview_window_x + bitmap_preview_window_width - 1,
+    bitmap_preview_window_y + bitmap_preview_header_height, false);
+draw_set_colour(c_white);
+var _bitmap_preview_header_text = "1:1 PIXEL PREVIEW";
+if (point_in_rectangle(mouse_x, mouse_y,
+    bitmap_preview_window_x, bitmap_preview_window_y,
+    bitmap_preview_window_x + bitmap_preview_window_width,
+    bitmap_preview_window_y + bitmap_preview_header_height)
+|| bitmap_preview_dragging) {
+    _bitmap_preview_header_text += " - Grab to drag";
+}
+draw_text(bitmap_preview_window_x + 6, bitmap_preview_window_y + 2, _bitmap_preview_header_text);
+
+if (surface_exists(bitmap_surface)) {
+    gpu_set_texfilter(false);
+    draw_surface(bitmap_surface, bitmap_preview_window_x + 2,
+        bitmap_preview_window_y + bitmap_preview_header_height);
+    gpu_set_texfilter(true);
+}

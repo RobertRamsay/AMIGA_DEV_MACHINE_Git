@@ -106,6 +106,19 @@ panel_y = max(0, floor((room_height - panel_height) / 2) - 20);
 panel_dragging = false;
 panel_drag_offset_x = 0;
 panel_drag_offset_y = 0;
+
+// Floating pixel-perfect overview. The image area is exactly 320x256 with no
+// scaling; its small frame and header make the whole window independently
+// draggable without affecting the main editor panel.
+bitmap_preview_window_width = 324;
+bitmap_preview_window_height = 280;
+bitmap_preview_header_height = 22;
+bitmap_preview_window_x = floor(panel_x + panel_width - bitmap_preview_window_width - 10);
+bitmap_preview_window_y = floor(panel_y + panel_height - bitmap_preview_window_height - 10);
+bitmap_preview_dragging = false;
+bitmap_preview_drag_offset_x = 0;
+bitmap_preview_drag_offset_y = 0;
+
 canvas_panning = false;
 canvas_pan_with_space = false;
 pan_mouse_x = 0;

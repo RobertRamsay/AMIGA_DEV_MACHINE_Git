@@ -76,39 +76,42 @@ if (_preview_line_count == 0) {
 
 draw_set_colour(c_white);
 
-var _macro_but_width = 100;
-var _macro_xpos = 310;
-
-draw_text(_macro_xpos, 2, "MACROS:");
+// Top tool strip. ORG and LOAD/SAVE stay in their familiar positions; all
+// other actions are separated into clear TEST, MACRO, EDITOR and SYSTEM groups.
+draw_text(top_ui_test_x, 2, "TEST MACROS:");
 draw_set_colour(c_maroon);
-draw_rectangle(_macro_xpos, 20, _macro_xpos+_macro_but_width, 36, false);
+draw_rectangle(top_ui_test_x, top_ui_row_1_y, top_ui_test_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, false);
 draw_set_colour(c_white);
-draw_rectangle(_macro_xpos, 20, _macro_xpos+_macro_but_width, 36, true);
-draw_text(318, 18, "TEST");
+draw_rectangle(top_ui_test_x, top_ui_row_1_y, top_ui_test_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, true);
+draw_text(top_ui_test_x + 4, top_ui_row_1_y - 2, "TEST SETUP");
 
+draw_set_colour(c_maroon);
+draw_rectangle(top_ui_test_x, top_ui_row_2_y, top_ui_test_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height, false);
+draw_set_colour(c_white);
+draw_rectangle(top_ui_test_x, top_ui_row_2_y, top_ui_test_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height, true);
+draw_text(top_ui_test_x + 4, top_ui_row_2_y - 2, "TEST SPRITE");
+
+draw_set_colour(c_white);
+draw_text(top_ui_macro_x, 2, "MACROS:");
+
+draw_text(top_ui_editor_x, 2, "EDITORS:");
 draw_set_colour(make_color_rgb(120, 60, 160));
-draw_rectangle(_macro_xpos, 64, _macro_xpos+_macro_but_width, 80, false);
+draw_rectangle(top_ui_editor_x, top_ui_row_1_y, top_ui_editor_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, false);
 draw_set_colour(c_white);
-draw_rectangle(_macro_xpos, 64, _macro_xpos+_macro_but_width, 80, true);
-draw_text(312, 62, "SPR EDIT");
-
-draw_set_colour(c_maroon);
-draw_rectangle(_macro_xpos, 84, _macro_xpos+_macro_but_width, 100, false);
-draw_set_colour(c_white);
-draw_rectangle(_macro_xpos, 84, _macro_xpos+_macro_but_width, 100, true);
-draw_text(312, 82, "TEST SPR");
+draw_rectangle(top_ui_editor_x, top_ui_row_1_y, top_ui_editor_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, true);
+draw_text(top_ui_editor_x + 4, top_ui_row_1_y - 2, "SPRITE EDIT");
 
 draw_set_colour(make_color_rgb(35, 55, 85));
-draw_rectangle(_macro_xpos, 104, _macro_xpos+_macro_but_width, 120, false);
+draw_rectangle(top_ui_editor_x, top_ui_row_2_y, top_ui_editor_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height, false);
 draw_set_colour(c_white);
-draw_rectangle(_macro_xpos, 104, _macro_xpos+_macro_but_width, 120, true);
-draw_text(312, 102, "BITMAP EDIT");
+draw_rectangle(top_ui_editor_x, top_ui_row_2_y, top_ui_editor_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height, true);
+draw_text(top_ui_editor_x + 4, top_ui_row_2_y - 2, "BITMAP EDIT");
 
 // SAVE/LOAD moved to their own column off to the side, and widened —
 // they're used often enough to want more room and less chance of a
 // mis-click against the macro buttons next to them.
 var _workspace_but_width = 150;
-var _workspace_xpos = _macro_xpos - _macro_but_width - _workspace_but_width+50;
+var _workspace_xpos = 110;
 
 draw_set_colour(make_color_rgb(40, 100, 40));
 draw_rectangle(_workspace_xpos, 20, _workspace_xpos+_workspace_but_width, 36, false);
@@ -122,19 +125,19 @@ draw_set_colour(c_white);
 draw_rectangle(_workspace_xpos, 44, _workspace_xpos+_workspace_but_width, 60, true);
 draw_text(_workspace_xpos + 2, 42, "SAVE WORKSPACE");
 
-// KILL FSUAE and QUIT sit further below with a real gap, not tucked
-// directly under BITMAP EDIT, so they're harder to hit by accident.
-draw_set_colour(make_color_rgb(140, 30, 30));
-draw_rectangle(_macro_xpos, 140, _macro_xpos+_macro_but_width, 156, false);
 draw_set_colour(c_white);
-draw_rectangle(_macro_xpos, 140, _macro_xpos+_macro_but_width, 156, true);
-draw_text(312, 138, "KILL FSUAE");
+draw_text(top_ui_system_x, 2, "SYSTEM:");
+draw_set_colour(make_color_rgb(140, 30, 30));
+draw_rectangle(top_ui_system_x, top_ui_row_1_y, top_ui_system_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, false);
+draw_set_colour(c_white);
+draw_rectangle(top_ui_system_x, top_ui_row_1_y, top_ui_system_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, true);
+draw_text(top_ui_system_x + 4, top_ui_row_1_y - 2, "KILL FSUAE");
 
 draw_set_colour(make_color_rgb(90, 20, 20));
-draw_rectangle(_macro_xpos, 176, _macro_xpos+_macro_but_width, 192, false);
+draw_rectangle(top_ui_system_x, top_ui_row_2_y, top_ui_system_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height, false);
 draw_set_colour(c_white);
-draw_rectangle(_macro_xpos, 176, _macro_xpos+_macro_but_width, 192, true);
-draw_text(312, 174, "QUIT");
+draw_rectangle(top_ui_system_x, top_ui_row_2_y, top_ui_system_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height, true);
+draw_text(top_ui_system_x + 4, top_ui_row_2_y - 2, "QUIT");
 
 if (keyboard_check(vk_control)) {
     var _hud_text = "Undo: " + string(array_length(global.undo_stack)) + "   Redo: " + string(array_length(global.redo_stack));

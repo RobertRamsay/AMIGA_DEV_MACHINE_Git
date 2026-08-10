@@ -1,4 +1,45 @@
 var _layout = scr_bitmap_editor_layout(id);
+
+// The floating 1:1 preview owns pointer input over its entire frame so tools
+// and palette controls underneath cannot be changed accidentally.
+var _over_bitmap_preview = point_in_rectangle(mouse_x, mouse_y,
+    bitmap_preview_window_x, bitmap_preview_window_y,
+    bitmap_preview_window_x + bitmap_preview_window_width,
+    bitmap_preview_window_y + bitmap_preview_window_height);
+var _over_bitmap_preview_header = point_in_rectangle(mouse_x, mouse_y,
+    bitmap_preview_window_x, bitmap_preview_window_y,
+    bitmap_preview_window_x + bitmap_preview_window_width,
+    bitmap_preview_window_y + bitmap_preview_header_height);
+
+if (_over_bitmap_preview_header && mouse_check_button_pressed(mb_left)) {
+    bitmap_preview_dragging = true;
+    bitmap_preview_drag_offset_x = mouse_x - bitmap_preview_window_x;
+    bitmap_preview_drag_offset_y = mouse_y - bitmap_preview_window_y;
+}
+
+if (bitmap_preview_dragging) {
+    if (mouse_check_button(mb_left)) {
+        bitmap_preview_window_x = clamp(mouse_x - bitmap_preview_drag_offset_x,
+            0, max(0, room_width - bitmap_preview_window_width));
+        bitmap_preview_window_y = clamp(mouse_y - bitmap_preview_drag_offset_y,
+            0, max(0, room_height - bitmap_preview_window_height));
+    } else {
+        bitmap_preview_dragging = false;
+    }
+
+    _over_bitmap_preview = true;
+}
+
+if (_over_bitmap_preview) {
+    if (mouse_check_button_released(mb_left) || mouse_check_button_released(mb_right)) {
+        bitmap_stroke_active = false;
+        bitmap_line_active = false;
+        bitmap_gradient_active = false;
+        bitmap_palette_drag_active = false;
+    }
+    exit;
+}
+
 var _over_close = point_in_rectangle(mouse_x, mouse_y, _layout.close_x, _layout.close_y, _layout.close_x + 18, _layout.close_y + 18);
 var _over_header = point_in_rectangle(mouse_x, mouse_y, _layout.header_x, _layout.header_y, _layout.header_x + _layout.header_width, _layout.header_y + _layout.header_height);
 

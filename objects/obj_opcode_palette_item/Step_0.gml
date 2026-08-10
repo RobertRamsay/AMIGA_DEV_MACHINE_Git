@@ -53,7 +53,12 @@ if (_over_item && mouse_check_button_pressed(mb_left) && !global.left_click_pick
     }
 }
 
-palette_y = base_palette_y + global.palette_scroll_y;
+// Top-strip entries are fixed controls, not part of the scrolling opcode list.
+if (palette_mnemonic == "ORG" || palette_mnemonic == "CPRBAR" || palette_mnemonic == "SETBKG") {
+    palette_y = base_palette_y;
+} else {
+    palette_y = base_palette_y + global.palette_scroll_y;
+}
 
 var _is_hovering_palette = point_in_rectangle(mouse_x, mouse_y, palette_x, palette_y, palette_x + palette_width, palette_y + palette_height);
 
