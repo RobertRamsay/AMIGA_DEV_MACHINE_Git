@@ -207,6 +207,7 @@
   "name":"AMIGA_DEV_MACHINE",
   "resources":[
     {"id":{"name":"execute_shell_simple_ext","path":"extensions/execute_shell_simple_ext/execute_shell_simple_ext.yy",},},
+    {"id":{"name":"font_Future","path":"fonts/font_Future/font_Future.yy",},},
     {"id":{"name":"obj_amiga_manager","path":"objects/obj_amiga_manager/obj_amiga_manager.yy",},},
     {"id":{"name":"obj_amiga_root_node","path":"objects/obj_amiga_root_node/obj_amiga_root_node.yy",},},
     {"id":{"name":"obj_bitmap_editor","path":"objects/obj_bitmap_editor/obj_bitmap_editor.yy",},},

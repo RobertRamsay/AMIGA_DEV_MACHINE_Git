@@ -1,3 +1,5 @@
+draw_set_font(font_Future);
+
 var _has_hover = (global.palette_hover_mnemonic != "");
 
 if (_has_hover) {
@@ -83,13 +85,13 @@ draw_set_colour(c_maroon);
 draw_rectangle(top_ui_test_x, top_ui_row_1_y, top_ui_test_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, false);
 draw_set_colour(c_white);
 draw_rectangle(top_ui_test_x, top_ui_row_1_y, top_ui_test_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, true);
-draw_text(top_ui_test_x + 4, top_ui_row_1_y - 2, "T: SETUP");
+draw_text(top_ui_test_x + 4, top_ui_row_1_y , "T: SETUP");
 
 draw_set_colour(c_maroon);
 draw_rectangle(top_ui_test_x, top_ui_row_2_y, top_ui_test_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height, false);
 draw_set_colour(c_white);
 draw_rectangle(top_ui_test_x, top_ui_row_2_y, top_ui_test_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height, true);
-draw_text(top_ui_test_x + 4, top_ui_row_2_y - 2, "T: SPRITE");
+draw_text(top_ui_test_x + 4, top_ui_row_2_y , "T: SPRITE");
 
 draw_set_colour(c_maroon);
 draw_rectangle(top_ui_test_2_x, top_ui_row_1_y, top_ui_test_2_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, false);
@@ -97,8 +99,8 @@ draw_rectangle(top_ui_test_2_x, top_ui_row_2_y, top_ui_test_2_x + top_ui_button_
 draw_set_colour(c_white);
 draw_rectangle(top_ui_test_2_x, top_ui_row_1_y, top_ui_test_2_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, true);
 draw_rectangle(top_ui_test_2_x, top_ui_row_2_y, top_ui_test_2_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height, true);
-draw_text(top_ui_test_2_x + 4, top_ui_row_1_y - 2, "T: BOB-BMP");
-draw_text(top_ui_test_2_x + 4, top_ui_row_2_y - 2, "T: SPR-BMP");
+draw_text(top_ui_test_2_x + 4, top_ui_row_1_y , "T: BOB-BMP");
+draw_text(top_ui_test_2_x + 4, top_ui_row_2_y , "T: SPR-BMP");
 
 draw_set_colour(c_white);
 draw_text(top_ui_macro_x, 2, "MACROS:");
@@ -108,19 +110,19 @@ draw_set_colour(make_color_rgb(120, 60, 160));
 draw_rectangle(top_ui_editor_x, top_ui_row_1_y, top_ui_editor_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, false);
 draw_set_colour(c_white);
 draw_rectangle(top_ui_editor_x, top_ui_row_1_y, top_ui_editor_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, true);
-draw_text(top_ui_editor_x + 4, top_ui_row_1_y - 2, "SPR-EDIT");
+draw_text(top_ui_editor_x + 4, top_ui_row_1_y , "SPR-EDIT");
 
 draw_set_colour(make_color_rgb(35, 55, 85));
 draw_rectangle(top_ui_editor_x, top_ui_row_2_y, top_ui_editor_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height, false);
 draw_set_colour(c_white);
 draw_rectangle(top_ui_editor_x, top_ui_row_2_y, top_ui_editor_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height, true);
-draw_text(top_ui_editor_x + 4, top_ui_row_2_y - 2, "BMP-EDIT");
+draw_text(top_ui_editor_x + 4, top_ui_row_2_y , "BMP-EDIT");
 
 draw_set_colour(make_color_rgb(75, 65, 35));
 draw_rectangle(top_ui_editor_2_x, top_ui_row_1_y, top_ui_editor_2_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, false);
 draw_set_colour(c_white);
 draw_rectangle(top_ui_editor_2_x, top_ui_row_1_y, top_ui_editor_2_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, true);
-draw_text(top_ui_editor_2_x + 4, top_ui_row_1_y - 2, "BOB-EDIT");
+draw_text(top_ui_editor_2_x + 4, top_ui_row_1_y , "BOB-EDIT");
 
 // SAVE/LOAD moved to their own column off to the side, and widened —
 // they're used often enough to want more room and less chance of a
@@ -146,13 +148,13 @@ draw_set_colour(make_color_rgb(140, 30, 30));
 draw_rectangle(top_ui_system_x, top_ui_row_1_y, top_ui_system_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, false);
 draw_set_colour(c_white);
 draw_rectangle(top_ui_system_x, top_ui_row_1_y, top_ui_system_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, true);
-draw_text(top_ui_system_x + 4, top_ui_row_1_y - 2, "KILL FSUAE");
+draw_text(top_ui_system_x + 4, top_ui_row_1_y , "KILL FSUAE");
 
 draw_set_colour(make_color_rgb(90, 20, 20));
 draw_rectangle(top_ui_system_x, top_ui_row_2_y, top_ui_system_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height, false);
 draw_set_colour(c_white);
 draw_rectangle(top_ui_system_x, top_ui_row_2_y, top_ui_system_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height, true);
-draw_text(top_ui_system_x + 4, top_ui_row_2_y - 2, "QUIT");
+draw_text(top_ui_system_x + 4, top_ui_row_2_y , "QUIT");
 
 if (keyboard_check(vk_control)) {
     var _hud_text = "Undo: " + string(array_length(global.undo_stack)) + "   Redo: " + string(array_length(global.redo_stack));
