@@ -1,0 +1,188 @@
+diff --git a/objects/obj_amiga_manager/Create_0.gml b/objects/obj_amiga_manager/Create_0.gml
+index f0fd664..85efc4a 100644
+--- a/objects/obj_amiga_manager/Create_0.gml
++++ b/objects/obj_amiga_manager/Create_0.gml
+@@ -103,6 +103,8 @@ global.palette_scroll_y = 0;
+ global.preview_scroll_y = 0;
+ 
+ preview_line_cache = [];
++preview_scrollbar_dragging = false;
++preview_scrollbar_drag_offset = 0;
+ 
+ global.status_message_log = [];
+ 
+diff --git a/objects/obj_amiga_manager/Draw_0.gml b/objects/obj_amiga_manager/Draw_0.gml
+index cca0378..caf94dc 100644
+--- a/objects/obj_amiga_manager/Draw_0.gml
++++ b/objects/obj_amiga_manager/Draw_0.gml
+@@ -36,6 +36,14 @@ draw_set_colour(c_white);
+ draw_rectangle(_panel_x, _panel_y, _panel_x + _panel_width, _panel_y + _panel_height, true);
+ draw_text(_panel_x + 6, _panel_y + 4, "COMPILED PROGRAM PREVIEW");
+ 
++var _collapse_x = _panel_x + _panel_width - 126;
++var _collapse_y = _panel_y + 3;
++draw_set_colour(make_color_rgb(55, 65, 90));
++draw_rectangle(_collapse_x, _collapse_y, _panel_x + _panel_width - 4, _collapse_y + 17, false);
++draw_set_colour(c_white);
++draw_rectangle(_collapse_x, _collapse_y, _panel_x + _panel_width - 4, _collapse_y + 17, true);
++draw_text(_collapse_x + 5, _collapse_y, "COLLAPSE ALL");
++
+ var _line_y = _panel_y + 24 + global.preview_scroll_y;
+ var _line_height = 16;
+ var _preview_line_count = array_length(preview_line_cache);
+@@ -76,6 +84,31 @@ if (_preview_line_count == 0) {
+     }
+ }
+ 
++// Proportional preview scrollbar. The thumb represents the visible fraction
++// of the wrapped line cache and follows mouse-wheel or drag scrolling.
++var _track_x1 = _panel_x + _panel_width - 11;
++var _track_x2 = _panel_x + _panel_width - 3;
++var _track_y1 = _panel_y + 24;
++var _track_y2 = _panel_y + _panel_height - 8;
++var _track_h = _track_y2 - _track_y1;
++var _viewport_h = _track_h;
++var _content_h = _preview_line_count * _line_height;
++draw_set_colour(make_color_rgb(25, 30, 45));
++draw_rectangle(_track_x1, _track_y1, _track_x2, _track_y2, false);
++
++if (_content_h > _viewport_h) {
++    var _thumb_h = max(28, floor(_track_h * (_viewport_h / _content_h)));
++    var _scroll_range = _content_h - _viewport_h;
++    var _thumb_range = _track_h - _thumb_h;
++    var _scroll_ratio = clamp((-global.preview_scroll_y) / _scroll_range, 0, 1);
++    var _thumb_y = _track_y1 + floor(_thumb_range * _scroll_ratio);
++    draw_set_colour(preview_scrollbar_dragging ? make_color_rgb(180, 190, 230) : make_color_rgb(105, 120, 165));
++    draw_rectangle(_track_x1, _thumb_y, _track_x2, _thumb_y + _thumb_h, false);
++} else {
++    draw_set_colour(make_color_rgb(65, 75, 100));
++    draw_rectangle(_track_x1, _track_y1, _track_x2, _track_y2, false);
++}
++
+ draw_set_colour(c_white);
+ 
+ // Top tool strip. ORG and LOAD/SAVE stay in their familiar positions; all
+diff --git a/objects/obj_amiga_manager/Step_0.gml b/objects/obj_amiga_manager/Step_0.gml
+index b0286dc..9652727 100644
+--- a/objects/obj_amiga_manager/Step_0.gml
++++ b/objects/obj_amiga_manager/Step_0.gml
+@@ -336,8 +336,15 @@ preview_line_cache = scr_amiga_build_preview_lines();
+ var _preview_panel_x = room_width - 360;
+ var _preview_panel_y = 60;
+ var _preview_panel_width = 350;
+-var _preview_panel_height = room_height - 80;
++var _preview_panel_height = room_height - 60;
+ var _preview_line_height = 16;
++var _preview_content_top = _preview_panel_y + 24;
++var _preview_content_bottom = _preview_panel_y + _preview_panel_height - 8;
++var _preview_viewport_height = _preview_content_bottom - _preview_content_top;
++var _preview_list_height = array_length(preview_line_cache) * _preview_line_height;
++var _preview_scroll_range = max(0, _preview_list_height - _preview_viewport_height);
++var _preview_min_scroll = -_preview_scroll_range;
++var _preview_scroll_consumed = false;
+ 
+ var _over_preview_panel = point_in_rectangle(mouse_x, mouse_y, _preview_panel_x, _preview_panel_y, _preview_panel_x + _preview_panel_width, _preview_panel_y + _preview_panel_height);
+ 
+@@ -358,16 +365,56 @@ if (_over_preview_panel) {
+         global.preview_scroll_y = 0;
+     }
+ 
+-    var _preview_list_height = array_length(preview_line_cache) * _preview_line_height;
+-    var _preview_min_scroll = 0;
++    if (global.preview_scroll_y < _preview_min_scroll) {
++        global.preview_scroll_y = _preview_min_scroll;
++    }
++}
+ 
+-    if (_preview_list_height > _preview_panel_height) {
+-        _preview_min_scroll = -(_preview_list_height - _preview_panel_height);
++var _collapse_x = _preview_panel_x + _preview_panel_width - 126;
++var _collapse_y = _preview_panel_y + 3;
++if (mouse_check_button_pressed(mb_left) && point_in_rectangle(mouse_x, mouse_y, _collapse_x, _collapse_y, _preview_panel_x + _preview_panel_width - 4, _collapse_y + 17)) {
++    with (obj_opcode_node) {
++        if (is_macro) preview_collapsed = true;
+     }
++    global.preview_scroll_y = 0;
++    _preview_scroll_consumed = true;
++}
+ 
+-    if (global.preview_scroll_y < _preview_min_scroll) {
+-        global.preview_scroll_y = _preview_min_scroll;
++var _track_x1 = _preview_panel_x + _preview_panel_width - 11;
++var _track_x2 = _preview_panel_x + _preview_panel_width - 3;
++var _track_y1 = _preview_content_top;
++var _track_y2 = _preview_content_bottom;
++var _track_height = _track_y2 - _track_y1;
++
++if (_preview_scroll_range > 0) {
++    var _thumb_height = max(28, floor(_track_height * (_preview_viewport_height / _preview_list_height)));
++    var _thumb_range = _track_height - _thumb_height;
++    var _thumb_ratio = clamp((-global.preview_scroll_y) / _preview_scroll_range, 0, 1);
++    var _thumb_y = _track_y1 + floor(_thumb_range * _thumb_ratio);
++
++    if (mouse_check_button_pressed(mb_left) && point_in_rectangle(mouse_x, mouse_y, _track_x1, _track_y1, _track_x2, _track_y2)) {
++        _preview_scroll_consumed = true;
++        if (point_in_rectangle(mouse_x, mouse_y, _track_x1, _thumb_y, _track_x2, _thumb_y + _thumb_height)) {
++            preview_scrollbar_drag_offset = mouse_y - _thumb_y;
++        } else {
++            preview_scrollbar_drag_offset = _thumb_height / 2;
++        }
++        preview_scrollbar_dragging = true;
++    }
++
++    if (preview_scrollbar_dragging) {
++        _preview_scroll_consumed = true;
++        if (mouse_check_button(mb_left)) {
++            var _new_thumb_y = clamp(mouse_y - preview_scrollbar_drag_offset, _track_y1, _track_y1 + _thumb_range);
++            var _new_ratio = _thumb_range > 0 ? (_new_thumb_y - _track_y1) / _thumb_range : 0;
++            global.preview_scroll_y = -round(_new_ratio * _preview_scroll_range);
++        } else {
++            preview_scrollbar_dragging = false;
++        }
+     }
++} else {
++    preview_scrollbar_dragging = false;
++    global.preview_scroll_y = 0;
+ }
+ 
+ // O spawns an ORG root node at the mouse position — workspace area only,
+@@ -386,7 +433,7 @@ if (keyboard_check_pressed(ord("O")) && global.operand_edit_owner_uid == -1 && !
+     scr_set_status_message("ORG spawned at mouse position.");
+ }
+ 
+-if (mouse_check_button_pressed(mb_left)) {
++if (mouse_check_button_pressed(mb_left) && !_preview_scroll_consumed) {
+     var _click_line_y = _preview_panel_y + 24 + global.preview_scroll_y;
+     var _click_line_index = 0;
+     var _click_line_count = array_length(preview_line_cache);
+diff --git a/scripts/scr_amiga_build_preview_lines/scr_amiga_build_preview_lines.gml b/scripts/scr_amiga_build_preview_lines/scr_amiga_build_preview_lines.gml
+index 725e414..235de98 100644
+--- a/scripts/scr_amiga_build_preview_lines/scr_amiga_build_preview_lines.gml
++++ b/scripts/scr_amiga_build_preview_lines/scr_amiga_build_preview_lines.gml
+@@ -92,7 +92,7 @@ function scr_amiga_build_preview_lines() {
+                 _header_text += " (" + _node.node_label + ")";
+             }
+ 
+-            var _wrapped_header = scr_amiga_wrap_preview_text(_header_text, 338);
++            var _wrapped_header = scr_amiga_wrap_preview_text(_header_text, 326);
+             for (var _wh = 0; _wh < array_length(_wrapped_header); _wh += 1) {
+                 array_push(_lines, { text : _wrapped_header[_wh], is_error : !_emit_result.is_valid, is_macro_header : true, node_id : _node, indent : false });
+             }
+@@ -103,7 +103,7 @@ function scr_amiga_build_preview_lines() {
+                 var _s = 0;
+ 
+                 while (_s < _sub_count) {
+-                    var _wrapped_sub = scr_amiga_wrap_preview_text(_sub_lines[_s], 326);
++                    var _wrapped_sub = scr_amiga_wrap_preview_text(_sub_lines[_s], 314);
+                     for (var _ws = 0; _ws < array_length(_wrapped_sub); _ws += 1) {
+                         array_push(_lines, { text : _wrapped_sub[_ws], is_error : !_emit_result.is_valid, is_macro_header : false, node_id : noone, indent : true });
+                     }
+@@ -116,7 +116,7 @@ function scr_amiga_build_preview_lines() {
+             var _pl = 0;
+ 
+             while (_pl < _plain_count) {
+-                var _wrapped_plain = scr_amiga_wrap_preview_text(_plain_lines[_pl], 338);
++                var _wrapped_plain = scr_amiga_wrap_preview_text(_plain_lines[_pl], 326);
+                 for (var _wp = 0; _wp < array_length(_wrapped_plain); _wp += 1) {
+                     array_push(_lines, { text : _wrapped_plain[_wp], is_error : !_emit_result.is_valid, is_macro_header : false, node_id : noone, indent : false });
+                 }

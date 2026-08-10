@@ -36,6 +36,14 @@ draw_set_colour(c_white);
 draw_rectangle(_panel_x, _panel_y, _panel_x + _panel_width, _panel_y + _panel_height, true);
 draw_text(_panel_x + 6, _panel_y + 4, "COMPILED PROGRAM PREVIEW");
 
+var _collapse_x = _panel_x + _panel_width - 126;
+var _collapse_y = _panel_y + 3;
+draw_set_colour(make_color_rgb(55, 65, 90));
+draw_rectangle(_collapse_x, _collapse_y, _panel_x + _panel_width - 4, _collapse_y + 17, false);
+draw_set_colour(c_white);
+draw_rectangle(_collapse_x, _collapse_y, _panel_x + _panel_width - 4, _collapse_y + 17, true);
+draw_text(_collapse_x + 5, _collapse_y, "COLLAPSE ALL");
+
 var _line_y = _panel_y + 24 + global.preview_scroll_y;
 var _line_height = 16;
 var _preview_line_count = array_length(preview_line_cache);
@@ -74,6 +82,31 @@ if (_preview_line_count == 0) {
         _line_y += _line_height;
         _p += 1;
     }
+}
+
+// Proportional preview scrollbar. The thumb represents the visible fraction
+// of the wrapped line cache and follows mouse-wheel or drag scrolling.
+var _track_x1 = _panel_x + _panel_width - 11;
+var _track_x2 = _panel_x + _panel_width - 3;
+var _track_y1 = _panel_y + 24;
+var _track_y2 = _panel_y + _panel_height - 8;
+var _track_h = _track_y2 - _track_y1;
+var _viewport_h = _track_h;
+var _content_h = _preview_line_count * _line_height;
+draw_set_colour(make_color_rgb(25, 30, 45));
+draw_rectangle(_track_x1, _track_y1, _track_x2, _track_y2, false);
+
+if (_content_h > _viewport_h) {
+    var _thumb_h = max(28, floor(_track_h * (_viewport_h / _content_h)));
+    var _scroll_range = _content_h - _viewport_h;
+    var _thumb_range = _track_h - _thumb_h;
+    var _scroll_ratio = clamp((-global.preview_scroll_y) / _scroll_range, 0, 1);
+    var _thumb_y = _track_y1 + floor(_thumb_range * _scroll_ratio);
+    draw_set_colour(preview_scrollbar_dragging ? make_color_rgb(180, 190, 230) : make_color_rgb(105, 120, 165));
+    draw_rectangle(_track_x1, _thumb_y, _track_x2, _thumb_y + _thumb_h, false);
+} else {
+    draw_set_colour(make_color_rgb(65, 75, 100));
+    draw_rectangle(_track_x1, _track_y1, _track_x2, _track_y2, false);
 }
 
 draw_set_colour(c_white);

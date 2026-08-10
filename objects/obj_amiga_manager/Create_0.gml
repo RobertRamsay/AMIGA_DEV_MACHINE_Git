@@ -103,6 +103,8 @@ global.palette_scroll_y = 0;
 global.preview_scroll_y = 0;
 
 preview_line_cache = [];
+preview_scrollbar_dragging = false;
+preview_scrollbar_drag_offset = 0;
 
 global.status_message_log = [];
 

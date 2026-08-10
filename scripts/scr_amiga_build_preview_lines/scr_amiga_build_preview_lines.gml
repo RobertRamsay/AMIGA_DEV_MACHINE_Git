@@ -92,7 +92,7 @@ function scr_amiga_build_preview_lines() {
                 _header_text += " (" + _node.node_label + ")";
             }
 
-            var _wrapped_header = scr_amiga_wrap_preview_text(_header_text, 338);
+            var _wrapped_header = scr_amiga_wrap_preview_text(_header_text, 326);
             for (var _wh = 0; _wh < array_length(_wrapped_header); _wh += 1) {
                 array_push(_lines, { text : _wrapped_header[_wh], is_error : !_emit_result.is_valid, is_macro_header : true, node_id : _node, indent : false });
             }
@@ -103,7 +103,7 @@ function scr_amiga_build_preview_lines() {
                 var _s = 0;
 
                 while (_s < _sub_count) {
-                    var _wrapped_sub = scr_amiga_wrap_preview_text(_sub_lines[_s], 326);
+                    var _wrapped_sub = scr_amiga_wrap_preview_text(_sub_lines[_s], 314);
                     for (var _ws = 0; _ws < array_length(_wrapped_sub); _ws += 1) {
                         array_push(_lines, { text : _wrapped_sub[_ws], is_error : !_emit_result.is_valid, is_macro_header : false, node_id : noone, indent : true });
                     }
@@ -116,7 +116,7 @@ function scr_amiga_build_preview_lines() {
             var _pl = 0;
 
             while (_pl < _plain_count) {
-                var _wrapped_plain = scr_amiga_wrap_preview_text(_plain_lines[_pl], 338);
+                var _wrapped_plain = scr_amiga_wrap_preview_text(_plain_lines[_pl], 326);
                 for (var _wp = 0; _wp < array_length(_wrapped_plain); _wp += 1) {
                     array_push(_lines, { text : _wrapped_plain[_wp], is_error : !_emit_result.is_valid, is_macro_header : false, node_id : noone, indent : false });
                 }

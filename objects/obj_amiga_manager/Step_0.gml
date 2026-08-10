@@ -336,8 +336,15 @@ preview_line_cache = scr_amiga_build_preview_lines();
 var _preview_panel_x = room_width - 360;
 var _preview_panel_y = 60;
 var _preview_panel_width = 350;
-var _preview_panel_height = room_height - 80;
+var _preview_panel_height = room_height - 60;
 var _preview_line_height = 16;
+var _preview_content_top = _preview_panel_y + 24;
+var _preview_content_bottom = _preview_panel_y + _preview_panel_height - 8;
+var _preview_viewport_height = _preview_content_bottom - _preview_content_top;
+var _preview_list_height = array_length(preview_line_cache) * _preview_line_height;
+var _preview_scroll_range = max(0, _preview_list_height - _preview_viewport_height);
+var _preview_min_scroll = -_preview_scroll_range;
+var _preview_scroll_consumed = false;
 
 var _over_preview_panel = point_in_rectangle(mouse_x, mouse_y, _preview_panel_x, _preview_panel_y, _preview_panel_x + _preview_panel_width, _preview_panel_y + _preview_panel_height);
 
@@ -358,16 +365,56 @@ if (_over_preview_panel) {
         global.preview_scroll_y = 0;
     }
 
-    var _preview_list_height = array_length(preview_line_cache) * _preview_line_height;
-    var _preview_min_scroll = 0;
-
-    if (_preview_list_height > _preview_panel_height) {
-        _preview_min_scroll = -(_preview_list_height - _preview_panel_height);
-    }
-
     if (global.preview_scroll_y < _preview_min_scroll) {
         global.preview_scroll_y = _preview_min_scroll;
     }
+}
+
+var _collapse_x = _preview_panel_x + _preview_panel_width - 126;
+var _collapse_y = _preview_panel_y + 3;
+if (mouse_check_button_pressed(mb_left) && point_in_rectangle(mouse_x, mouse_y, _collapse_x, _collapse_y, _preview_panel_x + _preview_panel_width - 4, _collapse_y + 17)) {
+    with (obj_opcode_node) {
+        if (is_macro) preview_collapsed = true;
+    }
+    global.preview_scroll_y = 0;
+    _preview_scroll_consumed = true;
+}
+
+var _track_x1 = _preview_panel_x + _preview_panel_width - 11;
+var _track_x2 = _preview_panel_x + _preview_panel_width - 3;
+var _track_y1 = _preview_content_top;
+var _track_y2 = _preview_content_bottom;
+var _track_height = _track_y2 - _track_y1;
+
+if (_preview_scroll_range > 0) {
+    var _thumb_height = max(28, floor(_track_height * (_preview_viewport_height / _preview_list_height)));
+    var _thumb_range = _track_height - _thumb_height;
+    var _thumb_ratio = clamp((-global.preview_scroll_y) / _preview_scroll_range, 0, 1);
+    var _thumb_y = _track_y1 + floor(_thumb_range * _thumb_ratio);
+
+    if (mouse_check_button_pressed(mb_left) && point_in_rectangle(mouse_x, mouse_y, _track_x1, _track_y1, _track_x2, _track_y2)) {
+        _preview_scroll_consumed = true;
+        if (point_in_rectangle(mouse_x, mouse_y, _track_x1, _thumb_y, _track_x2, _thumb_y + _thumb_height)) {
+            preview_scrollbar_drag_offset = mouse_y - _thumb_y;
+        } else {
+            preview_scrollbar_drag_offset = _thumb_height / 2;
+        }
+        preview_scrollbar_dragging = true;
+    }
+
+    if (preview_scrollbar_dragging) {
+        _preview_scroll_consumed = true;
+        if (mouse_check_button(mb_left)) {
+            var _new_thumb_y = clamp(mouse_y - preview_scrollbar_drag_offset, _track_y1, _track_y1 + _thumb_range);
+            var _new_ratio = _thumb_range > 0 ? (_new_thumb_y - _track_y1) / _thumb_range : 0;
+            global.preview_scroll_y = -round(_new_ratio * _preview_scroll_range);
+        } else {
+            preview_scrollbar_dragging = false;
+        }
+    }
+} else {
+    preview_scrollbar_dragging = false;
+    global.preview_scroll_y = 0;
 }
 
 // O spawns an ORG root node at the mouse position — workspace area only,
@@ -386,7 +433,7 @@ if (keyboard_check_pressed(ord("O")) && global.operand_edit_owner_uid == -1 && !
     scr_set_status_message("ORG spawned at mouse position.");
 }
 
-if (mouse_check_button_pressed(mb_left)) {
+if (mouse_check_button_pressed(mb_left) && !_preview_scroll_consumed) {
     var _click_line_y = _preview_panel_y + 24 + global.preview_scroll_y;
     var _click_line_index = 0;
     var _click_line_count = array_length(preview_line_cache);
