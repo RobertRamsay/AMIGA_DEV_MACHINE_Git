@@ -2,7 +2,12 @@
 /// Splits _text on newline characters into an array of individual lines.
 function scr_split_lines(_text) {
     var _lines = [];
-    var _remaining = _text;
+    // Assembly emitters use real tab characters for source indentation.
+    // A tab is a control character rather than a printable font glyph; the
+    // Future font therefore displays its fallback/unknown-character box.
+    // Normalise preview text only. The emitted main.s retains real tabs.
+    var _remaining = string_replace_all(_text, "\t", "    ");
+    _remaining = string_replace_all(_remaining, "\r", "");
     var _newline_pos = string_pos("\n", _remaining);
 
     while (_newline_pos > 0) {
