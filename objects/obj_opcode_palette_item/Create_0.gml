@@ -5,3 +5,7 @@ palette_y = 0;
 palette_width = 80;
 palette_height = 20;
 base_palette_y = 20;
+col1 = make_colour_rgb(20,20,255)
+col2 = make_colour_rgb(10,10,120)
+org_col1 = make_colour_rgb(250,220,20)
+org_col2 = make_colour_rgb(160,120,20)

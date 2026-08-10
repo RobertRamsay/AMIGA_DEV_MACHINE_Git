@@ -12,6 +12,7 @@
   "Folders":[
     {"$GMFolder":"","%Name":"Extensions","folderPath":"folders/Extensions.yy","name":"Extensions","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"SCRIPTS","folderPath":"folders/Extensions/SCRIPTS.yy","name":"SCRIPTS","resourceType":"GMFolder","resourceVersion":"2.0",},
+    {"$GMFolder":"","%Name":"GFX","folderPath":"folders/GFX.yy","name":"GFX","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"OBJECTS","folderPath":"folders/OBJECTS.yy","name":"OBJECTS","resourceType":"GMFolder","resourceVersion":"2.0",},
   ],
   "ForcedPrefabProjectReferences":[],
@@ -207,6 +208,7 @@
   "name":"AMIGA_DEV_MACHINE",
   "resources":[
     {"id":{"name":"execute_shell_simple_ext","path":"extensions/execute_shell_simple_ext/execute_shell_simple_ext.yy",},},
+    {"id":{"name":"font_Future_OpCode","path":"fonts/font_Future_OpCode/font_Future_OpCode.yy",},},
     {"id":{"name":"font_Future","path":"fonts/font_Future/font_Future.yy",},},
     {"id":{"name":"obj_amiga_manager","path":"objects/obj_amiga_manager/obj_amiga_manager.yy",},},
     {"id":{"name":"obj_amiga_root_node","path":"objects/obj_amiga_root_node/obj_amiga_root_node.yy",},},
@@ -305,6 +307,7 @@
     {"id":{"name":"scr_try_stack_connect","path":"scripts/scr_try_stack_connect/scr_try_stack_connect.yy",},},
     {"id":{"name":"scr_undo","path":"scripts/scr_undo/scr_undo.yy",},},
     {"id":{"name":"scr_validate_node_addressing","path":"scripts/scr_validate_node_addressing/scr_validate_node_addressing.yy",},},
+    {"id":{"name":"spr_ADM_Bkg","path":"sprites/spr_ADM_Bkg/spr_ADM_Bkg.yy",},},
     {"id":{"name":"spr_ADM_SmallLogo","path":"sprites/spr_ADM_SmallLogo/spr_ADM_SmallLogo.yy",},},
     {"id":{"name":"spr_blueGrad","path":"sprites/spr_blueGrad/spr_blueGrad.yy",},},
     {"id":{"name":"spr_MainLogo","path":"sprites/spr_MainLogo/spr_MainLogo.yy",},},

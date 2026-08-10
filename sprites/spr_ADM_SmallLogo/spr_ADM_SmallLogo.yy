@@ -25,8 +25,8 @@
   "nineSlice":null,
   "origin":0,
   "parent":{
-    "name":"AMIGA_DEV_MACHINE",
-    "path":"AMIGA_DEV_MACHINE.yyp",
+    "name":"GFX",
+    "path":"folders/GFX.yy",
   },
   "preMultiplyAlpha":false,
   "resourceType":"GMSprite",

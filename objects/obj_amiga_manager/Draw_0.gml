@@ -127,20 +127,20 @@ draw_text(top_ui_editor_2_x + 4, top_ui_row_1_y , "BOB-EDIT");
 // SAVE/LOAD moved to their own column off to the side, and widened —
 // they're used often enough to want more room and less chance of a
 // mis-click against the macro buttons next to them.
-var _workspace_but_width = 150;
-var _workspace_xpos = 110;
+var _workspace_but_width = 160;
+var _workspace_xpos = 100;
 
 draw_set_colour(make_color_rgb(40, 100, 40));
 draw_rectangle(_workspace_xpos, 20, _workspace_xpos+_workspace_but_width, 36, false);
 draw_set_colour(c_white);
 draw_rectangle(_workspace_xpos, 20, _workspace_xpos+_workspace_but_width, 36, true);
-draw_text(_workspace_xpos + 2, 18, "LOAD WORKSPACE");
+draw_text(_workspace_xpos + 5, 20, "LOAD WORKSPACE");
 
 draw_set_colour(make_color_rgb(35, 55, 85));
-draw_rectangle(_workspace_xpos, 44, _workspace_xpos+_workspace_but_width, 60, false);
+draw_rectangle(_workspace_xpos, 50, _workspace_xpos+_workspace_but_width, 66, false);
 draw_set_colour(c_white);
-draw_rectangle(_workspace_xpos, 44, _workspace_xpos+_workspace_but_width, 60, true);
-draw_text(_workspace_xpos + 2, 42, "SAVE WORKSPACE");
+draw_rectangle(_workspace_xpos, 50, _workspace_xpos+_workspace_but_width, 66, true);
+draw_text(_workspace_xpos + 5, 50, "SAVE WORKSPACE");
 
 draw_set_colour(c_white);
 draw_text(top_ui_system_x, 2, "SYSTEM:");

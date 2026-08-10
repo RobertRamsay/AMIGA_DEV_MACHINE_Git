@@ -1,6 +1,6 @@
 {
   "$GMFont":"",
-  "%Name":"font_Future",
+  "%Name":"font_Future_OpCode",
   "AntiAlias":1,
   "applyKerning":0,
   "ascender":12,
@@ -117,7 +117,7 @@
   "last":0,
   "lineHeight":15,
   "maintainGms1Font":false,
-  "name":"font_Future",
+  "name":"font_Future_OpCode",
   "parent":{
     "name":"AMIGA_DEV_MACHINE",
     "path":"AMIGA_DEV_MACHINE.yyp",
