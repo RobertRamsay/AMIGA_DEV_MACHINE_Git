@@ -253,7 +253,12 @@ while (_gradient_slot < 12) {
     var _over_gradient_slot = point_in_rectangle(mouse_x, mouse_y, _gradient_slot_x, _layout.gradient_custom_slots_y,
         _gradient_slot_x + _layout.gradient_custom_slot_width, _layout.gradient_custom_slots_y + _layout.gradient_custom_slot_height);
 
-    if (_over_gradient_slot && mouse_check_button_pressed(mb_left)) {
+    if (_over_gradient_slot && keyboard_check(vk_alt) && mouse_check_button_pressed(mb_left)) {
+        var _gradient_slot_pick = bitmap_gradient_custom_colours[_gradient_slot];
+        bitmap_paint_index = _gradient_slot_pick;
+        bitmap_palette_edit_index = _gradient_slot_pick;
+        bitmap_gradient_colour_1 = _gradient_slot_pick;
+    } else if (_over_gradient_slot && mouse_check_button_pressed(mb_left)) {
         bitmap_gradient_custom_colours[_gradient_slot] = bitmap_gradient_colour_1;
         if (_gradient_slot >= bitmap_gradient_custom_count) {
             bitmap_gradient_custom_count = _gradient_slot + 1;

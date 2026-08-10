@@ -164,7 +164,7 @@ draw_set_colour(bitmap_gradient_custom_active ? c_aqua : c_white);
 draw_rectangle(_layout.gradient_custom_toggle_x, _layout.gradient_custom_toggle_y,
     _layout.gradient_custom_toggle_x + _layout.gradient_custom_toggle_width, _layout.gradient_custom_toggle_y + _layout.tool_height, true);
 draw_text(_layout.gradient_custom_toggle_x + 10, _layout.gradient_custom_toggle_y + 3,
-    bitmap_gradient_custom_active ? "CUSTOM GRADIENT: ON" : "CUSTOM GRADIENT: OFF (COL1 / COL2)");
+    bitmap_gradient_custom_active ? "CUSTOM GRADIENT: ON" : "CUSTOM GRADIENT: OFF");
 
 var _gradient_slot = 0;
 while (_gradient_slot < 12) {
@@ -459,6 +459,6 @@ while (_channel < 3) {
 draw_text_ext(_layout.right_x, _layout.slider_b_y + 38, "32 colours = five hardware bitplanes. TEST BITMAP builds a bootable OFS disk and loads the 51,200-byte display through AmigaDOS.", 18, 225);
 
 draw_set_colour(c_white);
-draw_text(_layout.panel_x + 12, _layout.help_line_1_y, "LEFT: tool     RIGHT: COLOR00     ALT+CANVAS: pick     ALT+L/R SWATCH: COL1/COL2     CTRL+C/V SWATCH: copy/paste     SPACE: pan");
+draw_text(_layout.panel_x + 12, _layout.help_line_1_y, "LEFT: tool     RIGHT: COLOR00     ALT+CANVAS: pick     ALT+GRAD SLOT: edit colour     ALT+L/R SWATCH: COL1/COL2     CTRL+C/V: copy/paste     SPACE: pan");
 draw_text(_layout.panel_x + 12, _layout.help_line_2_y, "D/F/G/L: tools     C: checker dither     T: transparency lock     X: flip X     [ / ]: brush     CTRL+Z/Y: undo/redo     GRAD SLOTS L:set COL1 / R:end");
 draw_set_colour(c_white);
