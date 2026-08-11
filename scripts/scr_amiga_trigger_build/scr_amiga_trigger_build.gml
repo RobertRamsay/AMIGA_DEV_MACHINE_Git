@@ -44,7 +44,7 @@ function scr_amiga_trigger_build() {
             // }
 
             if (_requires_kickstart) {
-                scr_set_status_message("Booting with unknown Kickstart — at CLI 1> please enter " + chr(34) + "DF0:main" + chr(34));
+                scr_set_status_message("Booting with unknown Kickstart - at CLI 1> please enter " + chr(34) + "DF0:main" + chr(34));
             }
 
             var _start_result = scr_amiga_start_build(_node_array, global.current_project_path, global.current_chipset_mode);
