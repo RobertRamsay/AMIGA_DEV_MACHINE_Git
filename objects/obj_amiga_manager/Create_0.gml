@@ -186,8 +186,8 @@ while (_i < _mnemonic_count) {
 // 8. ORG PALETTE ENTRY
 // ============================================================================
 
-// Shared top-strip geometry. ORG and LOAD/SAVE retain their established
-// positions; the remaining controls are grouped by purpose from left to right.
+// Shared top-strip geometry. SYSTEM and workspace I/O form the left-hand
+// cluster; ORG occupies the former SYSTEM position on the right.
 top_ui_row_1_y = 20;
 top_ui_row_2_y = 44;
 top_ui_button_width = 100;
@@ -197,18 +197,21 @@ top_ui_test_2_x = 414;
 top_ui_macro_x = 530;
 top_ui_editor_x = 842;
 top_ui_editor_2_x = 946;
-top_ui_system_x = 1062;
+top_ui_system_x = palette_start_x;
+top_ui_workspace_x = 114;
+top_ui_workspace_width = 150;
+top_ui_org_x = 1062;
 
 var _org_palette_instance = instance_create_layer(
-    palette_start_x,
-    20,
+    top_ui_org_x,
+    top_ui_row_1_y,
     "Instances",
     obj_opcode_palette_item
 );
 
 _org_palette_instance.palette_mnemonic = "ORG";
-_org_palette_instance.palette_x = palette_start_x;
-_org_palette_instance.base_palette_y = 20;
+_org_palette_instance.palette_x = top_ui_org_x;
+_org_palette_instance.base_palette_y = top_ui_row_1_y;
 
 
 // ============================================================================

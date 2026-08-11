@@ -146,8 +146,8 @@ if (_content_h > _viewport_h) {
 
 draw_set_colour(c_white);
 
-// Top tool strip. ORG and LOAD/SAVE stay in their familiar positions; all
-// other actions are separated into clear TEST, MACRO, EDITOR and SYSTEM groups.
+// Top tool strip. SYSTEM and workspace I/O share the left cluster; ORG sits
+// alone in the former SYSTEM position to the right of the editor controls.
 draw_text(top_ui_test_x, 2, "TEST MACROS:");
 draw_set_colour(c_maroon);
 draw_rectangle(top_ui_test_x, top_ui_row_1_y, top_ui_test_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, false);
@@ -192,37 +192,36 @@ draw_set_colour(c_white);
 draw_rectangle(top_ui_editor_2_x, top_ui_row_1_y, top_ui_editor_2_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, true);
 draw_text(top_ui_editor_2_x + 4, top_ui_row_1_y , "BOB-EDIT");
 
-// SAVE/LOAD moved to their own column off to the side, and widened —
-// they're used often enough to want more room and less chance of a
-// mis-click against the macro buttons next to them.
-var _workspace_but_width = 160;
-var _workspace_xpos = 100;
+// Workspace I/O sits directly beside QUIT/KILL as part of the SYSTEM cluster.
+// The wider buttons leave enough room for their full labels.
+var _workspace_but_width = top_ui_workspace_width;
+var _workspace_xpos = top_ui_workspace_x;
 
 draw_set_colour(make_color_rgb(40, 100, 40));
-draw_rectangle(_workspace_xpos, 20, _workspace_xpos+_workspace_but_width, 36, false);
+draw_rectangle(_workspace_xpos, top_ui_row_1_y, _workspace_xpos+_workspace_but_width, top_ui_row_1_y + top_ui_button_height, false);
 draw_set_colour(c_white);
-draw_rectangle(_workspace_xpos, 20, _workspace_xpos+_workspace_but_width, 36, true);
-draw_text(_workspace_xpos + 5, 20, "LOAD WORKSPACE");
+draw_rectangle(_workspace_xpos, top_ui_row_1_y, _workspace_xpos+_workspace_but_width, top_ui_row_1_y + top_ui_button_height, true);
+draw_text(_workspace_xpos + 5, top_ui_row_1_y, "LOAD WORKSPACE");
 
 draw_set_colour(make_color_rgb(35, 55, 85));
-draw_rectangle(_workspace_xpos, 50, _workspace_xpos+_workspace_but_width, 66, false);
+draw_rectangle(_workspace_xpos, top_ui_row_2_y, _workspace_xpos+_workspace_but_width, top_ui_row_2_y + top_ui_button_height, false);
 draw_set_colour(c_white);
-draw_rectangle(_workspace_xpos, 50, _workspace_xpos+_workspace_but_width, 66, true);
-draw_text(_workspace_xpos + 5, 50, "SAVE WORKSPACE");
+draw_rectangle(_workspace_xpos, top_ui_row_2_y, _workspace_xpos+_workspace_but_width, top_ui_row_2_y + top_ui_button_height, true);
+draw_text(_workspace_xpos + 5, top_ui_row_2_y, "SAVE WORKSPACE");
 
 draw_set_colour(c_white);
 draw_text(top_ui_system_x, 2, "SYSTEM:");
-draw_set_colour(make_color_rgb(140, 30, 30));
+draw_set_colour(make_color_rgb(90, 20, 20));
 draw_rectangle(top_ui_system_x, top_ui_row_1_y, top_ui_system_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, false);
 draw_set_colour(c_white);
 draw_rectangle(top_ui_system_x, top_ui_row_1_y, top_ui_system_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, true);
-draw_text(top_ui_system_x + 4, top_ui_row_1_y , "KILL FSUAE");
+draw_text(top_ui_system_x + 4, top_ui_row_1_y , "QUIT");
 
-draw_set_colour(make_color_rgb(90, 20, 20));
+draw_set_colour(make_color_rgb(140, 30, 30));
 draw_rectangle(top_ui_system_x, top_ui_row_2_y, top_ui_system_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height, false);
 draw_set_colour(c_white);
 draw_rectangle(top_ui_system_x, top_ui_row_2_y, top_ui_system_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height, true);
-draw_text(top_ui_system_x + 4, top_ui_row_2_y , "QUIT");
+draw_text(top_ui_system_x + 4, top_ui_row_2_y , "KILL FSUAE");
 
 if (keyboard_check(vk_control)) {
     var _hud_text = "Undo: " + string(array_length(global.undo_stack)) + "   Redo: " + string(array_length(global.redo_stack));

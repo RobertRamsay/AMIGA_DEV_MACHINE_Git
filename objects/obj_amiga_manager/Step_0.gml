@@ -261,7 +261,7 @@ var _over_sprite_bitmap_test = point_in_rectangle(mouse_x, mouse_y, top_ui_test_
 if (_over_sprite_bitmap_test && mouse_check_button_pressed(mb_left)) scr_amiga_run_sprite_bitmap_test();
 
 var _kill_fsuae_button_x = top_ui_system_x;
-var _kill_fsuae_button_y = top_ui_row_1_y;
+var _kill_fsuae_button_y = top_ui_row_2_y;
 var _kill_fsuae_button_width = top_ui_button_width;
 var _kill_fsuae_button_height = top_ui_button_height;
 
@@ -272,10 +272,10 @@ if (_over_kill_fsuae_button && mouse_check_button_pressed(mb_left)) {
     scr_set_status_message("FS-UAE killed.");
 }
 
-var _save_workspace_button_x = 110;
-var _save_workspace_button_y = 44;
-var _save_workspace_button_width = 150;
-var _save_workspace_button_height = 16;
+var _save_workspace_button_x = top_ui_workspace_x;
+var _save_workspace_button_y = top_ui_row_2_y;
+var _save_workspace_button_width = top_ui_workspace_width;
+var _save_workspace_button_height = top_ui_button_height;
 
 var _over_save_workspace_button = point_in_rectangle(mouse_x, mouse_y, _save_workspace_button_x, _save_workspace_button_y, _save_workspace_button_x + _save_workspace_button_width, _save_workspace_button_y + _save_workspace_button_height);
 
@@ -288,10 +288,10 @@ if (_over_save_workspace_button && mouse_check_button_pressed(mb_left)) {
     }
 }
 
-var _load_workspace_button_x = 110;
-var _load_workspace_button_y = 20;
-var _load_workspace_button_width = 150;
-var _load_workspace_button_height = 16;
+var _load_workspace_button_x = top_ui_workspace_x;
+var _load_workspace_button_y = top_ui_row_1_y;
+var _load_workspace_button_width = top_ui_workspace_width;
+var _load_workspace_button_height = top_ui_button_height;
 
 var _over_load_workspace_button = point_in_rectangle(mouse_x, mouse_y, _load_workspace_button_x, _load_workspace_button_y, _load_workspace_button_x + _load_workspace_button_width, _load_workspace_button_y + _load_workspace_button_height);
 
@@ -305,7 +305,7 @@ if (_over_load_workspace_button && mouse_check_button_pressed(mb_left)) {
 }
 
 var _quit_button_x = top_ui_system_x;
-var _quit_button_y = top_ui_row_2_y;
+var _quit_button_y = top_ui_row_1_y;
 var _quit_button_width = top_ui_button_width;
 var _quit_button_height = top_ui_button_height;
 

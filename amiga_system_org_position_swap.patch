@@ -1,0 +1,161 @@
+diff --git a/objects/obj_amiga_manager/Create_0.gml b/objects/obj_amiga_manager/Create_0.gml
+index e2d104c..c519819 100644
+--- a/objects/obj_amiga_manager/Create_0.gml
++++ b/objects/obj_amiga_manager/Create_0.gml
+@@ -186,8 +186,8 @@ while (_i < _mnemonic_count) {
+ // 8. ORG PALETTE ENTRY
+ // ============================================================================
+ 
+-// Shared top-strip geometry. ORG and LOAD/SAVE retain their established
+-// positions; the remaining controls are grouped by purpose from left to right.
++// Shared top-strip geometry. SYSTEM and workspace I/O form the left-hand
++// cluster; ORG occupies the former SYSTEM position on the right.
+ top_ui_row_1_y = 20;
+ top_ui_row_2_y = 44;
+ top_ui_button_width = 100;
+@@ -197,18 +197,21 @@ top_ui_test_2_x = 414;
+ top_ui_macro_x = 530;
+ top_ui_editor_x = 842;
+ top_ui_editor_2_x = 946;
+-top_ui_system_x = 1062;
++top_ui_system_x = palette_start_x;
++top_ui_workspace_x = 114;
++top_ui_workspace_width = 150;
++top_ui_org_x = 1062;
+ 
+ var _org_palette_instance = instance_create_layer(
+-    palette_start_x,
+-    20,
++    top_ui_org_x,
++    top_ui_row_1_y,
+     "Instances",
+     obj_opcode_palette_item
+ );
+ 
+ _org_palette_instance.palette_mnemonic = "ORG";
+-_org_palette_instance.palette_x = palette_start_x;
+-_org_palette_instance.base_palette_y = 20;
++_org_palette_instance.palette_x = top_ui_org_x;
++_org_palette_instance.base_palette_y = top_ui_row_1_y;
+ 
+ 
+ // ============================================================================
+diff --git a/objects/obj_amiga_manager/Draw_0.gml b/objects/obj_amiga_manager/Draw_0.gml
+index 8714122..42e1659 100644
+--- a/objects/obj_amiga_manager/Draw_0.gml
++++ b/objects/obj_amiga_manager/Draw_0.gml
+@@ -146,8 +146,8 @@ if (_content_h > _viewport_h) {
+ 
+ draw_set_colour(c_white);
+ 
+-// Top tool strip. ORG and LOAD/SAVE stay in their familiar positions; all
+-// other actions are separated into clear TEST, MACRO, EDITOR and SYSTEM groups.
++// Top tool strip. SYSTEM and workspace I/O share the left cluster; ORG sits
++// alone in the former SYSTEM position to the right of the editor controls.
+ draw_text(top_ui_test_x, 2, "TEST MACROS:");
+ draw_set_colour(c_maroon);
+ draw_rectangle(top_ui_test_x, top_ui_row_1_y, top_ui_test_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, false);
+@@ -192,37 +192,36 @@ draw_set_colour(c_white);
+ draw_rectangle(top_ui_editor_2_x, top_ui_row_1_y, top_ui_editor_2_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, true);
+ draw_text(top_ui_editor_2_x + 4, top_ui_row_1_y , "BOB-EDIT");
+ 
+-// SAVE/LOAD moved to their own column off to the side, and widened —
+-// they're used often enough to want more room and less chance of a
+-// mis-click against the macro buttons next to them.
+-var _workspace_but_width = 160;
+-var _workspace_xpos = 100;
++// Workspace I/O sits directly beside QUIT/KILL as part of the SYSTEM cluster.
++// The wider buttons leave enough room for their full labels.
++var _workspace_but_width = top_ui_workspace_width;
++var _workspace_xpos = top_ui_workspace_x;
+ 
+ draw_set_colour(make_color_rgb(40, 100, 40));
+-draw_rectangle(_workspace_xpos, 20, _workspace_xpos+_workspace_but_width, 36, false);
++draw_rectangle(_workspace_xpos, top_ui_row_1_y, _workspace_xpos+_workspace_but_width, top_ui_row_1_y + top_ui_button_height, false);
+ draw_set_colour(c_white);
+-draw_rectangle(_workspace_xpos, 20, _workspace_xpos+_workspace_but_width, 36, true);
+-draw_text(_workspace_xpos + 5, 20, "LOAD WORKSPACE");
++draw_rectangle(_workspace_xpos, top_ui_row_1_y, _workspace_xpos+_workspace_but_width, top_ui_row_1_y + top_ui_button_height, true);
++draw_text(_workspace_xpos + 5, top_ui_row_1_y, "LOAD WORKSPACE");
+ 
+ draw_set_colour(make_color_rgb(35, 55, 85));
+-draw_rectangle(_workspace_xpos, 50, _workspace_xpos+_workspace_but_width, 66, false);
++draw_rectangle(_workspace_xpos, top_ui_row_2_y, _workspace_xpos+_workspace_but_width, top_ui_row_2_y + top_ui_button_height, false);
+ draw_set_colour(c_white);
+-draw_rectangle(_workspace_xpos, 50, _workspace_xpos+_workspace_but_width, 66, true);
+-draw_text(_workspace_xpos + 5, 50, "SAVE WORKSPACE");
++draw_rectangle(_workspace_xpos, top_ui_row_2_y, _workspace_xpos+_workspace_but_width, top_ui_row_2_y + top_ui_button_height, true);
++draw_text(_workspace_xpos + 5, top_ui_row_2_y, "SAVE WORKSPACE");
+ 
+ draw_set_colour(c_white);
+ draw_text(top_ui_system_x, 2, "SYSTEM:");
+-draw_set_colour(make_color_rgb(140, 30, 30));
++draw_set_colour(make_color_rgb(90, 20, 20));
+ draw_rectangle(top_ui_system_x, top_ui_row_1_y, top_ui_system_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, false);
+ draw_set_colour(c_white);
+ draw_rectangle(top_ui_system_x, top_ui_row_1_y, top_ui_system_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, true);
+-draw_text(top_ui_system_x + 4, top_ui_row_1_y , "KILL FSUAE");
++draw_text(top_ui_system_x + 4, top_ui_row_1_y , "QUIT");
+ 
+-draw_set_colour(make_color_rgb(90, 20, 20));
++draw_set_colour(make_color_rgb(140, 30, 30));
+ draw_rectangle(top_ui_system_x, top_ui_row_2_y, top_ui_system_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height, false);
+ draw_set_colour(c_white);
+ draw_rectangle(top_ui_system_x, top_ui_row_2_y, top_ui_system_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height, true);
+-draw_text(top_ui_system_x + 4, top_ui_row_2_y , "QUIT");
++draw_text(top_ui_system_x + 4, top_ui_row_2_y , "KILL FSUAE");
+ 
+ if (keyboard_check(vk_control)) {
+     var _hud_text = "Undo: " + string(array_length(global.undo_stack)) + "   Redo: " + string(array_length(global.redo_stack));
+diff --git a/objects/obj_amiga_manager/Step_0.gml b/objects/obj_amiga_manager/Step_0.gml
+index 3eb66c6..ff6da5a 100644
+--- a/objects/obj_amiga_manager/Step_0.gml
++++ b/objects/obj_amiga_manager/Step_0.gml
+@@ -261,7 +261,7 @@ var _over_sprite_bitmap_test = point_in_rectangle(mouse_x, mouse_y, top_ui_test_
+ if (_over_sprite_bitmap_test && mouse_check_button_pressed(mb_left)) scr_amiga_run_sprite_bitmap_test();
+ 
+ var _kill_fsuae_button_x = top_ui_system_x;
+-var _kill_fsuae_button_y = top_ui_row_1_y;
++var _kill_fsuae_button_y = top_ui_row_2_y;
+ var _kill_fsuae_button_width = top_ui_button_width;
+ var _kill_fsuae_button_height = top_ui_button_height;
+ 
+@@ -272,10 +272,10 @@ if (_over_kill_fsuae_button && mouse_check_button_pressed(mb_left)) {
+     scr_set_status_message("FS-UAE killed.");
+ }
+ 
+-var _save_workspace_button_x = 110;
+-var _save_workspace_button_y = 44;
+-var _save_workspace_button_width = 150;
+-var _save_workspace_button_height = 16;
++var _save_workspace_button_x = top_ui_workspace_x;
++var _save_workspace_button_y = top_ui_row_2_y;
++var _save_workspace_button_width = top_ui_workspace_width;
++var _save_workspace_button_height = top_ui_button_height;
+ 
+ var _over_save_workspace_button = point_in_rectangle(mouse_x, mouse_y, _save_workspace_button_x, _save_workspace_button_y, _save_workspace_button_x + _save_workspace_button_width, _save_workspace_button_y + _save_workspace_button_height);
+ 
+@@ -288,10 +288,10 @@ if (_over_save_workspace_button && mouse_check_button_pressed(mb_left)) {
+     }
+ }
+ 
+-var _load_workspace_button_x = 110;
+-var _load_workspace_button_y = 20;
+-var _load_workspace_button_width = 150;
+-var _load_workspace_button_height = 16;
++var _load_workspace_button_x = top_ui_workspace_x;
++var _load_workspace_button_y = top_ui_row_1_y;
++var _load_workspace_button_width = top_ui_workspace_width;
++var _load_workspace_button_height = top_ui_button_height;
+ 
+ var _over_load_workspace_button = point_in_rectangle(mouse_x, mouse_y, _load_workspace_button_x, _load_workspace_button_y, _load_workspace_button_x + _load_workspace_button_width, _load_workspace_button_y + _load_workspace_button_height);
+ 
+@@ -305,7 +305,7 @@ if (_over_load_workspace_button && mouse_check_button_pressed(mb_left)) {
+ }
+ 
+ var _quit_button_x = top_ui_system_x;
+-var _quit_button_y = top_ui_row_2_y;
++var _quit_button_y = top_ui_row_1_y;
+ var _quit_button_width = top_ui_button_width;
+ var _quit_button_height = top_ui_button_height;
+ 
