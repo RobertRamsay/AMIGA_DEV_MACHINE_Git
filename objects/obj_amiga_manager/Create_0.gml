@@ -2,10 +2,6 @@
 
 window_set_size(display_get_width(),display_get_height()); // ensure full screen
 window_set_position(0,0);
-// All fixed UI coordinates are authored against the 1920x1080 room. Draw GUI
-// otherwise uses a runner-dependent surface size, which can put Y=850 helper
-// panels completely outside the visible GUI on a 1366x768 application surface.
-display_set_gui_size(room_width, room_height);
 
 // ============================================================================
 // 0. GRID CONSTANT
@@ -136,7 +132,6 @@ global.palette_panel_bounds = {
 global.palette_hover_mnemonic = "";
 global.palette_hover_x = 0;
 global.palette_hover_y = 0;
-global.hovered_help_node = noone;
 
 depth = -300000
 // ============================================================================

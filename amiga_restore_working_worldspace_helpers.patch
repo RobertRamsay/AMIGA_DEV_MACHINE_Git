@@ -1,0 +1,300 @@
+diff --git a/objects/obj_amiga_manager/Create_0.gml b/objects/obj_amiga_manager/Create_0.gml
+index 3ad62f3..e2d104c 100644
+--- a/objects/obj_amiga_manager/Create_0.gml
++++ b/objects/obj_amiga_manager/Create_0.gml
+@@ -2,10 +2,6 @@
+ 
+ window_set_size(display_get_width(),display_get_height()); // ensure full screen
+ window_set_position(0,0);
+-// All fixed UI coordinates are authored against the 1920x1080 room. Draw GUI
+-// otherwise uses a runner-dependent surface size, which can put Y=850 helper
+-// panels completely outside the visible GUI on a 1366x768 application surface.
+-display_set_gui_size(room_width, room_height);
+ 
+ // ============================================================================
+ // 0. GRID CONSTANT
+@@ -136,7 +132,6 @@ global.palette_panel_bounds = {
+ global.palette_hover_mnemonic = "";
+ global.palette_hover_x = 0;
+ global.palette_hover_y = 0;
+-global.hovered_help_node = noone;
+ 
+ depth = -300000
+ // ============================================================================
+diff --git a/objects/obj_amiga_manager/Draw_0.gml b/objects/obj_amiga_manager/Draw_0.gml
+index bb5b199..b468e89 100644
+--- a/objects/obj_amiga_manager/Draw_0.gml
++++ b/objects/obj_amiga_manager/Draw_0.gml
+@@ -1,5 +1,33 @@
+ draw_set_font(font_Future);
+ 
++var _has_hover = (global.palette_hover_mnemonic != "");
++
++if (_has_hover) {
++    var _tooltip_data = scr_opcode_lookup(global.palette_hover_mnemonic);
++
++    if (_tooltip_data != undefined) {
++        var _tip_x = global.palette_hover_x + 16;
++        var _tip_y = global.palette_hover_y + 16;
++        var _tip_width = 800;
++        var _tip_height = 100;
++
++        draw_set_alpha(0.65);
++        draw_rectangle_colour(_tip_x, _tip_y, _tip_x + _tip_width, _tip_y + _tip_height, c_black, c_black, c_black, c_black, false);
++        draw_set_alpha(1);
++        draw_rectangle_colour(_tip_x, _tip_y, _tip_x + _tip_width, _tip_y + _tip_height, c_yellow, c_yellow, c_yellow, c_yellow, true);
++
++        draw_set_colour(c_white);
++        draw_text(_tip_x + 8, _tip_y + 6, _tooltip_data.format);
++        draw_text(_tip_x + 8, _tip_y + 24, _tooltip_data.mode);
++        draw_text(_tip_x + 8, _tip_y + 50, "Use: " + _tooltip_data.use);
++        if (variable_struct_exists(_tooltip_data, "generated_help") && _tooltip_data.generated_help) {
++            draw_text(_tip_x + 8, _tip_y + 72, "Cost: " + string(_tooltip_data.cycles) + ", size: " + string(_tooltip_data.bytes));
++        } else {
++            draw_text(_tip_x + 8, _tip_y + 72, "~" + string(_tooltip_data.cycles) + " cycles, " + string(_tooltip_data.bytes) + "+ bytes");
++        }
++    }
++}
++
+ var _panel_x = room_width - 360;
+ var _panel_y = 60;
+ var _panel_width = 350;
+diff --git a/objects/obj_amiga_manager/Draw_64.gml b/objects/obj_amiga_manager/Draw_64.gml
+deleted file mode 100644
+index 06f30e4..0000000
+--- a/objects/obj_amiga_manager/Draw_64.gml
++++ /dev/null
+@@ -1,108 +0,0 @@
+-/// @description GUI-layer hover help
+-// All palette, macro and placed-node help is drawn once here. Draw GUI runs
+-// after normal instance drawing, so overlapping nodes and instance depth can
+-// never cover the helper or cause several node instances to fight over it.
+-
+-draw_set_font(font_Future);
+-
+-var _tip_x = 272;
+-var _tip_y = 850;
+-var _tip_width = 800;
+-var _tip_height = 100;
+-var _drew_helper = false;
+-
+-// Normal Draw records hover ownership in visual draw order. Resolve directly
+-// as a fallback too, making this GUI event independent of event-order changes
+-// made by different GameMaker runners.
+-var _hover_mnemonic = global.palette_hover_mnemonic;
+-if (_hover_mnemonic == "") {
+-    var _palette_count = instance_number(obj_opcode_palette_item);
+-    var _palette_index = 0;
+-    while (_palette_index < _palette_count) {
+-        var _palette_item = instance_find(obj_opcode_palette_item, _palette_index);
+-        if (point_in_rectangle(mouse_x, mouse_y,
+-            _palette_item.palette_x, _palette_item.palette_y,
+-            _palette_item.palette_x + _palette_item.palette_width,
+-            _palette_item.palette_y + _palette_item.palette_height)) {
+-            _hover_mnemonic = _palette_item.palette_mnemonic;
+-        }
+-        _palette_index += 1;
+-    }
+-}
+-
+-// Fixed palette and macro controls get first refusal when they are hovered.
+-if (_hover_mnemonic != "") {
+-    var _tooltip_data = scr_opcode_lookup(_hover_mnemonic);
+-
+-    if (_tooltip_data != undefined) {
+-        if (global.palette_hover_mnemonic != "") {
+-            _tip_x = global.palette_hover_x + 16;
+-            _tip_y = global.palette_hover_y + 16;
+-        }
+-
+-        draw_set_alpha(0.65);
+-        draw_set_colour(c_black);
+-        draw_rectangle(_tip_x, _tip_y, _tip_x + _tip_width, _tip_y + _tip_height, false);
+-        draw_set_alpha(1);
+-        draw_set_colour(c_yellow);
+-        draw_rectangle(_tip_x, _tip_y, _tip_x + _tip_width, _tip_y + _tip_height, true);
+-        draw_set_colour(c_white);
+-        draw_text(_tip_x + 8, _tip_y + 6, _tooltip_data.format);
+-        draw_text(_tip_x + 8, _tip_y + 24, _tooltip_data.mode);
+-        draw_text(_tip_x + 8, _tip_y + 50, "Use: " + _tooltip_data.use);
+-
+-        if (variable_struct_exists(_tooltip_data, "generated_help") && _tooltip_data.generated_help) {
+-            draw_text(_tip_x + 8, _tip_y + 72, "Cost: " + string(_tooltip_data.cycles) + ", size: " + string(_tooltip_data.bytes));
+-        } else {
+-            draw_text(_tip_x + 8, _tip_y + 72, "~" + string(_tooltip_data.cycles) + " cycles, " + string(_tooltip_data.bytes) + "+ bytes");
+-        }
+-
+-        _drew_helper = true;
+-    }
+-}
+-
+-// Otherwise explain the one placed node selected by normal Draw order. This
+-// keeps hit testing in the same coordinate/depth context that drew the node,
+-// while the helper itself remains safely above the world in Draw GUI.
+-if (!_drew_helper
+-&& global.operand_edit_owner_uid == -1
+-&& !instance_exists(obj_bitmap_editor)
+-&& !instance_exists(obj_bob_editor)
+-&& !instance_exists(obj_colour_picker)
+-&& !instance_exists(obj_cprbar_editor)) {
+-    var _help_node = global.hovered_help_node;
+-
+-    if (_help_node == noone || !instance_exists(_help_node)) {
+-        var _node_count = instance_number(obj_opcode_node);
+-        var _node_index = 0;
+-        while (_node_index < _node_count) {
+-            var _node = instance_find(obj_opcode_node, _node_index);
+-            var _node_x = _node.node_x + global.pan_x;
+-            var _node_y = _node.node_y + global.pan_y;
+-            if (!_node.is_dragging
+-            && point_in_rectangle(mouse_x, mouse_y, _node_x, _node_y,
+-                _node_x + _node.node_width, _node_y + _node.node_height)) {
+-                _help_node = _node;
+-            }
+-            _node_index += 1;
+-        }
+-    }
+-
+-    if (_help_node != noone && instance_exists(_help_node)) {
+-        var _explanation = scr_amiga_explain_node(_help_node);
+-
+-        if (_explanation != "") {
+-            draw_set_alpha(0.65);
+-            draw_set_colour(c_black);
+-            draw_rectangle(_tip_x, _tip_y, _tip_x + _tip_width, _tip_y + _tip_height, false);
+-            draw_set_alpha(1);
+-            draw_set_colour(c_yellow);
+-            draw_rectangle(_tip_x, _tip_y, _tip_x + _tip_width, _tip_y + _tip_height, true);
+-            draw_set_colour(c_white);
+-            draw_text_ext(_tip_x + 8, _tip_y + 6, _explanation, 16, _tip_width - 16);
+-        }
+-    }
+-}
+-
+-draw_set_alpha(1);
+-draw_set_colour(c_white);
+diff --git a/objects/obj_amiga_manager/Step_0.gml b/objects/obj_amiga_manager/Step_0.gml
+index d930c23..3eb66c6 100644
+--- a/objects/obj_amiga_manager/Step_0.gml
++++ b/objects/obj_amiga_manager/Step_0.gml
+@@ -33,12 +33,6 @@ if (global.workspace_dirty && global.autosave_due_time >= 0 && current_time >= g
+     }
+ }
+ 
+-// Normal Draw events repopulate these after Step. Resetting them here lets
+-// actual draw order select the visually topmost palette item or node while
+-// Draw GUI remains the only place that renders the helper itself.
+-global.palette_hover_mnemonic = "";
+-global.hovered_help_node = noone;
+-
+ // The bitmap editor and colour picker are both modal: do not pan, build,
+ // undo, click controls or mutate the graph behind either of them.
+ if (instance_exists(obj_bitmap_editor) || instance_exists(obj_bob_editor) || instance_exists(obj_colour_picker) || instance_exists(obj_cprbar_editor)) {
+@@ -509,6 +503,8 @@ if (mouse_check_button_pressed(mb_left) && !_preview_scroll_consumed) {
+     }
+ }
+ 
++global.palette_hover_mnemonic = "";
++
+ if (global.sprite_editor_open) {
+     var _layout = scr_sprite_editor_layout();
+ 
+diff --git a/objects/obj_amiga_manager/obj_amiga_manager.yy b/objects/obj_amiga_manager/obj_amiga_manager.yy
+index e529d55..341ce4c 100644
+--- a/objects/obj_amiga_manager/obj_amiga_manager.yy
++++ b/objects/obj_amiga_manager/obj_amiga_manager.yy
+@@ -5,7 +5,6 @@
+     {"$GMEvent":"v1","%Name":"","collisionObjectId":null,"eventNum":0,"eventType":0,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
+     {"$GMEvent":"v1","%Name":"","collisionObjectId":null,"eventNum":0,"eventType":3,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
+     {"$GMEvent":"v1","%Name":"","collisionObjectId":null,"eventNum":0,"eventType":8,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
+-    {"$GMEvent":"v1","%Name":"","collisionObjectId":null,"eventNum":64,"eventType":8,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
+     {"$GMEvent":"v1","%Name":"","collisionObjectId":null,"eventNum":27,"eventType":9,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
+   ],
+   "managed":true,
+@@ -36,4 +35,4 @@
+   "spriteId":null,
+   "spriteMaskId":null,
+   "visible":true,
+-}
+\ No newline at end of file
++}
+diff --git a/objects/obj_opcode_node/Draw_0.gml b/objects/obj_opcode_node/Draw_0.gml
+index 667b05b..833a572 100644
+--- a/objects/obj_opcode_node/Draw_0.gml
++++ b/objects/obj_opcode_node/Draw_0.gml
+@@ -379,11 +379,34 @@ if (wedge_target_found && is_dragging) {
+     draw_set_colour(c_white);
+ }
+ 
+-// Record hover ownership in normal draw order, but render nothing here.
+-// Whichever overlapping node is drawn last is the one visibly on top and is
+-// therefore the one Draw GUI will explain.
+-if (!is_dragging
+-&& global.operand_edit_owner_uid == -1
+-&& point_in_rectangle(mouse_x, mouse_y, _dx, _dy, _dx + node_width, _dy + node_height)) {
+-    global.hovered_help_node = id;
++// Semantic hardware tooltip. Unknown instructions deliberately return an
++// empty string so the canvas stays quiet until an explanation is authored.
++var _hovering_node = point_in_rectangle(mouse_x, mouse_y, _dx, _dy, _dx + node_width, _dy + node_height);
++
++if (_hovering_node && !is_dragging && global.operand_edit_owner_uid == -1) {
++    var _explanation = scr_amiga_explain_node(id);
++
++    if (_explanation != "") {
++        var _tip_width = 800;
++        var _tip_height = 100;
++        var _tip_x = 272;//mouse_x + 18;
++        var _tip_y = 850;//mouse_y + 18;
++/*
++        if (_tip_x + _tip_width > room_width - 8) {
++            _tip_x = mouse_x - _tip_width - 18;
++        }
++
++        if (_tip_y + _tip_height > room_height - 8) {
++            _tip_y = mouse_y - _tip_height - 18;
++        }
++*/
++        draw_set_alpha(0.65);
++        draw_set_colour(c_black);
++        draw_rectangle(_tip_x, _tip_y, _tip_x + _tip_width, _tip_y + _tip_height, false);
++        draw_set_alpha(1);
++        draw_set_colour(c_yellow);
++        draw_rectangle(_tip_x, _tip_y, _tip_x + _tip_width, _tip_y + _tip_height, true);
++        draw_set_colour(c_white);
++        draw_text_ext(_tip_x + 8, _tip_y + 6, _explanation, 16, _tip_width - 16);
++    }
+ }
+diff --git a/objects/obj_opcode_palette_item/Draw_0.gml b/objects/obj_opcode_palette_item/Draw_0.gml
+index ae8d524..ac21584 100644
+--- a/objects/obj_opcode_palette_item/Draw_0.gml
++++ b/objects/obj_opcode_palette_item/Draw_0.gml
+@@ -24,12 +24,3 @@ if (palette_mnemonic == "ORG") {
+ 
+ draw_set_colour(c_white);
+ draw_text(palette_x + 3, palette_y+5, palette_display_label);
+-
+-// As with placed nodes, normal Draw decides hover ownership and Draw GUI owns
+-// the actual helper rectangle and text.
+-if (point_in_rectangle(mouse_x, mouse_y, palette_x, palette_y, palette_x + palette_width, palette_y + palette_height)) {
+-    global.palette_hover_mnemonic = palette_mnemonic;
+-    global.palette_hover_display_label = palette_display_label;
+-    global.palette_hover_x = 256;
+-    global.palette_hover_y = 834;
+-}
+diff --git a/objects/obj_opcode_palette_item/Step_0.gml b/objects/obj_opcode_palette_item/Step_0.gml
+index 457be90..eb2e35a 100644
+--- a/objects/obj_opcode_palette_item/Step_0.gml
++++ b/objects/obj_opcode_palette_item/Step_0.gml
+@@ -82,3 +82,12 @@ if (palette_mnemonic == "ORG" || palette_mnemonic == "CPRBAR" || palette_mnemoni
+ } else {
+     palette_y = base_palette_y + global.palette_scroll_y;
+ }
++
++var _is_hovering_palette = point_in_rectangle(mouse_x, mouse_y, palette_x, palette_y, palette_x + palette_width, palette_y + palette_height);
++
++if (_is_hovering_palette) {
++    global.palette_hover_mnemonic = palette_mnemonic;
++    global.palette_hover_display_label = palette_display_label;
++    global.palette_hover_x = 256;//mouse_x;
++    global.palette_hover_y = 834;//mouse_y;
++}

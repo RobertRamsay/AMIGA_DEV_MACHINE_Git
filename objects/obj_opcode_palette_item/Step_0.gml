@@ -82,3 +82,12 @@ if (palette_mnemonic == "ORG" || palette_mnemonic == "CPRBAR" || palette_mnemoni
 } else {
     palette_y = base_palette_y + global.palette_scroll_y;
 }
+
+var _is_hovering_palette = point_in_rectangle(mouse_x, mouse_y, palette_x, palette_y, palette_x + palette_width, palette_y + palette_height);
+
+if (_is_hovering_palette) {
+    global.palette_hover_mnemonic = palette_mnemonic;
+    global.palette_hover_display_label = palette_display_label;
+    global.palette_hover_x = 256;//mouse_x;
+    global.palette_hover_y = 834;//mouse_y;
+}
