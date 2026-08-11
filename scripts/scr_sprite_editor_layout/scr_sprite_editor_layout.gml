@@ -12,7 +12,7 @@ function scr_sprite_editor_layout() {
     var _grid_y = _panel_y + 160;
     var _grid_width = 16 * _cell_size;
     var _grid_height = global.sprite_height * _cell_size;
-    var _palette_y = _grid_y + _grid_height + 28;
+    var _palette_y = _grid_y + _grid_height + 78;
     var _slider_x = _panel_x + 32;
     var _slider_width = 192;
     var _slider_step_width = _slider_width / 16;
@@ -53,6 +53,14 @@ function scr_sprite_editor_layout() {
         tool_y : _grid_y,
         tool_width : 104,
         tool_height : 28,
+        anim_x : _panel_x + 252,
+        anim_play_y : _grid_y + 120,
+        anim_loop_y : _grid_y + 156,
+        anim_rate_y : _grid_y + 192,
+        anim_start_y : _grid_y + 228,
+        anim_end_y : _grid_y + 264,
+        anim_width : 104,
+        anim_height : 28,
         palette_y : _palette_y,
         palette_preview_x : _panel_x + 12,
         palette_preview_y : _palette_y + 18,

@@ -494,6 +494,7 @@ if (global.sprite_editor_open) {
 
     if (_over_close && mouse_check_button_pressed(mb_left)) {
         sprite_editor_commit_asset();
+        global.sprite_anim_playing = false;
         global.sprite_editor_open = false;
         global.sprite_editor_dragging = false;
     }
@@ -511,10 +512,44 @@ if (global.sprite_editor_open) {
         var _tool_y = _layout.tool_y + _tool_i * 36;
         if (mouse_check_button_pressed(mb_left) && point_in_rectangle(mouse_x, mouse_y, _layout.tool_x, _tool_y, _layout.tool_x + _layout.tool_width, _tool_y + _layout.tool_height)) {
             global.sprite_tool = _tool_names[_tool_i];
+            global.sprite_anim_playing = false;
             global.sprite_line_active = false;
             global.sprite_drawing = false;
         }
         _tool_i += 1;
+    }
+
+    if (mouse_check_button_pressed(mb_left) && point_in_rectangle(mouse_x, mouse_y, _layout.anim_x, _layout.anim_play_y, _layout.anim_x + _layout.anim_width, _layout.anim_play_y + _layout.anim_height)) {
+        global.sprite_anim_playing = !global.sprite_anim_playing;
+        if (global.sprite_anim_playing) {
+            sprite_editor_commit_asset(); sprite_editor_rebuild_assets();
+            global.sprite_asset_index = global.sprite_anim_start;
+            sprite_editor_load_asset(global.sprite_asset_names[global.sprite_asset_index]);
+            global.sprite_anim_next_time = current_time + (1000 / global.sprite_anim_rate);
+        }
+    }
+    if (mouse_check_button_pressed(mb_left) && point_in_rectangle(mouse_x, mouse_y, _layout.anim_x, _layout.anim_loop_y, _layout.anim_x + _layout.anim_width, _layout.anim_loop_y + _layout.anim_height)) {
+        global.sprite_anim_loop = !global.sprite_anim_loop;
+    }
+    var _sprite_frame_max = max(0, array_length(global.sprite_asset_names) - 1);
+    if (mouse_check_button_pressed(mb_left) && point_in_rectangle(mouse_x, mouse_y, _layout.anim_x, _layout.anim_rate_y, _layout.anim_x + _layout.anim_width, _layout.anim_rate_y + _layout.anim_height)) {
+        global.sprite_anim_rate = clamp(global.sprite_anim_rate + (mouse_x < _layout.anim_x + _layout.anim_width * 0.5 ? -1 : 1), 1, 60);
+    }
+    if (mouse_check_button_pressed(mb_left) && point_in_rectangle(mouse_x, mouse_y, _layout.anim_x, _layout.anim_start_y, _layout.anim_x + _layout.anim_width, _layout.anim_start_y + _layout.anim_height)) {
+        global.sprite_anim_start = clamp(global.sprite_anim_start + (mouse_x < _layout.anim_x + _layout.anim_width * 0.5 ? -1 : 1), 0, global.sprite_anim_end);
+    }
+    if (mouse_check_button_pressed(mb_left) && point_in_rectangle(mouse_x, mouse_y, _layout.anim_x, _layout.anim_end_y, _layout.anim_x + _layout.anim_width, _layout.anim_end_y + _layout.anim_height)) {
+        global.sprite_anim_end = clamp(global.sprite_anim_end + (mouse_x < _layout.anim_x + _layout.anim_width * 0.5 ? -1 : 1), global.sprite_anim_start, _sprite_frame_max);
+    }
+
+    if (global.sprite_anim_playing && current_time >= global.sprite_anim_next_time) {
+        global.sprite_asset_index += 1;
+        if (global.sprite_asset_index > global.sprite_anim_end) {
+            if (global.sprite_anim_loop) global.sprite_asset_index = global.sprite_anim_start;
+            else { global.sprite_asset_index = global.sprite_anim_end; global.sprite_anim_playing = false; }
+        }
+        sprite_editor_load_asset(global.sprite_asset_names[global.sprite_asset_index]);
+        global.sprite_anim_next_time = current_time + (1000 / global.sprite_anim_rate);
     }
 
     var _over_channel_minus = point_in_rectangle(mouse_x, mouse_y, _layout.channel_minus_x, _layout.channel_row_y, _layout.channel_minus_x + 16, _layout.channel_row_y + 16);
@@ -600,6 +635,7 @@ if (global.sprite_editor_open) {
     var _cell_row = clamp(floor((mouse_y - _layout.grid_y) / _layout.cell_size), 0, global.sprite_height - 1);
 
     if (_over_grid && _sprite_grid_press && global.sprite_editing_field == "") {
+        global.sprite_anim_playing = false;
         var _value = _sprite_right_press ? 0 : global.sprite_paint_index;
         if (global.sprite_tool == "DRAW") {
             global.sprite_drawing = true;
@@ -608,16 +644,27 @@ if (global.sprite_editor_open) {
             global.sprite_last_px = _cell_col; global.sprite_last_py = _cell_row;
             global.sprite_pixels[_cell_row * 16 + _cell_col] = _value;
         } else if (global.sprite_tool == "LINE") {
-            if (!global.sprite_line_active) {
-                global.sprite_line_active = true;
-                global.sprite_line_start_x = _cell_col; global.sprite_line_start_y = _cell_row; global.sprite_line_value = _value;
-            } else {
-                sprite_editor_apply_line(global.sprite_line_start_x, global.sprite_line_start_y, _cell_col, _cell_row, global.sprite_line_value);
-                global.sprite_line_active = false;
-                sprite_editor_commit_asset();
-            }
+            global.sprite_line_active = true;
+            global.sprite_line_start_x = _cell_col; global.sprite_line_start_y = _cell_row;
+            global.sprite_line_current_x = _cell_col; global.sprite_line_current_y = _cell_row;
+            global.sprite_line_value = _value;
+            global.sprite_line_button = _sprite_right_press ? mb_right : mb_left;
         } else if (global.sprite_tool == "FILL") {
             sprite_editor_apply_fill(_cell_col, _cell_row, _value);
+            sprite_editor_commit_asset();
+        }
+    }
+
+    if (global.sprite_line_active) {
+        if (mouse_check_button(global.sprite_line_button)) {
+            if (_over_grid) {
+                global.sprite_line_current_x = _cell_col;
+                global.sprite_line_current_y = _cell_row;
+            }
+        } else {
+            sprite_editor_apply_line(global.sprite_line_start_x, global.sprite_line_start_y,
+                global.sprite_line_current_x, global.sprite_line_current_y, global.sprite_line_value);
+            global.sprite_line_active = false;
             sprite_editor_commit_asset();
         }
     }

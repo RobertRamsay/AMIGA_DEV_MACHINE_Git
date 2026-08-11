@@ -421,10 +421,52 @@ if (global.sprite_editor_open) {
         _sprite_tool_i += 1;
     }
 
+    draw_set_colour(global.sprite_anim_playing ? make_colour_rgb(35, 110, 75) : make_colour_rgb(45, 65, 85));
+    draw_rectangle(_layout.anim_x, _layout.anim_play_y, _layout.anim_x + _layout.anim_width, _layout.anim_play_y + _layout.anim_height, false);
+    draw_set_colour(c_white); draw_text(_layout.anim_x + 24, _layout.anim_play_y + 5, global.sprite_anim_playing ? "STOP" : "PLAY");
+
+    draw_set_colour(global.sprite_anim_loop ? make_colour_rgb(35, 110, 75) : make_colour_rgb(45, 65, 85));
+    draw_rectangle(_layout.anim_x, _layout.anim_loop_y, _layout.anim_x + _layout.anim_width, _layout.anim_loop_y + _layout.anim_height, false);
+    draw_set_colour(c_white); draw_text(_layout.anim_x + 12, _layout.anim_loop_y + 5, "LOOP " + (global.sprite_anim_loop ? "ON" : "OFF"));
+
+    var _sprite_anim_values = [
+        "RATE " + string(global.sprite_anim_rate),
+        "START " + string(global.sprite_anim_start),
+        "END " + string(global.sprite_anim_end)
+    ];
+    var _sprite_anim_y = [_layout.anim_rate_y, _layout.anim_start_y, _layout.anim_end_y];
+    var _sprite_anim_i = 0;
+    while (_sprite_anim_i < 3) {
+        draw_set_colour(make_colour_rgb(45, 65, 85));
+        draw_rectangle(_layout.anim_x, _sprite_anim_y[_sprite_anim_i], _layout.anim_x + _layout.anim_width, _sprite_anim_y[_sprite_anim_i] + _layout.anim_height, false);
+        draw_set_colour(c_white);
+        draw_text(_layout.anim_x + 6, _sprite_anim_y[_sprite_anim_i] + 5, "< " + _sprite_anim_values[_sprite_anim_i] + " >");
+        _sprite_anim_i += 1;
+    }
+
     if (global.sprite_line_active) {
-        draw_set_colour(c_yellow);
-        draw_line(_layout.grid_x + global.sprite_line_start_x * _layout.cell_size + _layout.cell_size div 2,
-            _layout.grid_y + global.sprite_line_start_y * _layout.cell_size + _layout.cell_size div 2, mouse_x, mouse_y);
+        var _preview_colour = c_black;
+        if (global.sprite_line_value >= 1) {
+            var _preview_index = global.sprite_line_value - 1;
+            _preview_colour = make_color_rgb(global.sprite_colour_r[_preview_index] * 17,
+                global.sprite_colour_g[_preview_index] * 17, global.sprite_colour_b[_preview_index] * 17);
+        }
+        var _lx = global.sprite_line_start_x, _ly = global.sprite_line_start_y;
+        var _ldx = abs(global.sprite_line_current_x - _lx), _lsx = _lx < global.sprite_line_current_x ? 1 : -1;
+        var _ldy = -abs(global.sprite_line_current_y - _ly), _lsy = _ly < global.sprite_line_current_y ? 1 : -1;
+        var _lerr = _ldx + _ldy;
+        repeat (128) {
+            var _preview_x = _layout.grid_x + _lx * _layout.cell_size;
+            var _preview_y = _layout.grid_y + _ly * _layout.cell_size;
+            draw_set_colour(_preview_colour);
+            draw_rectangle(_preview_x, _preview_y, _preview_x + _layout.cell_size, _preview_y + _layout.cell_size, false);
+            draw_set_colour(c_yellow);
+            draw_rectangle(_preview_x, _preview_y, _preview_x + _layout.cell_size, _preview_y + _layout.cell_size, true);
+            if (_lx == global.sprite_line_current_x && _ly == global.sprite_line_current_y) break;
+            var _le2 = 2 * _lerr;
+            if (_le2 >= _ldy) { _lerr += _ldy; _lx += _lsx; }
+            if (_le2 <= _ldx) { _lerr += _ldx; _ly += _lsy; }
+        }
     }
 
     // --------------------------------------------------------------------

@@ -449,11 +449,20 @@ global.sprite_line_active = false;
 global.sprite_line_start_x = 0;
 global.sprite_line_start_y = 0;
 global.sprite_line_value = 1;
+global.sprite_line_current_x = 0;
+global.sprite_line_current_y = 0;
+global.sprite_line_button = mb_left;
 global.sprite_drawing = false;
 global.sprite_drawing_value = 1;
 global.sprite_drawing_button = mb_left;
 global.sprite_last_px = -1;
 global.sprite_last_py = -1;
+global.sprite_anim_playing = false;
+global.sprite_anim_rate = 8;
+global.sprite_anim_start = 0;
+global.sprite_anim_end = 0;
+global.sprite_anim_loop = true;
+global.sprite_anim_next_time = 0;
 
 sprite_editor_commit_asset = function() {
     scr_asset_define_sprite(global.sprite_asset_name, global.sprite_channel, global.sprite_height, global.sprite_address,
@@ -468,6 +477,9 @@ sprite_editor_rebuild_assets = function() {
         if (global.asset_list[_i].type == "SPRITE") array_push(global.sprite_asset_names, global.asset_list[_i].name);
         _i += 1;
     }
+    var _max_frame = max(0, array_length(global.sprite_asset_names) - 1);
+    global.sprite_anim_start = clamp(global.sprite_anim_start, 0, _max_frame);
+    global.sprite_anim_end = clamp(global.sprite_anim_end, global.sprite_anim_start, _max_frame);
 };
 
 sprite_editor_load_asset = function(_name) {
@@ -486,6 +498,7 @@ sprite_editor_load_asset = function(_name) {
 };
 
 sprite_editor_navigate = function(_delta) {
+    global.sprite_anim_playing = false;
     sprite_editor_commit_asset();
     sprite_editor_rebuild_assets();
     if (array_length(global.sprite_asset_names) <= 0) exit;
@@ -494,6 +507,7 @@ sprite_editor_navigate = function(_delta) {
 };
 
 sprite_editor_add_asset = function() {
+    global.sprite_anim_playing = false;
     sprite_editor_commit_asset();
     var _number = 1;
     var _name = "Sprite01";
@@ -507,6 +521,7 @@ sprite_editor_add_asset = function() {
     sprite_editor_commit_asset();
     sprite_editor_rebuild_assets();
     global.sprite_asset_index = array_length(global.sprite_asset_names) - 1;
+    global.sprite_anim_end = max(0, array_length(global.sprite_asset_names) - 1);
     global.sprite_line_active = false;
 };
 
@@ -557,3 +572,4 @@ while (_sprite_find < array_length(global.sprite_asset_names)) {
     _sprite_find += 1;
 }
 sprite_editor_load_asset(global.sprite_asset_names[global.sprite_asset_index]);
+global.sprite_anim_end = max(0, array_length(global.sprite_asset_names) - 1);

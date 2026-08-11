@@ -2,7 +2,7 @@
 panel_x = max(20, (room_width - 920) div 2);
 panel_y = max(20, (room_height - 610) div 2);
 panel_w = 920;
-panel_h = 610;
+panel_h = 670;
 header_h = 24;
 cell_size = 16;
 grid_x_offset = 24;
@@ -32,6 +32,15 @@ bob_line_active = false;
 bob_line_start_x = 0;
 bob_line_start_y = 0;
 bob_line_value = 1;
+bob_line_current_x = 0;
+bob_line_current_y = 0;
+bob_line_button = mb_left;
+bob_anim_playing = false;
+bob_anim_rate = 8;
+bob_anim_start = 0;
+bob_anim_end = 0;
+bob_anim_loop = true;
+bob_anim_next_time = 0;
 
 function bob_commit() {
     scr_asset_define_bob(bob_asset_name, bob_width, bob_height, bob_pixels);
@@ -45,6 +54,9 @@ function bob_rebuild_asset_names() {
         if (global.asset_list[_i].type == "BOB") array_push(bob_asset_names, global.asset_list[_i].name);
         _i += 1;
     }
+    var _max_frame = max(0, array_length(bob_asset_names) - 1);
+    bob_anim_start = clamp(bob_anim_start, 0, _max_frame);
+    bob_anim_end = clamp(bob_anim_end, bob_anim_start, _max_frame);
 }
 
 function bob_load_asset(_name) {
@@ -65,6 +77,7 @@ function bob_load_asset(_name) {
 }
 
 function bob_navigate(_delta) {
+    bob_anim_playing = false;
     bob_commit();
     bob_rebuild_asset_names();
     if (array_length(bob_asset_names) <= 0) exit;
@@ -73,6 +86,7 @@ function bob_navigate(_delta) {
 }
 
 function bob_add_asset() {
+    bob_anim_playing = false;
     bob_commit();
     var _number = 1;
     var _name = "Bob01";
@@ -86,6 +100,7 @@ function bob_add_asset() {
     bob_commit();
     bob_rebuild_asset_names();
     bob_asset_index = array_length(bob_asset_names) - 1;
+    bob_anim_end = max(0, array_length(bob_asset_names) - 1);
     bob_line_active = false;
 }
 
@@ -139,6 +154,7 @@ while (_find_index < array_length(bob_asset_names)) {
 }
 if (_test_index >= 0) bob_asset_index = _test_index;
 bob_load_asset(bob_asset_names[bob_asset_index]);
+bob_anim_end = max(0, array_length(bob_asset_names) - 1);
 
 with (obj_amiga_manager) visible = false;
 with (obj_opcode_node) visible = false;

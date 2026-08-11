@@ -25,8 +25,22 @@ for (var _line = 0; _line <= 32; _line += 1) {
     draw_line(_gx, _gy + _line * cell_size, _gx + 512, _gy + _line * cell_size);
 }
 if (bob_line_active) {
-    draw_set_colour(c_yellow);
-    draw_line(_gx + bob_line_start_x * cell_size + cell_size div 2, _gy + bob_line_start_y * cell_size + cell_size div 2, mouse_x, mouse_y);
+    var _preview_colour = bob_line_value == 0 ? make_colour_rgb(38, 38, 38)
+        : make_colour_rgb(colour_r[bob_line_value] * 17, colour_g[bob_line_value] * 17, colour_b[bob_line_value] * 17);
+    var _lx = bob_line_start_x, _ly = bob_line_start_y;
+    var _ldx = abs(bob_line_current_x - _lx), _lsx = _lx < bob_line_current_x ? 1 : -1;
+    var _ldy = -abs(bob_line_current_y - _ly), _lsy = _ly < bob_line_current_y ? 1 : -1;
+    var _lerr = _ldx + _ldy;
+    repeat (128) {
+        draw_set_colour(_preview_colour);
+        draw_rectangle(_gx + _lx * cell_size, _gy + _ly * cell_size, _gx + (_lx + 1) * cell_size - 1, _gy + (_ly + 1) * cell_size - 1, false);
+        draw_set_colour(c_yellow);
+        draw_rectangle(_gx + _lx * cell_size, _gy + _ly * cell_size, _gx + (_lx + 1) * cell_size - 1, _gy + (_ly + 1) * cell_size - 1, true);
+        if (_lx == bob_line_current_x && _ly == bob_line_current_y) break;
+        var _le2 = 2 * _lerr;
+        if (_le2 >= _ldy) { _lerr += _ldy; _lx += _lsx; }
+        if (_le2 <= _ldx) { _lerr += _ldx; _ly += _lsy; }
+    }
 }
 
 var _palette_x = panel_x + 560;
@@ -74,9 +88,26 @@ for (var _tool_i = 0; _tool_i < 3; _tool_i += 1) {
     draw_set_colour(c_white); draw_text(_tx + 20, _tool_y + 7, _tool_names[_tool_i]);
 }
 
-draw_set_colour(make_colour_rgb(90, 45, 45)); draw_rectangle(_palette_x, panel_y + 450, _palette_x + 130, panel_y + 480, false);
-draw_set_colour(c_white); draw_text(_palette_x + 30, panel_y + 457, "CLEAR (0)");
-draw_set_colour(make_colour_rgb(25, 95, 65)); draw_rectangle(_palette_x, panel_y + 500, _palette_x + 145, panel_y + 534, false);
-draw_rectangle(_palette_x + 160, panel_y + 500, _palette_x + 305, panel_y + 534, false);
-draw_set_colour(c_white); draw_text(_palette_x + 14, panel_y + 510, "TEST BOB-BMP"); draw_text(_palette_x + 172, panel_y + 510, "TEST SPR-BMP");
-draw_text(_palette_x, panel_y + 548, "LMB uses pen   RMB uses transparent 0");
+var _anim_y = panel_y + 450;
+draw_set_colour(bob_anim_playing ? make_colour_rgb(35, 110, 75) : make_colour_rgb(45, 65, 85));
+draw_rectangle(_palette_x, _anim_y, _palette_x + 92, _anim_y + 30, false);
+draw_set_colour(bob_anim_loop ? make_colour_rgb(35, 110, 75) : make_colour_rgb(45, 65, 85));
+draw_rectangle(_palette_x + 104, _anim_y, _palette_x + 196, _anim_y + 30, false);
+draw_set_colour(c_white);
+draw_text(_palette_x + 22, _anim_y + 7, bob_anim_playing ? "STOP" : "PLAY");
+draw_text(_palette_x + 116, _anim_y + 7, "LOOP " + (bob_anim_loop ? "ON" : "OFF"));
+
+var _anim_value_y = panel_y + 490;
+var _anim_labels = ["RATE " + string(bob_anim_rate), "START " + string(bob_anim_start), "END " + string(bob_anim_end)];
+for (var _anim_i = 0; _anim_i < 3; _anim_i += 1) {
+    var _ax = _palette_x + _anim_i * 104;
+    draw_set_colour(make_colour_rgb(45, 65, 85)); draw_rectangle(_ax, _anim_value_y, _ax + 92, _anim_value_y + 30, false);
+    draw_set_colour(c_white); draw_text(_ax + 5, _anim_value_y + 7, "< " + _anim_labels[_anim_i] + " >");
+}
+
+draw_set_colour(make_colour_rgb(90, 45, 45)); draw_rectangle(_palette_x, panel_y + 530, _palette_x + 130, panel_y + 560, false);
+draw_set_colour(c_white); draw_text(_palette_x + 30, panel_y + 537, "CLEAR (0)");
+draw_set_colour(make_colour_rgb(25, 95, 65)); draw_rectangle(_palette_x, panel_y + 580, _palette_x + 145, panel_y + 614, false);
+draw_rectangle(_palette_x + 160, panel_y + 580, _palette_x + 305, panel_y + 614, false);
+draw_set_colour(c_white); draw_text(_palette_x + 14, panel_y + 590, "TEST BOB-BMP"); draw_text(_palette_x + 172, panel_y + 590, "TEST SPR-BMP");
+draw_text(_palette_x, panel_y + 628, "LMB uses pen   RMB uses transparent 0");
