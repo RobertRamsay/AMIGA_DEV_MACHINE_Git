@@ -44,5 +44,5 @@ function scr_amiga_commit_shared_bitmap_palette(_r, _g, _b) {
         array_copy(_bitmap.colour_g, 0, _g, 0, 32);
         array_copy(_bitmap.colour_b, 0, _b, 0, 32);
     }
-    global.workspace_dirty = true;
+    scr_mark_workspace_dirty();
 }

@@ -6,6 +6,36 @@
 /// Returns a struct or undefined.
 function scr_opcode_lookup(_key) {
     var _lower_key = string_lower(_key);
+
+    // Fixed top-strip controls are macros rather than 68000 opcodes, so they
+    // do not exist in the instruction helper banks below. Give them the same
+    // hover-help shape while clearly labelling their generated/runtime cost.
+    if (_lower_key == "org") return {
+        format : "ORG", mode : "Program root",
+        use : "Starts an assembled program chain at the selected origin address.",
+        cycles : "none", bytes : "none", generated_help : true
+    };
+    if (_lower_key == "cprbar") return {
+        format : "CPRBAR", mode : "Copper macro",
+        use : "Builds raster-timed 12-bit colour bands and repeats them every video frame.",
+        cycles : "Copper-timed", bytes : "generated", generated_help : true
+    };
+    if (_lower_key == "setbkg") return {
+        format : "SETBKG", mode : "Display macro",
+        use : "Programs bitmap background register COLOR00 with a chosen Amiga 12-bit colour.",
+        cycles : "setup", bytes : "generated", generated_help : true
+    };
+    if (_lower_key == "move_bob" || _lower_key == "move_spr") return {
+        format : string_upper(_lower_key), mode : "Runtime movement macro",
+        use : "Moves the selected runtime ID using editable signed X and Y speeds each update.",
+        cycles : "per frame", bytes : "generated", generated_help : true
+    };
+    if (_lower_key == "anim_bob" || _lower_key == "anim_spr") return {
+        format : string_upper(_lower_key), mode : "Runtime animation macro",
+        use : "Animates an editable frame range at the selected rate, with optional looping.",
+        cycles : "per frame", bytes : "frame-dependent", generated_help : true
+    };
+
     var _result_first = scr_opcode_helper_68k(_lower_key);
 
     if (_result_first != undefined) {

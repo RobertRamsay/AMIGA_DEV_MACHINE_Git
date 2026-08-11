@@ -1,0 +1,378 @@
+diff --git a/objects/obj_amiga_manager/Create_0.gml b/objects/obj_amiga_manager/Create_0.gml
+index 2a6fa09..5588a80 100644
+--- a/objects/obj_amiga_manager/Create_0.gml
++++ b/objects/obj_amiga_manager/Create_0.gml
+@@ -113,6 +113,9 @@ global.status_message_log = [];
+ // every mutation already goes through — see scr_push_undo_snapshot and
+ // scr_bitmap_push_undo — and cleared by both save paths.
+ global.workspace_dirty = false;
++global.autosave_delay_ms = 5000;
++global.autosave_due_time = -1;
++global.autosave_workspace_path = global.current_project_path + "/temp_autosave_workspace.json";
+ 
+ // Recent colours picked in obj_colour_picker, most-recent-first, capped at
+ // 8. Global and shared across every picker open (SETBKG, any CPRBAR band,
+@@ -483,7 +486,7 @@ global.sprite_anim_next_time = 0;
+ sprite_editor_commit_asset = function() {
+     scr_asset_define_sprite(global.sprite_asset_name, global.sprite_channel, global.sprite_height, global.sprite_address,
+         global.sprite_pixels, global.sprite_colour_r, global.sprite_colour_g, global.sprite_colour_b);
+-    global.workspace_dirty = true;
++    scr_mark_workspace_dirty();
+ };
+ 
+ sprite_editor_load_shared_colours = function() {
+@@ -615,3 +618,18 @@ while (_sprite_find < array_length(global.sprite_asset_names)) {
+ }
+ sprite_editor_load_asset(global.sprite_asset_names[global.sprite_asset_index]);
+ global.sprite_anim_end = max(0, array_length(global.sprite_asset_names) - 1);
++
++// Default bootstrap assets are not a user edit. Once the manager is fully
++// initialized, recover the most recent temporary testing session when one is
++// available and report the I/O event in cyan in the message window.
++global.workspace_dirty = false;
++global.autosave_due_time = -1;
++if (file_exists(global.autosave_workspace_path)) {
++    try {
++        scr_load_workspace_from_path(global.autosave_workspace_path);
++        scr_set_status_message("Previous session auto-loaded.", make_colour_rgb(0, 255, 255));
++    } catch (_autosave_error) {
++        show_debug_message("Temporary autosave recovery failed: " + string(_autosave_error));
++        scr_set_status_message("Previous temporary session could not be loaded.", c_red);
++    }
++}
+diff --git a/objects/obj_amiga_manager/Draw_0.gml b/objects/obj_amiga_manager/Draw_0.gml
+index 6179e81..84b536b 100644
+--- a/objects/obj_amiga_manager/Draw_0.gml
++++ b/objects/obj_amiga_manager/Draw_0.gml
+@@ -20,7 +20,11 @@ if (_has_hover) {
+         draw_text(_tip_x + 8, _tip_y + 6, _tooltip_data.format);
+         draw_text(_tip_x + 8, _tip_y + 24, _tooltip_data.mode);
+         draw_text(_tip_x + 8, _tip_y + 50, "Use: " + _tooltip_data.use);
+-        draw_text(_tip_x + 8, _tip_y + 72, "~" + string(_tooltip_data.cycles) + " cycles, " + string(_tooltip_data.bytes) + "+ bytes");
++        if (variable_struct_exists(_tooltip_data, "generated_help") && _tooltip_data.generated_help) {
++            draw_text(_tip_x + 8, _tip_y + 72, "Cost: " + string(_tooltip_data.cycles) + ", size: " + string(_tooltip_data.bytes));
++        } else {
++            draw_text(_tip_x + 8, _tip_y + 72, "~" + string(_tooltip_data.cycles) + " cycles, " + string(_tooltip_data.bytes) + "+ bytes");
++        }
+     }
+ }
+ 
+diff --git a/objects/obj_amiga_manager/Step_0.gml b/objects/obj_amiga_manager/Step_0.gml
+index 3407dc7..08461eb 100644
+--- a/objects/obj_amiga_manager/Step_0.gml
++++ b/objects/obj_amiga_manager/Step_0.gml
+@@ -1,3 +1,19 @@
++// Autosave is evaluated before modal-editor blocking so bitmap, BOB and colour
++// work can be recovered without closing its editor. Holding a mouse button or
++// editing a text field postpones the save until five quiet seconds have passed.
++if (global.workspace_dirty && global.autosave_due_time >= 0 && current_time >= global.autosave_due_time) {
++    var _autosave_busy = mouse_check_button(mb_left)
++        || mouse_check_button(mb_right)
++        || global.operand_edit_owner_uid != -1
++        || global.sprite_editing_field != "";
++
++    if (_autosave_busy) {
++        global.autosave_due_time = current_time + global.autosave_delay_ms;
++    } else {
++        scr_write_temp_autosave();
++    }
++}
++
+ // The bitmap editor and colour picker are both modal: do not pan, build,
+ // undo, click controls or mutate the graph behind either of them.
+ if (instance_exists(obj_bitmap_editor) || instance_exists(obj_bob_editor) || instance_exists(obj_colour_picker) || instance_exists(obj_cprbar_editor)) {
+@@ -249,7 +265,7 @@ if (_over_save_workspace_button && mouse_check_button_pressed(mb_left)) {
+ 
+     if (_save_chosen_path != "") {
+         scr_save_workspace_to_path(_save_chosen_path);
+-        scr_set_status_message("Workspace saved: " + _save_chosen_path);
++        scr_set_status_message("Workspace saved: " + _save_chosen_path, make_colour_rgb(0, 255, 255));
+     }
+ }
+ 
+@@ -265,7 +281,7 @@ if (_over_load_workspace_button && mouse_check_button_pressed(mb_left)) {
+ 
+     if (_load_chosen_path != "") {
+         scr_load_workspace_from_path(_load_chosen_path);
+-        scr_set_status_message("Workspace loaded: " + _load_chosen_path);
++        scr_set_status_message("Workspace loaded: " + _load_chosen_path, make_colour_rgb(0, 255, 255));
+     }
+ }
+ 
+diff --git a/objects/obj_bob_editor/Create_0.gml b/objects/obj_bob_editor/Create_0.gml
+index 604dc06..312b911 100644
+--- a/objects/obj_bob_editor/Create_0.gml
++++ b/objects/obj_bob_editor/Create_0.gml
+@@ -44,7 +44,7 @@ bob_anim_next_time = 0;
+ 
+ function bob_commit() {
+     scr_asset_define_bob(bob_asset_name, bob_width, bob_height, bob_pixels);
+-    global.workspace_dirty = true;
++    scr_mark_workspace_dirty();
+ }
+ 
+ function bob_rebuild_asset_names() {
+diff --git a/scripts/scr_amiga_explain_node/scr_amiga_explain_node.gml b/scripts/scr_amiga_explain_node/scr_amiga_explain_node.gml
+index 9ff43f1..fb4e026 100644
+--- a/scripts/scr_amiga_explain_node/scr_amiga_explain_node.gml
++++ b/scripts/scr_amiga_explain_node/scr_amiga_explain_node.gml
+@@ -4,10 +4,54 @@
+ /// no explanation yet. Extend this function as new macros/registers are added.
+ function scr_amiga_explain_node(_node) {
+     if (_node.is_macro) {
++        if (_node.macro_type == "SETBKG") {
++            return "Sets bitmap COLOR00 to Amiga 12-bit colour #" + _node.macro_asset_name
++                + ". This is the playfield background colour behind zero-valued bitmap pixels.";
++        }
++
++        if (_node.macro_type == "MOVE_BOB") {
++            return "Moves BOB runtime ID " + string(_node.macro_object_id) + " by "
++                + string(_node.macro_speed_x) + " X and " + string(_node.macro_speed_y)
++                + " Y pixels each update. Signed speeds from -16 to 16 are supported.";
++        }
++
++        if (_node.macro_type == "MOVE_SPR") {
++            return "Moves hardware-sprite runtime ID " + string(_node.macro_object_id) + " by "
++                + string(_node.macro_speed_x) + " X and " + string(_node.macro_speed_y)
++                + " Y pixels each update. The test loops at one update per video frame.";
++        }
++
+         if (_node.macro_type == "ANIM_BOB" || _node.macro_type == "ANIM_SPR") {
+-            return "Animates runtime ID " + string(_node.macro_object_id) + " from frame "
++            var _anim_subject = _node.macro_type == "ANIM_BOB" ? "BOB" : "hardware sprite";
++            return "Animates " + _anim_subject + " runtime ID " + string(_node.macro_object_id) + " from frame "
+                 + string(_node.macro_anim_start) + " to " + string(_node.macro_anim_end)
+-                + " at " + string(_node.macro_anim_rate) + " FPS" + (_node.macro_anim_loop ? ", looping." : ", stopping on the last frame.");
++                + " at " + string(_node.macro_anim_rate) + " FPS"
++                + (_node.macro_anim_loop ? ", looping. MOVE and ANIM nodes sharing this ID work together." : ", stopping on the last frame. MOVE and ANIM nodes sharing this ID work together.");
++        }
++
++        if (_node.macro_type == "GET_BITMAP_BOB") {
++            return "Initializes BOB runtime ID " + string(_node.macro_object_id)
++                + " from asset '" + _node.macro_asset_name
++                + "'. It allocates chip-RAM storage for the BOB, its mask and the background rectangle saved beneath it.";
++        }
++
++        if (_node.macro_type == "DRAW_BOB") {
++            return "Restores the old background for BOB runtime ID " + string(_node.macro_object_id)
++                + ", captures the bitmap at its new X/Y position, then draws the masked BOB into all five bitplanes.";
++        }
++
++        if (_node.macro_type == "REPLACE_BITMAP_BOB") {
++            return "Copies the saved background rectangle back under BOB runtime ID "
++                + string(_node.macro_object_id)
++                + ". Use it before moving and redrawing the BOB so previous frames do not damage the bitmap.";
++        }
++
++        if (_node.macro_type == "BOB_BITMAP_TEST") {
++            return "Creates the complete 320x256 five-bitplane BOB demonstration, including shared palette, bitmap display, masked drawing and background restoration.";
++        }
++
++        if (_node.macro_type == "SPRITE_BITMAP_TEST") {
++            return "Creates a 320x256 five-bitplane display with one hardware sprite above the bitmap. The sprite uses the bitmap's shared COLOR17-31 registers.";
+         }
+         if (_node.macro_type == "COPPER_BAR") {
+             var _asset = scr_asset_find_by_name(_node.macro_asset_name);
+@@ -34,7 +78,8 @@ function scr_amiga_explain_node(_node) {
+ 
+             return "Creates a 320x256 PAL low-resolution display and uploads "
+                 + _sprite_text + ". It programs the sprite's three 12-bit colours"
+-                + " and uses the Copper to restore sprite and bitplane pointers each frame.";
++                + " and uses the Copper to restore sprite and bitplane pointers each frame."
++                + " Sprite priority defaults above the bitmap; its colours share the bitmap palette registers.";
+         }
+ 
+         if (_node.macro_type == "BITMAP_DISPLAY") {
+diff --git a/scripts/scr_amiga_shared_bitmap_palette/scr_amiga_shared_bitmap_palette.gml b/scripts/scr_amiga_shared_bitmap_palette/scr_amiga_shared_bitmap_palette.gml
+index fba3196..fdd9a69 100644
+--- a/scripts/scr_amiga_shared_bitmap_palette/scr_amiga_shared_bitmap_palette.gml
++++ b/scripts/scr_amiga_shared_bitmap_palette/scr_amiga_shared_bitmap_palette.gml
+@@ -44,5 +44,5 @@ function scr_amiga_commit_shared_bitmap_palette(_r, _g, _b) {
+         array_copy(_bitmap.colour_g, 0, _g, 0, 32);
+         array_copy(_bitmap.colour_b, 0, _b, 0, 32);
+     }
+-    global.workspace_dirty = true;
++    scr_mark_workspace_dirty();
+ }
+diff --git a/scripts/scr_bitmap_history/scr_bitmap_history.gml b/scripts/scr_bitmap_history/scr_bitmap_history.gml
+index 9b4cb96..fbf43b1 100644
+--- a/scripts/scr_bitmap_history/scr_bitmap_history.gml
++++ b/scripts/scr_bitmap_history/scr_bitmap_history.gml
+@@ -38,17 +38,19 @@ function scr_bitmap_push_undo(_editor) {
+         array_delete(_editor.bitmap_undo_stack, 0, 1);
+     }
+     _editor.bitmap_redo_stack = [];
+-    global.workspace_dirty = true;
++    scr_mark_workspace_dirty();
+ }
+ 
+ function scr_bitmap_undo(_editor) {
+     if (array_length(_editor.bitmap_undo_stack) <= 0) return;
+     array_push(_editor.bitmap_redo_stack, scr_bitmap_capture_snapshot(_editor));
+     scr_bitmap_restore_snapshot(_editor, array_pop(_editor.bitmap_undo_stack));
++    scr_mark_workspace_dirty();
+ }
+ 
+ function scr_bitmap_redo(_editor) {
+     if (array_length(_editor.bitmap_redo_stack) <= 0) return;
+     array_push(_editor.bitmap_undo_stack, scr_bitmap_capture_snapshot(_editor));
+     scr_bitmap_restore_snapshot(_editor, array_pop(_editor.bitmap_redo_stack));
++    scr_mark_workspace_dirty();
+ }
+diff --git a/scripts/scr_load_layout/scr_load_layout.gml b/scripts/scr_load_layout/scr_load_layout.gml
+index 74d51a5..f7d4ec9 100644
+--- a/scripts/scr_load_layout/scr_load_layout.gml
++++ b/scripts/scr_load_layout/scr_load_layout.gml
+@@ -6,4 +6,7 @@
+ function scr_load_layout() {
+     var _save_path = global.current_project_path + "/autosave_layout.json";
+     scr_load_workspace_from_path(_save_path);
++    if (file_exists(_save_path)) {
++        scr_set_status_message("Quick workspace loaded: " + _save_path, make_colour_rgb(0, 255, 255));
++    }
+ }
+diff --git a/scripts/scr_opcode_lookup/scr_opcode_lookup.gml b/scripts/scr_opcode_lookup/scr_opcode_lookup.gml
+index 4d09bd6..0b2b96b 100644
+--- a/scripts/scr_opcode_lookup/scr_opcode_lookup.gml
++++ b/scripts/scr_opcode_lookup/scr_opcode_lookup.gml
+@@ -6,6 +6,36 @@
+ /// Returns a struct or undefined.
+ function scr_opcode_lookup(_key) {
+     var _lower_key = string_lower(_key);
++
++    // Fixed top-strip controls are macros rather than 68000 opcodes, so they
++    // do not exist in the instruction helper banks below. Give them the same
++    // hover-help shape while clearly labelling their generated/runtime cost.
++    if (_lower_key == "org") return {
++        format : "ORG", mode : "Program root",
++        use : "Starts an assembled program chain at the selected origin address.",
++        cycles : "none", bytes : "none", generated_help : true
++    };
++    if (_lower_key == "cprbar") return {
++        format : "CPRBAR", mode : "Copper macro",
++        use : "Builds raster-timed 12-bit colour bands and repeats them every video frame.",
++        cycles : "Copper-timed", bytes : "generated", generated_help : true
++    };
++    if (_lower_key == "setbkg") return {
++        format : "SETBKG", mode : "Display macro",
++        use : "Programs bitmap background register COLOR00 with a chosen Amiga 12-bit colour.",
++        cycles : "setup", bytes : "generated", generated_help : true
++    };
++    if (_lower_key == "move_bob" || _lower_key == "move_spr") return {
++        format : string_upper(_lower_key), mode : "Runtime movement macro",
++        use : "Moves the selected runtime ID using editable signed X and Y speeds each update.",
++        cycles : "per frame", bytes : "generated", generated_help : true
++    };
++    if (_lower_key == "anim_bob" || _lower_key == "anim_spr") return {
++        format : string_upper(_lower_key), mode : "Runtime animation macro",
++        use : "Animates an editable frame range at the selected rate, with optional looping.",
++        cycles : "per frame", bytes : "frame-dependent", generated_help : true
++    };
++
+     var _result_first = scr_opcode_helper_68k(_lower_key);
+ 
+     if (_result_first != undefined) {
+@@ -48,4 +78,4 @@ function scr_opcode_lookup(_key) {
+     }
+ 
+     return undefined;
+-}
+\ No newline at end of file
++}
+diff --git a/scripts/scr_push_undo_snapshot/scr_push_undo_snapshot.gml b/scripts/scr_push_undo_snapshot/scr_push_undo_snapshot.gml
+index 4283d74..cd34054 100644
+--- a/scripts/scr_push_undo_snapshot/scr_push_undo_snapshot.gml
++++ b/scripts/scr_push_undo_snapshot/scr_push_undo_snapshot.gml
+@@ -9,5 +9,5 @@ function scr_push_undo_snapshot() {
+     }
+ 
+     global.redo_stack = [];
+-    global.workspace_dirty = true;
++    scr_mark_workspace_dirty();
+ }
+diff --git a/scripts/scr_redo/scr_redo.gml b/scripts/scr_redo/scr_redo.gml
+index bc9d65b..b8a08c1 100644
+--- a/scripts/scr_redo/scr_redo.gml
++++ b/scripts/scr_redo/scr_redo.gml
+@@ -18,4 +18,5 @@ function scr_redo() {
+     array_delete(global.redo_stack, _redo_count - 1, 1);
+ 
+     scr_restore_snapshot(_next_snapshot);
++    scr_mark_workspace_dirty();
+ }
+diff --git a/scripts/scr_save_layout/scr_save_layout.gml b/scripts/scr_save_layout/scr_save_layout.gml
+index 6e12002..140bb3e 100644
+--- a/scripts/scr_save_layout/scr_save_layout.gml
++++ b/scripts/scr_save_layout/scr_save_layout.gml
+@@ -5,4 +5,34 @@
+ function scr_save_layout() {
+     var _save_path = global.current_project_path + "/autosave_layout.json";
+     scr_save_workspace_to_path(_save_path);
++    scr_set_status_message("Quick workspace saved: " + _save_path, make_colour_rgb(0, 255, 255));
++}
++
++/// Marks a user-visible mutation and restarts the five-second autosave delay.
++/// Keeping this in one helper means every editor and undo system follows the
++/// same debounce rule instead of each maintaining its own timer.
++function scr_mark_workspace_dirty() {
++    global.workspace_dirty = true;
++    global.autosave_due_time = current_time + global.autosave_delay_ms;
++}
++
++/// Writes through a staging file so a shutdown during JSON output cannot
++/// replace the last usable recovery file with a partially-written document.
++function scr_write_temp_autosave() {
++    var _target_path = global.autosave_workspace_path;
++    var _staging_path = _target_path + ".writing";
++
++    if (file_exists(_staging_path)) file_delete(_staging_path);
++    scr_save_workspace_to_path(_staging_path, false);
++
++    if (!file_exists(_staging_path)) return false;
++    if (file_exists(_target_path)) file_delete(_target_path);
++    file_rename(_staging_path, _target_path);
++
++    if (!file_exists(_target_path)) return false;
++
++    global.workspace_dirty = false;
++    global.autosave_due_time = -1;
++    scr_set_status_message("Temporary workspace autosaved.", make_colour_rgb(0, 255, 255));
++    return true;
+ }
+diff --git a/scripts/scr_save_workspace_to_path/scr_save_workspace_to_path.gml b/scripts/scr_save_workspace_to_path/scr_save_workspace_to_path.gml
+index 3226a96..5c13833 100644
+--- a/scripts/scr_save_workspace_to_path/scr_save_workspace_to_path.gml
++++ b/scripts/scr_save_workspace_to_path/scr_save_workspace_to_path.gml
+@@ -2,8 +2,9 @@
+ /// Writes the full workspace — every root, every node (including all
+ /// macro fields, previously silently dropped by this save path), and the
+ /// complete global.asset_list (bitmap pixel data, sprite pixel data,
+-/// palettes) — to _path as JSON.
+-function scr_save_workspace_to_path(_path) {
++/// palettes) — to _path as JSON. _mark_clean is false only for the staging
++/// write used by the crash-safe temporary autosave path.
++function scr_save_workspace_to_path(_path, _mark_clean = true) {
+     var _root_array = [];
+ 
+     with (obj_amiga_root_node) {
+@@ -63,6 +64,9 @@ function scr_save_workspace_to_path(_path) {
+     file_text_write_string(_file, _json_text);
+     file_text_close(_file);
+ 
+-    global.workspace_dirty = false;
++    if (_mark_clean) {
++        global.workspace_dirty = false;
++        global.autosave_due_time = -1;
++    }
+     show_debug_message("Saved workspace to " + _path);
+ }
+diff --git a/scripts/scr_undo/scr_undo.gml b/scripts/scr_undo/scr_undo.gml
+index 650d111..2602da8 100644
+--- a/scripts/scr_undo/scr_undo.gml
++++ b/scripts/scr_undo/scr_undo.gml
+@@ -14,4 +14,5 @@ function scr_undo() {
+     array_delete(global.undo_stack, _undo_count - 1, 1);
+ 
+     scr_restore_snapshot(_previous_snapshot);
++    scr_mark_workspace_dirty();
+ }

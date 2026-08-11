@@ -38,17 +38,19 @@ function scr_bitmap_push_undo(_editor) {
         array_delete(_editor.bitmap_undo_stack, 0, 1);
     }
     _editor.bitmap_redo_stack = [];
-    global.workspace_dirty = true;
+    scr_mark_workspace_dirty();
 }
 
 function scr_bitmap_undo(_editor) {
     if (array_length(_editor.bitmap_undo_stack) <= 0) return;
     array_push(_editor.bitmap_redo_stack, scr_bitmap_capture_snapshot(_editor));
     scr_bitmap_restore_snapshot(_editor, array_pop(_editor.bitmap_undo_stack));
+    scr_mark_workspace_dirty();
 }
 
 function scr_bitmap_redo(_editor) {
     if (array_length(_editor.bitmap_redo_stack) <= 0) return;
     array_push(_editor.bitmap_undo_stack, scr_bitmap_capture_snapshot(_editor));
     scr_bitmap_restore_snapshot(_editor, array_pop(_editor.bitmap_redo_stack));
+    scr_mark_workspace_dirty();
 }

@@ -113,6 +113,9 @@ global.status_message_log = [];
 // every mutation already goes through — see scr_push_undo_snapshot and
 // scr_bitmap_push_undo — and cleared by both save paths.
 global.workspace_dirty = false;
+global.autosave_delay_ms = 5000;
+global.autosave_due_time = -1;
+global.autosave_workspace_path = global.current_project_path + "/temp_autosave_workspace.json";
 
 // Recent colours picked in obj_colour_picker, most-recent-first, capped at
 // 8. Global and shared across every picker open (SETBKG, any CPRBAR band,
@@ -483,7 +486,7 @@ global.sprite_anim_next_time = 0;
 sprite_editor_commit_asset = function() {
     scr_asset_define_sprite(global.sprite_asset_name, global.sprite_channel, global.sprite_height, global.sprite_address,
         global.sprite_pixels, global.sprite_colour_r, global.sprite_colour_g, global.sprite_colour_b);
-    global.workspace_dirty = true;
+    scr_mark_workspace_dirty();
 };
 
 sprite_editor_load_shared_colours = function() {
@@ -615,3 +618,18 @@ while (_sprite_find < array_length(global.sprite_asset_names)) {
 }
 sprite_editor_load_asset(global.sprite_asset_names[global.sprite_asset_index]);
 global.sprite_anim_end = max(0, array_length(global.sprite_asset_names) - 1);
+
+// Default bootstrap assets are not a user edit. Once the manager is fully
+// initialized, recover the most recent temporary testing session when one is
+// available and report the I/O event in cyan in the message window.
+global.workspace_dirty = false;
+global.autosave_due_time = -1;
+if (file_exists(global.autosave_workspace_path)) {
+    try {
+        scr_load_workspace_from_path(global.autosave_workspace_path);
+        scr_set_status_message("Previous session auto-loaded.", make_colour_rgb(0, 255, 255));
+    } catch (_autosave_error) {
+        show_debug_message("Temporary autosave recovery failed: " + string(_autosave_error));
+        scr_set_status_message("Previous temporary session could not be loaded.", c_red);
+    }
+}

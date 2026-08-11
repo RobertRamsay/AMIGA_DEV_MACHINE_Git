@@ -14,4 +14,5 @@ function scr_undo() {
     array_delete(global.undo_stack, _undo_count - 1, 1);
 
     scr_restore_snapshot(_previous_snapshot);
+    scr_mark_workspace_dirty();
 }

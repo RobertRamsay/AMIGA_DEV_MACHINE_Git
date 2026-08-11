@@ -20,7 +20,11 @@ if (_has_hover) {
         draw_text(_tip_x + 8, _tip_y + 6, _tooltip_data.format);
         draw_text(_tip_x + 8, _tip_y + 24, _tooltip_data.mode);
         draw_text(_tip_x + 8, _tip_y + 50, "Use: " + _tooltip_data.use);
-        draw_text(_tip_x + 8, _tip_y + 72, "~" + string(_tooltip_data.cycles) + " cycles, " + string(_tooltip_data.bytes) + "+ bytes");
+        if (variable_struct_exists(_tooltip_data, "generated_help") && _tooltip_data.generated_help) {
+            draw_text(_tip_x + 8, _tip_y + 72, "Cost: " + string(_tooltip_data.cycles) + ", size: " + string(_tooltip_data.bytes));
+        } else {
+            draw_text(_tip_x + 8, _tip_y + 72, "~" + string(_tooltip_data.cycles) + " cycles, " + string(_tooltip_data.bytes) + "+ bytes");
+        }
     }
 }
 

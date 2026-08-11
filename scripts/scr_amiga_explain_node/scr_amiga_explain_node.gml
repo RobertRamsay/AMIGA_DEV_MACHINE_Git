@@ -4,10 +4,54 @@
 /// no explanation yet. Extend this function as new macros/registers are added.
 function scr_amiga_explain_node(_node) {
     if (_node.is_macro) {
+        if (_node.macro_type == "SETBKG") {
+            return "Sets bitmap COLOR00 to Amiga 12-bit colour #" + _node.macro_asset_name
+                + ". This is the playfield background colour behind zero-valued bitmap pixels.";
+        }
+
+        if (_node.macro_type == "MOVE_BOB") {
+            return "Moves BOB runtime ID " + string(_node.macro_object_id) + " by "
+                + string(_node.macro_speed_x) + " X and " + string(_node.macro_speed_y)
+                + " Y pixels each update. Signed speeds from -16 to 16 are supported.";
+        }
+
+        if (_node.macro_type == "MOVE_SPR") {
+            return "Moves hardware-sprite runtime ID " + string(_node.macro_object_id) + " by "
+                + string(_node.macro_speed_x) + " X and " + string(_node.macro_speed_y)
+                + " Y pixels each update. The test loops at one update per video frame.";
+        }
+
         if (_node.macro_type == "ANIM_BOB" || _node.macro_type == "ANIM_SPR") {
-            return "Animates runtime ID " + string(_node.macro_object_id) + " from frame "
+            var _anim_subject = _node.macro_type == "ANIM_BOB" ? "BOB" : "hardware sprite";
+            return "Animates " + _anim_subject + " runtime ID " + string(_node.macro_object_id) + " from frame "
                 + string(_node.macro_anim_start) + " to " + string(_node.macro_anim_end)
-                + " at " + string(_node.macro_anim_rate) + " FPS" + (_node.macro_anim_loop ? ", looping." : ", stopping on the last frame.");
+                + " at " + string(_node.macro_anim_rate) + " FPS"
+                + (_node.macro_anim_loop ? ", looping. MOVE and ANIM nodes sharing this ID work together." : ", stopping on the last frame. MOVE and ANIM nodes sharing this ID work together.");
+        }
+
+        if (_node.macro_type == "GET_BITMAP_BOB") {
+            return "Initializes BOB runtime ID " + string(_node.macro_object_id)
+                + " from asset '" + _node.macro_asset_name
+                + "'. It allocates chip-RAM storage for the BOB, its mask and the background rectangle saved beneath it.";
+        }
+
+        if (_node.macro_type == "DRAW_BOB") {
+            return "Restores the old background for BOB runtime ID " + string(_node.macro_object_id)
+                + ", captures the bitmap at its new X/Y position, then draws the masked BOB into all five bitplanes.";
+        }
+
+        if (_node.macro_type == "REPLACE_BITMAP_BOB") {
+            return "Copies the saved background rectangle back under BOB runtime ID "
+                + string(_node.macro_object_id)
+                + ". Use it before moving and redrawing the BOB so previous frames do not damage the bitmap.";
+        }
+
+        if (_node.macro_type == "BOB_BITMAP_TEST") {
+            return "Creates the complete 320x256 five-bitplane BOB demonstration, including shared palette, bitmap display, masked drawing and background restoration.";
+        }
+
+        if (_node.macro_type == "SPRITE_BITMAP_TEST") {
+            return "Creates a 320x256 five-bitplane display with one hardware sprite above the bitmap. The sprite uses the bitmap's shared COLOR17-31 registers.";
         }
         if (_node.macro_type == "COPPER_BAR") {
             var _asset = scr_asset_find_by_name(_node.macro_asset_name);
@@ -34,7 +78,8 @@ function scr_amiga_explain_node(_node) {
 
             return "Creates a 320x256 PAL low-resolution display and uploads "
                 + _sprite_text + ". It programs the sprite's three 12-bit colours"
-                + " and uses the Copper to restore sprite and bitplane pointers each frame.";
+                + " and uses the Copper to restore sprite and bitplane pointers each frame."
+                + " Sprite priority defaults above the bitmap; its colours share the bitmap palette registers.";
         }
 
         if (_node.macro_type == "BITMAP_DISPLAY") {

@@ -2,8 +2,9 @@
 /// Writes the full workspace — every root, every node (including all
 /// macro fields, previously silently dropped by this save path), and the
 /// complete global.asset_list (bitmap pixel data, sprite pixel data,
-/// palettes) — to _path as JSON.
-function scr_save_workspace_to_path(_path) {
+/// palettes) — to _path as JSON. _mark_clean is false only for the staging
+/// write used by the crash-safe temporary autosave path.
+function scr_save_workspace_to_path(_path, _mark_clean = true) {
     var _root_array = [];
 
     with (obj_amiga_root_node) {
@@ -63,6 +64,9 @@ function scr_save_workspace_to_path(_path) {
     file_text_write_string(_file, _json_text);
     file_text_close(_file);
 
-    global.workspace_dirty = false;
+    if (_mark_clean) {
+        global.workspace_dirty = false;
+        global.autosave_due_time = -1;
+    }
     show_debug_message("Saved workspace to " + _path);
 }

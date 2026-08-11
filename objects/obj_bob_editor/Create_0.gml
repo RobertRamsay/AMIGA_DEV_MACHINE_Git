@@ -44,7 +44,7 @@ bob_anim_next_time = 0;
 
 function bob_commit() {
     scr_asset_define_bob(bob_asset_name, bob_width, bob_height, bob_pixels);
-    global.workspace_dirty = true;
+    scr_mark_workspace_dirty();
 }
 
 function bob_rebuild_asset_names() {

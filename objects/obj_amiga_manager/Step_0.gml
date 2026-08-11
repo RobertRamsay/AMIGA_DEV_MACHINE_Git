@@ -1,3 +1,19 @@
+// Autosave is evaluated before modal-editor blocking so bitmap, BOB and colour
+// work can be recovered without closing its editor. Holding a mouse button or
+// editing a text field postpones the save until five quiet seconds have passed.
+if (global.workspace_dirty && global.autosave_due_time >= 0 && current_time >= global.autosave_due_time) {
+    var _autosave_busy = mouse_check_button(mb_left)
+        || mouse_check_button(mb_right)
+        || global.operand_edit_owner_uid != -1
+        || global.sprite_editing_field != "";
+
+    if (_autosave_busy) {
+        global.autosave_due_time = current_time + global.autosave_delay_ms;
+    } else {
+        scr_write_temp_autosave();
+    }
+}
+
 // The bitmap editor and colour picker are both modal: do not pan, build,
 // undo, click controls or mutate the graph behind either of them.
 if (instance_exists(obj_bitmap_editor) || instance_exists(obj_bob_editor) || instance_exists(obj_colour_picker) || instance_exists(obj_cprbar_editor)) {
@@ -249,7 +265,7 @@ if (_over_save_workspace_button && mouse_check_button_pressed(mb_left)) {
 
     if (_save_chosen_path != "") {
         scr_save_workspace_to_path(_save_chosen_path);
-        scr_set_status_message("Workspace saved: " + _save_chosen_path);
+        scr_set_status_message("Workspace saved: " + _save_chosen_path, make_colour_rgb(0, 255, 255));
     }
 }
 
@@ -265,7 +281,7 @@ if (_over_load_workspace_button && mouse_check_button_pressed(mb_left)) {
 
     if (_load_chosen_path != "") {
         scr_load_workspace_from_path(_load_chosen_path);
-        scr_set_status_message("Workspace loaded: " + _load_chosen_path);
+        scr_set_status_message("Workspace loaded: " + _load_chosen_path, make_colour_rgb(0, 255, 255));
     }
 }
 

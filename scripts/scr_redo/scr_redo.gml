@@ -18,4 +18,5 @@ function scr_redo() {
     array_delete(global.redo_stack, _redo_count - 1, 1);
 
     scr_restore_snapshot(_next_snapshot);
+    scr_mark_workspace_dirty();
 }
