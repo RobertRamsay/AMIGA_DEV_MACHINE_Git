@@ -1,4 +1,4 @@
-draw_set_font(font_Future);
+draw_set_font(font_CyberVerse);
 
 var _has_hover = (global.palette_hover_mnemonic != "");
 

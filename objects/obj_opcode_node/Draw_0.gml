@@ -4,7 +4,7 @@
 var _dx = node_x + global.pan_x;
 var _dy = node_y + global.pan_y;
 
-draw_set_font(font_Future_OpCode);
+draw_set_font(font_CyberVerse_OpCode);
 
 var _body_colour = node_colour;
 

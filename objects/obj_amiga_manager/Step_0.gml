@@ -379,7 +379,7 @@ if (_over_palette) {
 // Wrapping uses real rendered pixel widths, so select the same font used by
 // Draw before rebuilding the cache. This avoids fixed character-count guesses
 // with the variable-width Future font.
-draw_set_font(font_Future);
+draw_set_font(font_CyberVerse);
 preview_line_cache = scr_amiga_build_preview_lines();
 
 var _preview_panel_x = room_width - 360;

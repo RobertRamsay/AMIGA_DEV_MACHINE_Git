@@ -1,4 +1,4 @@
-draw_set_font(font_Future_OpCode);
+draw_set_font(font_CyberVerse_OpCode);
 
 var _body_colour = make_color_rgb(40, 70, 240);
 
