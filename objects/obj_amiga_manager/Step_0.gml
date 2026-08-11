@@ -1,3 +1,22 @@
+// Recover only after the startup logo has fully faded. If the splash object is
+// ever removed from the room, recovery still proceeds rather than waiting
+// forever for an object that does not exist.
+if (global.autosave_recovery_pending) {
+    var _startup_fade_finished = !instance_exists(obj_flashSplash);
+    if (!_startup_fade_finished) _startup_fade_finished = obj_flashSplash.fade <= 0;
+
+    if (_startup_fade_finished) {
+        global.autosave_recovery_pending = false;
+        try {
+            scr_load_workspace_from_path(global.autosave_workspace_path);
+            scr_set_status_message("Previous session auto-loaded.", make_colour_rgb(0, 255, 255));
+        } catch (_autosave_error) {
+            show_debug_message("Temporary autosave recovery failed: " + string(_autosave_error));
+            scr_set_status_message("Previous temporary session could not be loaded.", c_red);
+        }
+    }
+}
+
 // Autosave is evaluated before modal-editor blocking so bitmap, BOB and colour
 // work can be recovered without closing its editor. Holding a mouse button or
 // editing a text field postpones the save until five quiet seconds have passed.

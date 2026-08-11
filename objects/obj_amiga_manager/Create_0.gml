@@ -2,6 +2,10 @@
 
 window_set_size(display_get_width(),display_get_height()); // ensure full screen
 window_set_position(0,0);
+// All fixed UI coordinates are authored against the 1920x1080 room. Draw GUI
+// otherwise uses a runner-dependent surface size, which can put Y=850 helper
+// panels completely outside the visible GUI on a 1366x768 application surface.
+display_set_gui_size(room_width, room_height);
 
 // ============================================================================
 // 0. GRID CONSTANT
@@ -620,17 +624,9 @@ while (_sprite_find < array_length(global.sprite_asset_names)) {
 sprite_editor_load_asset(global.sprite_asset_names[global.sprite_asset_index]);
 global.sprite_anim_end = max(0, array_length(global.sprite_asset_names) - 1);
 
-// Default bootstrap assets are not a user edit. Once the manager is fully
-// initialized, recover the most recent temporary testing session when one is
-// available and report the I/O event in cyan in the message window.
+// Default bootstrap assets are not a user edit. Recovery is deliberately
+// deferred to Step until obj_flashSplash has finished fading, so loading and
+// its cyan notification cannot interrupt the startup presentation.
 global.workspace_dirty = false;
 global.autosave_due_time = -1;
-if (file_exists(global.autosave_workspace_path)) {
-    try {
-        scr_load_workspace_from_path(global.autosave_workspace_path);
-        scr_set_status_message("Previous session auto-loaded.", make_colour_rgb(0, 255, 255));
-    } catch (_autosave_error) {
-        show_debug_message("Temporary autosave recovery failed: " + string(_autosave_error));
-        scr_set_status_message("Previous temporary session could not be loaded.", c_red);
-    }
-}
+global.autosave_recovery_pending = file_exists(global.autosave_workspace_path);

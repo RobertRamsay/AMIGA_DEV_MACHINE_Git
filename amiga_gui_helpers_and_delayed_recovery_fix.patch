@@ -1,0 +1,136 @@
+diff --git a/objects/obj_amiga_manager/Create_0.gml b/objects/obj_amiga_manager/Create_0.gml
+index 2ad6e9e..3ad62f3 100644
+--- a/objects/obj_amiga_manager/Create_0.gml
++++ b/objects/obj_amiga_manager/Create_0.gml
+@@ -2,6 +2,10 @@
+ 
+ window_set_size(display_get_width(),display_get_height()); // ensure full screen
+ window_set_position(0,0);
++// All fixed UI coordinates are authored against the 1920x1080 room. Draw GUI
++// otherwise uses a runner-dependent surface size, which can put Y=850 helper
++// panels completely outside the visible GUI on a 1366x768 application surface.
++display_set_gui_size(room_width, room_height);
+ 
+ // ============================================================================
+ // 0. GRID CONSTANT
+@@ -620,17 +624,9 @@ while (_sprite_find < array_length(global.sprite_asset_names)) {
+ sprite_editor_load_asset(global.sprite_asset_names[global.sprite_asset_index]);
+ global.sprite_anim_end = max(0, array_length(global.sprite_asset_names) - 1);
+ 
+-// Default bootstrap assets are not a user edit. Once the manager is fully
+-// initialized, recover the most recent temporary testing session when one is
+-// available and report the I/O event in cyan in the message window.
++// Default bootstrap assets are not a user edit. Recovery is deliberately
++// deferred to Step until obj_flashSplash has finished fading, so loading and
++// its cyan notification cannot interrupt the startup presentation.
+ global.workspace_dirty = false;
+ global.autosave_due_time = -1;
+-if (file_exists(global.autosave_workspace_path)) {
+-    try {
+-        scr_load_workspace_from_path(global.autosave_workspace_path);
+-        scr_set_status_message("Previous session auto-loaded.", make_colour_rgb(0, 255, 255));
+-    } catch (_autosave_error) {
+-        show_debug_message("Temporary autosave recovery failed: " + string(_autosave_error));
+-        scr_set_status_message("Previous temporary session could not be loaded.", c_red);
+-    }
+-}
++global.autosave_recovery_pending = file_exists(global.autosave_workspace_path);
+diff --git a/objects/obj_amiga_manager/Draw_64.gml b/objects/obj_amiga_manager/Draw_64.gml
+index e586a63..06f30e4 100644
+--- a/objects/obj_amiga_manager/Draw_64.gml
++++ b/objects/obj_amiga_manager/Draw_64.gml
+@@ -11,13 +11,34 @@ var _tip_width = 800;
+ var _tip_height = 100;
+ var _drew_helper = false;
+ 
++// Normal Draw records hover ownership in visual draw order. Resolve directly
++// as a fallback too, making this GUI event independent of event-order changes
++// made by different GameMaker runners.
++var _hover_mnemonic = global.palette_hover_mnemonic;
++if (_hover_mnemonic == "") {
++    var _palette_count = instance_number(obj_opcode_palette_item);
++    var _palette_index = 0;
++    while (_palette_index < _palette_count) {
++        var _palette_item = instance_find(obj_opcode_palette_item, _palette_index);
++        if (point_in_rectangle(mouse_x, mouse_y,
++            _palette_item.palette_x, _palette_item.palette_y,
++            _palette_item.palette_x + _palette_item.palette_width,
++            _palette_item.palette_y + _palette_item.palette_height)) {
++            _hover_mnemonic = _palette_item.palette_mnemonic;
++        }
++        _palette_index += 1;
++    }
++}
++
+ // Fixed palette and macro controls get first refusal when they are hovered.
+-if (global.palette_hover_mnemonic != "") {
+-    var _tooltip_data = scr_opcode_lookup(global.palette_hover_mnemonic);
++if (_hover_mnemonic != "") {
++    var _tooltip_data = scr_opcode_lookup(_hover_mnemonic);
+ 
+     if (_tooltip_data != undefined) {
+-        _tip_x = global.palette_hover_x + 16;
+-        _tip_y = global.palette_hover_y + 16;
++        if (global.palette_hover_mnemonic != "") {
++            _tip_x = global.palette_hover_x + 16;
++            _tip_y = global.palette_hover_y + 16;
++        }
+ 
+         draw_set_alpha(0.65);
+         draw_set_colour(c_black);
+@@ -49,8 +70,26 @@ if (!_drew_helper
+ && !instance_exists(obj_bob_editor)
+ && !instance_exists(obj_colour_picker)
+ && !instance_exists(obj_cprbar_editor)) {
+-    if (global.hovered_help_node != noone && instance_exists(global.hovered_help_node)) {
+-        var _explanation = scr_amiga_explain_node(global.hovered_help_node);
++    var _help_node = global.hovered_help_node;
++
++    if (_help_node == noone || !instance_exists(_help_node)) {
++        var _node_count = instance_number(obj_opcode_node);
++        var _node_index = 0;
++        while (_node_index < _node_count) {
++            var _node = instance_find(obj_opcode_node, _node_index);
++            var _node_x = _node.node_x + global.pan_x;
++            var _node_y = _node.node_y + global.pan_y;
++            if (!_node.is_dragging
++            && point_in_rectangle(mouse_x, mouse_y, _node_x, _node_y,
++                _node_x + _node.node_width, _node_y + _node.node_height)) {
++                _help_node = _node;
++            }
++            _node_index += 1;
++        }
++    }
++
++    if (_help_node != noone && instance_exists(_help_node)) {
++        var _explanation = scr_amiga_explain_node(_help_node);
+ 
+         if (_explanation != "") {
+             draw_set_alpha(0.65);
+diff --git a/objects/obj_amiga_manager/Step_0.gml b/objects/obj_amiga_manager/Step_0.gml
+index ab3944e..d930c23 100644
+--- a/objects/obj_amiga_manager/Step_0.gml
++++ b/objects/obj_amiga_manager/Step_0.gml
+@@ -1,3 +1,22 @@
++// Recover only after the startup logo has fully faded. If the splash object is
++// ever removed from the room, recovery still proceeds rather than waiting
++// forever for an object that does not exist.
++if (global.autosave_recovery_pending) {
++    var _startup_fade_finished = !instance_exists(obj_flashSplash);
++    if (!_startup_fade_finished) _startup_fade_finished = obj_flashSplash.fade <= 0;
++
++    if (_startup_fade_finished) {
++        global.autosave_recovery_pending = false;
++        try {
++            scr_load_workspace_from_path(global.autosave_workspace_path);
++            scr_set_status_message("Previous session auto-loaded.", make_colour_rgb(0, 255, 255));
++        } catch (_autosave_error) {
++            show_debug_message("Temporary autosave recovery failed: " + string(_autosave_error));
++            scr_set_status_message("Previous temporary session could not be loaded.", c_red);
++        }
++    }
++}
++
+ // Autosave is evaluated before modal-editor blocking so bitmap, BOB and colour
+ // work can be recovered without closing its editor. Holding a mouse button or
+ // editing a text field postpones the save until five quiet seconds have passed.
