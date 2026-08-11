@@ -192,9 +192,9 @@ top_ui_button_height = 16;
 top_ui_test_x = 310;
 top_ui_test_2_x = 414;
 top_ui_macro_x = 530;
-top_ui_editor_x = 630;
-top_ui_editor_2_x = 734;
-top_ui_system_x = 850;
+top_ui_editor_x = 738;
+top_ui_editor_2_x = 842;
+top_ui_system_x = 958;
 
 var _org_palette_instance = instance_create_layer(
     palette_start_x,
@@ -236,6 +236,18 @@ _setbkg_palette_instance.palette_mnemonic = "SETBKG";
 _setbkg_palette_instance.palette_display_label = "SETBKG";
 _setbkg_palette_instance.palette_x = top_ui_macro_x;
 _setbkg_palette_instance.base_palette_y = top_ui_row_2_y;
+
+var _move_bob_palette_instance = instance_create_layer(top_ui_macro_x + 104, top_ui_row_1_y, "Instances", obj_opcode_palette_item);
+_move_bob_palette_instance.palette_mnemonic = "MOVE_BOB";
+_move_bob_palette_instance.palette_display_label = "MOVE BOB";
+_move_bob_palette_instance.palette_x = top_ui_macro_x + 104;
+_move_bob_palette_instance.base_palette_y = top_ui_row_1_y;
+
+var _move_spr_palette_instance = instance_create_layer(top_ui_macro_x + 104, top_ui_row_2_y, "Instances", obj_opcode_palette_item);
+_move_spr_palette_instance.palette_mnemonic = "MOVE_SPR";
+_move_spr_palette_instance.palette_display_label = "MOVE SPR";
+_move_spr_palette_instance.palette_x = top_ui_macro_x + 104;
+_move_spr_palette_instance.base_palette_y = top_ui_row_2_y;
 
 
 // ============================================================================

@@ -51,6 +51,9 @@ function scr_restore_snapshot(_snapshot) {
         _new_node.is_macro = _node_data.is_macro;
         _new_node.macro_type = _node_data.macro_type;
         _new_node.macro_asset_name = _node_data.macro_asset_name;
+        if (variable_struct_exists(_node_data, "macro_object_id")) _new_node.macro_object_id = _node_data.macro_object_id;
+        if (variable_struct_exists(_node_data, "macro_speed_x")) _new_node.macro_speed_x = _node_data.macro_speed_x;
+        if (variable_struct_exists(_node_data, "macro_speed_y")) _new_node.macro_speed_y = _node_data.macro_speed_y;
         _new_node.preview_collapsed = _node_data.preview_collapsed;
         _new_node.opcode_mnemonic = _node_data.opcode_mnemonic;
         _new_node.opcode_size = _node_data.opcode_size;

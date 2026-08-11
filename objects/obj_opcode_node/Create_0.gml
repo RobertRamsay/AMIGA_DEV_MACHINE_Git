@@ -32,7 +32,13 @@ operand_label_dst = "";
 is_macro = false;
 macro_type = "";
 macro_asset_name = "";
+// Runtime object banks. Asset name chooses the artwork; the ID chooses one
+// of 64 independent BOB/sprite position and backing-store slots.
+macro_object_id = 0;
+macro_speed_x = 1;
+macro_speed_y = 0;
 preview_collapsed = true;
+right_click_last_time = -1000000;
 
 // COPPER_BAR macro nodes are fully self-contained — no shared named asset,
 // every field lives on the node itself. bands is always all 16 slots, fully

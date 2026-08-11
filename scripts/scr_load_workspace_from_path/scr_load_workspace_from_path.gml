@@ -82,6 +82,9 @@ function scr_load_workspace_from_path(_path) {
             _new_node.is_macro = _node_data.is_macro;
             _new_node.macro_type = _node_data.macro_type;
             _new_node.macro_asset_name = _node_data.macro_asset_name;
+            if (variable_struct_exists(_node_data, "macro_object_id")) _new_node.macro_object_id = _node_data.macro_object_id;
+            if (variable_struct_exists(_node_data, "macro_speed_x")) _new_node.macro_speed_x = _node_data.macro_speed_x;
+            if (variable_struct_exists(_node_data, "macro_speed_y")) _new_node.macro_speed_y = _node_data.macro_speed_y;
         }
 
         if (variable_struct_exists(_node_data, "macro_cprbar_band_count")) {
@@ -97,7 +100,7 @@ function scr_load_workspace_from_path(_path) {
         // palette-spawn time — loading skips that path entirely, so it
         // would otherwise sit at the generic default (60) forever. Snap it
         // back to the correct taller height here instead.
-        if (_new_node.macro_type == "SETBKG" || _new_node.macro_type == "COPPER_BAR") {
+        if (_new_node.is_macro) {
             _new_node.node_height = 100;
         }
 

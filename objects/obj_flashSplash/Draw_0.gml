@@ -27,6 +27,7 @@ fade=0;
     draw_set_halign(fa_right)
     draw_text(1910,10,"(C) POLYTRICITY  2026");
     draw_text(1910,24,"VERSION: "+string(GM_version));
+    draw_text(1910,38,"FPS: "+string(round(fps_real)));
     
     
     draw_set_alpha(1);

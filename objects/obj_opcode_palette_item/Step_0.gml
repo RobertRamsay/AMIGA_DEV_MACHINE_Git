@@ -32,6 +32,13 @@ if (_over_item && mouse_check_button_pressed(mb_left) && !global.left_click_pick
             _new_node.is_macro = true;
             _new_node.macro_type = "SETBKG";
             _new_node.macro_asset_name = "000";
+        } else if (palette_mnemonic == "MOVE_BOB" || palette_mnemonic == "MOVE_SPR") {
+            _new_node.node_height = 100;
+            _new_node.is_macro = true;
+            _new_node.macro_type = palette_mnemonic;
+            _new_node.macro_object_id = 0;
+            _new_node.macro_speed_x = 1;
+            _new_node.macro_speed_y = 0;
         } else {
             _new_node.opcode_mnemonic = palette_mnemonic;
 
@@ -54,7 +61,7 @@ if (_over_item && mouse_check_button_pressed(mb_left) && !global.left_click_pick
 }
 
 // Top-strip entries are fixed controls, not part of the scrolling opcode list.
-if (palette_mnemonic == "ORG" || palette_mnemonic == "CPRBAR" || palette_mnemonic == "SETBKG") {
+if (palette_mnemonic == "ORG" || palette_mnemonic == "CPRBAR" || palette_mnemonic == "SETBKG" || palette_mnemonic == "MOVE_BOB" || palette_mnemonic == "MOVE_SPR") {
     palette_y = base_palette_y;
 } else {
     palette_y = base_palette_y + global.palette_scroll_y;

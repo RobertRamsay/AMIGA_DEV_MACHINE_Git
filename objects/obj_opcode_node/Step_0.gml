@@ -144,10 +144,15 @@ if (is_dragging) {
         global.right_click_delete_handled_this_frame = true;
 
         if (global.operand_edit_owner_uid == -1) {
-            var _deleted_descriptor = scr_amiga_describe_node(id);
-            scr_push_undo_snapshot();
-            scr_amiga_delete_and_close_gap(id);
-            scr_set_status_message("Node deleted: " + _deleted_descriptor);
+            if ((current_time - right_click_last_time) < 1000) {
+                var _deleted_descriptor = scr_amiga_describe_node(id);
+                scr_push_undo_snapshot();
+                scr_amiga_delete_and_close_gap(id);
+                scr_set_status_message("Node deleted: " + _deleted_descriptor);
+            } else {
+                right_click_last_time = current_time;
+                scr_set_status_message("Right click again within one second to delete node.");
+            }
         }
         // else: some OTHER node still has an edit open — don't delete
         // while editing is in progress anywhere.
@@ -170,8 +175,13 @@ if (scr_is_dbcc_opcode(opcode_mnemonic)) {
 
 if (is_macro) {
     var _asset_resolved = (scr_asset_find_by_name(macro_asset_name) != undefined);
+    var _is_move_macro = (macro_type == "MOVE_BOB" || macro_type == "MOVE_SPR");
+    var _is_bob_reference = (macro_type == "GET_BITMAP_BOB" || macro_type == "DRAW_BOB" || macro_type == "REPLACE_BITMAP_BOB" || macro_type == "BOB_BITMAP_TEST");
+    var _is_sprite_reference = (macro_type == "SPRITE_DISPLAY" || macro_type == "SPRITE_BITMAP_TEST");
 
-    if (macro_type == "SETBKG") {
+    if (_is_move_macro) {
+        _asset_resolved = true;
+    } else if (macro_type == "SETBKG") {
         _asset_resolved = scr_is_valid_hex_colour(macro_asset_name);
     } else if (macro_type == "COPPER_BAR") {
         // Self-contained now — no shared named asset to fail to resolve.
@@ -189,7 +199,7 @@ if (is_macro) {
     var _over_asset_field = point_in_rectangle(_world_mouse_x, _world_mouse_y, _asset_field_x, _asset_field_y, _asset_field_x + _asset_field_width, _asset_field_y + _asset_field_height);
     var _can_start_asset_edit = ((global.operand_edit_owner_uid == -1) || (global.operand_edit_owner_uid == uid)) && (operand_editing_slot != "macro_asset");
 
-    if (_over_asset_field && mouse_check_button_pressed(mb_left) && _can_start_asset_edit) {
+    if (_over_asset_field && mouse_check_button_pressed(mb_left) && _can_start_asset_edit && !_is_move_macro) {
         if (macro_type == "SETBKG") {
             scr_colour_picker_open(id, "macro_asset_name", -1, "SETBKG colour");
         } else if (macro_type == "COPPER_BAR") {
@@ -202,6 +212,28 @@ if (is_macro) {
             operand_edit_text = macro_asset_name;
             keyboard_string = "";
             scr_set_status_message("Enter asset name, click away or enter to commit, right click to cancel");
+        }
+    }
+
+    // Compact left/right steppers. Every node that references a BOB or sprite
+    // exposes its 0..63 runtime slot; MOVE nodes also expose signed literals.
+    var _has_object_id = _is_move_macro || _is_bob_reference || _is_sprite_reference;
+    var _id_row_y = node_y + (_is_move_macro ? 20 : 40);
+    if (_has_object_id && mouse_check_button_pressed(mb_left)
+        && point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, _id_row_y, node_x + node_width, _id_row_y + 20)) {
+        scr_push_undo_snapshot();
+        macro_object_id = clamp(macro_object_id + (_world_mouse_x < node_x + node_width * 0.5 ? -1 : 1), 0, 63);
+        scr_set_status_message("Runtime ID " + string(macro_object_id) + " selected.");
+    }
+
+    if (_is_move_macro && mouse_check_button_pressed(mb_left)) {
+        var _speed_delta = (_world_mouse_x < node_x + node_width * 0.5 ? -1 : 1);
+        if (point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y + 40, node_x + node_width, node_y + 60)) {
+            scr_push_undo_snapshot();
+            macro_speed_x = clamp(macro_speed_x + _speed_delta, -16, 16);
+        } else if (point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y + 60, node_x + node_width, node_y + 80)) {
+            scr_push_undo_snapshot();
+            macro_speed_y = clamp(macro_speed_y + _speed_delta, -16, 16);
         }
     }
 } else {

@@ -53,6 +53,14 @@ if (is_macro) {
             _header_colour = make_color_rgb(75, 45, 125);
             break;
 
+        case "MOVE_BOB":
+            _header_colour = make_color_rgb(25, 110, 100);
+            break;
+
+        case "MOVE_SPR":
+            _header_colour = make_color_rgb(105, 40, 120);
+            break;
+
         case "SETBKG":
             _header_colour = make_color_rgb(150, 150, 40);
             break;
@@ -162,6 +170,18 @@ if (_label_display_text != "" || operand_editing_slot == "node_label") {
 if (is_macro) {
     var _asset_field_dx = node_x + global.pan_x;
     var _asset_field_dy = node_y + global.pan_y + 20;
+    var _is_move_macro_draw = (macro_type == "MOVE_BOB" || macro_type == "MOVE_SPR");
+    var _is_bob_ref_draw = (macro_type == "GET_BITMAP_BOB" || macro_type == "DRAW_BOB" || macro_type == "REPLACE_BITMAP_BOB" || macro_type == "BOB_BITMAP_TEST");
+    var _is_sprite_ref_draw = (macro_type == "SPRITE_DISPLAY" || macro_type == "SPRITE_BITMAP_TEST");
+
+    if (_is_move_macro_draw) {
+        draw_set_colour(c_dkgray);
+        draw_rectangle(_asset_field_dx, _asset_field_dy, _asset_field_dx + node_width, _asset_field_dy + 60, false);
+        draw_set_colour(c_white);
+        draw_text(_asset_field_dx + 4, _asset_field_dy + 2, "<   ID: " + string(macro_object_id) + "   >");
+        draw_text(_asset_field_dx + 4, _asset_field_dy + 22, "<   X SPEED: " + string(macro_speed_x) + "   >");
+        draw_text(_asset_field_dx + 4, _asset_field_dy + 42, "<   Y SPEED: " + string(macro_speed_y) + "   >");
+    } else {
 
     var _asset_field_colour = c_dkgray;
 
@@ -215,7 +235,16 @@ if (is_macro) {
         }
     }
 
-    draw_text(_asset_field_dx + 4, _asset_field_dy + 24, _info_text);
+    var _info_y = _asset_field_dy + 24;
+    if (_is_bob_ref_draw || _is_sprite_ref_draw) {
+        draw_set_colour(c_dkgray);
+        draw_rectangle(_asset_field_dx, _asset_field_dy + 20, _asset_field_dx + node_width, _asset_field_dy + 40, false);
+        draw_set_colour(c_white);
+        draw_text(_asset_field_dx + 4, _asset_field_dy + 22, "<   ID: " + string(macro_object_id) + "   >");
+        _info_y = _asset_field_dy + 44;
+    }
+    draw_text(_asset_field_dx + 4, _info_y, _info_text);
+    }
 } else {
     var _mode_src_dx = mode_button_src_x + global.pan_x;
     var _mode_src_dy = mode_button_src_y + global.pan_y;

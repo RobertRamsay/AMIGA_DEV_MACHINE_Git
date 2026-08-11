@@ -18,6 +18,8 @@ function scr_emit_macro_line(_node) {
     if (_node.macro_type == "GET_BITMAP_BOB") return scr_emit_macro_get_bitmap_bob(_node);
     if (_node.macro_type == "REPLACE_BITMAP_BOB") return scr_emit_macro_replace_bitmap_bob(_node);
     if (_node.macro_type == "DRAW_BOB") return scr_emit_macro_draw_bob(_node);
+    if (_node.macro_type == "MOVE_BOB") return scr_emit_macro_move_bob(_node);
+    if (_node.macro_type == "MOVE_SPR") return scr_emit_macro_move_spr(_node);
 
     if (_node.macro_type == "SETBKG") {
         return scr_emit_macro_setbkg(_node);
