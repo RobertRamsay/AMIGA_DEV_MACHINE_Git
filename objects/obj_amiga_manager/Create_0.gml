@@ -440,3 +440,120 @@ global.sprite_paint_index = 1;
 global.sprite_palette_edit_index = 1;
 global.sprite_editing_field = "";
 global.sprite_edit_text = "";
+global.sprite_asset_name = "TestSprite";
+global.current_bob_asset_name = "TestBob";
+global.sprite_asset_names = [];
+global.sprite_asset_index = 0;
+global.sprite_tool = "DRAW";
+global.sprite_line_active = false;
+global.sprite_line_start_x = 0;
+global.sprite_line_start_y = 0;
+global.sprite_line_value = 1;
+global.sprite_drawing = false;
+global.sprite_drawing_value = 1;
+global.sprite_drawing_button = mb_left;
+global.sprite_last_px = -1;
+global.sprite_last_py = -1;
+
+sprite_editor_commit_asset = function() {
+    scr_asset_define_sprite(global.sprite_asset_name, global.sprite_channel, global.sprite_height, global.sprite_address,
+        global.sprite_pixels, global.sprite_colour_r, global.sprite_colour_g, global.sprite_colour_b);
+    global.workspace_dirty = true;
+};
+
+sprite_editor_rebuild_assets = function() {
+    global.sprite_asset_names = [];
+    var _i = 0;
+    while (_i < array_length(global.asset_list)) {
+        if (global.asset_list[_i].type == "SPRITE") array_push(global.sprite_asset_names, global.asset_list[_i].name);
+        _i += 1;
+    }
+};
+
+sprite_editor_load_asset = function(_name) {
+    var _asset = scr_asset_find_by_name(_name);
+    if (_asset == undefined || _asset.type != "SPRITE") exit;
+    global.sprite_asset_name = _name;
+    global.sprite_channel = _asset.channel;
+    global.sprite_height = clamp(_asset.height, 1, 64);
+    global.sprite_address = _asset.address;
+    global.sprite_pixels = array_create(64 * 16, 0);
+    array_copy(global.sprite_pixels, 0, _asset.pixels, 0, min(array_length(_asset.pixels), 64 * 16));
+    global.sprite_colour_r = [_asset.colour_r[0], _asset.colour_r[1], _asset.colour_r[2]];
+    global.sprite_colour_g = [_asset.colour_g[0], _asset.colour_g[1], _asset.colour_g[2]];
+    global.sprite_colour_b = [_asset.colour_b[0], _asset.colour_b[1], _asset.colour_b[2]];
+    global.sprite_line_active = false;
+};
+
+sprite_editor_navigate = function(_delta) {
+    sprite_editor_commit_asset();
+    sprite_editor_rebuild_assets();
+    if (array_length(global.sprite_asset_names) <= 0) exit;
+    global.sprite_asset_index = (global.sprite_asset_index + _delta + array_length(global.sprite_asset_names)) mod array_length(global.sprite_asset_names);
+    sprite_editor_load_asset(global.sprite_asset_names[global.sprite_asset_index]);
+};
+
+sprite_editor_add_asset = function() {
+    sprite_editor_commit_asset();
+    var _number = 1;
+    var _name = "Sprite01";
+    while (scr_asset_find_by_name(_name) != undefined) {
+        _number += 1;
+        _name = "Sprite" + (_number < 10 ? "0" : "") + string(_number);
+    }
+    global.sprite_asset_name = _name;
+    global.sprite_pixels = array_create(64 * 16, 0);
+    global.sprite_height = 16;
+    sprite_editor_commit_asset();
+    sprite_editor_rebuild_assets();
+    global.sprite_asset_index = array_length(global.sprite_asset_names) - 1;
+    global.sprite_line_active = false;
+};
+
+sprite_editor_apply_line = function(_x0, _y0, _x1, _y1, _value) {
+    var _dx = abs(_x1 - _x0), _sx = _x0 < _x1 ? 1 : -1;
+    var _dy = -abs(_y1 - _y0), _sy = _y0 < _y1 ? 1 : -1;
+    var _err = _dx + _dy;
+    repeat (128) {
+        global.sprite_pixels[_y0 * 16 + _x0] = _value;
+        if (_x0 == _x1 && _y0 == _y1) break;
+        var _e2 = 2 * _err;
+        if (_e2 >= _dy) { _err += _dy; _x0 += _sx; }
+        if (_e2 <= _dx) { _err += _dx; _y0 += _sy; }
+    }
+};
+
+sprite_editor_apply_fill = function(_x, _y, _value) {
+    var _target = global.sprite_pixels[_y * 16 + _x];
+    if (_target == _value) exit;
+    var _qx = [_x], _qy = [_y], _head = 0;
+    global.sprite_pixels[_y * 16 + _x] = _value;
+    while (_head < array_length(_qx)) {
+        var _cx = _qx[_head], _cy = _qy[_head]; _head += 1;
+        var _nx = [_cx - 1, _cx + 1, _cx, _cx];
+        var _ny = [_cy, _cy, _cy - 1, _cy + 1];
+        var _n = 0;
+        while (_n < 4) {
+            if (_nx[_n] >= 0 && _nx[_n] < 16 && _ny[_n] >= 0 && _ny[_n] < global.sprite_height) {
+                var _index = _ny[_n] * 16 + _nx[_n];
+                if (global.sprite_pixels[_index] == _target) {
+                    global.sprite_pixels[_index] = _value;
+                    array_push(_qx, _nx[_n]); array_push(_qy, _ny[_n]);
+                }
+            }
+            _n += 1;
+        }
+    }
+};
+
+sprite_editor_rebuild_assets();
+if (array_length(global.sprite_asset_names) == 0) {
+    sprite_editor_commit_asset();
+    sprite_editor_rebuild_assets();
+}
+var _sprite_find = 0;
+while (_sprite_find < array_length(global.sprite_asset_names)) {
+    if (global.sprite_asset_names[_sprite_find] == "TestSprite") global.sprite_asset_index = _sprite_find;
+    _sprite_find += 1;
+}
+sprite_editor_load_asset(global.sprite_asset_names[global.sprite_asset_index]);

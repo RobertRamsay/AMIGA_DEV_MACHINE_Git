@@ -6,10 +6,10 @@
 function scr_sprite_editor_layout() {
     var _panel_x = global.sprite_editor_x;
     var _panel_y = global.sprite_editor_y;
-    var _panel_width = 260;
+    var _panel_width = 380;
     var _cell_size = 14;
     var _grid_x = _panel_x + 18;
-    var _grid_y = _panel_y + 112;
+    var _grid_y = _panel_y + 136;
     var _grid_width = 16 * _cell_size;
     var _grid_height = global.sprite_height * _cell_size;
     var _palette_y = _grid_y + _grid_height + 28;
@@ -34,17 +34,25 @@ function scr_sprite_editor_layout() {
         grid_height : _grid_height,
         close_x : _panel_x + _panel_width - 20,
         close_y : _panel_y + 2,
+        asset_prev_x : _panel_x + 12,
+        asset_next_x : _panel_x + 210,
+        asset_add_x : _panel_x + 250,
+        asset_row_y : _panel_y + 24,
         channel_minus_x : _panel_x + 90,
         channel_plus_x : _panel_x + 130,
-        channel_row_y : _panel_y + 24,
+        channel_row_y : _panel_y + 48,
         height_field_x : _panel_x + 90,
-        height_row_y : _panel_y + 44,
+        height_row_y : _panel_y + 68,
         addr_field_x : _panel_x + 90,
-        addr_row_y : _panel_y + 64,
-        swatch_row_y : _panel_y + 88,
+        addr_row_y : _panel_y + 88,
+        swatch_row_y : _panel_y + 112,
         swatch_width : 40,
         swatch_height : 18,
         swatch_x : _panel_x + 12,
+        tool_x : _panel_x + 252,
+        tool_y : _grid_y,
+        tool_width : 104,
+        tool_height : 28,
         palette_y : _palette_y,
         palette_preview_x : _panel_x + 12,
         palette_preview_y : _palette_y + 18,

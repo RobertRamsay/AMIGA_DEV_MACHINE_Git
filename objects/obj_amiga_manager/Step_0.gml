@@ -170,6 +170,20 @@ var _over_sprite_editor_button = point_in_rectangle(mouse_x, mouse_y, _sprite_ed
 
 if (_over_sprite_editor_button && mouse_check_button_pressed(mb_left)) {
     global.sprite_editor_open = !global.sprite_editor_open;
+    if (global.sprite_editor_open) {
+        sprite_editor_rebuild_assets();
+        if (array_length(global.sprite_asset_names) > 0) {
+            var _current_sprite_index = -1;
+            var _sprite_scan = 0;
+            while (_sprite_scan < array_length(global.sprite_asset_names)) {
+                if (global.sprite_asset_names[_sprite_scan] == global.sprite_asset_name) _current_sprite_index = _sprite_scan;
+                _sprite_scan += 1;
+            }
+            if (_current_sprite_index < 0) _current_sprite_index = 0;
+            global.sprite_asset_index = _current_sprite_index;
+            sprite_editor_load_asset(global.sprite_asset_names[global.sprite_asset_index]);
+        }
+    }
 }
 
 var _sprite_test_button_x = top_ui_test_x;
@@ -479,8 +493,28 @@ if (global.sprite_editor_open) {
     }
 
     if (_over_close && mouse_check_button_pressed(mb_left)) {
+        sprite_editor_commit_asset();
         global.sprite_editor_open = false;
         global.sprite_editor_dragging = false;
+    }
+
+    var _over_asset_prev = point_in_rectangle(mouse_x, mouse_y, _layout.asset_prev_x, _layout.asset_row_y, _layout.asset_prev_x + 28, _layout.asset_row_y + 20);
+    var _over_asset_next = point_in_rectangle(mouse_x, mouse_y, _layout.asset_next_x, _layout.asset_row_y, _layout.asset_next_x + 28, _layout.asset_row_y + 20);
+    var _over_asset_add = point_in_rectangle(mouse_x, mouse_y, _layout.asset_add_x, _layout.asset_row_y, _layout.asset_add_x + 104, _layout.asset_row_y + 20);
+    if (_over_asset_prev && mouse_check_button_pressed(mb_left)) sprite_editor_navigate(-1);
+    if (_over_asset_next && mouse_check_button_pressed(mb_left)) sprite_editor_navigate(1);
+    if (_over_asset_add && mouse_check_button_pressed(mb_left)) sprite_editor_add_asset();
+
+    var _tool_i = 0;
+    var _tool_names = ["DRAW", "LINE", "FILL"];
+    while (_tool_i < 3) {
+        var _tool_y = _layout.tool_y + _tool_i * 36;
+        if (mouse_check_button_pressed(mb_left) && point_in_rectangle(mouse_x, mouse_y, _layout.tool_x, _tool_y, _layout.tool_x + _layout.tool_width, _tool_y + _layout.tool_height)) {
+            global.sprite_tool = _tool_names[_tool_i];
+            global.sprite_line_active = false;
+            global.sprite_drawing = false;
+        }
+        _tool_i += 1;
     }
 
     var _over_channel_minus = point_in_rectangle(mouse_x, mouse_y, _layout.channel_minus_x, _layout.channel_row_y, _layout.channel_minus_x + 16, _layout.channel_row_y + 16);
@@ -558,22 +592,46 @@ if (global.sprite_editor_open) {
         }
     }
 
-    if ((mouse_check_button(mb_left) || mouse_check_button(mb_right)) && global.sprite_editing_field == "") {
-        var _over_grid = point_in_rectangle(mouse_x, mouse_y, _layout.grid_x, _layout.grid_y, _layout.grid_x + _layout.grid_width, _layout.grid_y + _layout.grid_height);
+    var _sprite_left_press = mouse_check_button_pressed(mb_left);
+    var _sprite_right_press = mouse_check_button_pressed(mb_right);
+    var _sprite_grid_press = _sprite_left_press || _sprite_right_press;
+    var _over_grid = point_in_rectangle(mouse_x, mouse_y, _layout.grid_x, _layout.grid_y, _layout.grid_x + _layout.grid_width, _layout.grid_y + _layout.grid_height);
+    var _cell_col = clamp(floor((mouse_x - _layout.grid_x) / _layout.cell_size), 0, 15);
+    var _cell_row = clamp(floor((mouse_y - _layout.grid_y) / _layout.cell_size), 0, global.sprite_height - 1);
 
-        if (_over_grid) {
-            var _cell_col = floor((mouse_x - _layout.grid_x) / _layout.cell_size);
-            var _cell_row = floor((mouse_y - _layout.grid_y) / _layout.cell_size);
-
-            if (_cell_col >= 0 && _cell_col < 16 && _cell_row >= 0 && _cell_row < global.sprite_height) {
-                var _draw_index = global.sprite_paint_index;
-
-                if (mouse_check_button(mb_right)) {
-                    _draw_index = 0;
-                }
-
-                global.sprite_pixels[(_cell_row * 16) + _cell_col] = _draw_index;
+    if (_over_grid && _sprite_grid_press && global.sprite_editing_field == "") {
+        var _value = _sprite_right_press ? 0 : global.sprite_paint_index;
+        if (global.sprite_tool == "DRAW") {
+            global.sprite_drawing = true;
+            global.sprite_drawing_value = _value;
+            global.sprite_drawing_button = _sprite_right_press ? mb_right : mb_left;
+            global.sprite_last_px = _cell_col; global.sprite_last_py = _cell_row;
+            global.sprite_pixels[_cell_row * 16 + _cell_col] = _value;
+        } else if (global.sprite_tool == "LINE") {
+            if (!global.sprite_line_active) {
+                global.sprite_line_active = true;
+                global.sprite_line_start_x = _cell_col; global.sprite_line_start_y = _cell_row; global.sprite_line_value = _value;
+            } else {
+                sprite_editor_apply_line(global.sprite_line_start_x, global.sprite_line_start_y, _cell_col, _cell_row, global.sprite_line_value);
+                global.sprite_line_active = false;
+                sprite_editor_commit_asset();
             }
+        } else if (global.sprite_tool == "FILL") {
+            sprite_editor_apply_fill(_cell_col, _cell_row, _value);
+            sprite_editor_commit_asset();
+        }
+    }
+
+    if (global.sprite_drawing) {
+        var _draw_held = mouse_check_button(global.sprite_drawing_button);
+        if (_draw_held) {
+            if (_over_grid) {
+                sprite_editor_apply_line(global.sprite_last_px, global.sprite_last_py, _cell_col, _cell_row, global.sprite_drawing_value);
+                global.sprite_last_px = _cell_col; global.sprite_last_py = _cell_row;
+            }
+        } else {
+            global.sprite_drawing = false;
+            sprite_editor_commit_asset();
         }
     }
 
@@ -643,15 +701,6 @@ if (global.sprite_editor_open) {
     // close. F5 after a paint, erase, or palette drag now uses the values that
     // are visibly present in the open editor.
     if (mouse_check_button_released(mb_left) || mouse_check_button_released(mb_right)) {
-        scr_asset_define_sprite(
-            "TestSprite",
-            global.sprite_channel,
-            global.sprite_height,
-            global.sprite_address,
-            global.sprite_pixels,
-            global.sprite_colour_r,
-            global.sprite_colour_g,
-            global.sprite_colour_b
-        );
+        sprite_editor_commit_asset();
     }
 }

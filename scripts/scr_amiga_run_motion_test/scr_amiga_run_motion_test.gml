@@ -40,8 +40,12 @@ function scr_amiga_run_motion_test(_macro_type, _asset_name, _message) {
 }
 
 function scr_amiga_run_bob_bitmap_test() {
-    var _bob = scr_asset_find_by_name("TestBob");
-    if (_bob == undefined || _bob.type != "BOB") scr_asset_define_bob("TestBob", 32, 32, array_create(1024, 0));
+    var _bob_name = global.current_bob_asset_name;
+    var _bob = scr_asset_find_by_name(_bob_name);
+    if (_bob == undefined || _bob.type != "BOB") {
+        _bob_name = "TestBob";
+        scr_asset_define_bob(_bob_name, 32, 32, array_create(1024, 0));
+    }
     scr_amiga_get_shared_bitmap_palette();
     with (obj_opcode_node) instance_destroy();
     with (obj_amiga_root_node) instance_destroy();
@@ -56,7 +60,7 @@ function scr_amiga_run_bob_bitmap_test() {
     for (var _i = 0; _i < 4; _i += 1) {
         var _m = instance_create_layer(_org.node_x, _cy, "Instances", obj_opcode_node);
         _m.node_x = _org.node_x; _m.node_y = _cy; _m.node_height = 100; _m.is_macro = true;
-        _m.macro_type = _types[_i]; _m.macro_asset_name = "TestBob"; _m.is_connected = true; _m.root_uid = _org.uid;
+        _m.macro_type = _types[_i]; _m.macro_asset_name = _bob_name; _m.is_connected = true; _m.root_uid = _org.uid;
         _m.macro_object_id = 0; _m.macro_speed_x = 1; _m.macro_speed_y = 0;
         if (_i == 1) _m.node_label = "bobloop";
         _cy += _m.node_height;
@@ -68,7 +72,7 @@ function scr_amiga_run_bob_bitmap_test() {
 }
 
 function scr_amiga_run_sprite_bitmap_test() {
-    scr_asset_define_sprite("TestSprite", global.sprite_channel, global.sprite_height, global.sprite_address, global.sprite_pixels, global.sprite_colour_r, global.sprite_colour_g, global.sprite_colour_b);
+    scr_asset_define_sprite(global.sprite_asset_name, global.sprite_channel, global.sprite_height, global.sprite_address, global.sprite_pixels, global.sprite_colour_r, global.sprite_colour_g, global.sprite_colour_b);
     scr_amiga_get_shared_bitmap_palette();
-    scr_amiga_run_motion_test("SPRITE_BITMAP_TEST", "TestSprite", "SPR-BMP test loaded — MOVE_SPR controls its signed X/Y speed.");
+    scr_amiga_run_motion_test("SPRITE_BITMAP_TEST", global.sprite_asset_name, "SPR-BMP test loaded — MOVE_SPR controls its signed X/Y speed.");
 }

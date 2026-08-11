@@ -283,7 +283,7 @@ if (global.sprite_editor_open) {
 
     var _over_editor_header = point_in_rectangle(mouse_x, mouse_y, _layout.header_x, _layout.header_y, _layout.header_x + _layout.header_width, _layout.header_y + _layout.header_height);
     var _over_editor_close = point_in_rectangle(mouse_x, mouse_y, _layout.close_x, _layout.close_y, _layout.close_x + 16, _layout.close_y + 16);
-    var _header_text = "SPRITE EDITOR";
+    var _header_text = "SPRITE EDITOR - " + global.sprite_asset_name;
 
     if ((_over_editor_header && !_over_editor_close) || global.sprite_editor_dragging) {
         _header_text = "SPRITE EDITOR - Grab to drag";
@@ -296,6 +296,17 @@ if (global.sprite_editor_open) {
     draw_set_colour(c_white);
     draw_rectangle(_layout.close_x, _layout.close_y, _layout.close_x + 16, _layout.close_y + 16, true);
     draw_text(_layout.close_x + 4, _layout.close_y - 1, "X");
+
+    draw_set_colour(make_colour_rgb(45, 65, 85));
+    draw_rectangle(_layout.asset_prev_x, _layout.asset_row_y, _layout.asset_prev_x + 28, _layout.asset_row_y + 20, false);
+    draw_rectangle(_layout.asset_prev_x + 34, _layout.asset_row_y, _layout.asset_prev_x + 190, _layout.asset_row_y + 20, false);
+    draw_rectangle(_layout.asset_next_x, _layout.asset_row_y, _layout.asset_next_x + 28, _layout.asset_row_y + 20, false);
+    draw_rectangle(_layout.asset_add_x, _layout.asset_row_y, _layout.asset_add_x + 104, _layout.asset_row_y + 20, false);
+    draw_set_colour(c_white);
+    draw_text(_layout.asset_prev_x + 9, _layout.asset_row_y + 1, "<");
+    draw_text(_layout.asset_prev_x + 42, _layout.asset_row_y + 1, global.sprite_asset_name);
+    draw_text(_layout.asset_next_x + 9, _layout.asset_row_y + 1, ">");
+    draw_text(_layout.asset_add_x + 14, _layout.asset_row_y + 1, "ADD SPRITE");
 
     draw_text(_layout.panel_x + 12, _layout.channel_row_y, "CHANNEL:");
     draw_rectangle(_layout.channel_minus_x, _layout.channel_row_y, _layout.channel_minus_x + 16, _layout.channel_row_y + 16, true);
@@ -397,6 +408,23 @@ if (global.sprite_editor_open) {
         }
 
         _row += 1;
+    }
+
+    var _sprite_tool_names = ["DRAW", "LINE", "FILL"];
+    var _sprite_tool_i = 0;
+    while (_sprite_tool_i < 3) {
+        var _sprite_tool_y = _layout.tool_y + _sprite_tool_i * 36;
+        draw_set_colour(global.sprite_tool == _sprite_tool_names[_sprite_tool_i] ? make_colour_rgb(35, 110, 75) : make_colour_rgb(45, 65, 85));
+        draw_rectangle(_layout.tool_x, _sprite_tool_y, _layout.tool_x + _layout.tool_width, _sprite_tool_y + _layout.tool_height, false);
+        draw_set_colour(c_white);
+        draw_text(_layout.tool_x + 24, _sprite_tool_y + 5, _sprite_tool_names[_sprite_tool_i]);
+        _sprite_tool_i += 1;
+    }
+
+    if (global.sprite_line_active) {
+        draw_set_colour(c_yellow);
+        draw_line(_layout.grid_x + global.sprite_line_start_x * _layout.cell_size + _layout.cell_size div 2,
+            _layout.grid_y + global.sprite_line_start_y * _layout.cell_size + _layout.cell_size div 2, mouse_x, mouse_y);
     }
 
     // --------------------------------------------------------------------

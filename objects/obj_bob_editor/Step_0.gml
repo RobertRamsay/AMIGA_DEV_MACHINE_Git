@@ -25,7 +25,8 @@ if (_left_press && point_in_rectangle(_mx, _my, panel_x + panel_w - 25, panel_y 
 var _gx = panel_x + grid_x_offset;
 var _gy = panel_y + grid_y_offset;
 var _over_grid = point_in_rectangle(_mx, _my, _gx, _gy, _gx + bob_width * cell_size - 1, _gy + bob_height * cell_size - 1);
-if (_over_grid && (_left_press || _right_press)) {
+var _grid_press = _over_grid && (_left_press || _right_press);
+if (_grid_press && bob_tool == "DRAW") {
     drawing = _left_press;
     erasing = _right_press;
     last_px = -1;
@@ -40,16 +41,7 @@ if (drawing || erasing) {
         if (last_px < 0) {
             bob_pixels[_py * bob_width + _px] = _value;
         } else {
-            var _dx = abs(_px - last_px), _sx = last_px < _px ? 1 : -1;
-            var _dy = -abs(_py - last_py), _sy = last_py < _py ? 1 : -1;
-            var _err = _dx + _dy, _cx = last_px, _cy = last_py;
-            repeat (64) {
-                bob_pixels[_cy * bob_width + _cx] = _value;
-                if (_cx == _px && _cy == _py) break;
-                var _e2 = 2 * _err;
-                if (_e2 >= _dy) { _err += _dy; _cx += _sx; }
-                if (_e2 <= _dx) { _err += _dx; _cy += _sy; }
-            }
+            bob_apply_line(last_px, last_py, _px, _py, _value);
         }
         last_px = _px;
         last_py = _py;
@@ -58,6 +50,27 @@ if (drawing || erasing) {
         drawing = false;
         erasing = false;
     }
+}
+
+if (_grid_press && bob_tool == "LINE") {
+    var _line_x = clamp(floor((_mx - _gx) / cell_size), 0, bob_width - 1);
+    var _line_y = clamp(floor((_my - _gy) / cell_size), 0, bob_height - 1);
+    var _line_value = _right_press ? 0 : pen_index;
+    if (!bob_line_active) {
+        bob_line_active = true;
+        bob_line_start_x = _line_x; bob_line_start_y = _line_y; bob_line_value = _line_value;
+    } else {
+        bob_apply_line(bob_line_start_x, bob_line_start_y, _line_x, _line_y, bob_line_value);
+        bob_line_active = false;
+        bob_commit();
+    }
+}
+
+if (_grid_press && bob_tool == "FILL") {
+    var _fill_x = clamp(floor((_mx - _gx) / cell_size), 0, bob_width - 1);
+    var _fill_y = clamp(floor((_my - _gy) / cell_size), 0, bob_height - 1);
+    bob_apply_fill(_fill_x, _fill_y, _right_press ? 0 : pen_index);
+    bob_commit();
 }
 
 var _palette_x = panel_x + 560;
@@ -82,16 +95,26 @@ for (var _component = 0; _component < 3; _component += 1) {
     }
 }
 
-if (_left_press && point_in_rectangle(_mx, _my, _palette_x, panel_y + 410, _palette_x + 130, panel_y + 440)) {
+var _asset_row_y = panel_y + 370;
+if (_left_press && point_in_rectangle(_mx, _my, _palette_x, _asset_row_y, _palette_x + 28, _asset_row_y + 26)) bob_navigate(-1);
+if (_left_press && point_in_rectangle(_mx, _my, _palette_x + 190, _asset_row_y, _palette_x + 218, _asset_row_y + 26)) bob_navigate(1);
+if (_left_press && point_in_rectangle(_mx, _my, _palette_x + 228, _asset_row_y, _palette_x + 320, _asset_row_y + 26)) bob_add_asset();
+
+var _tool_y = panel_y + 410;
+if (_left_press && point_in_rectangle(_mx, _my, _palette_x, _tool_y, _palette_x + 92, _tool_y + 30)) { bob_tool = "DRAW"; bob_line_active = false; }
+if (_left_press && point_in_rectangle(_mx, _my, _palette_x + 104, _tool_y, _palette_x + 196, _tool_y + 30)) { bob_tool = "LINE"; bob_line_active = false; }
+if (_left_press && point_in_rectangle(_mx, _my, _palette_x + 208, _tool_y, _palette_x + 300, _tool_y + 30)) { bob_tool = "FILL"; bob_line_active = false; }
+
+if (_left_press && point_in_rectangle(_mx, _my, _palette_x, panel_y + 450, _palette_x + 130, panel_y + 480)) {
     bob_pixels = array_create(bob_width * bob_height, 0);
     bob_commit();
 }
-if (_left_press && point_in_rectangle(_mx, _my, _palette_x, panel_y + 460, _palette_x + 145, panel_y + 494)) {
+if (_left_press && point_in_rectangle(_mx, _my, _palette_x, panel_y + 500, _palette_x + 145, panel_y + 534)) {
     bob_commit();
     scr_amiga_run_bob_bitmap_test();
     instance_destroy();
 }
-if (_left_press && point_in_rectangle(_mx, _my, _palette_x + 160, panel_y + 460, _palette_x + 305, panel_y + 494)) {
+if (_left_press && point_in_rectangle(_mx, _my, _palette_x + 160, panel_y + 500, _palette_x + 305, panel_y + 534)) {
     bob_commit();
     scr_amiga_run_sprite_bitmap_test();
     instance_destroy();

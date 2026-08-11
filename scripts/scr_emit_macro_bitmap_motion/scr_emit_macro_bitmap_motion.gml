@@ -88,6 +88,10 @@ function scr_emit_macro_get_bitmap_bob(_node) {
     var _after = "__getbob_after_data_" + _u;
     var _fail = "__getbob_fail_" + _u;
     var _row_words = ceil(_bob.width / 16) + 1;
+    // The shift padding word must still fit inside the 40-byte scanline.
+    // Without this, the rightmost BOB position spills into the next row and,
+    // near the bottom, into the following bitplane.
+    var _safe_max_x = min(320 - _bob.width, ((20 - _row_words) * 16) + 15);
     var _plane_bytes = _row_words * 2 * _bob.height;
     var _save_bytes = _plane_bytes * 5;
     var _bob_bytes = _plane_bytes * 6;
@@ -117,7 +121,7 @@ function scr_emit_macro_get_bitmap_bob(_node) {
     _s += "\tEVEN\n" + _state + "_save:\tDC.L 0\n" + _state + "_data:\tDC.L 0\n";
     _s += _state + "_x:\tDC.W 0\n" + _state + "_y:\tDC.W 112\n";
     _s += _state + "_old_x:\tDC.W 0\n" + _state + "_old_y:\tDC.W 112\n";
-    _s += _state + "_max_x:\tDC.W " + string(320 - _bob.width) + "\n" + _state + "_max_y:\tDC.W " + string(256 - _bob.height) + "\n";
+    _s += _state + "_max_x:\tDC.W " + string(_safe_max_x) + "\n" + _state + "_max_y:\tDC.W " + string(256 - _bob.height) + "\n";
     _s += _after + ":";
     return { text : _s, is_valid : true };
 }

@@ -3,7 +3,7 @@
 /// canvas, and builds a minimal INIT+ORG program: disable DMA/interrupts,
 /// display the sprite via a SPRITE_DISPLAY macro, then idle forever.
 function scr_amiga_run_sprite_test() {
-    scr_asset_define_sprite("TestSprite", global.sprite_channel, global.sprite_height, global.sprite_address, global.sprite_pixels, global.sprite_colour_r, global.sprite_colour_g, global.sprite_colour_b);
+    scr_asset_define_sprite(global.sprite_asset_name, global.sprite_channel, global.sprite_height, global.sprite_address, global.sprite_pixels, global.sprite_colour_r, global.sprite_colour_g, global.sprite_colour_b);
 
     with (obj_opcode_node) {
         instance_destroy();
@@ -68,7 +68,7 @@ function scr_amiga_run_sprite_test() {
     _sprite_macro_node.node_height = 100;
     _sprite_macro_node.is_macro = true;
     _sprite_macro_node.macro_type = "SPRITE_DISPLAY";
-    _sprite_macro_node.macro_asset_name = "TestSprite";
+    _sprite_macro_node.macro_asset_name = global.sprite_asset_name;
     _sprite_macro_node.is_connected = true;
     _sprite_macro_node.root_uid = _org_instance.uid;
 
