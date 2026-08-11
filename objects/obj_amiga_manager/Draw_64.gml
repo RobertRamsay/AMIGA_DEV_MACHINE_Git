@@ -40,43 +40,17 @@ if (global.palette_hover_mnemonic != "") {
     }
 }
 
-// Otherwise resolve exactly one placed node beneath the mouse. Lower depth is
-// visually nearer in GameMaker; the instance id breaks same-depth overlaps in
-// favour of the most recently created node.
+// Otherwise explain the one placed node selected by normal Draw order. This
+// keeps hit testing in the same coordinate/depth context that drew the node,
+// while the helper itself remains safely above the world in Draw GUI.
 if (!_drew_helper
 && global.operand_edit_owner_uid == -1
 && !instance_exists(obj_bitmap_editor)
 && !instance_exists(obj_bob_editor)
 && !instance_exists(obj_colour_picker)
 && !instance_exists(obj_cprbar_editor)) {
-    var _hovered_node = noone;
-    var _hovered_depth = 1000000000;
-    var _hovered_id = -1;
-
-    var _node_count = instance_number(obj_opcode_node);
-    var _node_index = 0;
-
-    while (_node_index < _node_count) {
-        var _node = instance_find(obj_opcode_node, _node_index);
-        var _node_screen_x = _node.node_x + global.pan_x;
-        var _node_screen_y = _node.node_y + global.pan_y;
-
-        if (!_node.is_dragging
-        && point_in_rectangle(mouse_x, mouse_y,
-            _node_screen_x, _node_screen_y,
-            _node_screen_x + _node.node_width, _node_screen_y + _node.node_height)) {
-            if (_node.depth < _hovered_depth || (_node.depth == _hovered_depth && _node.id > _hovered_id)) {
-                _hovered_node = _node;
-                _hovered_depth = _node.depth;
-                _hovered_id = _node.id;
-            }
-        }
-
-        _node_index += 1;
-    }
-
-    if (_hovered_node != noone && instance_exists(_hovered_node)) {
-        var _explanation = scr_amiga_explain_node(_hovered_node);
+    if (global.hovered_help_node != noone && instance_exists(global.hovered_help_node)) {
+        var _explanation = scr_amiga_explain_node(global.hovered_help_node);
 
         if (_explanation != "") {
             draw_set_alpha(0.65);

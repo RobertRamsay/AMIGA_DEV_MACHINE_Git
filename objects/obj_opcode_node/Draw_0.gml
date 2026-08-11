@@ -378,3 +378,12 @@ if (wedge_target_found && is_dragging) {
     draw_rectangle(_dx - 3, _dy - 3, _dx + node_width + 3, _dy + node_height + 3, true);
     draw_set_colour(c_white);
 }
+
+// Record hover ownership in normal draw order, but render nothing here.
+// Whichever overlapping node is drawn last is the one visibly on top and is
+// therefore the one Draw GUI will explain.
+if (!is_dragging
+&& global.operand_edit_owner_uid == -1
+&& point_in_rectangle(mouse_x, mouse_y, _dx, _dy, _dx + node_width, _dy + node_height)) {
+    global.hovered_help_node = id;
+}

@@ -1,0 +1,183 @@
+diff --git a/objects/obj_amiga_manager/Create_0.gml b/objects/obj_amiga_manager/Create_0.gml
+index c1660e5..2ad6e9e 100644
+--- a/objects/obj_amiga_manager/Create_0.gml
++++ b/objects/obj_amiga_manager/Create_0.gml
+@@ -132,6 +132,7 @@ global.palette_panel_bounds = {
+ global.palette_hover_mnemonic = "";
+ global.palette_hover_x = 0;
+ global.palette_hover_y = 0;
++global.hovered_help_node = noone;
+ 
+ depth = -300000
+ // ============================================================================
+diff --git a/objects/obj_amiga_manager/Draw_0.gml b/objects/obj_amiga_manager/Draw_0.gml
+index b468e89..bb5b199 100644
+--- a/objects/obj_amiga_manager/Draw_0.gml
++++ b/objects/obj_amiga_manager/Draw_0.gml
+@@ -1,33 +1,5 @@
+ draw_set_font(font_Future);
+ 
+-var _has_hover = (global.palette_hover_mnemonic != "");
+-
+-if (_has_hover) {
+-    var _tooltip_data = scr_opcode_lookup(global.palette_hover_mnemonic);
+-
+-    if (_tooltip_data != undefined) {
+-        var _tip_x = global.palette_hover_x + 16;
+-        var _tip_y = global.palette_hover_y + 16;
+-        var _tip_width = 800;
+-        var _tip_height = 100;
+-
+-        draw_set_alpha(0.65);
+-        draw_rectangle_colour(_tip_x, _tip_y, _tip_x + _tip_width, _tip_y + _tip_height, c_black, c_black, c_black, c_black, false);
+-        draw_set_alpha(1);
+-        draw_rectangle_colour(_tip_x, _tip_y, _tip_x + _tip_width, _tip_y + _tip_height, c_yellow, c_yellow, c_yellow, c_yellow, true);
+-
+-        draw_set_colour(c_white);
+-        draw_text(_tip_x + 8, _tip_y + 6, _tooltip_data.format);
+-        draw_text(_tip_x + 8, _tip_y + 24, _tooltip_data.mode);
+-        draw_text(_tip_x + 8, _tip_y + 50, "Use: " + _tooltip_data.use);
+-        if (variable_struct_exists(_tooltip_data, "generated_help") && _tooltip_data.generated_help) {
+-            draw_text(_tip_x + 8, _tip_y + 72, "Cost: " + string(_tooltip_data.cycles) + ", size: " + string(_tooltip_data.bytes));
+-        } else {
+-            draw_text(_tip_x + 8, _tip_y + 72, "~" + string(_tooltip_data.cycles) + " cycles, " + string(_tooltip_data.bytes) + "+ bytes");
+-        }
+-    }
+-}
+-
+ var _panel_x = room_width - 360;
+ var _panel_y = 60;
+ var _panel_width = 350;
+diff --git a/objects/obj_amiga_manager/Draw_64.gml b/objects/obj_amiga_manager/Draw_64.gml
+index 00d1604..e586a63 100644
+--- a/objects/obj_amiga_manager/Draw_64.gml
++++ b/objects/obj_amiga_manager/Draw_64.gml
+@@ -40,43 +40,17 @@ if (global.palette_hover_mnemonic != "") {
+     }
+ }
+ 
+-// Otherwise resolve exactly one placed node beneath the mouse. Lower depth is
+-// visually nearer in GameMaker; the instance id breaks same-depth overlaps in
+-// favour of the most recently created node.
++// Otherwise explain the one placed node selected by normal Draw order. This
++// keeps hit testing in the same coordinate/depth context that drew the node,
++// while the helper itself remains safely above the world in Draw GUI.
+ if (!_drew_helper
+ && global.operand_edit_owner_uid == -1
+ && !instance_exists(obj_bitmap_editor)
+ && !instance_exists(obj_bob_editor)
+ && !instance_exists(obj_colour_picker)
+ && !instance_exists(obj_cprbar_editor)) {
+-    var _hovered_node = noone;
+-    var _hovered_depth = 1000000000;
+-    var _hovered_id = -1;
+-
+-    var _node_count = instance_number(obj_opcode_node);
+-    var _node_index = 0;
+-
+-    while (_node_index < _node_count) {
+-        var _node = instance_find(obj_opcode_node, _node_index);
+-        var _node_screen_x = _node.node_x + global.pan_x;
+-        var _node_screen_y = _node.node_y + global.pan_y;
+-
+-        if (!_node.is_dragging
+-        && point_in_rectangle(mouse_x, mouse_y,
+-            _node_screen_x, _node_screen_y,
+-            _node_screen_x + _node.node_width, _node_screen_y + _node.node_height)) {
+-            if (_node.depth < _hovered_depth || (_node.depth == _hovered_depth && _node.id > _hovered_id)) {
+-                _hovered_node = _node;
+-                _hovered_depth = _node.depth;
+-                _hovered_id = _node.id;
+-            }
+-        }
+-
+-        _node_index += 1;
+-    }
+-
+-    if (_hovered_node != noone && instance_exists(_hovered_node)) {
+-        var _explanation = scr_amiga_explain_node(_hovered_node);
++    if (global.hovered_help_node != noone && instance_exists(global.hovered_help_node)) {
++        var _explanation = scr_amiga_explain_node(global.hovered_help_node);
+ 
+         if (_explanation != "") {
+             draw_set_alpha(0.65);
+diff --git a/objects/obj_amiga_manager/Step_0.gml b/objects/obj_amiga_manager/Step_0.gml
+index 08461eb..ab3944e 100644
+--- a/objects/obj_amiga_manager/Step_0.gml
++++ b/objects/obj_amiga_manager/Step_0.gml
+@@ -14,6 +14,12 @@ if (global.workspace_dirty && global.autosave_due_time >= 0 && current_time >= g
+     }
+ }
+ 
++// Normal Draw events repopulate these after Step. Resetting them here lets
++// actual draw order select the visually topmost palette item or node while
++// Draw GUI remains the only place that renders the helper itself.
++global.palette_hover_mnemonic = "";
++global.hovered_help_node = noone;
++
+ // The bitmap editor and colour picker are both modal: do not pan, build,
+ // undo, click controls or mutate the graph behind either of them.
+ if (instance_exists(obj_bitmap_editor) || instance_exists(obj_bob_editor) || instance_exists(obj_colour_picker) || instance_exists(obj_cprbar_editor)) {
+@@ -484,8 +490,6 @@ if (mouse_check_button_pressed(mb_left) && !_preview_scroll_consumed) {
+     }
+ }
+ 
+-global.palette_hover_mnemonic = "";
+-
+ if (global.sprite_editor_open) {
+     var _layout = scr_sprite_editor_layout();
+ 
+diff --git a/objects/obj_opcode_node/Draw_0.gml b/objects/obj_opcode_node/Draw_0.gml
+index 206f670..667b05b 100644
+--- a/objects/obj_opcode_node/Draw_0.gml
++++ b/objects/obj_opcode_node/Draw_0.gml
+@@ -378,3 +378,12 @@ if (wedge_target_found && is_dragging) {
+     draw_rectangle(_dx - 3, _dy - 3, _dx + node_width + 3, _dy + node_height + 3, true);
+     draw_set_colour(c_white);
+ }
++
++// Record hover ownership in normal draw order, but render nothing here.
++// Whichever overlapping node is drawn last is the one visibly on top and is
++// therefore the one Draw GUI will explain.
++if (!is_dragging
++&& global.operand_edit_owner_uid == -1
++&& point_in_rectangle(mouse_x, mouse_y, _dx, _dy, _dx + node_width, _dy + node_height)) {
++    global.hovered_help_node = id;
++}
+diff --git a/objects/obj_opcode_palette_item/Draw_0.gml b/objects/obj_opcode_palette_item/Draw_0.gml
+index 59f80b4..ae8d524 100644
+--- a/objects/obj_opcode_palette_item/Draw_0.gml
++++ b/objects/obj_opcode_palette_item/Draw_0.gml
+@@ -23,4 +23,13 @@ if (palette_mnemonic == "ORG") {
+ 
+ 
+ draw_set_colour(c_white);
+-draw_text(palette_x + 3, palette_y+5, palette_display_label);
+\ No newline at end of file
++draw_text(palette_x + 3, palette_y+5, palette_display_label);
++
++// As with placed nodes, normal Draw decides hover ownership and Draw GUI owns
++// the actual helper rectangle and text.
++if (point_in_rectangle(mouse_x, mouse_y, palette_x, palette_y, palette_x + palette_width, palette_y + palette_height)) {
++    global.palette_hover_mnemonic = palette_mnemonic;
++    global.palette_hover_display_label = palette_display_label;
++    global.palette_hover_x = 256;
++    global.palette_hover_y = 834;
++}
+diff --git a/objects/obj_opcode_palette_item/Step_0.gml b/objects/obj_opcode_palette_item/Step_0.gml
+index eb2e35a..457be90 100644
+--- a/objects/obj_opcode_palette_item/Step_0.gml
++++ b/objects/obj_opcode_palette_item/Step_0.gml
+@@ -82,12 +82,3 @@ if (palette_mnemonic == "ORG" || palette_mnemonic == "CPRBAR" || palette_mnemoni
+ } else {
+     palette_y = base_palette_y + global.palette_scroll_y;
+ }
+-
+-var _is_hovering_palette = point_in_rectangle(mouse_x, mouse_y, palette_x, palette_y, palette_x + palette_width, palette_y + palette_height);
+-
+-if (_is_hovering_palette) {
+-    global.palette_hover_mnemonic = palette_mnemonic;
+-    global.palette_hover_display_label = palette_display_label;
+-    global.palette_hover_x = 256;//mouse_x;
+-    global.palette_hover_y = 834;//mouse_y;
+-}

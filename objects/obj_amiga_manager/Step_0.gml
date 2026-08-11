@@ -14,6 +14,12 @@ if (global.workspace_dirty && global.autosave_due_time >= 0 && current_time >= g
     }
 }
 
+// Normal Draw events repopulate these after Step. Resetting them here lets
+// actual draw order select the visually topmost palette item or node while
+// Draw GUI remains the only place that renders the helper itself.
+global.palette_hover_mnemonic = "";
+global.hovered_help_node = noone;
+
 // The bitmap editor and colour picker are both modal: do not pan, build,
 // undo, click controls or mutate the graph behind either of them.
 if (instance_exists(obj_bitmap_editor) || instance_exists(obj_bob_editor) || instance_exists(obj_colour_picker) || instance_exists(obj_cprbar_editor)) {
@@ -483,8 +489,6 @@ if (mouse_check_button_pressed(mb_left) && !_preview_scroll_consumed) {
         _click_line_index += 1;
     }
 }
-
-global.palette_hover_mnemonic = "";
 
 if (global.sprite_editor_open) {
     var _layout = scr_sprite_editor_layout();

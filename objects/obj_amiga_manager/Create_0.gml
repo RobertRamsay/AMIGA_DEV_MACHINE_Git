@@ -132,6 +132,7 @@ global.palette_panel_bounds = {
 global.palette_hover_mnemonic = "";
 global.palette_hover_x = 0;
 global.palette_hover_y = 0;
+global.hovered_help_node = noone;
 
 depth = -300000
 // ============================================================================
