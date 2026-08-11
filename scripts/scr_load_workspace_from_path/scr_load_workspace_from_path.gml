@@ -85,6 +85,10 @@ function scr_load_workspace_from_path(_path) {
             if (variable_struct_exists(_node_data, "macro_object_id")) _new_node.macro_object_id = _node_data.macro_object_id;
             if (variable_struct_exists(_node_data, "macro_speed_x")) _new_node.macro_speed_x = _node_data.macro_speed_x;
             if (variable_struct_exists(_node_data, "macro_speed_y")) _new_node.macro_speed_y = _node_data.macro_speed_y;
+            if (variable_struct_exists(_node_data, "macro_anim_rate")) _new_node.macro_anim_rate = _node_data.macro_anim_rate;
+            if (variable_struct_exists(_node_data, "macro_anim_start")) _new_node.macro_anim_start = _node_data.macro_anim_start;
+            if (variable_struct_exists(_node_data, "macro_anim_end")) _new_node.macro_anim_end = _node_data.macro_anim_end;
+            if (variable_struct_exists(_node_data, "macro_anim_loop")) _new_node.macro_anim_loop = _node_data.macro_anim_loop;
         }
 
         if (variable_struct_exists(_node_data, "macro_cprbar_band_count")) {
@@ -101,7 +105,7 @@ function scr_load_workspace_from_path(_path) {
         // would otherwise sit at the generic default (60) forever. Snap it
         // back to the correct taller height here instead.
         if (_new_node.is_macro) {
-            _new_node.node_height = 100;
+            _new_node.node_height = (_new_node.macro_type == "ANIM_BOB" || _new_node.macro_type == "ANIM_SPR") ? 120 : 100;
         }
 
         _n += 1;

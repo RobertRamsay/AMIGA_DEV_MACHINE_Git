@@ -37,6 +37,10 @@ macro_asset_name = "";
 macro_object_id = 0;
 macro_speed_x = 1;
 macro_speed_y = 0;
+macro_anim_rate = 8;
+macro_anim_start = 0;
+macro_anim_end = 0;
+macro_anim_loop = true;
 preview_collapsed = true;
 right_click_last_time = -1000000;
 

@@ -192,9 +192,9 @@ top_ui_button_height = 16;
 top_ui_test_x = 310;
 top_ui_test_2_x = 414;
 top_ui_macro_x = 530;
-top_ui_editor_x = 738;
-top_ui_editor_2_x = 842;
-top_ui_system_x = 958;
+top_ui_editor_x = 842;
+top_ui_editor_2_x = 946;
+top_ui_system_x = 1062;
 
 var _org_palette_instance = instance_create_layer(
     palette_start_x,
@@ -248,6 +248,18 @@ _move_spr_palette_instance.palette_mnemonic = "MOVE_SPR";
 _move_spr_palette_instance.palette_display_label = "MOVE SPR";
 _move_spr_palette_instance.palette_x = top_ui_macro_x + 104;
 _move_spr_palette_instance.base_palette_y = top_ui_row_2_y;
+
+var _anim_bob_palette_instance = instance_create_layer(top_ui_macro_x + 208, top_ui_row_1_y, "Instances", obj_opcode_palette_item);
+_anim_bob_palette_instance.palette_mnemonic = "ANIM_BOB";
+_anim_bob_palette_instance.palette_display_label = "ANIM BOB";
+_anim_bob_palette_instance.palette_x = top_ui_macro_x + 208;
+_anim_bob_palette_instance.base_palette_y = top_ui_row_1_y;
+
+var _anim_spr_palette_instance = instance_create_layer(top_ui_macro_x + 208, top_ui_row_2_y, "Instances", obj_opcode_palette_item);
+_anim_spr_palette_instance.palette_mnemonic = "ANIM_SPR";
+_anim_spr_palette_instance.palette_display_label = "ANIM SPR";
+_anim_spr_palette_instance.palette_x = top_ui_macro_x + 208;
+_anim_spr_palette_instance.base_palette_y = top_ui_row_2_y;
 
 
 // ============================================================================
@@ -442,6 +454,10 @@ global.sprite_editing_field = "";
 global.sprite_edit_text = "";
 global.sprite_asset_name = "TestSprite";
 global.current_bob_asset_name = "TestBob";
+global.current_bob_anim_rate = 8;
+global.current_bob_anim_start = 0;
+global.current_bob_anim_end = 0;
+global.current_bob_anim_loop = true;
 global.sprite_asset_names = [];
 global.sprite_asset_index = 0;
 global.sprite_tool = "DRAW";
@@ -470,6 +486,31 @@ sprite_editor_commit_asset = function() {
     global.workspace_dirty = true;
 };
 
+sprite_editor_load_shared_colours = function() {
+    var _palette = scr_amiga_get_shared_bitmap_palette();
+    var _base = 17 + ((global.sprite_channel div 2) * 4);
+    var _i = 0;
+    while (_i < 3) {
+        global.sprite_colour_r[_i] = _palette.colour_r[_base + _i];
+        global.sprite_colour_g[_i] = _palette.colour_g[_base + _i];
+        global.sprite_colour_b[_i] = _palette.colour_b[_base + _i];
+        _i += 1;
+    }
+};
+
+sprite_editor_commit_shared_colours = function() {
+    var _palette = scr_amiga_get_shared_bitmap_palette();
+    var _base = 17 + ((global.sprite_channel div 2) * 4);
+    var _i = 0;
+    while (_i < 3) {
+        _palette.colour_r[_base + _i] = global.sprite_colour_r[_i];
+        _palette.colour_g[_base + _i] = global.sprite_colour_g[_i];
+        _palette.colour_b[_base + _i] = global.sprite_colour_b[_i];
+        _i += 1;
+    }
+    scr_amiga_commit_shared_bitmap_palette(_palette.colour_r, _palette.colour_g, _palette.colour_b);
+};
+
 sprite_editor_rebuild_assets = function() {
     global.sprite_asset_names = [];
     var _i = 0;
@@ -494,6 +535,7 @@ sprite_editor_load_asset = function(_name) {
     global.sprite_colour_r = [_asset.colour_r[0], _asset.colour_r[1], _asset.colour_r[2]];
     global.sprite_colour_g = [_asset.colour_g[0], _asset.colour_g[1], _asset.colour_g[2]];
     global.sprite_colour_b = [_asset.colour_b[0], _asset.colour_b[1], _asset.colour_b[2]];
+    sprite_editor_load_shared_colours();
     global.sprite_line_active = false;
 };
 

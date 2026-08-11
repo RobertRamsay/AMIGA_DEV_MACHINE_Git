@@ -276,3 +276,128 @@ function scr_emit_macro_move_spr(_node) {
     _s += "\tMOVE.W " + _state + "_y,D0\n\tADD.W #" + string(_sy) + ",D0\n\tBPL.S __movespr_y_nonneg_" + _u + "\n\tMOVE.W " + _state + "_max_y,D0\n__movespr_y_nonneg_" + _u + ":\n\tCMP.W " + _state + "_max_y,D0\n\tBLE.S __movespr_y_ok_" + _u + "\n\tCLR.W D0\n__movespr_y_ok_" + _u + ":\n\tMOVE.W D0," + _state + "_y";
     return { text : _s, is_valid : true };
 }
+
+/// ANIM_BOB: lazily copies the selected BOB-frame range into Chip RAM, then
+/// advances the chosen runtime slot using a PAL 50 Hz fractional accumulator.
+function scr_emit_macro_anim_bob(_node) {
+    var _frames = [];
+    var _i = 0;
+    while (_i < array_length(global.asset_list)) {
+        if (global.asset_list[_i].type == "BOB") array_push(_frames, global.asset_list[_i]);
+        _i += 1;
+    }
+    if (array_length(_frames) == 0) return { text : "; ERROR: ANIM_BOB has no BOB frames", is_valid : false };
+    var _start = clamp(floor(_node.macro_anim_start), 0, array_length(_frames) - 1);
+    var _end = clamp(floor(_node.macro_anim_end), _start, array_length(_frames) - 1);
+    var _first = _frames[_start];
+    var _f = _start;
+    while (_f <= _end) {
+        if (_frames[_f].width != _first.width || _frames[_f].height != _first.height)
+            return { text : "; ERROR: ANIM_BOB frames must share width and height", is_valid : false };
+        _f += 1;
+    }
+    var _row_words = ceil(_first.width / 16) + 1;
+    var _plane_bytes = _row_words * 2 * _first.height;
+    var _frame_bytes = _plane_bytes * 6;
+    var _frame_count = _end - _start + 1;
+    var _total_bytes = _frame_bytes * _frame_count;
+    var _id = string(clamp(floor(_node.macro_object_id), 0, 63));
+    var _u = string(floor(_node.uid));
+    var _state = "__bob_state_" + _id;
+    var _anim = "__anim_bob_" + _id;
+    var _data = "__anim_bob_data_" + _u;
+    var _ready = "__anim_bob_ready_" + _u;
+    var _frame_ok = "__anim_bob_frame_ok_" + _u;
+    var _done = "__anim_bob_done_" + _u;
+    var _after = "__anim_bob_after_" + _u;
+    var _fail = "__anim_bob_fail_" + _u;
+    var _rate = clamp(floor(_node.macro_anim_rate), 1, 50);
+    var _s = _node.node_label != "" ? _node.node_label + ":\n" : "";
+    _s += "\tTST.L " + _anim + "_bank\n\tBNE.W " + _ready + "\n\tMOVEA.L 4.W,A6\n\tMOVE.L #" + string(_total_bytes) + ",D0\n\tMOVE.L #65538,D1\n\tJSR -198(A6)\n\tTST.L D0\n\tBEQ.W " + _fail + "\n\tMOVEA.L D0,A3\n\tMOVE.L A3," + _anim + "_bank\n\tMOVE.L A3," + _state + "_data\n\tMOVEA.L A3,A1\n\tLEA " + _data + "(PC),A0\n\tMOVE.W #" + string((_total_bytes div 4) - 1) + ",D0\n__anim_bob_copy_" + _u + ":\n\tMOVE.L (A0)+,(A1)+\n\tDBRA D0,__anim_bob_copy_" + _u + "\n\tCLR.W " + _anim + "_frame\n\tCLR.W " + _anim + "_acc\n";
+    _s += _ready + ":\n\tADDI.W #" + string(_rate) + "," + _anim + "_acc\n\tCMPI.W #50," + _anim + "_acc\n\tBLT.W " + _done + "\n\tSUBI.W #50," + _anim + "_acc\n\tADDQ.W #1," + _anim + "_frame\n\tCMPI.W #" + string(_frame_count) + "," + _anim + "_frame\n\tBLT.S " + _frame_ok + "\n";
+    if (_node.macro_anim_loop) _s += "\tCLR.W " + _anim + "_frame\n";
+    else _s += "\tMOVE.W #" + string(_frame_count - 1) + "," + _anim + "_frame\n";
+    _s += _frame_ok + ":\n\tMOVE.W " + _anim + "_frame,D0\n\tMULU.W #" + string(_frame_bytes) + ",D0\n\tMOVEA.L " + _anim + "_bank,A3\n\tADDA.L D0,A3\n\tMOVE.L A3," + _state + "_data\n" + _done + ":\n\tJMP " + _after + "\n" + _fail + ":\n\tBRA.W " + _fail + "\n\tEVEN\n" + _data + ":\n";
+    _f = _start;
+    while (_f <= _end) {
+        var _bob = _frames[_f];
+        for (var _plane = -1; _plane < 5; _plane += 1) {
+            for (var _y = 0; _y < _bob.height; _y += 1) {
+                _s += "\tDC.W ";
+                for (var _wc = 0; _wc < _row_words; _wc += 1) {
+                    var _word = 0;
+                    if ((_wc * 16) < _bob.width) for (var _bit = 0; _bit < 16; _bit += 1) {
+                        var _px = _wc * 16 + _bit;
+                        var _pix = _px < _bob.width ? _bob.pixels[_y * _bob.width + _px] : 0;
+                        var _set = _plane < 0 ? (_pix != 0) : ((_pix & (1 << _plane)) != 0);
+                        if (_set) _word |= 1 << (15 - _bit);
+                    }
+                    if (_wc > 0) _s += ",";
+                    _s += string(_word);
+                }
+                _s += "\n";
+            }
+        }
+        _f += 1;
+    }
+    _s += "\tEVEN\n" + _anim + "_bank:\tDC.L 0\n" + _anim + "_frame:\tDC.W 0\n" + _anim + "_acc:\tDC.W 0\n" + _after + ":";
+    return { text : _s, is_valid : true };
+}
+
+/// ANIM_SPR: the hardware-sprite equivalent of ANIM_BOB. Every selected
+/// frame must have the same height so MOVE_SPR can share one control layout.
+function scr_emit_macro_anim_spr(_node) {
+    var _frames = [];
+    var _i = 0;
+    while (_i < array_length(global.asset_list)) {
+        if (global.asset_list[_i].type == "SPRITE") array_push(_frames, global.asset_list[_i]);
+        _i += 1;
+    }
+    if (array_length(_frames) == 0) return { text : "; ERROR: ANIM_SPR has no sprite frames", is_valid : false };
+    var _start = clamp(floor(_node.macro_anim_start), 0, array_length(_frames) - 1);
+    var _end = clamp(floor(_node.macro_anim_end), _start, array_length(_frames) - 1);
+    var _height = clamp(_frames[_start].height, 1, 64);
+    var _f = _start;
+    while (_f <= _end) {
+        if (_frames[_f].height != _height) return { text : "; ERROR: ANIM_SPR frames must share height", is_valid : false };
+        _f += 1;
+    }
+    var _frame_bytes = 4 + _height * 4 + 4;
+    var _frame_count = _end - _start + 1;
+    var _total_bytes = _frame_bytes * _frame_count;
+    var _id = string(clamp(floor(_node.macro_object_id), 0, 63));
+    var _u = string(floor(_node.uid));
+    var _state = "__spr_state_" + _id;
+    var _anim = "__anim_spr_" + _id;
+    var _data = "__anim_spr_data_" + _u;
+    var _ready = "__anim_spr_ready_" + _u;
+    var _frame_ok = "__anim_spr_frame_ok_" + _u;
+    var _done = "__anim_spr_done_" + _u;
+    var _after = "__anim_spr_after_" + _u;
+    var _fail = "__anim_spr_fail_" + _u;
+    var _rate = clamp(floor(_node.macro_anim_rate), 1, 50);
+    var _s = _node.node_label != "" ? _node.node_label + ":\n" : "";
+    _s += "\tTST.L " + _anim + "_bank\n\tBNE.W " + _ready + "\n\tMOVEA.L 4.W,A6\n\tMOVE.L #" + string(_total_bytes) + ",D0\n\tMOVE.L #65538,D1\n\tJSR -198(A6)\n\tTST.L D0\n\tBEQ.W " + _fail + "\n\tMOVEA.L D0,A3\n\tMOVE.L A3," + _anim + "_bank\n\tMOVE.L A3," + _state + "_ptr\n\tMOVEA.L A3,A1\n\tLEA " + _data + "(PC),A0\n\tMOVE.W #" + string((_total_bytes div 4) - 1) + ",D0\n__anim_spr_copy_" + _u + ":\n\tMOVE.L (A0)+,(A1)+\n\tDBRA D0,__anim_spr_copy_" + _u + "\n\tCLR.W " + _anim + "_frame\n\tCLR.W " + _anim + "_acc\n";
+    _s += _ready + ":\n\tADDI.W #" + string(_rate) + "," + _anim + "_acc\n\tCMPI.W #50," + _anim + "_acc\n\tBLT.W " + _done + "\n\tSUBI.W #50," + _anim + "_acc\n\tADDQ.W #1," + _anim + "_frame\n\tCMPI.W #" + string(_frame_count) + "," + _anim + "_frame\n\tBLT.S " + _frame_ok + "\n";
+    if (_node.macro_anim_loop) _s += "\tCLR.W " + _anim + "_frame\n";
+    else _s += "\tMOVE.W #" + string(_frame_count - 1) + "," + _anim + "_frame\n";
+    _s += _frame_ok + ":\n\tMOVE.W " + _anim + "_frame,D0\n\tMULU.W #" + string(_frame_bytes) + ",D0\n\tMOVEA.L " + _anim + "_bank,A3\n\tADDA.L D0,A3\n\tMOVE.L A3," + _state + "_ptr\n" + _done + ":\n\tJMP " + _after + "\n" + _fail + ":\n\tBRA.W " + _fail + "\n\tEVEN\n" + _data + ":\n";
+    _f = _start;
+    while (_f <= _end) {
+        var _sprite = _frames[_f];
+        _s += "\tDC.W 32768,0\n";
+        for (var _y = 0; _y < _height; _y += 1) {
+            var _a = 0, _b = 0;
+            for (var _x = 0; _x < 16; _x += 1) {
+                var _pix = _sprite.pixels[_y * 16 + _x];
+                if ((_pix & 1) != 0) _a |= 1 << (15 - _x);
+                if ((_pix & 2) != 0) _b |= 1 << (15 - _x);
+            }
+            _s += "\tDC.W " + string(_a) + "," + string(_b) + "\n";
+        }
+        _s += "\tDC.W 0,0\n";
+        _f += 1;
+    }
+    _s += "\tEVEN\n" + _anim + "_bank:\tDC.L 0\n" + _anim + "_frame:\tDC.W 0\n" + _anim + "_acc:\tDC.W 0\n" + _after + ":";
+    return { text : _s, is_valid : true };
+}

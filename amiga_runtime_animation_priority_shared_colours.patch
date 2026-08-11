@@ -1,0 +1,615 @@
+diff --git a/objects/obj_amiga_manager/Create_0.gml b/objects/obj_amiga_manager/Create_0.gml
+index eb67ba1..2a6fa09 100644
+--- a/objects/obj_amiga_manager/Create_0.gml
++++ b/objects/obj_amiga_manager/Create_0.gml
+@@ -192,9 +192,9 @@ top_ui_button_height = 16;
+ top_ui_test_x = 310;
+ top_ui_test_2_x = 414;
+ top_ui_macro_x = 530;
+-top_ui_editor_x = 738;
+-top_ui_editor_2_x = 842;
+-top_ui_system_x = 958;
++top_ui_editor_x = 842;
++top_ui_editor_2_x = 946;
++top_ui_system_x = 1062;
+ 
+ var _org_palette_instance = instance_create_layer(
+     palette_start_x,
+@@ -249,6 +249,18 @@ _move_spr_palette_instance.palette_display_label = "MOVE SPR";
+ _move_spr_palette_instance.palette_x = top_ui_macro_x + 104;
+ _move_spr_palette_instance.base_palette_y = top_ui_row_2_y;
+ 
++var _anim_bob_palette_instance = instance_create_layer(top_ui_macro_x + 208, top_ui_row_1_y, "Instances", obj_opcode_palette_item);
++_anim_bob_palette_instance.palette_mnemonic = "ANIM_BOB";
++_anim_bob_palette_instance.palette_display_label = "ANIM BOB";
++_anim_bob_palette_instance.palette_x = top_ui_macro_x + 208;
++_anim_bob_palette_instance.base_palette_y = top_ui_row_1_y;
++
++var _anim_spr_palette_instance = instance_create_layer(top_ui_macro_x + 208, top_ui_row_2_y, "Instances", obj_opcode_palette_item);
++_anim_spr_palette_instance.palette_mnemonic = "ANIM_SPR";
++_anim_spr_palette_instance.palette_display_label = "ANIM SPR";
++_anim_spr_palette_instance.palette_x = top_ui_macro_x + 208;
++_anim_spr_palette_instance.base_palette_y = top_ui_row_2_y;
++
+ 
+ // ============================================================================
+ // 10. BUILD STATE MACHINE
+@@ -442,6 +454,10 @@ global.sprite_editing_field = "";
+ global.sprite_edit_text = "";
+ global.sprite_asset_name = "TestSprite";
+ global.current_bob_asset_name = "TestBob";
++global.current_bob_anim_rate = 8;
++global.current_bob_anim_start = 0;
++global.current_bob_anim_end = 0;
++global.current_bob_anim_loop = true;
+ global.sprite_asset_names = [];
+ global.sprite_asset_index = 0;
+ global.sprite_tool = "DRAW";
+@@ -470,6 +486,31 @@ sprite_editor_commit_asset = function() {
+     global.workspace_dirty = true;
+ };
+ 
++sprite_editor_load_shared_colours = function() {
++    var _palette = scr_amiga_get_shared_bitmap_palette();
++    var _base = 17 + ((global.sprite_channel div 2) * 4);
++    var _i = 0;
++    while (_i < 3) {
++        global.sprite_colour_r[_i] = _palette.colour_r[_base + _i];
++        global.sprite_colour_g[_i] = _palette.colour_g[_base + _i];
++        global.sprite_colour_b[_i] = _palette.colour_b[_base + _i];
++        _i += 1;
++    }
++};
++
++sprite_editor_commit_shared_colours = function() {
++    var _palette = scr_amiga_get_shared_bitmap_palette();
++    var _base = 17 + ((global.sprite_channel div 2) * 4);
++    var _i = 0;
++    while (_i < 3) {
++        _palette.colour_r[_base + _i] = global.sprite_colour_r[_i];
++        _palette.colour_g[_base + _i] = global.sprite_colour_g[_i];
++        _palette.colour_b[_base + _i] = global.sprite_colour_b[_i];
++        _i += 1;
++    }
++    scr_amiga_commit_shared_bitmap_palette(_palette.colour_r, _palette.colour_g, _palette.colour_b);
++};
++
+ sprite_editor_rebuild_assets = function() {
+     global.sprite_asset_names = [];
+     var _i = 0;
+@@ -494,6 +535,7 @@ sprite_editor_load_asset = function(_name) {
+     global.sprite_colour_r = [_asset.colour_r[0], _asset.colour_r[1], _asset.colour_r[2]];
+     global.sprite_colour_g = [_asset.colour_g[0], _asset.colour_g[1], _asset.colour_g[2]];
+     global.sprite_colour_b = [_asset.colour_b[0], _asset.colour_b[1], _asset.colour_b[2]];
++    sprite_editor_load_shared_colours();
+     global.sprite_line_active = false;
+ };
+ 
+diff --git a/objects/obj_amiga_manager/Step_0.gml b/objects/obj_amiga_manager/Step_0.gml
+index 6ac565f..ce4b25f 100644
+--- a/objects/obj_amiga_manager/Step_0.gml
++++ b/objects/obj_amiga_manager/Step_0.gml
+@@ -561,6 +561,7 @@ if (global.sprite_editor_open) {
+         if (global.sprite_channel < 0) {
+             global.sprite_channel = 7;
+         }
++        sprite_editor_load_shared_colours();
+     }
+ 
+     if (_over_channel_plus && mouse_check_button_pressed(mb_left)) {
+@@ -569,6 +570,7 @@ if (global.sprite_editor_open) {
+         if (global.sprite_channel > 7) {
+             global.sprite_channel = 0;
+         }
++        sprite_editor_load_shared_colours();
+     }
+ 
+     var _over_height_field = point_in_rectangle(mouse_x, mouse_y, _layout.height_field_x, _layout.height_row_y, _layout.height_field_x + 60, _layout.height_row_y + 16);
+@@ -625,6 +627,8 @@ if (global.sprite_editor_open) {
+         if (_over_b_slider) {
+             global.sprite_colour_b[_palette_array_index] = _slider_value;
+         }
++
++        if (_over_r_slider || _over_g_slider || _over_b_slider) sprite_editor_commit_shared_colours();
+     }
+ 
+     var _sprite_left_press = mouse_check_button_pressed(mb_left);
+@@ -733,6 +737,7 @@ if (global.sprite_editor_open) {
+                     global.sprite_colour_r[_swatch_num - 1] = scr_hex_string_to_number(string_char_at(_hex_text, 1));
+                     global.sprite_colour_g[_swatch_num - 1] = scr_hex_string_to_number(string_char_at(_hex_text, 2));
+                     global.sprite_colour_b[_swatch_num - 1] = scr_hex_string_to_number(string_char_at(_hex_text, 3));
++                    sprite_editor_commit_shared_colours();
+                 }
+             }
+ 
+diff --git a/objects/obj_bob_editor/Step_0.gml b/objects/obj_bob_editor/Step_0.gml
+index 33c224e..f63132b 100644
+--- a/objects/obj_bob_editor/Step_0.gml
++++ b/objects/obj_bob_editor/Step_0.gml
+@@ -157,6 +157,10 @@ if (_left_press && point_in_rectangle(_mx, _my, _palette_x, panel_y + 530, _pale
+ }
+ if (_left_press && point_in_rectangle(_mx, _my, _palette_x, panel_y + 580, _palette_x + 145, panel_y + 614)) {
+     bob_commit();
++    global.current_bob_anim_rate = bob_anim_rate;
++    global.current_bob_anim_start = bob_anim_start;
++    global.current_bob_anim_end = bob_anim_end;
++    global.current_bob_anim_loop = bob_anim_loop;
+     scr_amiga_run_bob_bitmap_test();
+     instance_destroy();
+ }
+diff --git a/objects/obj_opcode_node/Create_0.gml b/objects/obj_opcode_node/Create_0.gml
+index 6cc6018..9d420cf 100644
+--- a/objects/obj_opcode_node/Create_0.gml
++++ b/objects/obj_opcode_node/Create_0.gml
+@@ -37,6 +37,10 @@ macro_asset_name = "";
+ macro_object_id = 0;
+ macro_speed_x = 1;
+ macro_speed_y = 0;
++macro_anim_rate = 8;
++macro_anim_start = 0;
++macro_anim_end = 0;
++macro_anim_loop = true;
+ preview_collapsed = true;
+ right_click_last_time = -1000000;
+ 
+diff --git a/objects/obj_opcode_node/Draw_0.gml b/objects/obj_opcode_node/Draw_0.gml
+index 962deeb..2cd8a31 100644
+--- a/objects/obj_opcode_node/Draw_0.gml
++++ b/objects/obj_opcode_node/Draw_0.gml
+@@ -61,6 +61,14 @@ if (is_macro) {
+             _header_colour = make_color_rgb(105, 40, 120);
+             break;
+ 
++        case "ANIM_BOB":
++            _header_colour = make_color_rgb(25, 105, 75);
++            break;
++
++        case "ANIM_SPR":
++            _header_colour = make_color_rgb(100, 35, 105);
++            break;
++
+         case "SETBKG":
+             _header_colour = make_color_rgb(150, 150, 40);
+             break;
+@@ -171,6 +179,7 @@ if (is_macro) {
+     var _asset_field_dx = node_x + global.pan_x;
+     var _asset_field_dy = node_y + global.pan_y + 20;
+     var _is_move_macro_draw = (macro_type == "MOVE_BOB" || macro_type == "MOVE_SPR");
++    var _is_anim_macro_draw = (macro_type == "ANIM_BOB" || macro_type == "ANIM_SPR");
+     var _is_bob_ref_draw = (macro_type == "GET_BITMAP_BOB" || macro_type == "DRAW_BOB" || macro_type == "REPLACE_BITMAP_BOB" || macro_type == "BOB_BITMAP_TEST");
+     var _is_sprite_ref_draw = (macro_type == "SPRITE_DISPLAY" || macro_type == "SPRITE_BITMAP_TEST");
+ 
+@@ -181,6 +190,15 @@ if (is_macro) {
+         draw_text(_asset_field_dx + 4, _asset_field_dy + 2, "<   ID: " + string(macro_object_id) + "   >");
+         draw_text(_asset_field_dx + 4, _asset_field_dy + 22, "<   X SPEED: " + string(macro_speed_x) + "   >");
+         draw_text(_asset_field_dx + 4, _asset_field_dy + 42, "<   Y SPEED: " + string(macro_speed_y) + "   >");
++    } else if (_is_anim_macro_draw) {
++        draw_set_colour(c_dkgray);
++        draw_rectangle(_asset_field_dx, _asset_field_dy, _asset_field_dx + node_width, _asset_field_dy + 100, false);
++        draw_set_colour(c_white);
++        draw_text(_asset_field_dx + 4, _asset_field_dy + 2, "<   ID: " + string(macro_object_id) + "   >");
++        draw_text(_asset_field_dx + 4, _asset_field_dy + 22, "<   RATE: " + string(macro_anim_rate) + " FPS   >");
++        draw_text(_asset_field_dx + 4, _asset_field_dy + 42, "<   START: " + string(macro_anim_start) + "   >");
++        draw_text(_asset_field_dx + 4, _asset_field_dy + 62, "<   END: " + string(macro_anim_end) + "   >");
++        draw_text(_asset_field_dx + 4, _asset_field_dy + 82, "LOOP: " + (macro_anim_loop ? "ON" : "OFF"));
+     } else {
+ 
+     var _asset_field_colour = c_dkgray;
+diff --git a/objects/obj_opcode_node/Step_0.gml b/objects/obj_opcode_node/Step_0.gml
+index 6f4c3e0..15121dc 100644
+--- a/objects/obj_opcode_node/Step_0.gml
++++ b/objects/obj_opcode_node/Step_0.gml
+@@ -176,10 +176,11 @@ if (scr_is_dbcc_opcode(opcode_mnemonic)) {
+ if (is_macro) {
+     var _asset_resolved = (scr_asset_find_by_name(macro_asset_name) != undefined);
+     var _is_move_macro = (macro_type == "MOVE_BOB" || macro_type == "MOVE_SPR");
++    var _is_anim_macro = (macro_type == "ANIM_BOB" || macro_type == "ANIM_SPR");
+     var _is_bob_reference = (macro_type == "GET_BITMAP_BOB" || macro_type == "DRAW_BOB" || macro_type == "REPLACE_BITMAP_BOB" || macro_type == "BOB_BITMAP_TEST");
+     var _is_sprite_reference = (macro_type == "SPRITE_DISPLAY" || macro_type == "SPRITE_BITMAP_TEST");
+ 
+-    if (_is_move_macro) {
++    if (_is_move_macro || _is_anim_macro) {
+         _asset_resolved = true;
+     } else if (macro_type == "SETBKG") {
+         _asset_resolved = scr_is_valid_hex_colour(macro_asset_name);
+@@ -199,7 +200,7 @@ if (is_macro) {
+     var _over_asset_field = point_in_rectangle(_world_mouse_x, _world_mouse_y, _asset_field_x, _asset_field_y, _asset_field_x + _asset_field_width, _asset_field_y + _asset_field_height);
+     var _can_start_asset_edit = ((global.operand_edit_owner_uid == -1) || (global.operand_edit_owner_uid == uid)) && (operand_editing_slot != "macro_asset");
+ 
+-    if (_over_asset_field && mouse_check_button_pressed(mb_left) && _can_start_asset_edit && !_is_move_macro) {
++    if (_over_asset_field && mouse_check_button_pressed(mb_left) && _can_start_asset_edit && !_is_move_macro && !_is_anim_macro) {
+         if (macro_type == "SETBKG") {
+             scr_colour_picker_open(id, "macro_asset_name", -1, "SETBKG colour");
+         } else if (macro_type == "COPPER_BAR") {
+@@ -217,8 +218,8 @@ if (is_macro) {
+ 
+     // Compact left/right steppers. Every node that references a BOB or sprite
+     // exposes its 0..63 runtime slot; MOVE nodes also expose signed literals.
+-    var _has_object_id = _is_move_macro || _is_bob_reference || _is_sprite_reference;
+-    var _id_row_y = node_y + (_is_move_macro ? 20 : 40);
++    var _has_object_id = _is_move_macro || _is_anim_macro || _is_bob_reference || _is_sprite_reference;
++    var _id_row_y = node_y + ((_is_move_macro || _is_anim_macro) ? 20 : 40);
+     if (_has_object_id && mouse_check_button_pressed(mb_left)
+         && point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, _id_row_y, node_x + node_width, _id_row_y + 20)) {
+         scr_push_undo_snapshot();
+@@ -236,6 +237,27 @@ if (is_macro) {
+             macro_speed_y = clamp(macro_speed_y + _speed_delta, -16, 16);
+         }
+     }
++
++    if (_is_anim_macro && mouse_check_button_pressed(mb_left)) {
++        var _anim_delta = (_world_mouse_x < node_x + node_width * 0.5 ? -1 : 1);
++        var _anim_frame_type = macro_type == "ANIM_BOB" ? "BOB" : "SPRITE";
++        var _anim_frame_count = 0;
++        var _anim_asset_i = 0;
++        while (_anim_asset_i < array_length(global.asset_list)) {
++            if (global.asset_list[_anim_asset_i].type == _anim_frame_type) _anim_frame_count += 1;
++            _anim_asset_i += 1;
++        }
++        var _anim_max_frame = max(0, _anim_frame_count - 1);
++        if (point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y + 40, node_x + node_width, node_y + 60)) {
++            scr_push_undo_snapshot(); macro_anim_rate = clamp(macro_anim_rate + _anim_delta, 1, 50);
++        } else if (point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y + 60, node_x + node_width, node_y + 80)) {
++            scr_push_undo_snapshot(); macro_anim_start = clamp(macro_anim_start + _anim_delta, 0, macro_anim_end);
++        } else if (point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y + 80, node_x + node_width, node_y + 100)) {
++            scr_push_undo_snapshot(); macro_anim_end = clamp(macro_anim_end + _anim_delta, macro_anim_start, _anim_max_frame);
++        } else if (point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y + 100, node_x + node_width, node_y + 120)) {
++            scr_push_undo_snapshot(); macro_anim_loop = !macro_anim_loop;
++        }
++    }
+ } else {
+     var _entry_for_validity = global.opcode_map[$ opcode_mnemonic];
+ 
+diff --git a/objects/obj_opcode_palette_item/Step_0.gml b/objects/obj_opcode_palette_item/Step_0.gml
+index f94fac5..eb2e35a 100644
+--- a/objects/obj_opcode_palette_item/Step_0.gml
++++ b/objects/obj_opcode_palette_item/Step_0.gml
+@@ -39,6 +39,22 @@ if (_over_item && mouse_check_button_pressed(mb_left) && !global.left_click_pick
+             _new_node.macro_object_id = 0;
+             _new_node.macro_speed_x = 1;
+             _new_node.macro_speed_y = 0;
++        } else if (palette_mnemonic == "ANIM_BOB" || palette_mnemonic == "ANIM_SPR") {
++            _new_node.node_height = 120;
++            _new_node.is_macro = true;
++            _new_node.macro_type = palette_mnemonic;
++            _new_node.macro_object_id = 0;
++            _new_node.macro_anim_rate = 8;
++            _new_node.macro_anim_start = 0;
++            var _frame_type = palette_mnemonic == "ANIM_BOB" ? "BOB" : "SPRITE";
++            var _frame_count = 0;
++            var _asset_i = 0;
++            while (_asset_i < array_length(global.asset_list)) {
++                if (global.asset_list[_asset_i].type == _frame_type) _frame_count += 1;
++                _asset_i += 1;
++            }
++            _new_node.macro_anim_end = max(0, _frame_count - 1);
++            _new_node.macro_anim_loop = true;
+         } else {
+             _new_node.opcode_mnemonic = palette_mnemonic;
+ 
+@@ -61,7 +77,7 @@ if (_over_item && mouse_check_button_pressed(mb_left) && !global.left_click_pick
+ }
+ 
+ // Top-strip entries are fixed controls, not part of the scrolling opcode list.
+-if (palette_mnemonic == "ORG" || palette_mnemonic == "CPRBAR" || palette_mnemonic == "SETBKG" || palette_mnemonic == "MOVE_BOB" || palette_mnemonic == "MOVE_SPR") {
++if (palette_mnemonic == "ORG" || palette_mnemonic == "CPRBAR" || palette_mnemonic == "SETBKG" || palette_mnemonic == "MOVE_BOB" || palette_mnemonic == "MOVE_SPR" || palette_mnemonic == "ANIM_BOB" || palette_mnemonic == "ANIM_SPR") {
+     palette_y = base_palette_y;
+ } else {
+     palette_y = base_palette_y + global.palette_scroll_y;
+diff --git a/scripts/scr_amiga_explain_node/scr_amiga_explain_node.gml b/scripts/scr_amiga_explain_node/scr_amiga_explain_node.gml
+index e5fa46a..9ff43f1 100644
+--- a/scripts/scr_amiga_explain_node/scr_amiga_explain_node.gml
++++ b/scripts/scr_amiga_explain_node/scr_amiga_explain_node.gml
+@@ -4,6 +4,11 @@
+ /// no explanation yet. Extend this function as new macros/registers are added.
+ function scr_amiga_explain_node(_node) {
+     if (_node.is_macro) {
++        if (_node.macro_type == "ANIM_BOB" || _node.macro_type == "ANIM_SPR") {
++            return "Animates runtime ID " + string(_node.macro_object_id) + " from frame "
++                + string(_node.macro_anim_start) + " to " + string(_node.macro_anim_end)
++                + " at " + string(_node.macro_anim_rate) + " FPS" + (_node.macro_anim_loop ? ", looping." : ", stopping on the last frame.");
++        }
+         if (_node.macro_type == "COPPER_BAR") {
+             var _asset = scr_asset_find_by_name(_node.macro_asset_name);
+             var _band_text = "its configured colour bands";
+@@ -138,7 +143,10 @@ function scr_amiga_explain_node(_node) {
+     }
+ 
+     if (_address == 14676226) return "BPLCON1: sets horizontal scrolling for the playfield. Zero means no scroll.";
+-    if (_address == 14676228) return "BPLCON2: controls sprite/playfield priority. Zero uses the standard priority order.";
++    if (_address == 14676228) {
++        if ((_value & 56) == 32) return "BPLCON2: places the bitmap behind every hardware-sprite pair.";
++        return "BPLCON2: controls the bitmap's priority relative to the four hardware-sprite pairs.";
++    }
+     if (_address == 14676230) return "BPLCON3: clears advanced ECS/AGA display-bank and border options.";
+     if (_address == 14676232) return "BPL1MOD: sets the byte skip after each bitplane row. Zero means tightly packed rows.";
+     if (_address == 14676236) return "BPLCON4: selects AGA sprite palette offsets. $0011 preserves COLOR17-31 compatibility.";
+diff --git a/scripts/scr_amiga_run_motion_test/scr_amiga_run_motion_test.gml b/scripts/scr_amiga_run_motion_test/scr_amiga_run_motion_test.gml
+index 206ac8f..7dfe782 100644
+--- a/scripts/scr_amiga_run_motion_test/scr_amiga_run_motion_test.gml
++++ b/scripts/scr_amiga_run_motion_test/scr_amiga_run_motion_test.gml
+@@ -33,6 +33,16 @@ function scr_amiga_run_motion_test(_macro_type, _asset_name, _message) {
+         _loop_node.opcode_mnemonic = "NOP";
+     }
+     _cy += _loop_node.node_height;
++    if (_macro_type == "SPRITE_BITMAP_TEST") {
++        var _anim_node = instance_create_layer(_org.node_x, _cy, "Instances", obj_opcode_node);
++        _anim_node.node_x = _org.node_x; _anim_node.node_y = _cy; _anim_node.node_height = 120;
++        _anim_node.is_macro = true; _anim_node.macro_type = "ANIM_SPR";
++        _anim_node.macro_object_id = 0; _anim_node.macro_anim_rate = global.sprite_anim_rate;
++        _anim_node.macro_anim_start = global.sprite_anim_start; _anim_node.macro_anim_end = global.sprite_anim_end;
++        _anim_node.macro_anim_loop = global.sprite_anim_loop;
++        _anim_node.is_connected = true; _anim_node.root_uid = _org.uid;
++        _cy += _anim_node.node_height;
++    }
+     var _bra = instance_create_layer(_org.node_x, _cy, "Instances", obj_opcode_node);
+     _bra.node_x = _org.node_x; _bra.node_y = _cy; _bra.opcode_mnemonic = "BRA"; _bra.opcode_size = "W";
+     _bra.addressing_mode_src = "LABEL"; _bra.operand_label_src = "mainloop"; _bra.is_connected = true; _bra.root_uid = _org.uid;
+@@ -56,12 +66,19 @@ function scr_amiga_run_bob_bitmap_test() {
+     var _org = instance_create_layer(_init.node_x + 240, _init.node_y, "Instances", obj_amiga_root_node);
+     _org.root_type = "ORG"; _org.node_x = scr_snap_to_grid(_init.node_x + 240, global.grid_size); _org.node_y = _init.node_y; _org.continues_from_root_uid = _init.uid;
+     var _cy = _org.node_y + _org.node_height;
+-    var _types = ["GET_BITMAP_BOB", "DRAW_BOB", "REPLACE_BITMAP_BOB", "MOVE_BOB"];
+-    for (var _i = 0; _i < 4; _i += 1) {
++    var _types = ["GET_BITMAP_BOB", "DRAW_BOB", "REPLACE_BITMAP_BOB", "MOVE_BOB", "ANIM_BOB"];
++    for (var _i = 0; _i < 5; _i += 1) {
+         var _m = instance_create_layer(_org.node_x, _cy, "Instances", obj_opcode_node);
+         _m.node_x = _org.node_x; _m.node_y = _cy; _m.node_height = 100; _m.is_macro = true;
+         _m.macro_type = _types[_i]; _m.macro_asset_name = _bob_name; _m.is_connected = true; _m.root_uid = _org.uid;
+         _m.macro_object_id = 0; _m.macro_speed_x = 1; _m.macro_speed_y = 0;
++        if (_types[_i] == "ANIM_BOB") {
++            _m.node_height = 120;
++            _m.macro_anim_rate = global.current_bob_anim_rate;
++            _m.macro_anim_start = global.current_bob_anim_start;
++            _m.macro_anim_end = global.current_bob_anim_end;
++            _m.macro_anim_loop = global.current_bob_anim_loop;
++        }
+         if (_i == 1) _m.node_label = "bobloop";
+         _cy += _m.node_height;
+     }
+diff --git a/scripts/scr_capture_snapshot/scr_capture_snapshot.gml b/scripts/scr_capture_snapshot/scr_capture_snapshot.gml
+index 5d7098c..70a444f 100644
+--- a/scripts/scr_capture_snapshot/scr_capture_snapshot.gml
++++ b/scripts/scr_capture_snapshot/scr_capture_snapshot.gml
+@@ -31,6 +31,10 @@ function scr_capture_snapshot() {
+             macro_object_id : macro_object_id,
+             macro_speed_x : macro_speed_x,
+             macro_speed_y : macro_speed_y,
++            macro_anim_rate : macro_anim_rate,
++            macro_anim_start : macro_anim_start,
++            macro_anim_end : macro_anim_end,
++            macro_anim_loop : macro_anim_loop,
+             preview_collapsed : preview_collapsed,
+             opcode_mnemonic : opcode_mnemonic,
+             opcode_size : opcode_size,
+diff --git a/scripts/scr_clone_opcode_node/scr_clone_opcode_node.gml b/scripts/scr_clone_opcode_node/scr_clone_opcode_node.gml
+index 8b5b04d..db3cbb3 100644
+--- a/scripts/scr_clone_opcode_node/scr_clone_opcode_node.gml
++++ b/scripts/scr_clone_opcode_node/scr_clone_opcode_node.gml
+@@ -39,6 +39,10 @@ function scr_clone_opcode_node(_source_node) {
+     _new_node.macro_object_id = _source_node.macro_object_id;
+     _new_node.macro_speed_x = _source_node.macro_speed_x;
+     _new_node.macro_speed_y = _source_node.macro_speed_y;
++    _new_node.macro_anim_rate = _source_node.macro_anim_rate;
++    _new_node.macro_anim_start = _source_node.macro_anim_start;
++    _new_node.macro_anim_end = _source_node.macro_anim_end;
++    _new_node.macro_anim_loop = _source_node.macro_anim_loop;
+     _new_node.macro_cprbar_band_count = _source_node.macro_cprbar_band_count;
+     _new_node.macro_cprbar_target_register = _source_node.macro_cprbar_target_register;
+     _new_node.macro_cprbar_equidistant = _source_node.macro_cprbar_equidistant;
+diff --git a/scripts/scr_emit_macro_bitmap_display/scr_emit_macro_bitmap_display.gml b/scripts/scr_emit_macro_bitmap_display/scr_emit_macro_bitmap_display.gml
+index dfaa16f..628d32f 100644
+--- a/scripts/scr_emit_macro_bitmap_display/scr_emit_macro_bitmap_display.gml
++++ b/scripts/scr_emit_macro_bitmap_display/scr_emit_macro_bitmap_display.gml
+@@ -43,7 +43,9 @@ function scr_emit_macro_bitmap_display(_node) {
+     _lines += "\tMOVE.W #11457,14676112.L\n";
+     _lines += "\tMOVE.W #20992,14676224.L\n"; // BPU=5, colour burst on
+     _lines += "\tMOVE.W #0,14676226.L\n";
+-    _lines += "\tMOVE.W #0,14676228.L\n";
++    // Normal single-playfield mode uses BPLCON2 PF2P (bits 5-3). Value 4
++    // places the playfield behind all four hardware-sprite pairs.
++    _lines += "\tMOVE.W #32,14676228.L\n";
+     _lines += "\tMOVE.W #0,14676230.L\n";
+     _lines += "\tMOVE.W #0,14676232.L\n";
+     _lines += "\tMOVE.W #0,14676476.L\n";
+diff --git a/scripts/scr_emit_macro_bitmap_motion/scr_emit_macro_bitmap_motion.gml b/scripts/scr_emit_macro_bitmap_motion/scr_emit_macro_bitmap_motion.gml
+index ab1f876..bdcd5a4 100644
+--- a/scripts/scr_emit_macro_bitmap_motion/scr_emit_macro_bitmap_motion.gml
++++ b/scripts/scr_emit_macro_bitmap_motion/scr_emit_macro_bitmap_motion.gml
+@@ -276,3 +276,128 @@ function scr_emit_macro_move_spr(_node) {
+     _s += "\tMOVE.W " + _state + "_y,D0\n\tADD.W #" + string(_sy) + ",D0\n\tBPL.S __movespr_y_nonneg_" + _u + "\n\tMOVE.W " + _state + "_max_y,D0\n__movespr_y_nonneg_" + _u + ":\n\tCMP.W " + _state + "_max_y,D0\n\tBLE.S __movespr_y_ok_" + _u + "\n\tCLR.W D0\n__movespr_y_ok_" + _u + ":\n\tMOVE.W D0," + _state + "_y";
+     return { text : _s, is_valid : true };
+ }
++
++/// ANIM_BOB: lazily copies the selected BOB-frame range into Chip RAM, then
++/// advances the chosen runtime slot using a PAL 50 Hz fractional accumulator.
++function scr_emit_macro_anim_bob(_node) {
++    var _frames = [];
++    var _i = 0;
++    while (_i < array_length(global.asset_list)) {
++        if (global.asset_list[_i].type == "BOB") array_push(_frames, global.asset_list[_i]);
++        _i += 1;
++    }
++    if (array_length(_frames) == 0) return { text : "; ERROR: ANIM_BOB has no BOB frames", is_valid : false };
++    var _start = clamp(floor(_node.macro_anim_start), 0, array_length(_frames) - 1);
++    var _end = clamp(floor(_node.macro_anim_end), _start, array_length(_frames) - 1);
++    var _first = _frames[_start];
++    var _f = _start;
++    while (_f <= _end) {
++        if (_frames[_f].width != _first.width || _frames[_f].height != _first.height)
++            return { text : "; ERROR: ANIM_BOB frames must share width and height", is_valid : false };
++        _f += 1;
++    }
++    var _row_words = ceil(_first.width / 16) + 1;
++    var _plane_bytes = _row_words * 2 * _first.height;
++    var _frame_bytes = _plane_bytes * 6;
++    var _frame_count = _end - _start + 1;
++    var _total_bytes = _frame_bytes * _frame_count;
++    var _id = string(clamp(floor(_node.macro_object_id), 0, 63));
++    var _u = string(floor(_node.uid));
++    var _state = "__bob_state_" + _id;
++    var _anim = "__anim_bob_" + _id;
++    var _data = "__anim_bob_data_" + _u;
++    var _ready = "__anim_bob_ready_" + _u;
++    var _frame_ok = "__anim_bob_frame_ok_" + _u;
++    var _done = "__anim_bob_done_" + _u;
++    var _after = "__anim_bob_after_" + _u;
++    var _fail = "__anim_bob_fail_" + _u;
++    var _rate = clamp(floor(_node.macro_anim_rate), 1, 50);
++    var _s = _node.node_label != "" ? _node.node_label + ":\n" : "";
++    _s += "\tTST.L " + _anim + "_bank\n\tBNE.W " + _ready + "\n\tMOVEA.L 4.W,A6\n\tMOVE.L #" + string(_total_bytes) + ",D0\n\tMOVE.L #65538,D1\n\tJSR -198(A6)\n\tTST.L D0\n\tBEQ.W " + _fail + "\n\tMOVEA.L D0,A3\n\tMOVE.L A3," + _anim + "_bank\n\tMOVE.L A3," + _state + "_data\n\tMOVEA.L A3,A1\n\tLEA " + _data + "(PC),A0\n\tMOVE.W #" + string((_total_bytes div 4) - 1) + ",D0\n__anim_bob_copy_" + _u + ":\n\tMOVE.L (A0)+,(A1)+\n\tDBRA D0,__anim_bob_copy_" + _u + "\n\tCLR.W " + _anim + "_frame\n\tCLR.W " + _anim + "_acc\n";
++    _s += _ready + ":\n\tADDI.W #" + string(_rate) + "," + _anim + "_acc\n\tCMPI.W #50," + _anim + "_acc\n\tBLT.W " + _done + "\n\tSUBI.W #50," + _anim + "_acc\n\tADDQ.W #1," + _anim + "_frame\n\tCMPI.W #" + string(_frame_count) + "," + _anim + "_frame\n\tBLT.S " + _frame_ok + "\n";
++    if (_node.macro_anim_loop) _s += "\tCLR.W " + _anim + "_frame\n";
++    else _s += "\tMOVE.W #" + string(_frame_count - 1) + "," + _anim + "_frame\n";
++    _s += _frame_ok + ":\n\tMOVE.W " + _anim + "_frame,D0\n\tMULU.W #" + string(_frame_bytes) + ",D0\n\tMOVEA.L " + _anim + "_bank,A3\n\tADDA.L D0,A3\n\tMOVE.L A3," + _state + "_data\n" + _done + ":\n\tJMP " + _after + "\n" + _fail + ":\n\tBRA.W " + _fail + "\n\tEVEN\n" + _data + ":\n";
++    _f = _start;
++    while (_f <= _end) {
++        var _bob = _frames[_f];
++        for (var _plane = -1; _plane < 5; _plane += 1) {
++            for (var _y = 0; _y < _bob.height; _y += 1) {
++                _s += "\tDC.W ";
++                for (var _wc = 0; _wc < _row_words; _wc += 1) {
++                    var _word = 0;
++                    if ((_wc * 16) < _bob.width) for (var _bit = 0; _bit < 16; _bit += 1) {
++                        var _px = _wc * 16 + _bit;
++                        var _pix = _px < _bob.width ? _bob.pixels[_y * _bob.width + _px] : 0;
++                        var _set = _plane < 0 ? (_pix != 0) : ((_pix & (1 << _plane)) != 0);
++                        if (_set) _word |= 1 << (15 - _bit);
++                    }
++                    if (_wc > 0) _s += ",";
++                    _s += string(_word);
++                }
++                _s += "\n";
++            }
++        }
++        _f += 1;
++    }
++    _s += "\tEVEN\n" + _anim + "_bank:\tDC.L 0\n" + _anim + "_frame:\tDC.W 0\n" + _anim + "_acc:\tDC.W 0\n" + _after + ":";
++    return { text : _s, is_valid : true };
++}
++
++/// ANIM_SPR: the hardware-sprite equivalent of ANIM_BOB. Every selected
++/// frame must have the same height so MOVE_SPR can share one control layout.
++function scr_emit_macro_anim_spr(_node) {
++    var _frames = [];
++    var _i = 0;
++    while (_i < array_length(global.asset_list)) {
++        if (global.asset_list[_i].type == "SPRITE") array_push(_frames, global.asset_list[_i]);
++        _i += 1;
++    }
++    if (array_length(_frames) == 0) return { text : "; ERROR: ANIM_SPR has no sprite frames", is_valid : false };
++    var _start = clamp(floor(_node.macro_anim_start), 0, array_length(_frames) - 1);
++    var _end = clamp(floor(_node.macro_anim_end), _start, array_length(_frames) - 1);
++    var _height = clamp(_frames[_start].height, 1, 64);
++    var _f = _start;
++    while (_f <= _end) {
++        if (_frames[_f].height != _height) return { text : "; ERROR: ANIM_SPR frames must share height", is_valid : false };
++        _f += 1;
++    }
++    var _frame_bytes = 4 + _height * 4 + 4;
++    var _frame_count = _end - _start + 1;
++    var _total_bytes = _frame_bytes * _frame_count;
++    var _id = string(clamp(floor(_node.macro_object_id), 0, 63));
++    var _u = string(floor(_node.uid));
++    var _state = "__spr_state_" + _id;
++    var _anim = "__anim_spr_" + _id;
++    var _data = "__anim_spr_data_" + _u;
++    var _ready = "__anim_spr_ready_" + _u;
++    var _frame_ok = "__anim_spr_frame_ok_" + _u;
++    var _done = "__anim_spr_done_" + _u;
++    var _after = "__anim_spr_after_" + _u;
++    var _fail = "__anim_spr_fail_" + _u;
++    var _rate = clamp(floor(_node.macro_anim_rate), 1, 50);
++    var _s = _node.node_label != "" ? _node.node_label + ":\n" : "";
++    _s += "\tTST.L " + _anim + "_bank\n\tBNE.W " + _ready + "\n\tMOVEA.L 4.W,A6\n\tMOVE.L #" + string(_total_bytes) + ",D0\n\tMOVE.L #65538,D1\n\tJSR -198(A6)\n\tTST.L D0\n\tBEQ.W " + _fail + "\n\tMOVEA.L D0,A3\n\tMOVE.L A3," + _anim + "_bank\n\tMOVE.L A3," + _state + "_ptr\n\tMOVEA.L A3,A1\n\tLEA " + _data + "(PC),A0\n\tMOVE.W #" + string((_total_bytes div 4) - 1) + ",D0\n__anim_spr_copy_" + _u + ":\n\tMOVE.L (A0)+,(A1)+\n\tDBRA D0,__anim_spr_copy_" + _u + "\n\tCLR.W " + _anim + "_frame\n\tCLR.W " + _anim + "_acc\n";
++    _s += _ready + ":\n\tADDI.W #" + string(_rate) + "," + _anim + "_acc\n\tCMPI.W #50," + _anim + "_acc\n\tBLT.W " + _done + "\n\tSUBI.W #50," + _anim + "_acc\n\tADDQ.W #1," + _anim + "_frame\n\tCMPI.W #" + string(_frame_count) + "," + _anim + "_frame\n\tBLT.S " + _frame_ok + "\n";
++    if (_node.macro_anim_loop) _s += "\tCLR.W " + _anim + "_frame\n";
++    else _s += "\tMOVE.W #" + string(_frame_count - 1) + "," + _anim + "_frame\n";
++    _s += _frame_ok + ":\n\tMOVE.W " + _anim + "_frame,D0\n\tMULU.W #" + string(_frame_bytes) + ",D0\n\tMOVEA.L " + _anim + "_bank,A3\n\tADDA.L D0,A3\n\tMOVE.L A3," + _state + "_ptr\n" + _done + ":\n\tJMP " + _after + "\n" + _fail + ":\n\tBRA.W " + _fail + "\n\tEVEN\n" + _data + ":\n";
++    _f = _start;
++    while (_f <= _end) {
++        var _sprite = _frames[_f];
++        _s += "\tDC.W 32768,0\n";
++        for (var _y = 0; _y < _height; _y += 1) {
++            var _a = 0, _b = 0;
++            for (var _x = 0; _x < 16; _x += 1) {
++                var _pix = _sprite.pixels[_y * 16 + _x];
++                if ((_pix & 1) != 0) _a |= 1 << (15 - _x);
++                if ((_pix & 2) != 0) _b |= 1 << (15 - _x);
++            }
++            _s += "\tDC.W " + string(_a) + "," + string(_b) + "\n";
++        }
++        _s += "\tDC.W 0,0\n";
++        _f += 1;
++    }
++    _s += "\tEVEN\n" + _anim + "_bank:\tDC.L 0\n" + _anim + "_frame:\tDC.W 0\n" + _anim + "_acc:\tDC.W 0\n" + _after + ":";
++    return { text : _s, is_valid : true };
++}
+diff --git a/scripts/scr_emit_macro_line/scr_emit_macro_line.gml b/scripts/scr_emit_macro_line/scr_emit_macro_line.gml
+index 7bb8722..1792408 100644
+--- a/scripts/scr_emit_macro_line/scr_emit_macro_line.gml
++++ b/scripts/scr_emit_macro_line/scr_emit_macro_line.gml
+@@ -20,6 +20,8 @@ function scr_emit_macro_line(_node) {
+     if (_node.macro_type == "DRAW_BOB") return scr_emit_macro_draw_bob(_node);
+     if (_node.macro_type == "MOVE_BOB") return scr_emit_macro_move_bob(_node);
+     if (_node.macro_type == "MOVE_SPR") return scr_emit_macro_move_spr(_node);
++    if (_node.macro_type == "ANIM_BOB") return scr_emit_macro_anim_bob(_node);
++    if (_node.macro_type == "ANIM_SPR") return scr_emit_macro_anim_spr(_node);
+ 
+     if (_node.macro_type == "SETBKG") {
+         return scr_emit_macro_setbkg(_node);
+diff --git a/scripts/scr_load_workspace_from_path/scr_load_workspace_from_path.gml b/scripts/scr_load_workspace_from_path/scr_load_workspace_from_path.gml
+index 168b555..0eaf951 100644
+--- a/scripts/scr_load_workspace_from_path/scr_load_workspace_from_path.gml
++++ b/scripts/scr_load_workspace_from_path/scr_load_workspace_from_path.gml
+@@ -85,6 +85,10 @@ function scr_load_workspace_from_path(_path) {
+             if (variable_struct_exists(_node_data, "macro_object_id")) _new_node.macro_object_id = _node_data.macro_object_id;
+             if (variable_struct_exists(_node_data, "macro_speed_x")) _new_node.macro_speed_x = _node_data.macro_speed_x;
+             if (variable_struct_exists(_node_data, "macro_speed_y")) _new_node.macro_speed_y = _node_data.macro_speed_y;
++            if (variable_struct_exists(_node_data, "macro_anim_rate")) _new_node.macro_anim_rate = _node_data.macro_anim_rate;
++            if (variable_struct_exists(_node_data, "macro_anim_start")) _new_node.macro_anim_start = _node_data.macro_anim_start;
++            if (variable_struct_exists(_node_data, "macro_anim_end")) _new_node.macro_anim_end = _node_data.macro_anim_end;
++            if (variable_struct_exists(_node_data, "macro_anim_loop")) _new_node.macro_anim_loop = _node_data.macro_anim_loop;
+         }
+ 
+         if (variable_struct_exists(_node_data, "macro_cprbar_band_count")) {
+@@ -101,7 +105,7 @@ function scr_load_workspace_from_path(_path) {
+         // would otherwise sit at the generic default (60) forever. Snap it
+         // back to the correct taller height here instead.
+         if (_new_node.is_macro) {
+-            _new_node.node_height = 100;
++            _new_node.node_height = (_new_node.macro_type == "ANIM_BOB" || _new_node.macro_type == "ANIM_SPR") ? 120 : 100;
+         }
+ 
+         _n += 1;
+diff --git a/scripts/scr_restore_snapshot/scr_restore_snapshot.gml b/scripts/scr_restore_snapshot/scr_restore_snapshot.gml
+index 9162779..ee5b5c1 100644
+--- a/scripts/scr_restore_snapshot/scr_restore_snapshot.gml
++++ b/scripts/scr_restore_snapshot/scr_restore_snapshot.gml
+@@ -54,6 +54,10 @@ function scr_restore_snapshot(_snapshot) {
+         if (variable_struct_exists(_node_data, "macro_object_id")) _new_node.macro_object_id = _node_data.macro_object_id;
+         if (variable_struct_exists(_node_data, "macro_speed_x")) _new_node.macro_speed_x = _node_data.macro_speed_x;
+         if (variable_struct_exists(_node_data, "macro_speed_y")) _new_node.macro_speed_y = _node_data.macro_speed_y;
++        if (variable_struct_exists(_node_data, "macro_anim_rate")) _new_node.macro_anim_rate = _node_data.macro_anim_rate;
++        if (variable_struct_exists(_node_data, "macro_anim_start")) _new_node.macro_anim_start = _node_data.macro_anim_start;
++        if (variable_struct_exists(_node_data, "macro_anim_end")) _new_node.macro_anim_end = _node_data.macro_anim_end;
++        if (variable_struct_exists(_node_data, "macro_anim_loop")) _new_node.macro_anim_loop = _node_data.macro_anim_loop;
+         _new_node.preview_collapsed = _node_data.preview_collapsed;
+         _new_node.opcode_mnemonic = _node_data.opcode_mnemonic;
+         _new_node.opcode_size = _node_data.opcode_size;
+diff --git a/scripts/scr_save_workspace_to_path/scr_save_workspace_to_path.gml b/scripts/scr_save_workspace_to_path/scr_save_workspace_to_path.gml
+index dc0d6a7..3226a96 100644
+--- a/scripts/scr_save_workspace_to_path/scr_save_workspace_to_path.gml
++++ b/scripts/scr_save_workspace_to_path/scr_save_workspace_to_path.gml
+@@ -41,6 +41,10 @@ function scr_save_workspace_to_path(_path) {
+             macro_object_id : macro_object_id,
+             macro_speed_x : macro_speed_x,
+             macro_speed_y : macro_speed_y,
++            macro_anim_rate : macro_anim_rate,
++            macro_anim_start : macro_anim_start,
++            macro_anim_end : macro_anim_end,
++            macro_anim_loop : macro_anim_loop,
+             macro_cprbar_band_count : macro_cprbar_band_count,
+             macro_cprbar_target_register : macro_cprbar_target_register,
+             macro_cprbar_equidistant : macro_cprbar_equidistant,
+

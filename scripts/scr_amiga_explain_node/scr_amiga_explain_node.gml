@@ -4,6 +4,11 @@
 /// no explanation yet. Extend this function as new macros/registers are added.
 function scr_amiga_explain_node(_node) {
     if (_node.is_macro) {
+        if (_node.macro_type == "ANIM_BOB" || _node.macro_type == "ANIM_SPR") {
+            return "Animates runtime ID " + string(_node.macro_object_id) + " from frame "
+                + string(_node.macro_anim_start) + " to " + string(_node.macro_anim_end)
+                + " at " + string(_node.macro_anim_rate) + " FPS" + (_node.macro_anim_loop ? ", looping." : ", stopping on the last frame.");
+        }
         if (_node.macro_type == "COPPER_BAR") {
             var _asset = scr_asset_find_by_name(_node.macro_asset_name);
             var _band_text = "its configured colour bands";
@@ -138,7 +143,10 @@ function scr_amiga_explain_node(_node) {
     }
 
     if (_address == 14676226) return "BPLCON1: sets horizontal scrolling for the playfield. Zero means no scroll.";
-    if (_address == 14676228) return "BPLCON2: controls sprite/playfield priority. Zero uses the standard priority order.";
+    if (_address == 14676228) {
+        if ((_value & 56) == 32) return "BPLCON2: places the bitmap behind every hardware-sprite pair.";
+        return "BPLCON2: controls the bitmap's priority relative to the four hardware-sprite pairs.";
+    }
     if (_address == 14676230) return "BPLCON3: clears advanced ECS/AGA display-bank and border options.";
     if (_address == 14676232) return "BPL1MOD: sets the byte skip after each bitplane row. Zero means tightly packed rows.";
     if (_address == 14676236) return "BPLCON4: selects AGA sprite palette offsets. $0011 preserves COLOR17-31 compatibility.";

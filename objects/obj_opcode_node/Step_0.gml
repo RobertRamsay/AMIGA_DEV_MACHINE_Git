@@ -176,10 +176,11 @@ if (scr_is_dbcc_opcode(opcode_mnemonic)) {
 if (is_macro) {
     var _asset_resolved = (scr_asset_find_by_name(macro_asset_name) != undefined);
     var _is_move_macro = (macro_type == "MOVE_BOB" || macro_type == "MOVE_SPR");
+    var _is_anim_macro = (macro_type == "ANIM_BOB" || macro_type == "ANIM_SPR");
     var _is_bob_reference = (macro_type == "GET_BITMAP_BOB" || macro_type == "DRAW_BOB" || macro_type == "REPLACE_BITMAP_BOB" || macro_type == "BOB_BITMAP_TEST");
     var _is_sprite_reference = (macro_type == "SPRITE_DISPLAY" || macro_type == "SPRITE_BITMAP_TEST");
 
-    if (_is_move_macro) {
+    if (_is_move_macro || _is_anim_macro) {
         _asset_resolved = true;
     } else if (macro_type == "SETBKG") {
         _asset_resolved = scr_is_valid_hex_colour(macro_asset_name);
@@ -199,7 +200,7 @@ if (is_macro) {
     var _over_asset_field = point_in_rectangle(_world_mouse_x, _world_mouse_y, _asset_field_x, _asset_field_y, _asset_field_x + _asset_field_width, _asset_field_y + _asset_field_height);
     var _can_start_asset_edit = ((global.operand_edit_owner_uid == -1) || (global.operand_edit_owner_uid == uid)) && (operand_editing_slot != "macro_asset");
 
-    if (_over_asset_field && mouse_check_button_pressed(mb_left) && _can_start_asset_edit && !_is_move_macro) {
+    if (_over_asset_field && mouse_check_button_pressed(mb_left) && _can_start_asset_edit && !_is_move_macro && !_is_anim_macro) {
         if (macro_type == "SETBKG") {
             scr_colour_picker_open(id, "macro_asset_name", -1, "SETBKG colour");
         } else if (macro_type == "COPPER_BAR") {
@@ -217,8 +218,8 @@ if (is_macro) {
 
     // Compact left/right steppers. Every node that references a BOB or sprite
     // exposes its 0..63 runtime slot; MOVE nodes also expose signed literals.
-    var _has_object_id = _is_move_macro || _is_bob_reference || _is_sprite_reference;
-    var _id_row_y = node_y + (_is_move_macro ? 20 : 40);
+    var _has_object_id = _is_move_macro || _is_anim_macro || _is_bob_reference || _is_sprite_reference;
+    var _id_row_y = node_y + ((_is_move_macro || _is_anim_macro) ? 20 : 40);
     if (_has_object_id && mouse_check_button_pressed(mb_left)
         && point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, _id_row_y, node_x + node_width, _id_row_y + 20)) {
         scr_push_undo_snapshot();
@@ -234,6 +235,27 @@ if (is_macro) {
         } else if (point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y + 60, node_x + node_width, node_y + 80)) {
             scr_push_undo_snapshot();
             macro_speed_y = clamp(macro_speed_y + _speed_delta, -16, 16);
+        }
+    }
+
+    if (_is_anim_macro && mouse_check_button_pressed(mb_left)) {
+        var _anim_delta = (_world_mouse_x < node_x + node_width * 0.5 ? -1 : 1);
+        var _anim_frame_type = macro_type == "ANIM_BOB" ? "BOB" : "SPRITE";
+        var _anim_frame_count = 0;
+        var _anim_asset_i = 0;
+        while (_anim_asset_i < array_length(global.asset_list)) {
+            if (global.asset_list[_anim_asset_i].type == _anim_frame_type) _anim_frame_count += 1;
+            _anim_asset_i += 1;
+        }
+        var _anim_max_frame = max(0, _anim_frame_count - 1);
+        if (point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y + 40, node_x + node_width, node_y + 60)) {
+            scr_push_undo_snapshot(); macro_anim_rate = clamp(macro_anim_rate + _anim_delta, 1, 50);
+        } else if (point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y + 60, node_x + node_width, node_y + 80)) {
+            scr_push_undo_snapshot(); macro_anim_start = clamp(macro_anim_start + _anim_delta, 0, macro_anim_end);
+        } else if (point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y + 80, node_x + node_width, node_y + 100)) {
+            scr_push_undo_snapshot(); macro_anim_end = clamp(macro_anim_end + _anim_delta, macro_anim_start, _anim_max_frame);
+        } else if (point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y + 100, node_x + node_width, node_y + 120)) {
+            scr_push_undo_snapshot(); macro_anim_loop = !macro_anim_loop;
         }
     }
 } else {

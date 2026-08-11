@@ -43,7 +43,9 @@ function scr_emit_macro_bitmap_display(_node) {
     _lines += "\tMOVE.W #11457,14676112.L\n";
     _lines += "\tMOVE.W #20992,14676224.L\n"; // BPU=5, colour burst on
     _lines += "\tMOVE.W #0,14676226.L\n";
-    _lines += "\tMOVE.W #0,14676228.L\n";
+    // Normal single-playfield mode uses BPLCON2 PF2P (bits 5-3). Value 4
+    // places the playfield behind all four hardware-sprite pairs.
+    _lines += "\tMOVE.W #32,14676228.L\n";
     _lines += "\tMOVE.W #0,14676230.L\n";
     _lines += "\tMOVE.W #0,14676232.L\n";
     _lines += "\tMOVE.W #0,14676476.L\n";

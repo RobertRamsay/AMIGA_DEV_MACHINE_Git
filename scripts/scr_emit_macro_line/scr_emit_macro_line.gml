@@ -20,6 +20,8 @@ function scr_emit_macro_line(_node) {
     if (_node.macro_type == "DRAW_BOB") return scr_emit_macro_draw_bob(_node);
     if (_node.macro_type == "MOVE_BOB") return scr_emit_macro_move_bob(_node);
     if (_node.macro_type == "MOVE_SPR") return scr_emit_macro_move_spr(_node);
+    if (_node.macro_type == "ANIM_BOB") return scr_emit_macro_anim_bob(_node);
+    if (_node.macro_type == "ANIM_SPR") return scr_emit_macro_anim_spr(_node);
 
     if (_node.macro_type == "SETBKG") {
         return scr_emit_macro_setbkg(_node);

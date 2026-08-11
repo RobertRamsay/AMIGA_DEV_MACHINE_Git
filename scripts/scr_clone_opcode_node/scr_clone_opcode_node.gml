@@ -39,6 +39,10 @@ function scr_clone_opcode_node(_source_node) {
     _new_node.macro_object_id = _source_node.macro_object_id;
     _new_node.macro_speed_x = _source_node.macro_speed_x;
     _new_node.macro_speed_y = _source_node.macro_speed_y;
+    _new_node.macro_anim_rate = _source_node.macro_anim_rate;
+    _new_node.macro_anim_start = _source_node.macro_anim_start;
+    _new_node.macro_anim_end = _source_node.macro_anim_end;
+    _new_node.macro_anim_loop = _source_node.macro_anim_loop;
     _new_node.macro_cprbar_band_count = _source_node.macro_cprbar_band_count;
     _new_node.macro_cprbar_target_register = _source_node.macro_cprbar_target_register;
     _new_node.macro_cprbar_equidistant = _source_node.macro_cprbar_equidistant;

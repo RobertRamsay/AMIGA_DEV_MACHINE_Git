@@ -61,6 +61,14 @@ if (is_macro) {
             _header_colour = make_color_rgb(105, 40, 120);
             break;
 
+        case "ANIM_BOB":
+            _header_colour = make_color_rgb(25, 105, 75);
+            break;
+
+        case "ANIM_SPR":
+            _header_colour = make_color_rgb(100, 35, 105);
+            break;
+
         case "SETBKG":
             _header_colour = make_color_rgb(150, 150, 40);
             break;
@@ -171,6 +179,7 @@ if (is_macro) {
     var _asset_field_dx = node_x + global.pan_x;
     var _asset_field_dy = node_y + global.pan_y + 20;
     var _is_move_macro_draw = (macro_type == "MOVE_BOB" || macro_type == "MOVE_SPR");
+    var _is_anim_macro_draw = (macro_type == "ANIM_BOB" || macro_type == "ANIM_SPR");
     var _is_bob_ref_draw = (macro_type == "GET_BITMAP_BOB" || macro_type == "DRAW_BOB" || macro_type == "REPLACE_BITMAP_BOB" || macro_type == "BOB_BITMAP_TEST");
     var _is_sprite_ref_draw = (macro_type == "SPRITE_DISPLAY" || macro_type == "SPRITE_BITMAP_TEST");
 
@@ -181,6 +190,15 @@ if (is_macro) {
         draw_text(_asset_field_dx + 4, _asset_field_dy + 2, "<   ID: " + string(macro_object_id) + "   >");
         draw_text(_asset_field_dx + 4, _asset_field_dy + 22, "<   X SPEED: " + string(macro_speed_x) + "   >");
         draw_text(_asset_field_dx + 4, _asset_field_dy + 42, "<   Y SPEED: " + string(macro_speed_y) + "   >");
+    } else if (_is_anim_macro_draw) {
+        draw_set_colour(c_dkgray);
+        draw_rectangle(_asset_field_dx, _asset_field_dy, _asset_field_dx + node_width, _asset_field_dy + 100, false);
+        draw_set_colour(c_white);
+        draw_text(_asset_field_dx + 4, _asset_field_dy + 2, "<   ID: " + string(macro_object_id) + "   >");
+        draw_text(_asset_field_dx + 4, _asset_field_dy + 22, "<   RATE: " + string(macro_anim_rate) + " FPS   >");
+        draw_text(_asset_field_dx + 4, _asset_field_dy + 42, "<   START: " + string(macro_anim_start) + "   >");
+        draw_text(_asset_field_dx + 4, _asset_field_dy + 62, "<   END: " + string(macro_anim_end) + "   >");
+        draw_text(_asset_field_dx + 4, _asset_field_dy + 82, "LOOP: " + (macro_anim_loop ? "ON" : "OFF"));
     } else {
 
     var _asset_field_colour = c_dkgray;

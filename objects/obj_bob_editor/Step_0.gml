@@ -157,6 +157,10 @@ if (_left_press && point_in_rectangle(_mx, _my, _palette_x, panel_y + 530, _pale
 }
 if (_left_press && point_in_rectangle(_mx, _my, _palette_x, panel_y + 580, _palette_x + 145, panel_y + 614)) {
     bob_commit();
+    global.current_bob_anim_rate = bob_anim_rate;
+    global.current_bob_anim_start = bob_anim_start;
+    global.current_bob_anim_end = bob_anim_end;
+    global.current_bob_anim_loop = bob_anim_loop;
     scr_amiga_run_bob_bitmap_test();
     instance_destroy();
 }

@@ -33,6 +33,16 @@ function scr_amiga_run_motion_test(_macro_type, _asset_name, _message) {
         _loop_node.opcode_mnemonic = "NOP";
     }
     _cy += _loop_node.node_height;
+    if (_macro_type == "SPRITE_BITMAP_TEST") {
+        var _anim_node = instance_create_layer(_org.node_x, _cy, "Instances", obj_opcode_node);
+        _anim_node.node_x = _org.node_x; _anim_node.node_y = _cy; _anim_node.node_height = 120;
+        _anim_node.is_macro = true; _anim_node.macro_type = "ANIM_SPR";
+        _anim_node.macro_object_id = 0; _anim_node.macro_anim_rate = global.sprite_anim_rate;
+        _anim_node.macro_anim_start = global.sprite_anim_start; _anim_node.macro_anim_end = global.sprite_anim_end;
+        _anim_node.macro_anim_loop = global.sprite_anim_loop;
+        _anim_node.is_connected = true; _anim_node.root_uid = _org.uid;
+        _cy += _anim_node.node_height;
+    }
     var _bra = instance_create_layer(_org.node_x, _cy, "Instances", obj_opcode_node);
     _bra.node_x = _org.node_x; _bra.node_y = _cy; _bra.opcode_mnemonic = "BRA"; _bra.opcode_size = "W";
     _bra.addressing_mode_src = "LABEL"; _bra.operand_label_src = "mainloop"; _bra.is_connected = true; _bra.root_uid = _org.uid;
@@ -56,12 +66,19 @@ function scr_amiga_run_bob_bitmap_test() {
     var _org = instance_create_layer(_init.node_x + 240, _init.node_y, "Instances", obj_amiga_root_node);
     _org.root_type = "ORG"; _org.node_x = scr_snap_to_grid(_init.node_x + 240, global.grid_size); _org.node_y = _init.node_y; _org.continues_from_root_uid = _init.uid;
     var _cy = _org.node_y + _org.node_height;
-    var _types = ["GET_BITMAP_BOB", "DRAW_BOB", "REPLACE_BITMAP_BOB", "MOVE_BOB"];
-    for (var _i = 0; _i < 4; _i += 1) {
+    var _types = ["GET_BITMAP_BOB", "DRAW_BOB", "REPLACE_BITMAP_BOB", "MOVE_BOB", "ANIM_BOB"];
+    for (var _i = 0; _i < 5; _i += 1) {
         var _m = instance_create_layer(_org.node_x, _cy, "Instances", obj_opcode_node);
         _m.node_x = _org.node_x; _m.node_y = _cy; _m.node_height = 100; _m.is_macro = true;
         _m.macro_type = _types[_i]; _m.macro_asset_name = _bob_name; _m.is_connected = true; _m.root_uid = _org.uid;
         _m.macro_object_id = 0; _m.macro_speed_x = 1; _m.macro_speed_y = 0;
+        if (_types[_i] == "ANIM_BOB") {
+            _m.node_height = 120;
+            _m.macro_anim_rate = global.current_bob_anim_rate;
+            _m.macro_anim_start = global.current_bob_anim_start;
+            _m.macro_anim_end = global.current_bob_anim_end;
+            _m.macro_anim_loop = global.current_bob_anim_loop;
+        }
         if (_i == 1) _m.node_label = "bobloop";
         _cy += _m.node_height;
     }

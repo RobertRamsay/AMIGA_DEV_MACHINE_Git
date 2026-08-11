@@ -561,6 +561,7 @@ if (global.sprite_editor_open) {
         if (global.sprite_channel < 0) {
             global.sprite_channel = 7;
         }
+        sprite_editor_load_shared_colours();
     }
 
     if (_over_channel_plus && mouse_check_button_pressed(mb_left)) {
@@ -569,6 +570,7 @@ if (global.sprite_editor_open) {
         if (global.sprite_channel > 7) {
             global.sprite_channel = 0;
         }
+        sprite_editor_load_shared_colours();
     }
 
     var _over_height_field = point_in_rectangle(mouse_x, mouse_y, _layout.height_field_x, _layout.height_row_y, _layout.height_field_x + 60, _layout.height_row_y + 16);
@@ -625,6 +627,8 @@ if (global.sprite_editor_open) {
         if (_over_b_slider) {
             global.sprite_colour_b[_palette_array_index] = _slider_value;
         }
+
+        if (_over_r_slider || _over_g_slider || _over_b_slider) sprite_editor_commit_shared_colours();
     }
 
     var _sprite_left_press = mouse_check_button_pressed(mb_left);
@@ -733,6 +737,7 @@ if (global.sprite_editor_open) {
                     global.sprite_colour_r[_swatch_num - 1] = scr_hex_string_to_number(string_char_at(_hex_text, 1));
                     global.sprite_colour_g[_swatch_num - 1] = scr_hex_string_to_number(string_char_at(_hex_text, 2));
                     global.sprite_colour_b[_swatch_num - 1] = scr_hex_string_to_number(string_char_at(_hex_text, 3));
+                    sprite_editor_commit_shared_colours();
                 }
             }
 
