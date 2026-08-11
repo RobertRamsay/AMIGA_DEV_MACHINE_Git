@@ -8,7 +8,7 @@ if (_has_hover) {
     if (_tooltip_data != undefined) {
         var _tip_x = global.palette_hover_x + 16;
         var _tip_y = global.palette_hover_y + 16;
-        var _tip_width = 700;
+        var _tip_width = 800;
         var _tip_height = 100;
 
         draw_set_alpha(0.65);

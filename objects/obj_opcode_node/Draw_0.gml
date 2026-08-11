@@ -387,7 +387,7 @@ if (_hovering_node && !is_dragging && global.operand_edit_owner_uid == -1) {
     var _explanation = scr_amiga_explain_node(id);
 
     if (_explanation != "") {
-        var _tip_width = 460;
+        var _tip_width = 800;
         var _tip_height = 100;
         var _tip_x = 272;//mouse_x + 18;
         var _tip_y = 850;//mouse_y + 18;

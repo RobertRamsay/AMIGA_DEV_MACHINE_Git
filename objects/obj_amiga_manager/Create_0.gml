@@ -133,7 +133,7 @@ global.palette_hover_mnemonic = "";
 global.palette_hover_x = 0;
 global.palette_hover_y = 0;
 
-depth=-100000
+depth = -300000
 // ============================================================================
 // 7. OPCODE PALETTE
 // One obj_opcode_palette_item per defined opcode, arranged in three columns.
