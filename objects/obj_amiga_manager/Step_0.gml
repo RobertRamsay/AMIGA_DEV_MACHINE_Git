@@ -506,6 +506,54 @@ if (global.sprite_editor_open) {
     if (_over_asset_next && mouse_check_button_pressed(mb_left)) sprite_editor_navigate(1);
     if (_over_asset_add && mouse_check_button_pressed(mb_left)) sprite_editor_add_asset();
 
+    // Frame-navigation shortcuts. Keep these disabled while a numeric/hex field
+    // owns the keyboard, and require an unmodified key so Ctrl+S remains the
+    // workspace-save shortcut handled above.
+    var _sprite_shortcut_plain = global.sprite_editing_field == ""
+        && !keyboard_check(vk_control)
+        && !keyboard_check(vk_alt);
+    if (_sprite_shortcut_plain) {
+        if (keyboard_check_pressed(ord("A"))) sprite_editor_navigate(-1);
+        if (keyboard_check_pressed(ord("D"))) sprite_editor_navigate(1);
+        if (keyboard_check_pressed(ord("W"))) sprite_editor_add_asset();
+
+        if (keyboard_check_pressed(ord("Q"))) {
+            global.sprite_anim_playing = false;
+            sprite_editor_commit_asset();
+            sprite_editor_rebuild_assets();
+            if (array_length(global.sprite_asset_names) > 0) {
+                global.sprite_asset_index = 0;
+                sprite_editor_load_asset(global.sprite_asset_names[0]);
+            }
+        }
+
+        if (keyboard_check_pressed(ord("E"))) {
+            global.sprite_anim_playing = false;
+            sprite_editor_commit_asset();
+            sprite_editor_rebuild_assets();
+            var _sprite_last_frame = array_length(global.sprite_asset_names) - 1;
+            if (_sprite_last_frame >= 0) {
+                global.sprite_asset_index = _sprite_last_frame;
+                sprite_editor_load_asset(global.sprite_asset_names[_sprite_last_frame]);
+            }
+        }
+
+        if (keyboard_check_pressed(ord("S"))) {
+            global.sprite_anim_playing = !global.sprite_anim_playing;
+            if (global.sprite_anim_playing) {
+                sprite_editor_commit_asset();
+                sprite_editor_rebuild_assets();
+                if (array_length(global.sprite_asset_names) > 0) {
+                    global.sprite_asset_index = global.sprite_anim_start;
+                    sprite_editor_load_asset(global.sprite_asset_names[global.sprite_asset_index]);
+                    global.sprite_anim_next_time = current_time + (1000 / global.sprite_anim_rate);
+                } else {
+                    global.sprite_anim_playing = false;
+                }
+            }
+        }
+    }
+
     var _tool_i = 0;
     var _tool_names = ["DRAW", "LINE", "FILL"];
     while (_tool_i < 3) {

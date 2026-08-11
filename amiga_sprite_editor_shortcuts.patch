@@ -1,0 +1,115 @@
+diff --git a/objects/obj_amiga_manager/Step_0.gml b/objects/obj_amiga_manager/Step_0.gml
+index ce4b25f..3407dc7 100644
+--- a/objects/obj_amiga_manager/Step_0.gml
++++ b/objects/obj_amiga_manager/Step_0.gml
+@@ -506,6 +506,54 @@ if (global.sprite_editor_open) {
+     if (_over_asset_next && mouse_check_button_pressed(mb_left)) sprite_editor_navigate(1);
+     if (_over_asset_add && mouse_check_button_pressed(mb_left)) sprite_editor_add_asset();
+ 
++    // Frame-navigation shortcuts. Keep these disabled while a numeric/hex field
++    // owns the keyboard, and require an unmodified key so Ctrl+S remains the
++    // workspace-save shortcut handled above.
++    var _sprite_shortcut_plain = global.sprite_editing_field == ""
++        && !keyboard_check(vk_control)
++        && !keyboard_check(vk_alt);
++    if (_sprite_shortcut_plain) {
++        if (keyboard_check_pressed(ord("A"))) sprite_editor_navigate(-1);
++        if (keyboard_check_pressed(ord("D"))) sprite_editor_navigate(1);
++        if (keyboard_check_pressed(ord("W"))) sprite_editor_add_asset();
++
++        if (keyboard_check_pressed(ord("Q"))) {
++            global.sprite_anim_playing = false;
++            sprite_editor_commit_asset();
++            sprite_editor_rebuild_assets();
++            if (array_length(global.sprite_asset_names) > 0) {
++                global.sprite_asset_index = 0;
++                sprite_editor_load_asset(global.sprite_asset_names[0]);
++            }
++        }
++
++        if (keyboard_check_pressed(ord("E"))) {
++            global.sprite_anim_playing = false;
++            sprite_editor_commit_asset();
++            sprite_editor_rebuild_assets();
++            var _sprite_last_frame = array_length(global.sprite_asset_names) - 1;
++            if (_sprite_last_frame >= 0) {
++                global.sprite_asset_index = _sprite_last_frame;
++                sprite_editor_load_asset(global.sprite_asset_names[_sprite_last_frame]);
++            }
++        }
++
++        if (keyboard_check_pressed(ord("S"))) {
++            global.sprite_anim_playing = !global.sprite_anim_playing;
++            if (global.sprite_anim_playing) {
++                sprite_editor_commit_asset();
++                sprite_editor_rebuild_assets();
++                if (array_length(global.sprite_asset_names) > 0) {
++                    global.sprite_asset_index = global.sprite_anim_start;
++                    sprite_editor_load_asset(global.sprite_asset_names[global.sprite_asset_index]);
++                    global.sprite_anim_next_time = current_time + (1000 / global.sprite_anim_rate);
++                } else {
++                    global.sprite_anim_playing = false;
++                }
++            }
++        }
++    }
++
+     var _tool_i = 0;
+     var _tool_names = ["DRAW", "LINE", "FILL"];
+     while (_tool_i < 3) {
+diff --git a/objects/obj_bob_editor/Step_0.gml b/objects/obj_bob_editor/Step_0.gml
+index f63132b..46f6d4b 100644
+--- a/objects/obj_bob_editor/Step_0.gml
++++ b/objects/obj_bob_editor/Step_0.gml
+@@ -112,6 +112,51 @@ if (_left_press && point_in_rectangle(_mx, _my, _palette_x, _asset_row_y, _palet
+ if (_left_press && point_in_rectangle(_mx, _my, _palette_x + 190, _asset_row_y, _palette_x + 218, _asset_row_y + 26)) bob_navigate(1);
+ if (_left_press && point_in_rectangle(_mx, _my, _palette_x + 228, _asset_row_y, _palette_x + 320, _asset_row_y + 26)) bob_add_asset();
+ 
++// Match the hardware-sprite editor's frame controls. Modified keys are ignored
++// so application-level shortcuts such as Ctrl+S keep their existing meaning.
++var _bob_shortcut_plain = !keyboard_check(vk_control) && !keyboard_check(vk_alt);
++if (_bob_shortcut_plain) {
++    if (keyboard_check_pressed(ord("A"))) bob_navigate(-1);
++    if (keyboard_check_pressed(ord("D"))) bob_navigate(1);
++    if (keyboard_check_pressed(ord("W"))) bob_add_asset();
++
++    if (keyboard_check_pressed(ord("Q"))) {
++        bob_anim_playing = false;
++        bob_commit();
++        bob_rebuild_asset_names();
++        if (array_length(bob_asset_names) > 0) {
++            bob_asset_index = 0;
++            bob_load_asset(bob_asset_names[0]);
++        }
++    }
++
++    if (keyboard_check_pressed(ord("E"))) {
++        bob_anim_playing = false;
++        bob_commit();
++        bob_rebuild_asset_names();
++        var _bob_last_frame = array_length(bob_asset_names) - 1;
++        if (_bob_last_frame >= 0) {
++            bob_asset_index = _bob_last_frame;
++            bob_load_asset(bob_asset_names[_bob_last_frame]);
++        }
++    }
++
++    if (keyboard_check_pressed(ord("S"))) {
++        bob_anim_playing = !bob_anim_playing;
++        if (bob_anim_playing) {
++            bob_commit();
++            bob_rebuild_asset_names();
++            if (array_length(bob_asset_names) > 0) {
++                bob_asset_index = bob_anim_start;
++                bob_load_asset(bob_asset_names[bob_asset_index]);
++                bob_anim_next_time = current_time + (1000 / bob_anim_rate);
++            } else {
++                bob_anim_playing = false;
++            }
++        }
++    }
++}
++
+ var _tool_y = panel_y + 410;
+ if (_left_press && point_in_rectangle(_mx, _my, _palette_x, _tool_y, _palette_x + 92, _tool_y + 30)) { bob_tool = "DRAW"; bob_line_active = false; }
+ if (_left_press && point_in_rectangle(_mx, _my, _palette_x + 104, _tool_y, _palette_x + 196, _tool_y + 30)) { bob_tool = "LINE"; bob_line_active = false; }

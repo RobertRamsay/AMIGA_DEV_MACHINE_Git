@@ -112,6 +112,51 @@ if (_left_press && point_in_rectangle(_mx, _my, _palette_x, _asset_row_y, _palet
 if (_left_press && point_in_rectangle(_mx, _my, _palette_x + 190, _asset_row_y, _palette_x + 218, _asset_row_y + 26)) bob_navigate(1);
 if (_left_press && point_in_rectangle(_mx, _my, _palette_x + 228, _asset_row_y, _palette_x + 320, _asset_row_y + 26)) bob_add_asset();
 
+// Match the hardware-sprite editor's frame controls. Modified keys are ignored
+// so application-level shortcuts such as Ctrl+S keep their existing meaning.
+var _bob_shortcut_plain = !keyboard_check(vk_control) && !keyboard_check(vk_alt);
+if (_bob_shortcut_plain) {
+    if (keyboard_check_pressed(ord("A"))) bob_navigate(-1);
+    if (keyboard_check_pressed(ord("D"))) bob_navigate(1);
+    if (keyboard_check_pressed(ord("W"))) bob_add_asset();
+
+    if (keyboard_check_pressed(ord("Q"))) {
+        bob_anim_playing = false;
+        bob_commit();
+        bob_rebuild_asset_names();
+        if (array_length(bob_asset_names) > 0) {
+            bob_asset_index = 0;
+            bob_load_asset(bob_asset_names[0]);
+        }
+    }
+
+    if (keyboard_check_pressed(ord("E"))) {
+        bob_anim_playing = false;
+        bob_commit();
+        bob_rebuild_asset_names();
+        var _bob_last_frame = array_length(bob_asset_names) - 1;
+        if (_bob_last_frame >= 0) {
+            bob_asset_index = _bob_last_frame;
+            bob_load_asset(bob_asset_names[_bob_last_frame]);
+        }
+    }
+
+    if (keyboard_check_pressed(ord("S"))) {
+        bob_anim_playing = !bob_anim_playing;
+        if (bob_anim_playing) {
+            bob_commit();
+            bob_rebuild_asset_names();
+            if (array_length(bob_asset_names) > 0) {
+                bob_asset_index = bob_anim_start;
+                bob_load_asset(bob_asset_names[bob_asset_index]);
+                bob_anim_next_time = current_time + (1000 / bob_anim_rate);
+            } else {
+                bob_anim_playing = false;
+            }
+        }
+    }
+}
+
 var _tool_y = panel_y + 410;
 if (_left_press && point_in_rectangle(_mx, _my, _palette_x, _tool_y, _palette_x + 92, _tool_y + 30)) { bob_tool = "DRAW"; bob_line_active = false; }
 if (_left_press && point_in_rectangle(_mx, _my, _palette_x + 104, _tool_y, _palette_x + 196, _tool_y + 30)) { bob_tool = "LINE"; bob_line_active = false; }
