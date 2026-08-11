@@ -9,7 +9,7 @@ function scr_sprite_editor_layout() {
     var _panel_width = 380;
     var _cell_size = 14;
     var _grid_x = _panel_x + 18;
-    var _grid_y = _panel_y + 136;
+    var _grid_y = _panel_y + 160;
     var _grid_width = 16 * _cell_size;
     var _grid_height = global.sprite_height * _cell_size;
     var _palette_y = _grid_y + _grid_height + 28;
