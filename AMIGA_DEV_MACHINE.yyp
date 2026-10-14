@@ -212,6 +212,9 @@
   },
   "name":"AMIGA_DEV_MACHINE",
   "resources":[
+    {"id":{"name":"scr_tutorial_builders","path":"scripts/scr_tutorial_builders/scr_tutorial_builders.yy",},},
+    {"id":{"name":"scr_tutorials","path":"scripts/scr_tutorials/scr_tutorials.yy",},},
+    {"id":{"name":"scr_gamekit_assets","path":"scripts/scr_gamekit_assets/scr_gamekit_assets.yy",},},
     {"id":{"name":"scr_amiga_selftest","path":"scripts/scr_amiga_selftest/scr_amiga_selftest.yy",},},
     {"id":{"name":"scr_macro_node_defaults","path":"scripts/scr_macro_node_defaults/scr_macro_node_defaults.yy",},},
     {"id":{"name":"scr_amiga_modal_open","path":"scripts/scr_amiga_modal_open/scr_amiga_modal_open.yy",},},

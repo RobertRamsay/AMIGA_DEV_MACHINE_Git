@@ -143,4 +143,9 @@ function scr_node_restore_extra_fields(_node, _data) {
     if (variable_struct_exists(_data, "macro_music_pos")) _node.macro_music_pos = _data.macro_music_pos;
     if (variable_struct_exists(_data, "macro_sfx_channel")) _node.macro_sfx_channel = _data.macro_sfx_channel;
     if (variable_struct_exists(_data, "macro_sfx_volume")) _node.macro_sfx_volume = _data.macro_sfx_volume;
+    if (variable_struct_exists(_data, "macro_param_a")) _node.macro_param_a = _data.macro_param_a;
+    if (variable_struct_exists(_data, "macro_param_b")) _node.macro_param_b = _data.macro_param_b;
+    if (variable_struct_exists(_data, "macro_param_c")) _node.macro_param_c = _data.macro_param_c;
+    if (variable_struct_exists(_data, "macro_param_text_a") && is_string(_data.macro_param_text_a)) _node.macro_param_text_a = _data.macro_param_text_a;
+    if (variable_struct_exists(_data, "macro_param_text_b") && is_string(_data.macro_param_text_b)) _node.macro_param_text_b = _data.macro_param_text_b;
 }

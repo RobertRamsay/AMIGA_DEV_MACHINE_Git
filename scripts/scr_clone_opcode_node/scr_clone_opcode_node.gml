@@ -53,6 +53,11 @@ function scr_clone_opcode_node(_source_node) {
     _new_node.macro_music_pos = _source_node.macro_music_pos;
     _new_node.macro_sfx_channel = _source_node.macro_sfx_channel;
     _new_node.macro_sfx_volume = _source_node.macro_sfx_volume;
+    _new_node.macro_param_a = _source_node.macro_param_a;
+    _new_node.macro_param_b = _source_node.macro_param_b;
+    _new_node.macro_param_c = _source_node.macro_param_c;
+    _new_node.macro_param_text_a = _source_node.macro_param_text_a;
+    _new_node.macro_param_text_b = _source_node.macro_param_text_b;
 
     _new_node.macro_cprbar_bands = array_create(16, "000");
     array_copy(_new_node.macro_cprbar_bands, 0, _source_node.macro_cprbar_bands, 0, 16);

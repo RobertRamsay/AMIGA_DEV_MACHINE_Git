@@ -685,5 +685,10 @@ global.workspace_dirty = false;
 global.autosave_due_time = -1;
 global.autosave_recovery_pending = file_exists(global.autosave_workspace_path);
 
+// Tutorials (scr_tutorials): definitions cache, loaded tutorial (-1 = none), guide step.
+global.tutorial_defs_cache = undefined;
+global.tutorial_current = -1;
+global.tutorial_step = 0;
+
 // Development self test (-admselftest <mod>), see scr_amiga_selftest.
 scr_amiga_selftest_init();

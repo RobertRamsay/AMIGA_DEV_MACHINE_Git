@@ -55,7 +55,12 @@ function scr_save_workspace_to_path(_path, _mark_clean = true) {
             macro_code_text : macro_code_text,
             macro_music_pos : macro_music_pos,
             macro_sfx_channel : macro_sfx_channel,
-            macro_sfx_volume : macro_sfx_volume
+            macro_sfx_volume : macro_sfx_volume,
+            macro_param_a : macro_param_a,
+            macro_param_b : macro_param_b,
+            macro_param_c : macro_param_c,
+            macro_param_text_a : macro_param_text_a,
+            macro_param_text_b : macro_param_text_b
         };
 
         array_push(_node_array, _node_data);
