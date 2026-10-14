@@ -20,7 +20,7 @@ function scr_amiga_explain_node(_node) {
             var _mod_text = _node.macro_asset_name == "" ? "(none chosen yet)" : "'" + _node.macro_asset_name + "'";
             return "Starts the ProTracker module " + _mod_text + " from song position " + string(_node.macro_music_pos)
                 + " using ptplayer on CIA-B interrupts, so it keeps playing while your program runs. "
-                + "Click < > to pick the music, the middle of the name to preview it here. Import MODs in SND-EDIT.";
+                + "Click < > to pick the music. PLAY / STOP preview it here, EDIT opens it in the TRACKER (or starts a new song). Import MODs in SND-EDIT.";
         }
 
         if (_node.macro_type == "STOP_MOD") {

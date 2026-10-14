@@ -144,6 +144,21 @@ function scr_tracker_selftest() {
         scr_audio_delete(_saved_name);
         instance_destroy();
     }
+    // EDIT on a PLAY MUSIC node with no song: a new song, linked on save.
+    var _node = instance_create_layer(-5000, -5000, "Instances", obj_opcode_node);
+    scr_macro_node_init(_node, "PLAY_MOD");
+    _node.macro_asset_name = "";
+    var _ed2 = scr_tracker_open_for_node(_node);
+    var _linked_name = "";
+    with (_ed2) {
+        tracker_save();
+        _linked_name = song_name;
+        instance_destroy();
+    }
+    if (_node.macro_asset_name != _linked_name || _linked_name == "") array_push(_fail, "node link: [" + _node.macro_asset_name + "] vs [" + _linked_name + "]");
+    if (_linked_name != "") scr_audio_delete(_linked_name);
+    with (_node) instance_destroy();
+
     global.tracker_last_name = _keep_last;
     return _fail;
 }

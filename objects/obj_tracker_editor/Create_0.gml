@@ -37,6 +37,7 @@ redo_stack = [];
 clip_track = undefined;
 clip_pattern = undefined;
 vu_display = [0, 0, 0, 0];
+link_node = noone;         // PLAY MUSIC node whose EDIT opened the tracker
 
 /// Every area of the editor (room coordinates).
 tracker_layout = function() {
@@ -276,6 +277,12 @@ tracker_save = function() {
     }
     dirty = false;
     global.tracker_last_name = song_name;
+    // Opened from a PLAY MUSIC node's EDIT: that node now plays this song.
+    if (instance_exists(link_node) && link_node.macro_asset_name != song_name) {
+        scr_push_undo_snapshot();
+        link_node.macro_asset_name = song_name;
+        scr_mark_workspace_dirty();
+    }
     var _asset = scr_asset_find_by_name(song_name);
     tracker_message("Saved MOD " + song_name + " (" + string(_asset.length) + " bytes) - PLAY MUSIC nodes can use it.", c_lime);
     return true;

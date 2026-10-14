@@ -212,6 +212,23 @@ if (is_macro) {
         scr_node_row(_asset_field_dx, node_width, _asset_field_dy, _audio_name, c_dkgray, _audio_asset_draw == undefined ? c_red : c_white, true);
         if (macro_type == "PLAY_MOD") {
             scr_node_row(_asset_field_dx, node_width, _asset_field_dy + 20, "SONG POS: " + string(macro_music_pos), c_dkgray, c_white, true);
+            // PLAY / STOP / EDIT (Step uses the same thirds of the row).
+            var _music_playing = global.audio_preview_kind == "MOD" && global.audio_preview_name == macro_asset_name && macro_asset_name != "";
+            var _bx1 = _asset_field_dx + NODE_ROW_INSET_L;
+            var _bx2 = _asset_field_dx + node_width - NODE_ROW_INSET_R;
+            var _music_labels = ["PLAY", "STOP", "EDIT"];
+            for (var _mb = 0; _mb < 3; _mb += 1) {
+                var _mx1 = _asset_field_dx + _mb * node_width / 3;
+                var _mx2 = _asset_field_dx + (_mb + 1) * node_width / 3;
+                var _bl = max(_bx1, _mx1 + 2);
+                var _br = min(_bx2, _mx2 - 2);
+                var _by1 = _asset_field_dy + 42;
+                var _by2 = _asset_field_dy + 58;
+                var _hover_mb = point_in_rectangle(mouse_x, mouse_y, _bl, _by1, _br, _by2) && !scr_amiga_modal_open();
+                var _fill_mb = (_mb == 0 && _music_playing) ? make_colour_rgb(35, 110, 75)
+                    : (_mb == 2 ? make_colour_rgb(25, 95, 100) : make_colour_rgb(45, 65, 85));
+                scr_ui_button(_bl, _by1, _br, _by2, _music_labels[_mb], _fill_mb, _hover_mb);
+            }
         } else {
             scr_node_row(_asset_field_dx, node_width, _asset_field_dy + 20, "CHANNEL: " + (macro_sfx_channel < 0 ? "AUTO" : string(macro_sfx_channel)), c_dkgray, c_white, true);
             var _vol_text = macro_sfx_volume < 0 ? "SAMPLE" : string(macro_sfx_volume);

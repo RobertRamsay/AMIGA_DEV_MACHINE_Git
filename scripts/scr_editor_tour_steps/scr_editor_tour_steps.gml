@@ -182,7 +182,7 @@ function scr_tour_categories() {
             { title : "PLAY SFX", show : "main", rect : function() { return scr_tour_node_rect(scr_tour_find_node("PLAY_SFX")); },
               text : "PLAY SFX plays a sample. The < and > ends of the first row choose the sample and the middle plays it here; the next rows pick the Paula channel (AUTO lets the player choose) and the volume." },
             { title : "PLAY MOD", show : "main", rect : function() { return scr_tour_node_rect(scr_tour_find_node("PLAY_MOD")); },
-              text : "PLAY MOD starts a ProTracker module (music keeps playing while your program runs). Choose the module with < and >, preview it with the middle, and set the song position to start from." }
+              text : "PLAY MOD starts a ProTracker module (music keeps playing while your program runs). Choose the module with < and > and the song position to start from. PLAY and STOP preview it; EDIT opens it in the TRACKER (or starts a new song for this node)." }
         ]
     });
 

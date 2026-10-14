@@ -230,6 +230,18 @@ if (is_macro) {
             } else if (point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y + 40, node_x + node_width, node_y + 60)) {
                 scr_push_undo_snapshot();
                 macro_music_pos = clamp(macro_music_pos + _field_delta, 0, 127);
+            } else if (point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y + 60, node_x + node_width, node_y + 80)) {
+                // PLAY / STOP / EDIT, a third of the row each.
+                var _music_button = clamp(floor((_world_mouse_x - node_x) * 3 / node_width), 0, 2);
+                var _music_asset = scr_asset_find_by_name(macro_asset_name);
+                if (_music_button == 0) {
+                    if (_music_asset != undefined && _music_asset.type == "MOD") scr_audio_preview_mod(_music_asset);
+                    else scr_set_status_message("No music chosen - EDIT makes a new song in the tracker.", c_orange);
+                } else if (_music_button == 1) {
+                    scr_audio_preview_stop();
+                } else {
+                    scr_tracker_open_for_node(id);
+                }
             }
         } else if (macro_type == "PLAY_SFX" && _pressed_here) {
             if (point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y + 20, node_x + node_width, node_y + 40)) {
