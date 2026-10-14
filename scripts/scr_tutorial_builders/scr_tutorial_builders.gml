@@ -865,7 +865,7 @@ function scr_tutorial_build_10(_chain) {
         _g += 1;
     }
     scr_tb_spawn(_map, _s, 2, 13, 16);
-    scr_tb_enemy(_map, _s, 6, 13, "Slime", 16);
+    scr_tb_enemy(_map, _s, 14, 13, "Slime", 16);        // between the hill and the gap, away from the start
     scr_tb_enemy(_map, _s, 36, 13, "Slime", 16);
     scr_tb_enemy(_map, _s, 13, 29, "Slime", 16);
     scr_tb_enemy(_map, _s, 22, 29, "Slime", 16);
