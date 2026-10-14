@@ -129,7 +129,7 @@ function scr_amiga_fsuae_args(_adf) {
 /// Closes any FS-UAE an earlier run left open. Asynchronous; launch a few
 /// frames later (the manager's build state machine does this).
 function scr_amiga_fsuae_close() {
-    execute_shell_simple("taskkill.exe", "/F /T /IM fs-uae.exe", "open", 0);
+    execute_shell_simple("taskkill.exe", "/F /IM fs-uae.exe", "open", 0);
 }
 
 /// Boots _adf in the bundled FS-UAE. Returns true when the launch was started.

@@ -80,25 +80,20 @@ function scr_amiga_start_adf_build(_bin_path, _project_path, _volume_name, _uses
         _xdf_args += "+ boot write \"" + _bin_path + "\"";
     }
 
-    // The GameMaker shell call is asynchronous. Run xdftool inside a small
-    // batch and atomically publish the finished image under disk.adf only when
-    // xdftool exits successfully. The manager can now use file_exists() as a
-    // genuine completion signal instead of guessing with a fixed delay.
-    var _batch_path = _build_dir + "/build_adf.bat";
+    // The GameMaker shell call is asynchronous. Run xdftool and atomically
+    // publish the finished image under disk.adf only when xdftool exits
+    // successfully (&&), so the manager can use file_exists() as a genuine
+    // completion signal. One cmd /C line, no batch file: antivirus behaviour
+    // shields quarantined ADM for writing a .bat and running it hidden.
     var _log_path = _build_dir + "/build_adf.log";
-    var _batch_file = file_text_open_write(_batch_path);
-    file_text_write_string(_batch_file, "@echo off\r\n");
-    file_text_write_string(_batch_file, "cd /D \"%~dp0\"\r\n");
-    // move (below) and other cmd.exe builtins are far less tolerant of
-    // forward slashes than xdftool.exe or Win32 file APIs are. LOCALAPPDATA
-    // gives a backslash path and GML appends forward slashes onto it, so
-    // normalise every path here before it reaches cmd.exe.
-    var _xdftool_command_line = "\"" + string_replace_all(global.xdftool_path, "/", "\\") + "\" " + string_replace_all(_xdf_args, "/", "\\") + " > \"" + string_replace_all(_log_path, "/", "\\") + "\" 2>&1";
-    file_text_write_string(_batch_file, _xdftool_command_line + "\r\n");
-    file_text_write_string(_batch_file, "if errorlevel 1 exit /b %errorlevel%\r\n");
-    var _move_command_line = "move /Y \"" + string_replace_all(_working_adf_path, "/", "\\") + "\" \"" + string_replace_all(_adf_path, "/", "\\") + "\" >> \"" + string_replace_all(_log_path, "/", "\\") + "\" 2>&1";
-    file_text_write_string(_batch_file, _move_command_line + "\r\n");
-    file_text_close(_batch_file);
+    if (file_exists(_build_dir + "/build_adf.bat")) file_delete(_build_dir + "/build_adf.bat");
+    // move and other cmd.exe builtins are far less tolerant of forward
+    // slashes than xdftool.exe or Win32 file APIs are. LOCALAPPDATA gives a
+    // backslash path and GML appends forward slashes onto it, so normalise
+    // every path here before it reaches cmd.exe.
+    var _log_native = string_replace_all(_log_path, "/", "\\");
+    var _xdftool_command_line = "\"" + string_replace_all(global.xdftool_path, "/", "\\") + "\" " + string_replace_all(_xdf_args, "/", "\\") + " > \"" + _log_native + "\" 2>&1";
+    var _move_command_line = "move /Y \"" + string_replace_all(_working_adf_path, "/", "\\") + "\" \"" + string_replace_all(_adf_path, "/", "\\") + "\" >> \"" + _log_native + "\" 2>&1";
 
     // Create the log before launch so a missing/unchanged log distinguishes a
     // launcher problem from an xdftool error.
@@ -106,13 +101,13 @@ function scr_amiga_start_adf_build(_bin_path, _project_path, _volume_name, _uses
     file_text_write_string(_prelaunch_log, "ADF batch prepared; waiting for cmd.exe to start it.\r\n");
     file_text_close(_prelaunch_log);
 
-    // Give cmd.exe the build directory separately as its working directory.
-    // The /C command is now just a simple filename, with no nested quoted path
-    // for ShellExecute or cmd.exe to misparse. SW_HIDE prevents a popup.
+    // cmd.exe runs in the build directory, started minimised (7) rather than
+    // hidden. /S: the outer quotes are stripped and the rest kept as written.
     var _build_dir_native = string_replace_all(_build_dir, "/", "\\");
-    var _batch_started = execute_shell_simple("cmd.exe", "/D /C \"" + _build_dir_native + "\\build_adf.bat\"", "open", 0, _build_dir_native);
-    if (!_batch_started) {
-        show_debug_message("scr_amiga_start_adf_build: could not launch cmd.exe for " + _batch_path);
+    var _command = "/D /S /C \"" + _xdftool_command_line + " && " + _move_command_line + "\"";
+    var _started = execute_shell_simple("cmd.exe", _command, "open", 7, _build_dir_native);
+    if (!_started) {
+        show_debug_message("scr_amiga_start_adf_build: could not launch cmd.exe for xdftool");
     }
 
     return _adf_path;

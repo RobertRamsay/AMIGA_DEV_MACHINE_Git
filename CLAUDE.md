@@ -54,7 +54,7 @@ ptplayer approach.
 ### Build pipeline (F5)
 
 1. `scr_amiga_start_build` writes `main.s`: `SECTION code,CODE`, the hardware equates (only if a CODE block exists), every node, then the runtime footer (`scr_amiga_build_runtime`). It records a **line map** (main.s line → node, and CODE-block line) for error reporting. Every program is a Hunk executable: `vasm -Fhunkexe -kick1hunks -nosym -m68000` (A600) or `-m68020` (A1200).
-2. vasm runs inside `build_asm.bat` (launched with native backslash paths) which captures `vasm.log` and writes `asm.done` (`exit N`).
+2. vasm runs in one `cmd.exe /D /V:ON /S /C "..."` line (native backslash paths, build folder as working directory, started minimised with show 7) which captures `vasm.log` and writes `asm.done` (`exit !errorlevel!`). **No batch files and no hidden cmd.exe:** AVG / Avast Behaviour Shield quarantined ADM as `IDP.Generic` for writing `build_asm.bat` and running it hidden. The DOS-boot xdftool step works the same way (`xdftool ... && move ...`), and FS-UAE is closed with `taskkill /F /IM fs-uae.exe` (no `/T`).
 3. The manager polls `asm.done` (this state machine runs **above** the modal-editor `exit`, so builds started inside the code editor progress), then `scr_amiga_vasm_report` maps errors to nodes (`build_error_text` → red outline + hover message) and to CODE lines (`global.code_editor_build_errors` = `{ node_uid, line (0-based), message }`).
 4. On success: close FS-UAE, wait ~20 frames, write the disk, launch.
 

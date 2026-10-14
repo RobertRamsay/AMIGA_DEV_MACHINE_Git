@@ -2,7 +2,7 @@
 /// Validates + emits all nodes into main.s and starts vasm asynchronously.
 /// Every program is a Hunk executable now: the auto-boot loader (or, in DOS
 /// boot mode, AmigaDOS) relocates it, so programs of any size share one path.
-/// vasm runs inside build_asm.bat, which captures its messages in vasm.log
+/// vasm runs in one minimised cmd /C line (no batch file), which captures its messages in vasm.log
 /// and writes its exit code to asm.done when it has finished - the manager
 /// polls for that file instead of guessing from main.bin's size.
 /// Returns a struct { success, error_list, exe_path, uses_dos_loader, done_path, log_path, line_map }
@@ -105,21 +105,22 @@ function scr_amiga_start_build(_node_array, _project_path, _chipset_mode) {
     var _cpu = _chipset_mode == "AGA" ? "-m68020" : "-m68000";
     var _vasm_args = "-Fhunkexe -kick1hunks -nosym " + _cpu + " -o main.bin main.s";
 
-    var _batch_path = _build_dir + "/build_asm.bat";
-    var _batch = file_text_open_write(_batch_path);
-    file_text_write_string(_batch, "@echo off\r\n");
-    file_text_write_string(_batch, "cd /D \"%~dp0\"\r\n");
-    file_text_write_string(_batch, "\"" + string_replace_all(global.vasm_path, "/", "\\") + "\" " + _vasm_args + " > vasm.log 2>&1\r\n");
-    // Not "echo %errorlevel%> asm.done": that expands to "echo 0> ..." and
-    // cmd reads "0>" as a redirect of handle 0, leaving the marker empty.
-    file_text_write_string(_batch, "> asm.done echo exit %errorlevel%\r\n");
-    file_text_close(_batch);
+    // No batch file: antivirus behaviour shields (AVG / Avast IDP.Generic)
+    // quarantined ADM for writing a .bat and running it in a hidden cmd.exe.
+    // One cmd /C line instead, started minimised (not hidden), in the build
+    // folder. /V:ON makes !errorlevel! expand after vasm has run (%errorlevel%
+    // would be expanded when the line is parsed). "> asm.done echo" rather than
+    // "echo ...> asm.done": "0>" would read as a redirect of handle 0.
+    if (file_exists(_build_dir + "/build_asm.bat")) file_delete(_build_dir + "/build_asm.bat");
+    var _vasm_native = string_replace_all(global.vasm_path, "/", "\\");
+    var _command = "/D /V:ON /S /C \"\"" + _vasm_native + "\" " + _vasm_args
+        + " > vasm.log 2>&1 & > asm.done echo exit !errorlevel!\"";
 
     show_debug_message("scr_amiga_start_build: launching vasm " + _vasm_args);
     // ShellExecute wants a native path: LOCALAPPDATA gives backslashes and GML
-    // appends forward slashes, so normalise both the batch and its folder.
+    // appends forward slashes, so normalise the working folder.
     var _build_dir_native = string_replace_all(_build_dir, "/", "\\");
-    var _started = execute_shell_simple("cmd.exe", "/D /C \"" + _build_dir_native + "\\build_asm.bat\"", "open", 0, _build_dir_native);
+    var _started = execute_shell_simple("cmd.exe", _command, "open", 7, _build_dir_native);
     if (!_started) {
         array_push(_result.error_list, "; ERROR: could not start cmd.exe to run vasm");
         return _result;

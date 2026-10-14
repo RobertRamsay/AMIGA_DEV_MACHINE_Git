@@ -43,7 +43,7 @@ if (global.workspace_dirty && global.autosave_due_time >= 0 && current_time >= g
 
 scr_amiga_selftest_step();
 
-// Build state machine. vasm runs in build_asm.bat, which writes its exit
+// Build state machine. vasm runs in a cmd /C line, which writes its exit
 // code to asm.done when it finishes; vasm.log holds its messages.
 if (build_state == "waiting_for_asm") {
     build_wait_timer += 1;
@@ -339,7 +339,7 @@ var _kill_fsuae_button_height = top_ui_button_height;
 var _over_kill_fsuae_button = point_in_rectangle(mouse_x, mouse_y, _kill_fsuae_button_x, _kill_fsuae_button_y, _kill_fsuae_button_x + _kill_fsuae_button_width, _kill_fsuae_button_y + _kill_fsuae_button_height);
 
 if (_over_kill_fsuae_button && mouse_check_button_pressed(mb_left)) {
-    execute_shell_simple("taskkill.exe", "/F /T /IM fs-uae.exe", "open", 0);
+    execute_shell_simple("taskkill.exe", "/F /IM fs-uae.exe", "open", 0);
     scr_set_status_message("FS-UAE killed.");
 }
 
