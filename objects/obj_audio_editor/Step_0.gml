@@ -44,6 +44,8 @@ if (panel_dragging) {
 }
 
 controls = audio_editor_controls();
+// The editor tour is presenting this screen: its input belongs to the tour.
+if (instance_exists(obj_editor_tour)) exit;
 
 // --- buttons -------------------------------------------------------------
 var _clicked = "";

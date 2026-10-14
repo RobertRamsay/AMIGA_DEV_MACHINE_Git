@@ -124,6 +124,7 @@ home_layout = function() {
     }
     array_push(_start, { action : "new", label : "NEW EMPTY WORKSPACE", sub : "Start from a blank INIT block" });
     array_push(_start, { action : "open", label : "OPEN WORKSPACE...", sub : "Load a saved workspace (.json)" });
+    array_push(_start, { action : "tour", label : "EDITOR TOUR", sub : "A guided walk through every panel and editor" });
     var _s = 0;
     while (_s < array_length(_start)) {
         var _b = _start[_s];

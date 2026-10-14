@@ -1,3 +1,6 @@
+// The editor tour is presenting this screen: its input belongs to the tour.
+if (instance_exists(obj_editor_tour)) exit;
+
 /// @desc obj_colour_picker Step
 /// Modal — sliders write straight into colour_r/g/b, closing (the Close
 /// button or Enter) commits the combined hex value back onto whichever

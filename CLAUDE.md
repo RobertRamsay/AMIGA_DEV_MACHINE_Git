@@ -36,7 +36,7 @@ ptplayer approach.
 | `obj_opcode_palette_item` | Opcode palette and the top-strip macro buttons; dropping one creates a node. |
 | `scr_emit_opcode_line` → `scr_emit_macro_line` | Node → assembler text `{ text, is_valid }`. |
 | `scr_amiga_trigger_build` → `scr_amiga_start_build` | F5 / RUN / INIT click / F5 in the code editor. |
-| Modal editors | `obj_bitmap_editor`, `obj_bob_editor`, `obj_colour_picker`, `obj_cprbar_editor`, `obj_code_editor`, `obj_audio_editor`, `obj_tile_editor`, `obj_tutorial_home`. **Always test with `scr_amiga_modal_open()`** — add any new modal object there. |
+| Modal editors | `obj_bitmap_editor`, `obj_bob_editor`, `obj_colour_picker`, `obj_cprbar_editor`, `obj_code_editor`, `obj_audio_editor`, `obj_tile_editor`, `obj_tutorial_home`, `obj_editor_tour`. **Always test with `scr_amiga_modal_open()`** — add any new modal object there, and give it the editor-tour guard (see Editor tour). |
 | Persistence | Node fields must be added to `scr_capture_snapshot`, `scr_node_restore_extra_fields` (in `scr_restore_snapshot`), `scr_save_workspace_to_path`, `scr_clone_opcode_node`. `global.asset_list` is saved whole with `json_stringify`, so assets must be plain JSON data. |
 | `scr_macro_node_defaults` | `scr_macro_node_height(type)` (palette + load use it), `scr_macro_node_init` for audio/CODE nodes. |
 
@@ -90,6 +90,14 @@ ptplayer approach.
 
 - `scr_tutorials`: `scr_tutorial_defs()` (ten tutorials: id, title, level, summary, features, steps), `scr_tutorial_load(i)`, `scr_tutorial_reset_workspace()`. `scr_tutorial_builders`: `scr_tutorial_build(n)` builds each node graph and **generates every asset** (tile art at any size via `scr_tb_tile_colour`, metatiles, maps, hero and slime with 4 frames per state, a 2-pattern M.K. tune and three sfx for tutorial 10).
 - UI (`scr_tutorial_ui`): `obj_tutorial_home` is the opening page, shown after the splash unless switched off (`[ui] show_home` in settings.ini). Its CONTINUE LAST SESSION replaces the old automatic recovery. `obj_tutorial_guide` is the step panel over the preview; it highlights nodes named in capitals. The workspace and preview ignore clicks under it (`scr_tutorial_guide_mouse_over()`). Done flags: `[tutorials] done_<id>`. Toolbar: GAME KIT column (TILE-EDIT, TUTORIALS). Loading any workspace sets `global.tutorial_current = -1`, which closes the guide.
+
+### Editor tour
+
+- `obj_editor_tour` (depth -900000), opened by TOUR / F1 / EDITOR TOUR on the opening page (`scr_tour_open`). A category picker (16 categories, ALL / NONE, auto-play delay `[tour] delay` in settings.ini), then steps with PREV / NEXT / SKIP CATEGORY / AUTO / END TOUR (keys: arrows, Space, Tab, A, + / -, Esc).
+- It runs on a demo workspace (`scr_tour_build_demo`: tutorial 10 plus an ORG column of classic nodes). `scr_tour_stash_workspace` saves the user's work to `tour_stash_workspace.json` (and autosaves the recovery file first); END / Esc / Destroy restore it, including dirty flag, undo stacks, pan and the loaded tutorial. Autosave is off while the tour exists.
+- Content: `scr_editor_tour_steps` (main-screen categories, demo) and `scr_editor_tour_editors` (`scr_tour_show(view)` opens / closes editors and switches their tabs; per-editor rectangle helpers). A step is `{ title, text, show, rect }`; `rect` is a **function** evaluated every frame (GML function literals do not capture locals — use globals / instance lookups inside them).
+- The tour is modal: listed in `scr_amiga_modal_open`, and every editor's Step starts with `if (instance_exists(obj_editor_tour)) exit;` (after its layout code). New editors need the same guard. For 3 frames after the demo is built `global.tour_settling` lets the graph Step once (preview, ORG links, operand rows).
+- `-admtour` self test: runs every step, saves a screenshot of each to `<data>/tour_shots/`, checks auto-play and that the user's workspace comes back unchanged.
 
 ## Adding a macro node type — checklist
 

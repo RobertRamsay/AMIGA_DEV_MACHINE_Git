@@ -1,3 +1,6 @@
+// The editor tour is presenting this screen: its input belongs to the tour.
+if (instance_exists(obj_editor_tour)) exit;
+
 // Scrolling the tutorial list (only when it does not fit).
 if (home_scroll_max > 0 && point_in_rectangle(mouse_x, mouse_y, home_list_x, home_list_top, home_list_x + home_list_w, home_list_bottom)) {
     if (mouse_wheel_down()) home_scroll += home_card_h div 2;
@@ -39,6 +42,10 @@ if (mouse_check_button_pressed(mb_left) && home_hover >= 0) {
         case "close": home_close(); break;
         case "new": home_action_new(); break;
         case "open": home_action_open(); break;
+        case "tour":
+            home_close();
+            scr_tour_open();
+            break;
         case "show_home": scr_tutorial_home_set_show_at_startup(!scr_tutorial_home_show_at_startup()); break;
         case "tutorial": home_action_tutorial(_hit.index); break;
     }

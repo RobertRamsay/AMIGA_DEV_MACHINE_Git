@@ -702,6 +702,7 @@ global.tutorial_step = 0;
 // Opening page: shown once the splash has faded (unless switched off in its footer).
 global.tutorial_home_startup_pending = true;
 scr_tutorial_ui_init();
+scr_tour_init();
 
 // Development self test (-admselftest <mod>), see scr_amiga_selftest.
 scr_amiga_selftest_init();

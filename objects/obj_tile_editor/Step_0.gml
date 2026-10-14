@@ -96,6 +96,8 @@ var _rp = mouse_check_button_pressed(mb_right);
 var _wheel = mouse_wheel_down() - mouse_wheel_up();
 
 controls = te_controls(dlg_kind != "");
+// The editor tour is presenting this screen: its input belongs to the tour.
+if (instance_exists(obj_editor_tour)) exit;
 var _clicked = "";
 var _arg = "";
 if (_lp) {
