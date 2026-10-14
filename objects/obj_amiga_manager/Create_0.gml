@@ -102,6 +102,10 @@ global.left_click_pickup_handled_this_frame = false;
 
 global.palette_scroll_y = 0;
 global.preview_scroll_y = 0;
+// Type to find: letters typed over the palette (one or two; a third starts
+// again) light up the entries whose label starts with them.
+global.palette_find = "";
+palette_find_was_over = false;
 
 preview_line_cache = [];
 preview_scrollbar_dragging = false;

@@ -138,7 +138,7 @@ function scr_tour_categories() {
             { title : "68000 instructions", show : "main", rect : function() { return [4, 176, 266, 900]; },
               text : "Below them, every 68000 instruction in alphabetical order. Drag one into a column to make an instruction node; then set its size and operands on the node itself." },
             { title : "Scroll and hover", show : "main", rect : function() { return [4, 76, 266, 1076]; },
-              text : "The mouse wheel over the palette scrolls the list. Hover an instruction to read what it does, its sizes and its addressing modes in the help box at the bottom." }
+              text : "The mouse wheel over the palette scrolls the list. Type the first one or two letters of an instruction to light up the matches (a third letter starts again). Hover an instruction to read what it does, its sizes and its addressing modes in the help box at the bottom." }
         ]
     });
 

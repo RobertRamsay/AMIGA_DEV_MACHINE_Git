@@ -347,6 +347,7 @@
     {"id":{"name":"scr_opcode_helper_68k","path":"scripts/scr_opcode_helper_68k/scr_opcode_helper_68k.yy",},},
     {"id":{"name":"scr_opcode_lookup","path":"scripts/scr_opcode_lookup/scr_opcode_lookup.yy",},},
     {"id":{"name":"scr_operand_mode_uses_register_index","path":"scripts/scr_operand_mode_uses_register_index/scr_operand_mode_uses_register_index.yy",},},
+    {"id":{"name":"scr_palette_find","path":"scripts/scr_palette_find/scr_palette_find.yy",},},
     {"id":{"name":"scr_pick_default_size","path":"scripts/scr_pick_default_size/scr_pick_default_size.yy",},},
     {"id":{"name":"scr_push_undo_snapshot","path":"scripts/scr_push_undo_snapshot/scr_push_undo_snapshot.yy",},},
     {"id":{"name":"scr_redo","path":"scripts/scr_redo/scr_redo.yy",},},
