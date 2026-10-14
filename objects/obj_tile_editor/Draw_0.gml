@@ -1,4 +1,7 @@
-draw_set_font(font_CyberVerse);
+// Chrome (window, header, tabs, buttons, list boxes, dialogs) uses the house
+// style (scr_ui_style); pixel grids, tile grids, swatches, map views and
+// sprite frames stay square.
+draw_set_font(UI_FONT);
 draw_set_halign(fa_left);
 draw_set_valign(fa_top);
 var _texfilter = gpu_get_texfilter();
@@ -10,6 +13,7 @@ var _col_button = make_colour_rgb(45, 65, 85);
 var _col_button_on = make_colour_rgb(35, 110, 75);
 var _col_box = make_colour_rgb(10, 12, 18);
 var _col_dim = make_colour_rgb(150, 160, 175);
+var _col_edge = make_colour_rgb(90, 104, 128);
 var _cy = content_y;
 var _ax = col_a_x;
 
@@ -18,15 +22,14 @@ draw_set_alpha(0.6);
 draw_set_colour(c_black);
 draw_rectangle(0, 0, room_width, room_height, false);
 draw_set_alpha(0.98);
-draw_set_colour(_col_panel);
-draw_rectangle(panel_x, panel_y, panel_x + panel_w, panel_y + panel_h, false);
+scr_ui_box_fill(panel_x, panel_y, panel_x + panel_w, panel_y + panel_h, _col_panel);
 draw_set_alpha(1);
-draw_set_colour(_col_header);
-draw_rectangle(panel_x, panel_y, panel_x + panel_w, panel_y + header_h, false);
+scr_ui_box_outline(panel_x, panel_y, panel_x + panel_w, panel_y + panel_h, _col_edge);
+scr_ui_box_fill(panel_x + 3, panel_y + 3, panel_x + panel_w - 3, panel_y + header_h, _col_header);
 draw_set_colour(c_white);
-draw_text(panel_x + 10, panel_y + 5, "TILES & MAPS");
+scr_ui_text_mid(panel_x + 16, panel_y + 3, panel_y + header_h, "TILES & MAPS");
 draw_set_colour(_col_dim);
-draw_text(panel_x + 200, panel_y + 5, "Esc closes   Ctrl+Z / Ctrl+Y undo / redo   Mouse wheel scrolls lists and tile grids");
+scr_ui_text_mid(panel_x + 200, panel_y + 3, panel_y + header_h, "Esc closes   Ctrl+Z / Ctrl+Y undo / redo   Mouse wheel scrolls lists and tile grids");
 
 // --- lists ---------------------------------------------------------------------------
 var _lists = te_lists();
@@ -36,33 +39,33 @@ while (_l < array_length(_lists)) {
     var _names = _list.names;
     var _scroll = list_scroll[$ _list.id];
     var _lh = _list.rows * row_h;
+    var _lx2 = _list.x + _list.w;
+    var _ly2 = _list.y + _lh;
     draw_set_colour(c_white);
-    draw_text(_list.x, _list.y - 22, _list.title + "  (" + string(array_length(_names)) + ")");
-    draw_set_colour(_col_box);
-    draw_rectangle(_list.x, _list.y, _list.x + _list.w, _list.y + _lh, false);
-    draw_set_colour(c_gray);
-    draw_rectangle(_list.x, _list.y, _list.x + _list.w, _list.y + _lh, true);
+    scr_ui_text_mid(_list.x, _list.y - 24, _list.y, _list.title + "  (" + string(array_length(_names)) + ")");
+    scr_ui_box_fill(_list.x, _list.y, _lx2, _ly2, _col_box);
     var _r = 0;
     while (_r < _list.rows && _scroll + _r < array_length(_names)) {
         var _ry = _list.y + _r * row_h;
         if (_names[_scroll + _r] == _list.selected) {
             draw_set_colour(_col_button_on);
-            draw_rectangle(_list.x + 1, _ry + 1, _list.x + _list.w - 1, _ry + row_h - 1, false);
+            scr_te_rect_in_bevel(_list.x + 1, _ry + 1, _lx2 - 1, _ry + row_h - 1, _list.x, _list.y, _lx2, _ly2);
         }
         draw_set_colour(c_white);
-        draw_text(_list.x + 6, _ry + 2, _names[_scroll + _r]);
+        scr_ui_text_mid(_list.x + 10, _ry, _ry + row_h, _names[_scroll + _r]);
         _r += 1;
     }
     if (array_length(_names) > _list.rows) {
         var _bar_h = _lh * _list.rows / array_length(_names);
         var _bar_y = _list.y + (_lh - _bar_h) * _scroll / max(1, array_length(_names) - _list.rows);
         draw_set_colour(c_gray);
-        draw_rectangle(_list.x + _list.w - 6, _bar_y, _list.x + _list.w - 1, _bar_y + _bar_h, false);
+        scr_te_rect_in_bevel(_lx2 - 6, _bar_y, _lx2 - 1, _bar_y + _bar_h, _list.x, _list.y, _lx2, _ly2);
     }
     if (array_length(_names) == 0) {
         draw_set_colour(_col_dim);
-        draw_text(_list.x + 8, _list.y + 6, "Nothing yet - press NEW");
+        scr_ui_text_mid(_list.x + 10, _list.y, _list.y + row_h + 4, "Nothing yet - press NEW");
     }
+    scr_ui_box_outline(_list.x, _list.y, _lx2, _ly2, c_gray);
     _l += 1;
 }
 
@@ -240,7 +243,7 @@ switch (tab) {
         while (_gi < 3) {
             var _by = _cy + 252 + _gi * 30;
             draw_set_colour(c_white);
-            draw_text(tools_x + 4, _by + 2, _gun_names[_gi]);
+            scr_ui_text_mid(tools_x + 4, _by, _by + 24, _gun_names[_gi]);
             var _v = 0;
             while (_v < 16) {
                 draw_set_colour(_v <= _guns[_gi][pal_sel] ? _gun_cols[_gi] : _col_box);
@@ -248,7 +251,7 @@ switch (tab) {
                 _v += 1;
             }
             draw_set_colour(c_white);
-            draw_text(tools_x + 394, _by + 2, string(_guns[_gi][pal_sel]));
+            scr_ui_text_mid(tools_x + 394, _by, _by + 24, string(_guns[_gi][pal_sel]));
             _gi += 1;
         }
         draw_text(tools_x, _cy + 352, "FLAGS OF TILE " + string(tile_sel) + (tile_sel == 0 ? "  (tile 0 is locked)" : ""));
@@ -529,12 +532,10 @@ switch (tab) {
         var _ey2 = _cy + 452 + 5 * row_h + 52;
         draw_text(map_col_x, _ey2 - 26, "ENEMIES  room " + string(_room_enemies) + " / " + string(GK_ENEMIES_PER_ROOM)
             + (enemy_sel >= 0 ? "   editing E" + string(enemy_sel + 1) : "   (settings for new enemies)"));
-        draw_text(map_col_x, _ey2 + 2, "ANIM SET");
-        draw_set_halign(fa_center);
-        draw_text(map_col_x + 283, _ey2 + 2, enemy_animset == "" ? "(none - make one)" : enemy_animset);
-        draw_text(map_col_x + 183, _ey2 + 36, string(enemy_speed));
-        draw_set_halign(fa_left);
-        draw_text(map_col_x, _ey2 + 36, "SPEED px/f");
+        scr_ui_text_mid(map_col_x, _ey2, _ey2 + 26, "ANIM SET");
+        scr_ui_text_centred(map_col_x + 283, _ey2 + 13, enemy_animset == "" ? "(none - make one)" : enemy_animset);
+        scr_ui_text_centred(map_col_x + 183, _ey2 + 47, string(enemy_speed));
+        scr_ui_text_mid(map_col_x, _ey2 + 34, _ey2 + 60, "SPEED px/f");
         draw_set_colour(_col_dim);
         var _help_y = _ey2 + 76;
         switch (map_tool) {
@@ -579,24 +580,21 @@ switch (tab) {
             var _st = _states[_s];
             var _state = _set.states[$ _st];
             var _y0 = _cy + 10 + _s * anim_row_h;
-            draw_set_colour(_col_box);
-            draw_rectangle(anim_x - 6, _y0 - 6, panel_x + panel_w - 12, _y0 + anim_row_h - 12, false);
+            scr_ui_box(anim_x - 8, _y0 - 6, panel_x + panel_w - 12, _y0 + anim_row_h - 12, _col_box, make_colour_rgb(40, 48, 62));
             draw_set_colour(c_yellow);
-            draw_text(anim_x, _y0 + 2, string_upper(_st));
+            scr_ui_text_mid(anim_x + 2, _y0, _y0 + 26, string_upper(_st));
             if (!is_struct(_state)) {
                 draw_set_colour(c_red);
-                draw_text(anim_x + 130, _y0 + 2, "state missing");
+                scr_ui_text_mid(anim_x + 130, _y0, _y0 + 26, "state missing");
                 _s += 1;
                 continue;
             }
             draw_set_colour(c_white);
-            draw_text(anim_x + 80, _y0 + 2, "RATE");
-            draw_set_halign(fa_center);
-            draw_text(anim_x + 208, _y0 + 2, string(_state.rate) + " fps");
-            draw_set_halign(fa_left);
+            scr_ui_text_mid(anim_x + 80, _y0, _y0 + 26, "RATE");
+            scr_ui_text_centred(anim_x + 208, _y0 + 13, string(_state.rate) + " fps");
             var _nf = array_length(_state.frames);
             draw_set_colour(_col_dim);
-            draw_text(anim_x + 300, _y0 + 2, string(_nf) + " frame(s)" + ((anim_state == _st && anim_frame >= 0 && anim_frame < _nf) ? "   selected: " + _state.frames[anim_frame] : ""));
+            scr_ui_text_mid(anim_x + 300, _y0, _y0 + 26, string(_nf) + " frame(s)" + ((anim_state == _st && anim_frame >= 0 && anim_frame < _nf) ? "   selected: " + _state.frames[anim_frame] : ""));
             var _f2 = 0;
             while (_f2 < _nf) {
                 var _fx = anim_x + _f2 * 40;
@@ -667,22 +665,9 @@ var _buttons = te_controls(false);
 var _i = 0;
 while (_i < array_length(_buttons)) {
     var _c = _buttons[_i];
-    if (_c.id == "close") {
-        draw_set_colour(c_red);
-        draw_text(_c.x1 + 5, _c.y1 + 1, "X");
-    } else {
-        var _hover = dlg_kind == "" && point_in_rectangle(mouse_x, mouse_y, _c.x1, _c.y1, _c.x2, _c.y2);
-        draw_set_colour(_c.on ? _col_button_on : _col_button);
-        draw_set_alpha(_c.enabled ? 1 : 0.4);
-        draw_rectangle(_c.x1, _c.y1, _c.x2, _c.y2, false);
-        draw_set_colour(_hover && _c.enabled ? c_white : c_gray);
-        draw_rectangle(_c.x1, _c.y1, _c.x2, _c.y2, true);
-        draw_set_colour(c_white);
-        draw_set_halign(fa_center);
-        draw_text((_c.x1 + _c.x2) div 2, (_c.y1 + _c.y2) div 2 - 10, _c.label);
-        draw_set_halign(fa_left);
-        draw_set_alpha(1);
-    }
+    var _hover = dlg_kind == "" && point_in_rectangle(mouse_x, mouse_y, _c.x1, _c.y1, _c.x2, _c.y2);
+    var _fill = (_c.id == "close") ? make_colour_rgb(120, 40, 46) : (_c.on ? _col_button_on : _col_button);
+    scr_ui_button(_c.x1, _c.y1, _c.x2, _c.y2, _c.label, _fill, _hover && _c.enabled, _c.enabled);
     _i += 1;
 }
 
@@ -695,31 +680,24 @@ if (hover_text != "" && dlg_kind == "") {
 // --- dialog -----------------------------------------------------------------------------------
 if (dlg_kind != "") {
     draw_set_alpha(0.5);
-    draw_set_colour(c_black);
-    draw_rectangle(panel_x, panel_y, panel_x + panel_w, panel_y + panel_h, false);
+    scr_ui_box_fill(panel_x, panel_y, panel_x + panel_w, panel_y + panel_h, c_black, false);
     draw_set_alpha(1);
-    draw_set_colour(_col_panel);
-    draw_rectangle(dlg_x, dlg_y, dlg_x + dlg_w_px, dlg_y + dlg_h_px, false);
-    draw_set_colour(_col_header);
-    draw_rectangle(dlg_x, dlg_y, dlg_x + dlg_w_px, dlg_y + 28, false);
-    draw_set_colour(c_gray);
-    draw_rectangle(dlg_x, dlg_y, dlg_x + dlg_w_px, dlg_y + dlg_h_px, true);
+    scr_ui_box(dlg_x, dlg_y, dlg_x + dlg_w_px, dlg_y + dlg_h_px, _col_panel, c_gray);
+    scr_ui_box_fill(dlg_x + 3, dlg_y + 3, dlg_x + dlg_w_px - 3, dlg_y + 28, _col_header);
     draw_set_colour(c_white);
-    draw_text(dlg_x + 10, dlg_y + 5, dlg_title);
+    scr_ui_text_mid(dlg_x + 16, dlg_y + 3, dlg_y + 28, dlg_title);
     var _dx = dlg_x + 20;
     var _dy = dlg_y + 110;
     if (dlg_has_name) {
-        draw_text(_dx, dlg_y + 54, "NAME");
-        draw_set_colour(c_black);
-        draw_rectangle(_dx + 130, dlg_y + 48, dlg_x + dlg_w_px - 20, dlg_y + 76, false);
-        draw_set_colour(c_yellow);
-        draw_rectangle(_dx + 130, dlg_y + 48, dlg_x + dlg_w_px - 20, dlg_y + 76, true);
-        draw_text(_dx + 138, dlg_y + 53, dlg_name + ((current_time div 400) mod 2 == 0 ? "_" : ""));
+        scr_ui_text_mid(_dx, dlg_y + 48, dlg_y + 76, "NAME");
+        scr_ui_box(_dx + 130, dlg_y + 48, dlg_x + dlg_w_px - 20, dlg_y + 76, c_black, c_yellow);
+        draw_set_colour(c_white);
+        scr_ui_text_mid(_dx + 142, dlg_y + 48, dlg_y + 76, dlg_name + ((current_time div 400) mod 2 == 0 ? "_" : ""));
     }
     draw_set_colour(c_white);
     switch (dlg_kind) {
         case "ts_new":
-            draw_text(_dx, _dy + 4, "TILE SIZE");
+            scr_ui_text_mid(_dx, _dy, _dy + 26, "TILE SIZE");
             draw_set_colour(_col_dim);
             draw_text(_dx, _dy + 40, "A room (one screen) is " + string(scr_gk_room_cols(dlg_size)) + " x " + string(scr_gk_room_rows(dlg_size))
                 + " tiles of " + string(dlg_size) + " px.");
@@ -728,70 +706,62 @@ if (dlg_kind != "") {
         case "meta_resize":
             var _dts = te_tileset();
             var _dsz = (_dts == undefined) ? 16 : _dts.tile_size;
-            draw_text(_dx, _dy + 4, "WIDTH");
-            draw_text(_dx, _dy + 38, "HEIGHT");
-            draw_set_halign(fa_center);
-            draw_text(_dx + 183, _dy + 4, string(dlg_w));
-            draw_text(_dx + 183, _dy + 38, string(dlg_h));
-            draw_set_halign(fa_left);
-            draw_text(_dx + 260, _dy + 20, "tiles = " + string(dlg_w * _dsz) + " x " + string(dlg_h * _dsz) + " px");
+            scr_ui_text_mid(_dx, _dy, _dy + 26, "WIDTH");
+            scr_ui_text_mid(_dx, _dy + 34, _dy + 60, "HEIGHT");
+            scr_ui_text_centred(_dx + 183, _dy + 13, string(dlg_w));
+            scr_ui_text_centred(_dx + 183, _dy + 47, string(dlg_h));
+            scr_ui_text_mid(_dx + 260, _dy, _dy + 60, "tiles = " + string(dlg_w * _dsz) + " x " + string(dlg_h * _dsz) + " px");
             draw_set_colour(_col_dim);
             draw_text(_dx, _dy + 76, "At most " + string(GK_METATILE_MAX_PX) + " x " + string(GK_METATILE_MAX_PX) + " px. Resizing keeps the cells that still fit.");
             break;
         case "map_new":
-            draw_text(_dx, _dy + 4, "TILESET");
-            draw_set_halign(fa_center);
-            draw_text(_dx + 288, _dy + 4, dlg_tileset == "" ? "(none - make one first)" : dlg_tileset);
-            draw_set_halign(fa_left);
+            scr_ui_text_mid(_dx, _dy, _dy + 26, "TILESET");
+            scr_ui_text_centred(_dx + 288, _dy + 13, dlg_tileset == "" ? "(none - make one first)" : dlg_tileset);
             _dy += 34;
-            draw_text(_dx, _dy + 4, "ROOMS X");
-            draw_text(_dx, _dy + 38, "ROOMS Y");
-            draw_set_halign(fa_center);
-            draw_text(_dx + 183, _dy + 4, string(dlg_rx));
-            draw_text(_dx + 183, _dy + 38, string(dlg_ry));
-            draw_set_halign(fa_left);
+            scr_ui_text_mid(_dx, _dy, _dy + 26, "ROOMS X");
+            scr_ui_text_mid(_dx, _dy + 34, _dy + 60, "ROOMS Y");
+            scr_ui_text_centred(_dx + 183, _dy + 13, string(dlg_rx));
+            scr_ui_text_centred(_dx + 183, _dy + 47, string(dlg_ry));
             draw_set_colour(_col_dim);
-            draw_text(_dx + 260, _dy + 20, "one room = one 320 x 256 screen");
+            scr_ui_text_mid(_dx + 260, _dy, _dy + 60, "one room = one 320 x 256 screen");
             break;
         case "map_resize":
-            draw_text(_dx, _dy + 4, "ROOMS X");
-            draw_text(_dx, _dy + 38, "ROOMS Y");
-            draw_set_halign(fa_center);
-            draw_text(_dx + 183, _dy + 4, string(dlg_rx));
-            draw_text(_dx + 183, _dy + 38, string(dlg_ry));
-            draw_set_halign(fa_left);
+            scr_ui_text_mid(_dx, _dy, _dy + 26, "ROOMS X");
+            scr_ui_text_mid(_dx, _dy + 34, _dy + 60, "ROOMS Y");
+            scr_ui_text_centred(_dx + 183, _dy + 13, string(dlg_rx));
+            scr_ui_text_centred(_dx + 183, _dy + 47, string(dlg_ry));
             draw_set_colour(_col_dim);
             draw_text(_dx, _dy + 76, "Cells that still fit are kept; enemies outside are removed.");
             break;
         case "anim_new":
-            draw_text(_dx, _dy + 4, "HEIGHT");
-            draw_set_halign(fa_center);
-            draw_text(_dx + 183, _dy + 4, string(dlg_height));
-            draw_set_halign(fa_left);
-            draw_text(_dx + 260, _dy + 4, "px (16 px wide sprites)");
+            scr_ui_text_mid(_dx, _dy, _dy + 26, "HEIGHT");
+            scr_ui_text_centred(_dx + 183, _dy + 13, string(dlg_height));
+            scr_ui_text_mid(_dx + 260, _dy, _dy + 26, "px (16 px wide sprites)");
             break;
         case "frame_pick":
             var _plx = dlg_x + 20;
             var _ply = dlg_y + 70;
             var _prows = 9;
-            draw_text(_plx, dlg_y + 44, "Click a sprite to add it (" + string(array_length(dlg_list)) + " with the right height)");
-            draw_set_colour(_col_box);
-            draw_rectangle(_plx, _ply, _plx + dlg_w_px - 40, _ply + _prows * row_h, false);
+            var _plx2 = _plx + dlg_w_px - 40;
+            var _ply2 = _ply + _prows * row_h;
+            draw_text(_plx, dlg_y + 42, "Click a sprite to add it (" + string(array_length(dlg_list)) + " with the right height)");
+            scr_ui_box_fill(_plx, _ply, _plx2, _ply2, _col_box);
             var _pr = 0;
             while (_pr < _prows && dlg_scroll + _pr < array_length(dlg_list)) {
                 var _pry = _ply + _pr * row_h;
-                if (point_in_rectangle(mouse_x, mouse_y, _plx, _pry, _plx + dlg_w_px - 40, _pry + row_h - 1)) {
+                if (point_in_rectangle(mouse_x, mouse_y, _plx, _pry, _plx2, _pry + row_h - 1)) {
                     draw_set_colour(_col_button);
-                    draw_rectangle(_plx + 1, _pry + 1, _plx + dlg_w_px - 41, _pry + row_h - 1, false);
+                    scr_te_rect_in_bevel(_plx + 1, _pry + 1, _plx2 - 1, _pry + row_h - 1, _plx, _ply, _plx2, _ply2);
                 }
                 draw_set_colour(c_white);
-                draw_text(_plx + 6, _pry + 2, dlg_list[dlg_scroll + _pr]);
+                scr_ui_text_mid(_plx + 10, _pry, _pry + row_h, dlg_list[dlg_scroll + _pr]);
                 _pr += 1;
             }
             if (array_length(dlg_list) == 0) {
                 draw_set_colour(_col_dim);
-                draw_text(_plx + 6, _ply + 4, "No sprite of this height yet - use NEW FRAME.");
+                scr_ui_text_mid(_plx + 10, _ply, _ply + row_h + 4, "No sprite of this height yet - use NEW FRAME.");
             }
+            scr_ui_box_outline(_plx, _ply, _plx2, _ply2, c_gray);
             break;
     }
     if (dlg_error != "") {
@@ -806,16 +776,7 @@ if (dlg_kind != "") {
     while (_di < array_length(_dbuttons)) {
         var _dc = _dbuttons[_di];
         var _dhover = point_in_rectangle(mouse_x, mouse_y, _dc.x1, _dc.y1, _dc.x2, _dc.y2);
-        draw_set_colour(_dc.on ? _col_button_on : _col_button);
-        draw_set_alpha(_dc.enabled ? 1 : 0.4);
-        draw_rectangle(_dc.x1, _dc.y1, _dc.x2, _dc.y2, false);
-        draw_set_colour(_dhover && _dc.enabled ? c_white : c_gray);
-        draw_rectangle(_dc.x1, _dc.y1, _dc.x2, _dc.y2, true);
-        draw_set_colour(c_white);
-        draw_set_halign(fa_center);
-        draw_text((_dc.x1 + _dc.x2) div 2, (_dc.y1 + _dc.y2) div 2 - 10, _dc.label);
-        draw_set_halign(fa_left);
-        draw_set_alpha(1);
+        scr_ui_button(_dc.x1, _dc.y1, _dc.x2, _dc.y2, _dc.label, _dc.on ? _col_button_on : _col_button, _dhover && _dc.enabled, _dc.enabled);
         _di += 1;
     }
 }
