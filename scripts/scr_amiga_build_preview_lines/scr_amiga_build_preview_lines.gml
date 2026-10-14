@@ -4,7 +4,9 @@
 /// (node.preview_collapsed == true) — click it to expand and see the
 /// full generated instructions, indented, underneath. Regular nodes are
 /// unaffected. Returns an array of structs:
-/// { text, is_error, is_macro_header, node_id, indent }
+/// { text, is_error, is_macro_header, node_id, indent, code_line }
+/// node_id is the node every line came from (clicking a line goes to it);
+/// code_line is the 0-based line inside a CODE block, or -1.
 function scr_amiga_wrap_preview_text(_text, _max_width) {
     var _wrapped = [];
     var _remaining = _text;
@@ -86,7 +88,7 @@ function scr_amiga_build_preview_lines() {
                 _toggle_glyph = "[-]";
             }
 
-            var _header_text = _toggle_glyph + " MACRO: " + _node.macro_type;
+            var _header_text = _toggle_glyph + " MACRO: " + scr_macro_preview_title(_node);
 
             if (_node.node_label != "") {
                 _header_text += " (" + _node.node_label + ")";
@@ -94,18 +96,20 @@ function scr_amiga_build_preview_lines() {
 
             var _wrapped_header = scr_amiga_wrap_preview_text(_header_text, 326);
             for (var _wh = 0; _wh < array_length(_wrapped_header); _wh += 1) {
-                array_push(_lines, { text : _wrapped_header[_wh], is_error : !_emit_result.is_valid, is_macro_header : true, node_id : _node, indent : false });
+                array_push(_lines, { text : _wrapped_header[_wh], is_error : !_emit_result.is_valid, is_macro_header : true, node_id : _node, indent : false, code_line : -1 });
             }
 
             if (!_node.preview_collapsed) {
                 var _sub_lines = scr_split_lines(_emit_result.text);
                 var _sub_count = array_length(_sub_lines);
+                // A CODE block's emitted text starts with its name comment and label.
+                var _code_skip = (scr_code_block_name(_node) != "" ? 1 : 0) + (_node.node_label != "" ? 1 : 0);
                 var _s = 0;
 
                 while (_s < _sub_count) {
                     var _wrapped_sub = scr_amiga_wrap_preview_text(_sub_lines[_s], 314);
                     for (var _ws = 0; _ws < array_length(_wrapped_sub); _ws += 1) {
-                        array_push(_lines, { text : _wrapped_sub[_ws], is_error : !_emit_result.is_valid, is_macro_header : false, node_id : noone, indent : true });
+                        array_push(_lines, { text : _wrapped_sub[_ws], is_error : !_emit_result.is_valid, is_macro_header : false, node_id : _node, indent : true, code_line : (_node.macro_type == "CODE" && _s >= _code_skip) ? _s - _code_skip : -1 });
                     }
                     _s += 1;
                 }
@@ -118,7 +122,7 @@ function scr_amiga_build_preview_lines() {
             while (_pl < _plain_count) {
                 var _wrapped_plain = scr_amiga_wrap_preview_text(_plain_lines[_pl], 326);
                 for (var _wp = 0; _wp < array_length(_wrapped_plain); _wp += 1) {
-                    array_push(_lines, { text : _wrapped_plain[_wp], is_error : !_emit_result.is_valid, is_macro_header : false, node_id : noone, indent : false });
+                    array_push(_lines, { text : _wrapped_plain[_wp], is_error : !_emit_result.is_valid, is_macro_header : false, node_id : _node, indent : false, code_line : -1 });
                 }
                 _pl += 1;
             }

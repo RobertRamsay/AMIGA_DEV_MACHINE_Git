@@ -49,7 +49,7 @@ function scr_amiga_start_build(_node_array, _project_path, _chipset_mode) {
 
         var _code_first_line = -1;
         if (_node.is_macro && _node.macro_type == "CODE") {
-            _code_first_line = _line_cursor + (_node.node_label != "" ? 1 : 0);
+            _code_first_line = _line_cursor + (scr_code_block_name(_node) != "" ? 1 : 0) + (_node.node_label != "" ? 1 : 0);
         }
 
         var _line_count = string_count("\n", _emit_result.text) + 1;

@@ -108,7 +108,21 @@ if (_cmd) {
 // =====================================================================
 // Bar fields (find / replace / go to)
 // =====================================================================
-if (focus != "text") {
+if (focus == "name") {
+    // The block's name: any text, one line, up to 40 characters.
+    if (_typed != "") name_text = string_copy(name_text + _typed, 1, 40);
+    if (_key(vk_backspace)) name_text = _cmd ? "" : string_copy(name_text, 1, max(0, string_length(name_text) - 1));
+    if (_cmd && ed_kp(ord("V")) && clipboard_has_text()) {
+        var _name_clip = string_replace_all(clipboard_get_text(), "\r", "");
+        var _name_nl = string_pos("\n", _name_clip);
+        if (_name_nl > 0) _name_clip = string_copy(_name_clip, 1, _name_nl - 1);
+        name_text = string_copy(name_text + _name_clip, 1, 40);
+    }
+    if ((ed_kp(vk_enter) && !_cmd) || ed_kp(vk_tab)) {
+        ed_commit_name();
+        focus = "text";
+    }
+} else if (focus != "text") {
     var _val = (focus == "find") ? find_text : ((focus == "replace") ? replace_text : goto_text);
     var _before_val = _val;
     var _bs = _key(vk_backspace);
@@ -367,7 +381,7 @@ if (focus != "text") {
     }
 
     if (_key(vk_backspace)) {
-        ed_backspace(_cmd);
+        if (_cmd || !ed_backspace_pair()) ed_backspace(_cmd);
         if (ac_open) _ac_refresh = true;
     }
 
@@ -377,7 +391,7 @@ if (focus != "text") {
     }
 
     if (_typed != "") {
-        ed_type_text(_typed);
+        if (string_length(_typed) != 1 || !ed_type_autoclose(_typed)) ed_type_text(_typed);
         var _last_o = ord(string_char_at(_typed, string_length(_typed)));
         if (ed_is_word_code(_last_o) || _last_o == 46) {
             _ac_refresh = true;
@@ -427,8 +441,18 @@ if (_mp && !_handled) {
     if (closing) exit;
 }
 
+// Clicking anywhere but the name field commits the name.
+if (_mp && focus == "name" && !ed_point_in(_mx, _my, name_field_rect)) {
+    ed_commit_name();
+    focus = "text";
+}
+
 if (_mp && !_handled) {
-    if (find_open && ed_point_in(_mx, _my, find_field_rect)) {
+    if (ed_point_in(_mx, _my, name_field_rect)) {
+        focus = "name";
+        ac_close();
+        _handled = true;
+    } else if (find_open && ed_point_in(_mx, _my, find_field_rect)) {
         focus = "find";
         field_fresh = false;
         _handled = true;

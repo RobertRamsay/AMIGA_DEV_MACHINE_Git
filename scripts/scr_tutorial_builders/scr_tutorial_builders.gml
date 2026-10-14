@@ -620,6 +620,7 @@ function scr_tutorial_build_3(_chain) {
 function scr_tutorial_build_4(_chain) {
     var _code = scr_tb_macro(_chain, "CODE");
     _code.macro_code_text = scr_tb_raster_code_text();
+    _code.macro_code_name = "Raster bar";
 }
 
 /// Tutorial 4's CODE block (also the editor tour's demo code).

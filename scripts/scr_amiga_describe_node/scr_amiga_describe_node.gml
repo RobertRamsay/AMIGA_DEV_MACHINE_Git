@@ -4,7 +4,7 @@
 /// status log messages (drop, delete, etc).
 function scr_amiga_describe_node(_node_id) {
     if (_node_id.is_macro) {
-        if (_node_id.macro_type == "CODE") return "CODE BLOCK";
+        if (_node_id.macro_type == "CODE") return scr_code_block_name(_node_id) != "" ? "CODE: " + scr_code_block_name(_node_id) : "CODE BLOCK";
         if (scr_gk_is_node_type(_node_id.macro_type)) return scr_gk_node_label(_node_id.macro_type);
         if (_node_id.macro_type == "PLAY_MOD") return "PLAY MOD " + _node_id.macro_asset_name;
         if (_node_id.macro_type == "STOP_MOD") return "STOP MUSIC";

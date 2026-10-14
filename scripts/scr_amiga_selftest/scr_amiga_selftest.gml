@@ -119,7 +119,9 @@ function scr_amiga_selftest_step() {
             scr_amiga_selftest_note("scr_audio_selftest failures: " + string(array_length(_audio_failures)) + (array_length(_audio_failures) > 0 ? " " + json_stringify(_audio_failures) : ""));
             var _tile_failures = scr_tile_editor_selftest();
             scr_amiga_selftest_note("scr_tile_editor_selftest failures: " + string(array_length(_tile_failures)) + (array_length(_tile_failures) > 0 ? " " + json_stringify(_tile_failures) : ""));
-            if (array_length(_asm_failures) + array_length(_audio_failures) + array_length(_tile_failures) > 0) {
+            var _ced_failures = scr_code_editor_selftest();
+            scr_amiga_selftest_note("scr_code_editor_selftest failures: " + string(array_length(_ced_failures)) + (array_length(_ced_failures) > 0 ? " " + json_stringify(_ced_failures) : ""));
+            if (array_length(_asm_failures) + array_length(_audio_failures) + array_length(_tile_failures) + array_length(_ced_failures) > 0) {
                 scr_amiga_selftest_finish(false);
                 exit;
             }
@@ -160,6 +162,10 @@ function scr_amiga_selftest_step() {
             if (global.selftest_expect_error) {
                 // Line 3 (index 2) uses a data register that does not exist.
                 _setup.macro_code_text = "; deliberate error on line 3\n\tlea\tCUSTOM,a6\n\tmove.w\t#1,d9\n";
+                // A name and a label add two lines before the code in main.s:
+                // the error must still map back to line 3 of the block.
+                _setup.macro_code_name = "Broken setup";
+                _setup.node_label = "setup_block";
             }
             _y += _setup.node_height;
 
@@ -172,6 +178,7 @@ function scr_amiga_selftest_step() {
             _y += _sfx.node_height;
 
             var _loop = scr_amiga_selftest_add_node(_init, _y, "CODE");
+            _loop.macro_code_name = "Main loop";
             _loop.macro_code_text = "; green while Paula audio DMA runs\n\tlea\tCUSTOM,a6\nmainloop:\n\tmove.w\tDMACONR(a6),d0\n\tand.w\t#15,d0\n\tbeq.s\t.quiet\n\tmove.w\t#$0f0,COLOR00(a6)\n\tbra.s\tmainloop\n.quiet\tmove.w\t#$008,COLOR00(a6)\n\tbra.s\tmainloop\n";
 
             var _old_adf = global.current_project_path + "/build/disk.adf";

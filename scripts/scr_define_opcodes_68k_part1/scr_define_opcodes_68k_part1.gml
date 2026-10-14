@@ -32,8 +32,8 @@ function scr_define_opcodes_68k_part1() {
         mnemonic : "MOVEM",
         sizes : ["W", "L"],
         operand_count : 2,
-        src_modes : global.AM_CONTROL + global.AM_AN_POSTINC,
-        dst_modes : global.AM_CONTROL + global.AM_AN_PREDEC,
+        src_modes : global.AM_REGLIST + global.AM_CONTROL + global.AM_AN_POSTINC,
+        dst_modes : global.AM_CONTROL + global.AM_AN_PREDEC + global.AM_REGLIST,
         category : "data_movement"
     };
 

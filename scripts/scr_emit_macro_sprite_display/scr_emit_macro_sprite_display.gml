@@ -153,7 +153,21 @@ function scr_emit_macro_sprite_display(_node) {
     _lines += "\tMOVE.L #" + string(_copper_sprite_low) + "," + string(_copper_address + 4) + ".L\n";
     _lines += "\tMOVE.L #" + string(_copper_bitplane_high) + "," + string(_copper_address + 8) + ".L\n";
     _lines += "\tMOVE.L #" + string(_copper_bitplane_low) + "," + string(_copper_address + 12) + ".L\n";
-    _lines += "\tMOVE.L #4294967294," + string(_copper_address + 16) + ".L\n";
+    // The other seven channels point at this sprite's zero terminator, so
+    // SPREN does not fetch whatever their old pointers address.
+    var _null_sprite = _write_offset - 4;
+    var _cop = 16;
+    var _other = 0;
+    while (_other < 8) {
+        if (_other != _channel) {
+            var _other_offset = 288 + (_other * 4);
+            _lines += "\tMOVE.L #" + string((_other_offset * 65536) + ((_null_sprite >> 16) & 65535)) + "," + string(_copper_address + _cop) + ".L\n";
+            _lines += "\tMOVE.L #" + string(((_other_offset + 2) * 65536) + (_null_sprite & 65535)) + "," + string(_copper_address + _cop + 4) + ".L\n";
+            _cop += 8;
+        }
+        _other += 1;
+    }
+    _lines += "\tMOVE.L #4294967294," + string(_copper_address + _cop) + ".L\n";
     _lines += "\tMOVE.L #" + string(_copper_address) + ",14676096.L\n";
     _lines += "\tMOVE.W #0,14676104.L\n";
 

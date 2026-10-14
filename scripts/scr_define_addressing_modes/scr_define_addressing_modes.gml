@@ -11,6 +11,7 @@ function scr_define_addressing_modes() {
     global.AM_PC_DISP    = 512;    // d16(PC)
     global.AM_PC_INDEX   = 1024;   // d8(PC,Xn)
     global.AM_IMM        = 2048;   // #immediate
+    global.AM_REGLIST    = 4096;   // MOVEM register list (text, e.g. d0-d7/a0-a6)
 
     // Common groupings
     global.AM_DATA_ALTERABLE = global.AM_DN + global.AM_AN_IND + global.AM_AN_POSTINC + global.AM_AN_PREDEC + global.AM_AN_DISP + global.AM_AN_INDEX + global.AM_ABS_W + global.AM_ABS_L;

@@ -149,7 +149,7 @@ if (opcode_size != "") {
 
 if (is_macro) {
     _header_text = "MACRO: " + macro_type;
-    if (macro_type == "CODE") _header_text = "CODE BLOCK";
+    if (macro_type == "CODE") _header_text = scr_code_block_name(id) != "" ? "CODE: " + scr_code_block_name(id) : "CODE BLOCK";
     if (macro_type == "PLAY_MOD") _header_text = "PLAY MUSIC (MOD)";
     if (macro_type == "STOP_MOD") _header_text = "STOP MUSIC";
     if (macro_type == "PLAY_SFX") _header_text = "PLAY SOUND FX";
@@ -337,7 +337,7 @@ if (is_macro) {
                 _src_value_text = "$" + scr_number_to_hex_string(operand_src);
             }
 
-            if (addressing_mode_src == "LABEL") {
+            if (scr_operand_mode_is_text(addressing_mode_src)) {
                 _src_value_text = operand_label_src;
             }
 
@@ -356,7 +356,7 @@ if (is_macro) {
                 _dst_value_text = "$" + scr_number_to_hex_string(operand_dst);
             }
 
-            if (addressing_mode_dst == "LABEL") {
+            if (scr_operand_mode_is_text(addressing_mode_dst)) {
                 _dst_value_text = operand_label_dst;
             }
 
@@ -443,3 +443,14 @@ if (wedge_target_found && is_dragging) {
 }
 
 
+
+// Flash after the program preview sent the user here (scr_amiga_focus_node).
+var _focus_flash = scr_amiga_focus_flash(id);
+if (_focus_flash > 0) {
+    draw_set_alpha(_focus_flash);
+    scr_ui_box_outline(_dx - 4, _dy - 4, _dx + node_width + 4, _dy + node_height + 4, make_colour_rgb(255, 220, 90), 2);
+    draw_set_alpha(_focus_flash * 0.35);
+    scr_ui_box_outline(_dx - 7, _dy - 7, _dx + node_width + 7, _dy + node_height + 7, make_colour_rgb(255, 200, 60), 2);
+    draw_set_alpha(1);
+    draw_set_colour(c_white);
+}

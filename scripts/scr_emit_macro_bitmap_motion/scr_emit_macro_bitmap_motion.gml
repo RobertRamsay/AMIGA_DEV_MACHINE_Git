@@ -34,16 +34,19 @@ function scr_emit_macro_bob_bitmap_test(_node) {
     _s += _loop + ":\n";
     // One update per PAL frame.
     _s += _vb1 + ":\n\tCMPI.B #255,6(A5)\n\tBNE.S " + _vb1 + "\n" + _vb2 + ":\n\tCMPI.B #255,6(A5)\n\tBEQ.S " + _vb2 + "\n";
-    // Restore the complete pristine bitmap (A -> D), ensuring no BOB trails.
+    // Restore the complete pristine bitmap (A -> D), ensuring no BOB trails:
+    // all five planes (51,200 bytes) in one blit of 400 rows x 64 words
+    // (BLTSIZE width 0 = 64 words; 256 x 20 would cover plane 0 only).
     _s += _restore_wait + ":\n\tBTST #6,2(A5)\n\tBNE.S " + _restore_wait + "\n";
     _s += "\tMOVE.W #2544,64(A5)\n\tCLR.W 66(A5)\n\tMOVE.W #65535,68(A5)\n\tMOVE.W #65535,70(A5)\n";
-    _s += "\tMOVE.L A4,80(A5)\n\tMOVE.L A2,84(A5)\n\tCLR.W 100(A5)\n\tCLR.W 102(A5)\n\tMOVE.W #16404,88(A5)\n";
+    _s += "\tMOVE.L A4,80(A5)\n\tMOVE.L A2,84(A5)\n\tCLR.W 100(A5)\n\tCLR.W 102(A5)\n\tMOVE.W #25600,88(A5)\n";
     // Horizontal shift and screen word offset for the 32-pixel cookie-cut.
     _s += _draw_wait + ":\n\tBTST #6,2(A5)\n\tBNE.S " + _draw_wait + "\n\tMOVE.W D7,D6\n\tANDI.W #15,D6\n\tLSL.W #8,D6\n\tLSL.W #4,D6\n\tMOVE.W D6,D5\n\tORI.W #4042,D5\n\tMOVE.W D5,64(A5)\n\tMOVE.W D6,66(A5)\n";
     _s += "\tMOVE.W #65535,68(A5)\n\tMOVE.W #65535,70(A5)\n\tCLR.W 100(A5)\n\tCLR.W 98(A5)\n\tMOVE.W #34,96(A5)\n\tMOVE.W #34,102(A5)\n";
     _s += "\tMOVE.L A3,80(A5)\n\tMOVE.W D7,D4\n\tLSR.W #4,D4\n\tADD.W D4,D4\n\tMOVEA.L A2,A0\n\tADDA.L #4480,A0\n\tADDA.W D4,A0\n";
     for (var _p = 0; _p < 5; _p += 1) {
-        _s += "\tMOVE.L A3,D0\n\tADD.L #" + string(192 + _p * 192) + ",D0\n\tMOVE.L D0,76(A5)\n";
+        // The mask (A) restarts for every plane: the blit leaves BLTAPT past it.
+        _s += "\tMOVE.L A3,80(A5)\n\tMOVE.L A3,D0\n\tADD.L #" + string(192 + _p * 192) + ",D0\n\tMOVE.L D0,76(A5)\n";
         _s += "\tMOVE.L A0,72(A5)\n\tMOVE.L A0,84(A5)\n\tMOVE.W #2051,88(A5)\n";
         if (_p < 4) _s += "__bob_plane_wait_" + _u + "_" + string(_p) + ":\n\tBTST #6,2(A5)\n\tBNE.S __bob_plane_wait_" + _u + "_" + string(_p) + "\n\tADDA.L #10240,A0\n";
     }
@@ -227,7 +230,7 @@ function scr_emit_macro_sprite_bitmap_test(_node) {
     if (_sprite == undefined || _sprite.type != "SPRITE") return { text : "; ERROR: TestSprite not found", is_valid : false };
     if (_bitmap == undefined || _bitmap.type != "BITMAP") return { text : "; ERROR: TestBitmap not found", is_valid : false };
     var _saved = _node.macro_asset_name; _node.macro_asset_name = "TestBitmap";
-    var _base = scr_emit_macro_bitmap_display(_node); _node.macro_asset_name = _saved;
+    var _base = scr_emit_macro_bitmap_display(_node, clamp(_sprite.channel, 0, 7)); _node.macro_asset_name = _saved;
     if (!_base.is_valid) return _base;
     var _u = string(floor(_node.uid));
     var _id = string(clamp(floor(_node.macro_object_id), 0, 63));
@@ -270,7 +273,8 @@ function scr_emit_macro_move_spr(_node) {
     _s += "__movespr_vb1_" + _u + ":\n\tCMPI.B #255,6(A5)\n\tBNE.S __movespr_vb1_" + _u + "\n__movespr_vb2_" + _u + ":\n\tCMPI.B #255,6(A5)\n\tBEQ.S __movespr_vb2_" + _u + "\n";
     _s += "\tMOVEA.L " + _state + "_ptr,A3\n\tMOVEA.L " + _state + "_ptrreg,A0\n\tMOVE.L A3,(A0)\n";
     _s += "\tMOVE.W " + _state + "_x,D0\n\tADDI.W #128,D0\n\tMOVE.W D0,D4\n\tLSR.W #1,D4\n\tANDI.W #255,D4\n";
-    _s += "\tMOVE.W " + _state + "_y,D2\n\tADDI.W #128,D2\n\tMOVE.W D2,D1\n\tANDI.W #255,D1\n\tLSL.W #8,D1\n\tOR.W D4,D1\n\tMOVE.W D1,(A3)\n";
+    // VSTART: the display starts on line $2C (DIWSTRT $2C81), as gk_put_sprite.
+    _s += "\tMOVE.W " + _state + "_y,D2\n\tADDI.W #$2C,D2\n\tMOVE.W D2,D1\n\tANDI.W #255,D1\n\tLSL.W #8,D1\n\tOR.W D4,D1\n\tMOVE.W D1,(A3)\n";
     _s += "\tMOVE.W D2,D3\n\tADD.W " + _state + "_height,D3\n\tMOVE.W D3,D5\n\tANDI.W #255,D5\n\tLSL.W #8,D5\n\tANDI.W #1,D0\n\tOR.W D0,D5\n\tBTST #8,D2\n\tBEQ.S __movespr_no_vs_hi_" + _u + "\n\tORI.W #4,D5\n__movespr_no_vs_hi_" + _u + ":\n\tBTST #8,D3\n\tBEQ.S __movespr_no_ve_hi_" + _u + "\n\tORI.W #2,D5\n__movespr_no_ve_hi_" + _u + ":\n\tMOVE.W D5,2(A3)\n";
     _s += "\tMOVE.W " + _state + "_x,D0\n\tADD.W #" + string(_sx) + ",D0\n\tBPL.S __movespr_x_nonneg_" + _u + "\n\tMOVE.W " + _state + "_max_x,D0\n__movespr_x_nonneg_" + _u + ":\n\tCMP.W " + _state + "_max_x,D0\n\tBLE.S __movespr_x_ok_" + _u + "\n\tCLR.W D0\n__movespr_x_ok_" + _u + ":\n\tMOVE.W D0," + _state + "_x\n";
     _s += "\tMOVE.W " + _state + "_y,D0\n\tADD.W #" + string(_sy) + ",D0\n\tBPL.S __movespr_y_nonneg_" + _u + "\n\tMOVE.W " + _state + "_max_y,D0\n__movespr_y_nonneg_" + _u + ":\n\tCMP.W " + _state + "_max_y,D0\n\tBLE.S __movespr_y_ok_" + _u + "\n\tCLR.W D0\n__movespr_y_ok_" + _u + ":\n\tMOVE.W D0," + _state + "_y";

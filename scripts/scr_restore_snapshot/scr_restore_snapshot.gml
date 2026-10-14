@@ -140,6 +140,7 @@ function scr_node_restore_extra_fields(_node, _data) {
         if (is_array(_data.macro_cprbar_bands)) _node.macro_cprbar_bands = variable_clone(_data.macro_cprbar_bands);
     }
     if (variable_struct_exists(_data, "macro_code_text") && is_string(_data.macro_code_text)) _node.macro_code_text = _data.macro_code_text;
+    if (variable_struct_exists(_data, "macro_code_name") && is_string(_data.macro_code_name)) _node.macro_code_name = _data.macro_code_name;
     if (variable_struct_exists(_data, "macro_music_pos")) _node.macro_music_pos = _data.macro_music_pos;
     if (variable_struct_exists(_data, "macro_sfx_channel")) _node.macro_sfx_channel = _data.macro_sfx_channel;
     if (variable_struct_exists(_data, "macro_sfx_volume")) _node.macro_sfx_volume = _data.macro_sfx_volume;

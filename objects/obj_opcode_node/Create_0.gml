@@ -110,6 +110,8 @@ operand_edit_text = "";
 
 // CODE blocks: free-form vasm source edited in obj_code_editor.
 macro_code_text = "";
+// CODE blocks: optional display name (node header, preview panel, main.s comment).
+macro_code_name = "";
 // PLAY_MOD: song position to start from.
 macro_music_pos = 0;
 // PLAY_SFX: Paula channel (-1 = ptplayer picks) and volume (-1 = the sample's own).

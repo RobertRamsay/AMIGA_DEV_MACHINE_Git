@@ -13,7 +13,8 @@ function scr_addressing_mode_list_from_flags(_flags) {
         ["abs.L", global.AM_ABS_L],
         ["d16(PC)", global.AM_PC_DISP],
         ["d8(PC,Xn)", global.AM_PC_INDEX],
-        ["#imm", global.AM_IMM]
+        ["#imm", global.AM_IMM],
+        ["regs", global.AM_REGLIST]
     ];
 
     var _result = [];

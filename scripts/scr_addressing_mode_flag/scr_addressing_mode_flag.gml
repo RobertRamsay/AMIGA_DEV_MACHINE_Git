@@ -15,6 +15,7 @@ function scr_addressing_mode_flag(_mode_label) {
         case "d16(PC)":    _flag = global.AM_PC_DISP;    break;
         case "d8(PC,Xn)":  _flag = global.AM_PC_INDEX;   break;
         case "#imm":       _flag = global.AM_IMM;        break;
+        case "regs":       _flag = global.AM_REGLIST;    break;
         default:           _flag = 0;                    break;
     }
 

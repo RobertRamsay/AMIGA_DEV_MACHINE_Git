@@ -198,6 +198,8 @@ if (!_pan_trigger_held) {
     global.pan_active = false;
 }
 
+scr_amiga_focus_pan_step();
+
 var _ctrl_held_for_undo = keyboard_check(vk_control);
 
 if (_ctrl_held_for_undo && keyboard_check_pressed(ord("Z")) && global.operand_edit_owner_uid == -1) {
@@ -559,15 +561,28 @@ if (mouse_check_button_pressed(mb_left) && !_preview_scroll_consumed && !_guide_
     var _click_line_index = 0;
     var _click_line_count = array_length(preview_line_cache);
 
-    while (_click_line_index < _click_line_count) {
+    // Every line belongs to a node: clicking one brings that node into view
+    // and flashes it. A macro header also folds / unfolds its code, and a
+    // double-click on a CODE block's line opens the editor on that line.
+    var _click_in_list = point_in_rectangle(mouse_x, mouse_y, _preview_panel_x, _preview_content_top, _preview_panel_x + _preview_panel_width - 14, _preview_content_bottom);
+
+    while (_click_in_list && _click_line_index < _click_line_count) {
         var _line_data = preview_line_cache[_click_line_index];
+        var _over_this_line = point_in_rectangle(mouse_x, mouse_y, _preview_panel_x, _click_line_y, _preview_panel_x + _preview_panel_width, _click_line_y + _preview_line_height - 1);
 
-        if (_line_data.is_macro_header) {
-            var _over_this_line = point_in_rectangle(mouse_x, mouse_y, _preview_panel_x, _click_line_y, _preview_panel_x + _preview_panel_width, _click_line_y + _preview_line_height);
+        if (_over_this_line && _line_data.node_id != noone && instance_exists(_line_data.node_id)) {
+            var _double = (current_time - preview_last_click_time < 400) && (preview_last_click_index == _click_line_index);
+            preview_last_click_time = _double ? -100000 : current_time;
+            preview_last_click_index = _click_line_index;
 
-            if (_over_this_line) {
+            if (_line_data.is_macro_header) {
                 _line_data.node_id.preview_collapsed = !_line_data.node_id.preview_collapsed;
             }
+            scr_amiga_focus_node(_line_data.node_id);
+            if (_double && _line_data.node_id.is_macro && _line_data.node_id.macro_type == "CODE") {
+                scr_code_editor_open(_line_data.node_id, max(0, _line_data.code_line));
+            }
+            break;
         }
 
         _click_line_y += _preview_line_height;

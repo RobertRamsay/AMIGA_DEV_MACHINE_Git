@@ -80,7 +80,10 @@ function scr_amiga_ptplayer_equ_names() {
 /// Lines emitted right after SECTION code,CODE.
 function scr_amiga_build_header_text(_scan) {
     var _flags = "";
-    if (_scan.uses_gamekit && _scan.uses_audio) _flags = "GK_AUDIO\tequ\t1\t\t\t; the Game Kit plays sound effects\n";
+    // ADM_AUDIO: ptplayer is in the program, so macros that take over the
+    // interrupts must leave its CIA-B (EXTER) interrupt on.
+    if (_scan.uses_audio) _flags += "ADM_AUDIO\tequ\t1\t\t\t; music / sound effects are used\n";
+    if (_scan.uses_gamekit && _scan.uses_audio) _flags += "GK_AUDIO\tequ\t1\t\t\t; the Game Kit plays sound effects\n";
     if (!_scan.uses_code) return _flags;
 
     var _equates = scr_asm_hardware_equates_text();
@@ -162,8 +165,8 @@ function scr_amiga_build_audio_footer_text(_scan, _build_dir) {
     _t += "\n; ==== Amiga Dev Machine audio runtime ====\n";
     _t += "; ptplayer 6.4 by Frank Wille (public domain) plays ProTracker MODs and\n";
     _t += "; sound effects from CIA-B level 6 interrupts. __adm_audio_init installs it\n";
-    _t += "; once (first PLAY node) and switches the interrupt master back on, so it\n";
-    _t += "; still plays after a macro has written INTENA $7FFF.\n";
+    _t += "; once (first PLAY node); every call switches the interrupt master and\n";
+    _t += "; EXTER back on, so it still plays after a macro has written INTENA $7FFF.\n";
     _t += "\tSECTION adm_runtime,CODE\n";
     _t += "__adm_audio_init:\n";
     _t += "\tMOVEM.L D0-D7/A0-A6,-(SP)\n";
@@ -184,8 +187,8 @@ function scr_amiga_build_audio_footer_text(_scan, _build_dir) {
     _t += "\tMOVEQ #1,D0\n";
     _t += ".ntsc:\tLEA $DFF000,A6\n";
     _t += "\tJSR _mt_install\n";
-    _t += "\tMOVE.W #$C000,$9A(A6)\t\t; INTENA master on (EXTER set by _mt_install)\n";
-    _t += ".done:\tMOVEM.L (SP)+,D0-D7/A0-A6\n";
+    _t += ".done:\tMOVE.W #$E000,$DFF09A\t\t; INTENA: master + EXTER (ptplayer's CIA-B) on\n";
+    _t += "\tMOVEM.L (SP)+,D0-D7/A0-A6\n";
     _t += "\tRTS\n";
     _t += "__adm_get_vbr:\n";
     _t += "\tDC.L $4E7A0801\t\t\t; MOVEC VBR,D0\n";
@@ -305,9 +308,12 @@ function scr_emit_macro_play_sfx(_node) {
 }
 
 /// CODE: the block's own source, label first, column-1 mnemonics indented.
+/// A named block starts with a comment line naming it, so it can be found in
+/// main.s (scr_amiga_start_build counts that line in its line map).
 /// The assembler is the final judge, so editor diagnostics never block a build.
 function scr_emit_macro_code(_node) {
     var _lines = "";
+    if (scr_code_block_name(_node) != "") _lines += "\t; ---- CODE: " + scr_code_block_name(_node) + " ----\n";
     if (_node.node_label != "") _lines += _node.node_label + ":\n";
     var _source = scr_asm_normalise_for_emit(_node.macro_code_text);
     if (string_trim(_source) == "") _source = "\t; (empty CODE block)";
