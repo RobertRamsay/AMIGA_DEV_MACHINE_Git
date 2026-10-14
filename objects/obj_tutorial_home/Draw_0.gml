@@ -124,6 +124,46 @@ draw_rectangle(_clip_x, 0, room_width, home_list_top - 7, false);
 draw_rectangle(_clip_x, home_list_bottom + 4, room_width, room_height, false);
 draw_set_alpha(1);
 
+// MORE indicators between the columns: a label and three flat chevrons that
+// light up in a travelling wave and bob in the scroll direction.
+_c = 0;
+while (_c < array_length(home_controls)) {
+    var _m = home_controls[_c];
+    if (_m.kind == "more") {
+        var _down = _m.action == "more_down";
+        var _mx = (_m.x1 + _m.x2) * 0.5;
+        var _t = current_time / 1000;
+        var _bob = round(sin(_t * 4) * 4) * (_down ? 1 : -1);
+        var _hot = home_hover == _c;
+        draw_set_alpha(0.75);
+        scr_ui_box(_m.x1, _m.y1, _m.x2, _m.y2, _hot ? make_colour_rgb(35, 50, 85) : make_colour_rgb(14, 18, 32), _hot ? c_yellow : make_colour_rgb(60, 80, 130));
+        draw_set_alpha(1);
+        draw_set_font(UI_FONT_SMALL);
+        draw_set_colour(_hot ? c_yellow : make_colour_rgb(160, 200, 255));
+        // "SCROLL / DOWN / (MORE)" stacked to fit the gap, then the chevrons.
+        var _words = ["SCROLL", _down ? "DOWN" : "UP", "(MORE)"];
+        var _w = 0;
+        while (_w < 3) {
+            scr_ui_text_centred(_mx, _down ? _m.y1 + 14 + _w * 17 : _m.y2 - 48 + _w * 17, _words[_w]);
+            _w += 1;
+        }
+        var _half = (_m.x2 - _m.x1) * 0.5 - 8;
+        var _k = 0;
+        while (_k < 3) {
+            // Chevron k: from the label outwards in the scroll direction.
+            var _cy = _down ? _m.y1 + 70 + _k * 22 + _bob : _m.y2 - 70 - _k * 22 + _bob;
+            var _glow = 0.3 + 0.7 * (0.5 + 0.5 * sin(_t * 5 - _k * 1.2));
+            draw_set_alpha(_glow);
+            draw_set_colour(_hot ? c_yellow : make_colour_rgb(90, 200, 255));
+            if (_down) draw_triangle(_mx - _half, _cy, _mx + _half, _cy, _mx, _cy + 11, false);
+            else draw_triangle(_mx - _half, _cy, _mx + _half, _cy, _mx, _cy - 11, false);
+            _k += 1;
+        }
+        draw_set_alpha(1);
+    }
+    _c += 1;
+}
+
 // --- header ------------------------------------------------------------------
 draw_sprite_ext(spr_ADM_SmallLogo, 0, 36, 16, 0.85, 0.85, 0, c_white, 1);
 draw_set_font(font_Future);

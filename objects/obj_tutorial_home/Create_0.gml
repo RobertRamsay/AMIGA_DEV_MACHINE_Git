@@ -20,7 +20,7 @@ home_list_w = 1400;
 home_list_top = 176;
 home_list_bottom = 1060;
 home_card_cols = 2;
-home_card_gap_x = 16;
+home_card_gap_x = 64;                // room for the MORE indicator between the columns
 home_card_gap_y = 12;
 home_card_w = (home_list_w - home_card_gap_x * (home_card_cols - 1)) div home_card_cols;
 home_pad = 12;                      // inner padding of cards and panels
@@ -178,6 +178,19 @@ home_layout = function() {
         array_push(home_controls, { kind : "card", action : "tutorial", index : _i,
             x1 : _cx, y1 : _cy, x2 : _cx + home_card_w, y2 : _cy + home_card_h, label : "", sub : "" });
         _i += 1;
+    }
+
+    // MORE indicators in the gap between the columns: more cards below
+    // (bottom) or above (top). Clicking one scrolls two rows.
+    var _gap_x1 = home_list_x + home_card_w;
+    var _gap_x2 = _gap_x1 + home_card_gap_x;
+    if (home_scroll < home_scroll_max) {
+        array_push(home_controls, { kind : "more", action : "more_down", index : -1,
+            x1 : _gap_x1 + 4, y1 : home_list_bottom - 148, x2 : _gap_x2 - 4, y2 : home_list_bottom, label : "MORE", sub : "" });
+    }
+    if (home_scroll > 0) {
+        array_push(home_controls, { kind : "more", action : "more_up", index : -1,
+            x1 : _gap_x1 + 4, y1 : home_list_top, x2 : _gap_x2 - 4, y2 : home_list_top + 148, label : "MORE", sub : "" });
     }
 
     // Close box (top right).
