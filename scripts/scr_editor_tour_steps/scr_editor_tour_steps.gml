@@ -233,7 +233,7 @@ function scr_tour_categories() {
         summary : "The tutorials page, the step guide and how to come back to this tour.",
         steps : [
             { title : "The tutorials page", show : "home", rect : function() { return scr_tour_home_rect("cards"); },
-              text : "Fifteen tutorials: from a one-node program to a complete platformer, then how macros work, bitmaps, sprites, BOBs, music and sound. Click a card to load it: the nodes and every asset are made for you, ready for F5." },
+              text : "Sixteen tutorials: from a one-node program to a complete platformer, then how macros work, bitmaps, sprites, BOBs, music and sound, and writing a whole song in the tracker. Click a card to load it: the nodes and every asset are made for you, ready for F5." },
             { title : "Getting started", show : "home", rect : function() { return scr_tour_home_rect("start"); },
               text : "The page opens at start-up: carry on with your last session, start an empty workspace, open a saved one, or take this tour. Untick 'Show this page at startup' to go straight to the workspace; TUTORIALS on the toolbar brings it back." },
             { title : "The step guide", show : "guide", rect : function() { return scr_tour_guide_rect(); },

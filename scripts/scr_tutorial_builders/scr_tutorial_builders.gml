@@ -39,6 +39,7 @@ function scr_tutorial_build(_number) {
         case 13: scr_tutorial_build_13(_chain); break;
         case 14: scr_tutorial_build_14(_chain); break;
         case 15: scr_tutorial_build_15(_chain); break;
+        case 16: scr_tutorial_build_16(_chain); break;
         default: return false;
     }
     return true;
@@ -1014,4 +1015,18 @@ function scr_tutorial_build_15(_chain) {
         + "\tbeq.s\tfire_up\n"
         + "\tmove.w\t#$024,$dff180\n";
     scr_tb_loop(_org, _press, "shoot");
+}
+
+/// 16: write a tracker song - Pixel Hearts built step by step. The workspace
+/// plays MySong; each guide step's SHOW ME rebuilds it to that step
+/// (scr_tutorial_song_show). It starts as the kit and tempo only.
+function scr_tutorial_build_16(_chain) {
+    var _music = scr_tb_hook_song("MySong", 1);
+    var _play = scr_tb_macro(_chain, "PLAY_MOD");
+    _play.macro_asset_name = _music;
+    _play.macro_music_pos = 0;
+    var _bkg = scr_tb_macro(_chain, "SETBKG");
+    _bkg.macro_asset_name = "203";
+    var _nop = scr_tb_op(_chain, "NOP", "", "", 0, "", 0);
+    scr_tb_loop(_chain, _nop, "forever");
 }

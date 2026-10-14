@@ -1,16 +1,18 @@
 /// @desc Tutorial registry. scr_tutorial_defs() describes the tutorials
 /// (1-10: from one node to a complete Game Kit platformer; 11-15: how macros
-/// work, bitmaps, sprites, BOBs, music and sound); scr_tutorial_load(i)
-/// replaces the workspace with tutorial i's node graph and assets (built by
-/// scr_tutorial_build_* in scr_tutorial_builders). The opening page
-/// (obj_tutorial_home) lists them and the guide panel (obj_tutorial_guide)
-/// walks through the steps of the loaded one.
+/// work, bitmaps, sprites, BOBs, music and sound; 16: write a tracker song);
+/// scr_tutorial_load(i) replaces the workspace with tutorial i's node graph
+/// and assets (built by scr_tutorial_build_* in scr_tutorial_builders). The
+/// opening page (obj_tutorial_home) lists them and the guide panel
+/// (obj_tutorial_guide) walks through the steps of the loaded one.
 ///
 /// Each tutorial: { id, title, level ("Beginner" / "Intermediate" / "Advanced"),
 ///   summary, features[] (what it proves), steps[] { title, text } }
+/// A step may add song_stage (+ hint): the guide then shows SHOW ME IN THE
+/// TRACKER, which builds the song to that stage (scr_tutorial_song_show).
 
 /// Number of tutorials (the length of scr_tutorial_defs(); -admtutorials builds them all).
-#macro TUTORIAL_COUNT 15
+#macro TUTORIAL_COUNT 16
 
 function scr_tutorial_defs() {
     if (is_array(global.tutorial_defs_cache)) return global.tutorial_defs_cache;
@@ -180,6 +182,34 @@ function scr_tutorial_defs() {
                 { title : "Sound effects", text : "PLAY SFX plays the sample Zap on a free channel, mixed in with the music. Samples come from SND-EDIT (import WAV, IFF 8SVX or raw files) or from a tracker instrument with TO SAMPLE." },
                 { title : "Fire!", text : "The CODE block Wait for fire waits for the joystick button (right Ctrl in FS-UAE) and flashes the background; Wait for release waits for it to be let go. BRA shoot repeats it for ever. STOP MUSIC would end the music and effects." },
                 { title : "Run it", text : "F5, wait for the music to start, then press fire." }
+            ]
+        },
+        {
+            id : 16, title : "Write a tracker song", level : "Advanced",
+            summary : "Build Pixel Hearts in the TRACKER layer by layer - drums, bass, hook, echo, chords - with SHOW ME at every step.",
+            features : ["TRACKER", "drums + octave bass", "hook + echo channel", "vibrato, fades, cuts", "arpeggio chords", "SHOW ME"],
+            steps : [
+                { title : "The plan", song_stage : 1, hint : "Step 1: the kit (01-07) and 140 BPM. Write the hook in pattern 02 first.",
+                  text : "You will write Pixel Hearts - the song of tutorials 10 and 15 - one layer at a time, hook first, the way classic Amiga musicians did. Each step says what to type. SHOW ME IN THE TRACKER rebuilds the song MySong to the end of that step and opens it, so you can copy it, compare or just listen: Enter plays the pattern, Space stops, Esc saves and closes." },
+                { title : "Kit and tempo", song_stage : 1, hint : "Kit: 01 lead, 02 bass, 04 kick, 05 snare, 06 hat, 07 stab (SQUARE, VOL 22). BPM 140.",
+                  text : "Click EDIT on the PLAY MOD node to open the TRACKER. A new song comes with a starter kit: 01 pulse lead, 02 synth bass, 04 kick, 05 snare, 06 hi-hat. Make 07 the chord stab: select it, click SQUARE, set VOL 22. Set BPM to 140. At speed 6 a row is a sixteenth note, so 4 rows are a beat, 16 rows a bar and a 64-row pattern four bars." },
+                { title : "Drums", song_stage : 2, hint : "Drums, channel 4: kick 0, 8, 11 - snare 4, 12 - hats 2, 6, 10, 14 (+15 soft).",
+                  text : "Chip style, one channel holds the whole kit (channel 4). Every hit is the note C-2. Kick (04) on rows 0 and 8 plus a syncopated kick on 11; snare (05) on 4 and 12 - the backbeat; hi-hats (06) on 2, 6, 10 and 14 and a ghost hat on 15. Type a volume in the effect column for accents: C40 full, C24 a hat, C0E the ghost. Repeat the bar four times. Enter plays it." },
+                { title : "Octave bass", song_stage : 3, hint : "Bass, channel 3: every 2 rows, root then octave up. C G A F, one chord a bar.",
+                  text : "Channel 3: the synth bass (02) on every eighth note (every 2 rows), bouncing between the root and the same note an octave up - the trick of Space Debris and Elysium. The chords are C, G, Am and F, one bar each. Low notes get C2E, high ones C20, so the bounce pulses." },
+                { title : "The hook", song_stage : 4, hint : "Hook, channel 1: E E D C . D E | D B G . G A B, then the answer. Notes ring on!",
+                  text : "Channel 1, instrument 01: the call - E E D C, D E, then D B G, G A B - and the answer over Am and F: C C B A, E D, C A C. Short repeats and small steps make a tune catchy. Now play it: the held notes ring on. The lead is a tiny looping wave, so a note sounds until something stops it." },
+                { title : "Vibrato, fades and cuts", song_stage : 5, hint : "Fades: A08 on a note's last row, C00 after. Long notes: 4A2, 400, then 608.",
+                  text : "Stop the ringing: on the last row of every note type A08 (volume slide down - a fade) and on the row after it C00 (volume 0 - a cut). Long notes get a light vibrato from their third row: 4A2 (speed A, depth 2 - fast and shallow), 400 to keep it going, and 608 on the last row (vibrato and fade together)." },
+                { title : "The echo channel", song_stage : 6, hint : "Echo, channel 2: the lead 3 rows later at C10, fades A03, the same cuts.",
+                  text : "Channel 2 plays the lead again three rows later at C10 - a quarter of the volume - with gentler fades (A03) and the same cuts. That is the echo trick of Elysium: one channel of delay makes the lead sound wide and twice as busy." },
+                { title : "The answer pattern", song_stage : 7, hint : "Pattern 03: the same call, a climbing answer and a snare roll in the last bar.",
+                  text : "Use COPY PATTERN, make a NEW pattern and PASTE: pattern 03 keeps the call but its answer climbs - C C B A, E G A, then G F E D - and the drums finish with a rising snare roll (snares on 58-63 with growing Cxx). Add 03 to the order list after 02." },
+                { title : "The B section", song_stage : 8, hint : "B section 04-05: stabs 07 with 047 / 037 on channel 2, cut by C00.",
+                  text : "Patterns 04 and 05 change the chords to F G Em Am and F G C G with longer, higher lead notes. Channel 2 now plays chord stabs: instrument 07 with arpeggio 047 (major) or 037 (minor) - one channel playing a whole chord - on rows 0, 3, 6, 10 and 12, each cut two rows later with C00. In 05 the lead slides up to B with 328 (tone portamento)." },
+                { title : "Intro and order list", song_stage : 9, hint : "The whole song: 00 01 02 03 04 05 02 06, looping to the hook. Shift+Enter!",
+                  text : "Pattern 00 builds up: stabs over hats, long bass notes, then kicks and a roll. 01 is the full groove with a pick-up into the hook, 06 the last hook over the stabs. The order list is 00 01 02 03 04 05 02 06, and the song loops back to the hook. Shift+Enter plays it all - that is Pixel Hearts." },
+                { title : "Run it", text : "Esc saves MySong. PLAY on the PLAY MOD node previews it, F5 plays it on the Amiga. Then make it yours: change a note, a chord, the tempo or an instrument." }
             ]
         }
     ];

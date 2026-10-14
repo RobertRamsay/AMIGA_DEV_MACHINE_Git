@@ -112,7 +112,11 @@ guide_layout = function() {
     guide_text_y1 = _y;
 
     var _button_gap = 6;
-    var _buttons_h = 3 * guide_button_h + 2 * _button_gap + guide_pad;
+    // A step with a song_stage (tutorial 16) gets a SHOW ME row on top.
+    var _step_def = guide_def.steps[global.tutorial_step];
+    var _show_me = variable_struct_exists(_step_def, "song_stage");
+    var _button_rows = _show_me ? 4 : 3;
+    var _buttons_h = _button_rows * guide_button_h + (_button_rows - 1) * _button_gap + guide_pad;
     var _text_full_h = array_length(guide_text_lines) * guide_line_h;
     // At least four lines of text, so the buttons stay put on short steps.
     var _text_h = clamp(_text_full_h, guide_line_h * 4, guide_max_y2 - _buttons_h - _gap - guide_text_y1);
@@ -141,7 +145,12 @@ guide_layout = function() {
     var _bx2 = guide_x2 - guide_pad;
     var _bmid = (_bx1 + _bx2) div 2;
     var _bh = guide_button_h;
-    var _by = guide_y2 - guide_pad - 3 * _bh - 2 * _button_gap;
+    var _by = guide_y2 - guide_pad - _button_rows * _bh - (_button_rows - 1) * _button_gap;
+    if (_show_me) {
+        array_push(guide_controls, { action : "showme", x1 : _bx1, y1 : _by, x2 : _bx2, y2 : _by + _bh,
+            label : "SHOW ME IN THE TRACKER", colour : make_colour_rgb(25, 95, 100), enabled : true });
+        _by += _bh + _button_gap;
+    }
     array_push(guide_controls, { action : "prev", x1 : _bx1, y1 : _by, x2 : _bmid - 3, y2 : _by + _bh,
         label : "< PREV", colour : make_colour_rgb(45, 65, 85), enabled : global.tutorial_step > 0 });
     var _next_action = "next", _next_label = "NEXT >";

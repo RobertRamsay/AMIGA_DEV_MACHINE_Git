@@ -73,6 +73,11 @@ switch (_hit.action) {
     case "build":
         scr_amiga_trigger_build();
         break;
+    case "showme":
+        // Tutorial 16: the song as it is after this step, open in the tracker.
+        var _show_step = guide_def.steps[global.tutorial_step];
+        scr_tutorial_song_show(_show_step.song_stage, variable_struct_exists(_show_step, "hint") ? _show_step.hint : "");
+        break;
     case "all":
         scr_tutorial_home_open(false);
         break;

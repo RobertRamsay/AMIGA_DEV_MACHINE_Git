@@ -159,6 +159,19 @@ function scr_tracker_selftest() {
     if (_linked_name != "") scr_audio_delete(_linked_name);
     with (_node) instance_destroy();
 
+    // Tutorial 16's build stages of Pixel Hearts: each one saves and loads,
+    // with the order list growing to the whole song.
+    var _orders = [1, 1, 1, 1, 1, 1, 2, 4, 8];
+    var _stage = 1;
+    while (_stage <= TB_SONG_STAGES) {
+        var _stage_name = scr_tb_hook_song(scr_audio_unique_name("trkstage"), _stage);
+        var _stage_song = _stage_name != "" ? scr_tracker_song_from_asset(scr_asset_find_by_name(_stage_name)) : undefined;
+        if (_stage_song == undefined) array_push(_fail, "song stage " + string(_stage) + " did not save / load");
+        else if (array_length(_stage_song.order) != _orders[_stage - 1]) array_push(_fail, "song stage " + string(_stage) + " order length " + string(array_length(_stage_song.order)));
+        if (_stage_name != "") scr_audio_delete(_stage_name);
+        _stage += 1;
+    }
+
     global.tracker_last_name = _keep_last;
     return _fail;
 }

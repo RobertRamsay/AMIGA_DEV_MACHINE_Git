@@ -48,13 +48,20 @@ function scr_tb_song_cell(_cells, _row, _ch, _note, _sample, _fx, _prm) {
 /// vibrato). Every note ends: its last row fades out (Axy, or 6xy to keep the
 /// vibrato going), and the row after it is cut (C00) unless the next note
 /// starts there - the looped lead wave never rings on into a rest.
-function scr_tb_song_lead(_cells, _events) {
+/// _expression false writes the bare notes only (tutorial 16's stage 4, where
+/// the ringing notes show why the fades and cuts are needed).
+function scr_tb_song_lead(_cells, _events, _expression = true) {
     var _i = 0;
     while (_i < array_length(_events)) {
         var _e = _events[_i];
         var _start = _e[0];
         var _len = _e[2];
         var _note = scr_tb_note(_e[1]);
+        if (!_expression) {
+            scr_tb_song_cell(_cells, _start, 0, _note, TB_SONG_LEAD, 12, 50);
+            _i += 1;
+            continue;
+        }
         var _vibrato = _len >= 6;
         if (array_length(_e) > 3 && _e[3] == "slide") {
             scr_tb_song_cell(_cells, _start, 0, _note, TB_SONG_LEAD, 3, $28);
@@ -192,9 +199,17 @@ function scr_tb_song_drums(_cells, _bars_style, _fill) {
     }
 }
 
+/// Number of the last build stage (the finished song).
+#macro TB_SONG_STAGES 9
+
 /// Builds "Pixel Hearts" and saves it as the MOD asset _name. Returns the
 /// name, or "" when it could not be saved.
-function scr_tb_hook_song(_name) {
+/// _stage builds it only up to a step of tutorial 16 ("Write a tracker
+/// song"), the hook first:
+///   1 kit + tempo   2 drums   3 bass   4 hook melody (plain notes)
+///   5 vibrato, fades and cuts   6 echo channel   7 the answer pattern
+///   8 the B section   9 intro, last hook and order list = the whole song.
+function scr_tb_hook_song(_name, _stage = TB_SONG_STAGES) {
     var _song = scr_tracker_song_new();
     _song.title = "pixel hearts";
     // Instruments: the starter kit (1 pulse lead, 2 bass, 3 organ, 4 kick,
@@ -213,20 +228,7 @@ function scr_tb_hook_song(_name) {
     var _hook_chords = [["C", true], ["G", true], ["A", false], ["F", true]];
     var _hook_roots = ["C", "G", "A", "F"];
     var _groove = ["groove", "groove", "groove", "groove"];
-
-    // 0: intro - stabs over hats, the bass enters, then kicks and a roll.
-    var _c = _song.patterns[0];
-    scr_tb_song_stabs(_c, _hook_chords);
-    scr_tb_song_bass(_c, _hook_roots, true);
-    scr_tb_song_drums(_c, ["hats", "hats", "four", "four"], true);
-    scr_tb_song_cell(_c, 0, 0, -1, 0, 15, 140);             // 140 BPM
-
-    // 1: intro 2 - the full groove, the lead's pick-up into the hook.
-    _c = _song.patterns[1];
-    scr_tb_song_stabs(_c, _hook_chords);
-    scr_tb_song_bass(_c, _hook_roots, false);
-    scr_tb_song_drums(_c, _groove, true);
-    scr_tb_song_lead(_c, [[56, "G2", 2], [58, "A2", 2], [60, "C3", 2], [62, "D3", 2]]);
+    var _expression = _stage >= 5;
 
     // The hook: call (bars 1-2) and answer (bars 3-4).
     var _hook_call = [
@@ -238,56 +240,126 @@ function scr_tb_hook_song(_name) {
     var _answer_2 = [[32, "C3", 2], [34, "C3", 2], [36, "B2", 2], [38, "A2", 2], [40, "E3", 2], [42, "G3", 2], [44, "A3", 4],
                      [48, "G3", 8], [56, "F3", 2], [58, "E3", 2], [60, "D3", 4]];
 
-    // 2: hook A1 with the echo channel.
-    _c = _song.patterns[2];
-    scr_tb_song_lead(_c, _hook_call);
-    scr_tb_song_lead(_c, _answer_1);
-    scr_tb_song_echo(_c, 3, 16);
-    scr_tb_song_bass(_c, _hook_roots, false);
-    scr_tb_song_drums(_c, _groove, false);
+    // 2: hook A1 - built first, layer by layer (stages 1-6).
+    var _c = _song.patterns[2];
+    scr_tb_song_cell(_c, 0, 1, -1, 0, 15, 140);             // 140 BPM (the echo starts on row 3)
+    if (_stage >= 2) scr_tb_song_drums(_c, _groove, false);
+    if (_stage >= 3) scr_tb_song_bass(_c, _hook_roots, false);
+    if (_stage >= 4) {
+        scr_tb_song_lead(_c, _hook_call, _expression);
+        scr_tb_song_lead(_c, _answer_1, _expression);
+    }
+    if (_stage >= 6) scr_tb_song_echo(_c, 3, 16);
 
     // 3: hook A2 - the answer climbs instead, a fill hands over to B.
-    _c = _song.patterns[3];
-    scr_tb_song_lead(_c, _hook_call);
-    scr_tb_song_lead(_c, _answer_2);
-    scr_tb_song_echo(_c, 3, 16);
-    scr_tb_song_bass(_c, _hook_roots, false);
-    scr_tb_song_drums(_c, _groove, true);
+    if (_stage >= 7) {
+        _c = _song.patterns[3];
+        scr_tb_song_lead(_c, _hook_call);
+        scr_tb_song_lead(_c, _answer_2);
+        scr_tb_song_echo(_c, 3, 16);
+        scr_tb_song_bass(_c, _hook_roots, false);
+        scr_tb_song_drums(_c, _groove, true);
+    }
 
-    // 4: B1 - longer, higher notes over F G Em Am, stabs instead of the echo.
-    _c = _song.patterns[4];
-    scr_tb_song_lead(_c, [[0, "A3", 6], [6, "G3", 2], [8, "F3", 4], [12, "C3", 4],
-                          [16, "D3", 6], [22, "E3", 2], [24, "F3", 2], [26, "E3", 2], [28, "D3", 4],
-                          [32, "B2", 6], [38, "C3", 2], [40, "D3", 4], [44, "E3", 4],
-                          [48, "A2", 8], [56, "C3", 4], [60, "E3", 4]]);
-    scr_tb_song_stabs(_c, [["F", true], ["G", true], ["E", false], ["A", false]]);
-    scr_tb_song_bass(_c, ["F", "G", "E", "A"], false);
-    scr_tb_song_drums(_c, _groove, false);
+    if (_stage >= 8) {
+        // 4: B1 - longer, higher notes over F G Em Am, stabs instead of the echo.
+        _c = _song.patterns[4];
+        scr_tb_song_lead(_c, [[0, "A3", 6], [6, "G3", 2], [8, "F3", 4], [12, "C3", 4],
+                              [16, "D3", 6], [22, "E3", 2], [24, "F3", 2], [26, "E3", 2], [28, "D3", 4],
+                              [32, "B2", 6], [38, "C3", 2], [40, "D3", 4], [44, "E3", 4],
+                              [48, "A2", 8], [56, "C3", 4], [60, "E3", 4]]);
+        scr_tb_song_stabs(_c, [["F", true], ["G", true], ["E", false], ["A", false]]);
+        scr_tb_song_bass(_c, ["F", "G", "E", "A"], false);
+        scr_tb_song_drums(_c, _groove, false);
 
-    // 5: B2 - a slide up to the top note, then the build back into the hook.
-    _c = _song.patterns[5];
-    scr_tb_song_lead(_c, [[0, "A3", 6], [6, "G3", 2], [8, "F3", 4], [12, "A3", 4],
-                          [16, "B3", 6, "slide"], [22, "A3", 2], [24, "G3", 8],
-                          [32, "E3", 4], [36, "G3", 4], [40, "C3", 4], [44, "E3", 4],
-                          [48, "D3", 4], [52, "G2", 2], [54, "B2", 2], [56, "D3", 2], [58, "G3", 6]]);
-    scr_tb_song_stabs(_c, [["F", true], ["G", true], ["C", true], ["G", true]]);
-    scr_tb_song_bass(_c, ["F", "G", "C", "G"], false);
-    scr_tb_song_drums(_c, _groove, true);
+        // 5: B2 - a slide up to the top note, then the build back into the hook.
+        _c = _song.patterns[5];
+        scr_tb_song_lead(_c, [[0, "A3", 6], [6, "G3", 2], [8, "F3", 4], [12, "A3", 4],
+                              [16, "B3", 6, "slide"], [22, "A3", 2], [24, "G3", 8],
+                              [32, "E3", 4], [36, "G3", 4], [40, "C3", 4], [44, "E3", 4],
+                              [48, "D3", 4], [52, "G2", 2], [54, "B2", 2], [56, "D3", 2], [58, "G3", 6]]);
+        scr_tb_song_stabs(_c, [["F", true], ["G", true], ["C", true], ["G", true]]);
+        scr_tb_song_bass(_c, ["F", "G", "C", "G"], false);
+        scr_tb_song_drums(_c, _groove, true);
+    }
 
-    // 6: the last hook - A2's lead over the stabs (no echo), round to the hook.
-    _c = _song.patterns[6];
-    scr_tb_song_lead(_c, _hook_call);
-    scr_tb_song_lead(_c, _answer_2);
-    scr_tb_song_stabs(_c, _hook_chords);
-    scr_tb_song_bass(_c, _hook_roots, false);
-    scr_tb_song_drums(_c, _groove, true);
+    if (_stage >= 9) {
+        // 0: intro - stabs over hats, the bass enters, then kicks and a roll.
+        _c = _song.patterns[0];
+        scr_tb_song_stabs(_c, _hook_chords);
+        scr_tb_song_bass(_c, _hook_roots, true);
+        scr_tb_song_drums(_c, ["hats", "hats", "four", "four"], true);
+        scr_tb_song_cell(_c, 0, 0, -1, 0, 15, 140);         // 140 BPM from the first row
 
-    _song.order = [0, 1, 2, 3, 4, 5, 2, 6];
-    _song.restart = 2;
+        // 1: intro 2 - the full groove, the lead's pick-up into the hook.
+        _c = _song.patterns[1];
+        scr_tb_song_stabs(_c, _hook_chords);
+        scr_tb_song_bass(_c, _hook_roots, false);
+        scr_tb_song_drums(_c, _groove, true);
+        scr_tb_song_lead(_c, [[56, "G2", 2], [58, "A2", 2], [60, "C3", 2], [62, "D3", 2]]);
+
+        // 6: the last hook - A2's lead over the stabs (no echo), round to the hook.
+        _c = _song.patterns[6];
+        scr_tb_song_lead(_c, _hook_call);
+        scr_tb_song_lead(_c, _answer_2);
+        scr_tb_song_stabs(_c, _hook_chords);
+        scr_tb_song_bass(_c, _hook_roots, false);
+        scr_tb_song_drums(_c, _groove, true);
+    }
+
+    // The order list grows with the song; the finished one restarts at the hook.
+    if (_stage >= 9) {
+        _song.order = [0, 1, 2, 3, 4, 5, 2, 6];
+        _song.restart = 2;
+    } else if (_stage >= 8) {
+        _song.order = [2, 3, 4, 5];
+    } else if (_stage >= 7) {
+        _song.order = [2, 3];
+    } else {
+        _song.order = [2];
+    }
     var _error = scr_tracker_song_save(_song, _name);
     if (_error != "") {
         show_debug_message("[tutorial] song not saved: " + _error);
         return "";
     }
     return _name;
+}
+
+/// Where SHOW ME puts the tracker's cursor for build stage _stage:
+/// [order position, channel, row].
+function scr_tb_hook_song_cursor(_stage) {
+    switch (_stage) {
+        case 2: return [0, 3, 0];
+        case 3: return [0, 2, 0];
+        case 4: return [0, 0, 0];
+        case 5: return [0, 0, 48];
+        case 6: return [0, 1, 0];
+        case 7: return [1, 0, 32];
+        case 8: return [2, 0, 0];
+        case 9: return [0, 1, 0];
+    }
+    return [0, 0, 0];
+}
+
+/// Tutorial 16's SHOW ME: rebuilds MySong up to _stage, links it to the
+/// PLAY MUSIC node and opens it in the TRACKER at that stage's work, with
+/// _hint in the tracker's message panel.
+function scr_tutorial_song_show(_stage, _hint) {
+    scr_audio_preview_stop();
+    scr_tb_hook_song("MySong", _stage);
+    with (obj_opcode_node) {
+        if (is_macro && macro_type == "PLAY_MOD") macro_asset_name = "MySong";
+    }
+    var _editor = scr_tracker_open("MySong");
+    var _cursor = scr_tb_hook_song_cursor(_stage);
+    with (_editor) {
+        tracker_load("MySong");
+        cur_pos = min(_cursor[0], array_length(song.order) - 1);
+        cur_ch = _cursor[1];
+        cur_row = _cursor[2];
+        cur_col = 0;
+        tracker_message(_hint, c_lime);
+    }
+    return _editor;
 }

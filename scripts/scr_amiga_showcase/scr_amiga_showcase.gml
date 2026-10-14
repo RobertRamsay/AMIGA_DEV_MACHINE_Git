@@ -64,8 +64,23 @@ function scr_amiga_showcase_shots() {
             var _play = scr_tour_find_node("PLAY_MOD");
             if (_play != noone) scr_tracker_open_for_node(_play);
         } },
-        { name : "35_tutorial_10_edit_map", setup : function() { scr_amiga_showcase_tutorial(10, "GK_MAP"); } }
+        { name : "35_tutorial_10_edit_map", setup : function() { scr_amiga_showcase_tutorial(10, "GK_MAP"); } },
+        { name : "36_tutorial_16_step_echo", setup : function() {
+            scr_amiga_showcase_tutorial(16, "");
+            global.tutorial_step = 6;
+        } },
+        { name : "37_tutorial_16_show_me_fades", setup : function() { scr_amiga_showcase_song_step(5); } },
+        { name : "38_tutorial_16_show_me_b_section", setup : function() { scr_amiga_showcase_song_step(8); } }
     ];
+}
+
+/// Tutorial 16 on guide step _step, with its SHOW ME pressed.
+function scr_amiga_showcase_song_step(_step) {
+    scr_amiga_showcase_tutorial(16, "");
+    global.tutorial_step = _step;
+    var _defs = scr_tutorial_defs();
+    var _def = _defs[15].steps[_step];
+    scr_tutorial_song_show(_def.song_stage, _def.hint);
 }
 
 /// Loads tutorial _number with its step guide; with _edit_type, presses the

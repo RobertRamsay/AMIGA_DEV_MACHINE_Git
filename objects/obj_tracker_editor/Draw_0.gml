@@ -63,12 +63,18 @@ draw_set_colour(_col_dim);
 scr_ui_text_mid(_sx + 12, _sy + 168, _sy + 190, "Positions " + string(array_length(song.order)) + "   Patterns " + string(array_length(song.patterns))
     + "   Instruments " + string(_used));
 scr_ui_text_mid(_sx + 12, _sy + 192, _sy + 214, "Size " + string(_bytes) + " bytes (" + string_format(_bytes / 1024, 1, 1) + " KB of chip RAM)");
-scr_ui_text_mid(_sx + 12, _sy + 216, _sy + 238, "SAVE, then pick it in a PLAY MUSIC node.");
-draw_set_colour(message_colour);
-// At most four lines, so a long message never runs into the transport bar.
-var _msg = message;
-while (string_height_ext(_msg, 18, _l.song[2] - _sx - 24) > 72 && string_length(_msg) > 4) _msg = string_copy(_msg, 1, string_length(_msg) - 5) + "..";
-draw_text_ext(_sx + 12, _sy + 240, _msg, 18, _l.song[2] - _sx - 24);
+// The message takes the place of the SAVE tip, and only as many lines as fit
+// above the panel's bottom edge (never into the transport bar).
+if (message == "") {
+    scr_ui_text_mid(_sx + 12, _sy + 216, _sy + 238, "SAVE, then pick it in a PLAY MUSIC node.");
+} else {
+    draw_set_colour(message_colour);
+    var _msg = message;
+    var _msg_w = _l.song[2] - _sx - 24;
+    var _msg_h = max(18, _l.song[3] - (_sy + 218) - 4);
+    while (string_height_ext(_msg, 18, _msg_w) > _msg_h && string_length(_msg) > 4) _msg = string_copy(_msg, 1, string_length(_msg) - 5) + "..";
+    draw_text_ext(_sx + 12, _sy + 218, _msg, 18, _msg_w);
+}
 
 // ORDER list.
 var _ox = _l.order[0] + 8;
