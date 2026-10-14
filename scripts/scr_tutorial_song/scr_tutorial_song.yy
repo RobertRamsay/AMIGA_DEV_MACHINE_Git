@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_tutorial_song",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_tutorial_song",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/Extensions/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

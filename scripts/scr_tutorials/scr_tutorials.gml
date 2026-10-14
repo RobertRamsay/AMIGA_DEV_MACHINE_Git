@@ -118,7 +118,7 @@ function scr_tutorial_defs() {
             summary : "Six rooms, music, sound effects, 64 and 128 pixel metatiles and an exit door: a whole little game.",
             features : ["PLAY MOD", "jump / collect / hurt sound effects", "3 x 2 rooms", "128x128 metatiles", "EXIT tile", "every Game Kit node"],
             steps : [
-                { title : "Music", text : "PLAY MOD starts the soundtrack (import your own .mod in SND-EDIT; the tutorial makes a short tune). TILE EVENTS and PHYSICS play the jump, pickup and hurt effects." },
+                { title : "Music", text : "PLAY MOD starts the soundtrack with Pixel Hearts, a song written in the TRACKER (EDIT on the node opens it; import your own .mod in SND-EDIT). TILE EVENTS and PHYSICS play the jump, pickup and hurt effects." },
                 { title : "The world", text : "Six rooms (3 x 2) are built from 64 x 64 and 128 x 128 metatiles - open TILE-EDIT's Map tab to see and stamp them." },
                 { title : "The goal", text : "Collect the gems, then reach the Exit door: the screen flashes and the level starts again." },
                 { title : "Make it yours", text : "Repaint tiles, redraw the hero's frames in SPR-EDIT, move enemies and the start point, tune PHYSICS, and press F5." }
@@ -175,7 +175,7 @@ function scr_tutorial_defs() {
             summary : "A song written in the TRACKER plays in the background; the fire button plays a sound effect over it.",
             features : ["TRACKER", "PLAY MOD", "PLAY SFX", "CODE: joystick fire", "SND-EDIT"],
             steps : [
-                { title : "The tracker", text : "The song Chiptune was written in the TRACKER: four channels, 64 rows a pattern, built-in synth instruments. Click EDIT on PLAY MOD to open it - Enter plays a pattern, the Z-M and Q-P keys play notes, Esc saves and closes." },
+                { title : "The tracker", text : "The song Chiptune (Pixel Hearts) was written in the TRACKER: four channels, 64 rows a pattern, built-in synth instruments - a lead with an echo channel, chord stabs, bass and drums. Click EDIT on PLAY MOD to open it - Enter plays a pattern, the Z-M and Q-P keys play notes, Esc saves and closes." },
                 { title : "PLAY MOD", text : "PLAY MOD starts the music from its song position and it keeps playing by itself (ptplayer on a CIA timer interrupt) while the program runs. PLAY and STOP on the node preview it here." },
                 { title : "Sound effects", text : "PLAY SFX plays the sample Zap on a free channel, mixed in with the music. Samples come from SND-EDIT (import WAV, IFF 8SVX or raw files) or from a tracker instrument with TO SAMPLE." },
                 { title : "Fire!", text : "The CODE block Wait for fire waits for the joystick button (right Ctrl in FS-UAE) and flashes the background; Wait for release waits for it to be let go. BRA shoot repeats it for ever. STOP MUSIC would end the music and effects." },

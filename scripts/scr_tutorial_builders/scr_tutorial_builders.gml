@@ -1,9 +1,10 @@
 /// @desc Node graphs and assets for the tutorials (see scr_tutorials).
 /// Everything is generated: tile art for 8/16/24/32 px tilesets, metatiles up
 /// to 128 x 128, maps, a hero and an enemy with four frames in every animation
-/// state, (tutorial 10) a short ProTracker tune and three sound effects, and
-/// for the classic-hardware tutorials 11-15 bitmaps, a 4-frame sprite bird, a
-/// 4-frame BOB ship and a song written with the TRACKER's song model.
+/// state, three sound effects, the song "Pixel Hearts" (tutorials 10 and 15,
+/// written with the TRACKER's song model in scr_tutorial_song), and for the
+/// classic-hardware tutorials 11-15 bitmaps, a 4-frame sprite bird and a
+/// 4-frame BOB ship.
 /// The user can repaint and re-tune all of it afterwards.
 
 // Tile indices every tutorial tileset shares.
@@ -415,7 +416,8 @@ function scr_tb_slime(_name, _h) {
 }
 
 // ---------------------------------------------------------------------------
-// Sound: three effects and a short 4-channel tune, all synthesised.
+// Sound: three synthesised effects. The music is scr_tb_hook_song
+// ("Pixel Hearts", in scr_tutorial_song).
 
 function scr_tb_sample(_name, _length, _kind) {
     _length = _length - (_length mod 2);
@@ -443,20 +445,6 @@ function scr_tb_sample(_name, _length, _kind) {
                 }
                 _v = _held * (1 - _t);
                 break;
-            case "drum":
-                if (_i mod (1 + _i div 250) == 0) {
-                    _seed = (_seed * 1103515245 + 12345) mod 2147483648;
-                    _held = ((_seed div 65536) mod 256) - 128;
-                }
-                _phase += 1 / (20 + 60 * _t);
-                _v = (_held * 0.5 + sin(_phase * 2 * pi) * 70) * power(1 - _t, 2);
-                break;
-            case "lead":
-                _v = _i < _length / 2 ? 60 : -60;
-                break;
-            case "bass":
-                _v = (_t < 0.5 ? (_t * 4 - 1) : (3 - _t * 4)) * 100;
-                break;
         }
         buffer_write(_buffer, buffer_s8, clamp(round(_v), -127, 127));
         _i += 1;
@@ -469,121 +457,6 @@ function scr_tb_sfx(_name, _length, _kind) {
     var _size = buffer_get_size(_buffer);
     scr_audio_define_sample(_name, buffer_base64_encode(_buffer, 0, _size), _size, 322, 64, false, 0, 0, "tutorial");
     buffer_delete(_buffer);
-}
-
-function scr_tb_u16(_buffer, _at, _value) {
-    buffer_poke(_buffer, _at, buffer_u8, (_value div 256) mod 256);
-    buffer_poke(_buffer, _at + 1, buffer_u8, _value mod 256);
-}
-
-function scr_tb_mod_note(_buffer, _pattern, _row, _channel, _sample, _period) {
-    var _at = 1084 + _pattern * 1024 + _row * 16 + _channel * 4;
-    buffer_poke(_buffer, _at, buffer_u8, (_sample & $F0) | ((_period >> 8) & $0F));
-    buffer_poke(_buffer, _at + 1, buffer_u8, _period & $FF);
-    buffer_poke(_buffer, _at + 2, buffer_u8, (_sample & $0F) << 4);
-    buffer_poke(_buffer, _at + 3, buffer_u8, 0);
-}
-
-/// A 2-pattern M.K. module: lead, bass and drum. Returns the MOD asset name.
-function scr_tb_tune(_name) {
-    var _samples = [scr_tb_sample("lead", 32, "lead"), scr_tb_sample("bass", 64, "bass"), scr_tb_sample("drum", 2400, "drum")];
-    var _loops = [true, true, false];
-    var _volumes = [36, 56, 64];
-    var _patterns = 2;
-    var _data_size = 0;
-    var _s = 0;
-    while (_s < 3) {
-        _data_size += buffer_get_size(_samples[_s]);
-        _s += 1;
-    }
-    var _length = 1084 + _patterns * 1024 + _data_size;
-    var _buffer = buffer_create(_length, buffer_fixed, 1);
-    buffer_fill(_buffer, 0, buffer_u8, 0, _length);
-
-    var _title = "adm tutorial tune";
-    var _c = 0;
-    while (_c < string_length(_title)) {
-        buffer_poke(_buffer, _c, buffer_u8, ord(string_char_at(_title, _c + 1)));
-        _c += 1;
-    }
-    // 31 sample headers; unused ones keep a 1-word repeat as ProTracker writes them.
-    _s = 0;
-    while (_s < 31) {
-        var _at = 20 + _s * 30;
-        if (_s < 3) {
-            var _words = buffer_get_size(_samples[_s]) div 2;
-            var _sname = ["lead", "bass", "drum"][_s];
-            _c = 0;
-            while (_c < string_length(_sname)) {
-                buffer_poke(_buffer, _at + _c, buffer_u8, ord(string_char_at(_sname, _c + 1)));
-                _c += 1;
-            }
-            scr_tb_u16(_buffer, _at + 22, _words);
-            buffer_poke(_buffer, _at + 25, buffer_u8, _volumes[_s]);
-            scr_tb_u16(_buffer, _at + 28, _loops[_s] ? _words : 1);
-        } else {
-            scr_tb_u16(_buffer, _at + 28, 1);
-        }
-        _s += 1;
-    }
-    buffer_poke(_buffer, 950, buffer_u8, 4);
-    buffer_poke(_buffer, 951, buffer_u8, 127);
-    var _order = [0, 1, 0, 1];
-    var _o = 0;
-    while (_o < 4) {
-        buffer_poke(_buffer, 952 + _o, buffer_u8, _order[_o]);
-        _o += 1;
-    }
-    buffer_poke(_buffer, 1080, buffer_u8, ord("M"));
-    buffer_poke(_buffer, 1081, buffer_u8, ord("."));
-    buffer_poke(_buffer, 1082, buffer_u8, ord("K"));
-    buffer_poke(_buffer, 1083, buffer_u8, ord("."));
-
-    // Periods: octave 1, 2, 3 of C D E F G A B.
-    var _C1 = 856, _F1 = 640, _G1 = 570, _A1 = 508;
-    var _C2 = 428, _D2 = 381, _E2 = 339, _F2 = 320, _G2 = 285, _A2 = 254, _B2 = 226;
-    var _C3 = 214, _D3 = 190, _E3 = 170, _F3 = 160, _G3 = 143, _A3 = 127;
-    var _melody = [
-        [_C3, _E3, _G3, _E3, _D3, _F3, _A3, _F3, _E3, _G3, _C3, _G3, _D3, _B2, _G2, _B2,
-         _C3, _E3, _G3, _A3, _G3, _E3, _D3, _C3, _A2, _C3, _E3, _C3, _G2, _B2, _D3, _B2],
-        [_A2, _C3, _E3, _C3, _F2, _A2, _C3, _A2, _G2, _B2, _D3, _B2, _C3, _E3, _G3, _E3,
-         _A3, _G3, _E3, _C3, _F3, _E3, _D3, _A2, _G2, _B2, _D3, _G3, _E3, _D3, _C3, _C3]
-    ];
-    var _bass = [
-        [_C1, _C1, _G1, _G1, _F1, _F1, _G1, _G1, _C1, _C1, _A1, _A1, _F1, _F1, _G1, _G1],
-        [_A1, _A1, _F1, _F1, _G1, _G1, _C1, _C1, _A1, _A1, _F1, _F1, _G1, _G1, _C1, _C1]
-    ];
-    var _p = 0;
-    while (_p < _patterns) {
-        var _row = 0;
-        while (_row < 64) {
-            if (_row mod 2 == 0) scr_tb_mod_note(_buffer, _p, _row, 0, 1, _melody[_p][_row div 2]);
-            if (_row mod 4 == 0) scr_tb_mod_note(_buffer, _p, _row, 1, 2, _bass[_p][_row div 4]);
-            if (_row mod 8 == 0 || _row mod 16 == 14) scr_tb_mod_note(_buffer, _p, _row, 2, 3, _C2);
-            _row += 1;
-        }
-        _p += 1;
-    }
-
-    var _write_at = 1084 + _patterns * 1024;
-    _s = 0;
-    while (_s < 3) {
-        var _size = buffer_get_size(_samples[_s]);
-        buffer_copy(_samples[_s], 0, _size, _buffer, _write_at);
-        _write_at += _size;
-        buffer_delete(_samples[_s]);
-        _s += 1;
-    }
-
-    var _info = scr_audio_mod_info(_buffer);
-    if (_info.ok) {
-        scr_audio_define_mod(_name, scr_audio_buffer_b64(_buffer, _length), _length, _info.title, _info.positions, _info.patterns, _info.samples_used, "tutorial");
-    } else {
-        show_debug_message("[tutorial] generated MOD rejected: " + _info.err);
-        _name = "";
-    }
-    buffer_delete(_buffer);
-    return _name;
 }
 
 // ---------------------------------------------------------------------------
@@ -825,7 +698,7 @@ function scr_tutorial_build_10(_chain) {
     scr_tb_metatile(_ts, "clouds64", 4, 4, "clouds");
     scr_tb_hero("Hero", 16);
     scr_tb_slime("Slime", 16);
-    var _music = scr_tb_tune("TutorialTune");
+    var _music = scr_tb_hook_song("TutorialTune");
     scr_tb_sfx("Jump", 2400, "jump");
     scr_tb_sfx("Pickup", 2600, "pickup");
     scr_tb_sfx("Hurt", 4000, "hurt");
@@ -1020,68 +893,6 @@ function scr_tb_bird_pixels(_frame) {
     return _canvas.p;
 }
 
-/// The song of tutorial 15, written with the TRACKER's song model
-/// (scr_tracker_song): its starter kit - 1 pulse lead, 2 bass, 3 organ,
-/// 4 kick, 5 snare, 6 hi-hat - and two patterns of Am F C G / F G Em Am.
-/// Returns the MOD asset name, or "" when it could not be saved.
-function scr_tb_tracker_song(_name) {
-    var _song = scr_tracker_song_new();
-    _song.title = "adm chiptune";
-    array_push(_song.patterns, scr_tracker_pattern_empty());
-    _song.order = [0, 1];
-    var _periods = scr_audio_note_periods();
-    // Chords as note numbers in octave 1 (0 = C, 9 = A ...): root, third, fifth.
-    var _chords = [
-        [[9, 12, 16], [5, 9, 12], [0, 4, 7], [7, 11, 14]],
-        [[5, 9, 12], [7, 11, 14], [4, 7, 11], [9, 12, 16]]
-    ];
-    var _arp = [0, 1, 2, 1, 0, 1, 2, 2];
-    var _p = 0;
-    while (_p < 2) {
-        var _cells = _song.patterns[_p];
-        var _row = 0;
-        while (_row < 64) {
-            var _chord = _chords[_p][_row div 16];
-            var _at = 0;
-            // Lead arpeggio, an octave up in the second pattern's last bar.
-            if (_row mod 2 == 0) {
-                var _note = clamp(_chord[_arp[(_row div 2) mod 8]] + 12 + ((_p == 1 && _row >= 48) ? 12 : 0), 0, 35);
-                _at = scr_tracker_cell_at(_row, 0);
-                _cells[@ _at] = _periods[_note];
-                _cells[@ _at + 1] = 1;
-            }
-            // Bass on the root.
-            if (_row mod 4 == 0) {
-                _at = scr_tracker_cell_at(_row, 1);
-                _cells[@ _at] = _periods[clamp(_chord[0] + 12, 0, 35)];
-                _cells[@ _at + 1] = 2;
-            }
-            // Drums: kick on the beat, snare on the back beat, hi-hat between.
-            _at = scr_tracker_cell_at(_row, 2);
-            if (_row mod 8 == 0) {
-                _cells[@ _at] = _periods[12];
-                _cells[@ _at + 1] = 4;
-            } else if (_row mod 8 == 4) {
-                _cells[@ _at] = _periods[12];
-                _cells[@ _at + 1] = 5;
-            }
-            if (_row mod 4 == 2) {
-                _at = scr_tracker_cell_at(_row, 3);
-                _cells[@ _at] = _periods[12];
-                _cells[@ _at + 1] = 6;
-            }
-            _row += 1;
-        }
-        _p += 1;
-    }
-    var _error = scr_tracker_song_save(_song, _name);
-    if (_error != "") {
-        show_debug_message("[tutorial] tracker song not saved: " + _error);
-        return "";
-    }
-    return _name;
-}
-
 /// 11: how macros work - SETBKG and COPPER BAR in INIT, the loop in an ORG column.
 function scr_tutorial_build_11(_chain) {
     var _bkg = scr_tb_macro(_chain, "SETBKG");
@@ -1173,7 +984,7 @@ function scr_tutorial_build_14(_chain) {
 
 /// 15: music from the TRACKER, and a sound effect on the fire button.
 function scr_tutorial_build_15(_chain) {
-    var _music = scr_tb_tracker_song("Chiptune");
+    var _music = scr_tb_hook_song("Chiptune");
     scr_tb_sfx("Zap", 2400, "jump");
     if (_music != "") {
         var _play = scr_tb_macro(_chain, "PLAY_MOD");

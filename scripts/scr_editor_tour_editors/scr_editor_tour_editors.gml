@@ -127,11 +127,12 @@ function scr_tour_show(_view) {
             break;
 
         case "tracker":
-            // The demo's TutorialTune, with the cursor a few rows in.
+            // The demo's TutorialTune (Pixel Hearts) on the hook: lead, echo, bass, drums.
             if (!instance_exists(obj_tracker_editor)) {
                 var _tracker = scr_tracker_open("");
                 with (_tracker) {
                     if (scr_asset_find_by_name("TutorialTune") != undefined) tracker_load("TutorialTune");
+                    cur_pos = min(2, array_length(song.order) - 1);
                     cur_row = 8;
                     cur_inst = 1;
                 }
