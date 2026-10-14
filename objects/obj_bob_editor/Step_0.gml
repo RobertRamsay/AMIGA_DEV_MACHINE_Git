@@ -1,3 +1,6 @@
+// The editor tour is presenting this screen: its input belongs to the tour.
+if (instance_exists(obj_editor_tour)) exit;
+
 var _mx = mouse_x;
 var _my = mouse_y;
 var _left_press = mouse_check_button_pressed(mb_left);

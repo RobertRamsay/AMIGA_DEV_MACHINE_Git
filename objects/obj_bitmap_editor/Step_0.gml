@@ -1,5 +1,8 @@
 var _layout = scr_bitmap_editor_layout(id);
 
+// The editor tour is presenting this screen: its input belongs to the tour.
+if (instance_exists(obj_editor_tour)) exit;
+
 // The floating 1:1 preview owns pointer input over its entire frame so tools
 // and palette controls underneath cannot be changed accidentally.
 var _over_bitmap_preview = point_in_rectangle(mouse_x, mouse_y,

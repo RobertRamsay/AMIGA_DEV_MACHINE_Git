@@ -21,6 +21,8 @@ function scr_amiga_selftest_init() {
     global.selftest_tutorial_index = -1;
     global.selftest_tutorial_ok = true;
     global.build_skip_launch = false;
+    // -admtour runs the whole editor tour, saving a screenshot of every step.
+    global.selftest_tour = false;
 
     var _p = 0;
     while (_p < parameter_count()) {
@@ -28,6 +30,10 @@ function scr_amiga_selftest_init() {
         if (parameter_string(_p) == "-admselftest" || parameter_string(_p) == "-admselftesterr") {
             global.selftest_active = true;
             if (_p + 1 < parameter_count()) global.selftest_mod_path = parameter_string(_p + 1);
+        }
+        if (parameter_string(_p) == "-admtour") {
+            global.selftest_active = true;
+            global.selftest_tour = true;
         }
         if (parameter_string(_p) == "-admtutorials") {
             global.selftest_active = true;
@@ -83,6 +89,10 @@ function scr_amiga_selftest_step() {
     global.selftest_timer += 1;
     if (global.selftest_tutorial_first > 0) {
         scr_amiga_selftest_tutorial_step();
+        return;
+    }
+    if (global.selftest_tour) {
+        scr_amiga_selftest_tour_step();
         return;
     }
 
@@ -277,4 +287,121 @@ function scr_amiga_selftest_tutorial_step() {
             }
             break;
     }
+}
+
+/// -admtour: loads tutorial 2 as the "user's" workspace, runs every tour step
+/// (screenshot of each in <data>/tour_shots/), ends the tour and checks the
+/// user's workspace came back unchanged.
+function scr_amiga_selftest_tour_step() {
+    switch (global.selftest_stage) {
+        case 0:
+            if (global.selftest_timer < 30) break;
+            global.workspace_dirty = false;
+            scr_tutorial_load(1);
+            global.workspace_dirty = true;          // pretend there is unsaved work
+            global.selftest_tour_before = scr_amiga_selftest_tour_signature();
+            scr_amiga_selftest_note("user workspace: " + global.selftest_tour_before);
+            global.selftest_tour_dir = global.amiga_dev_data_path + "/tour_shots";
+            scr_tour_open();
+            global.selftest_tour_missing = 0;
+            global.selftest_stage = 4;
+            global.selftest_timer = 0;
+            break;
+
+        case 5:
+            if (current_time - global.selftest_tour_auto_from < 2500) break;
+            var _auto_tour = instance_find(obj_editor_tour, 0);
+            scr_amiga_selftest_note("auto-play after 2.5 s at 1 s per step: step " + string(_auto_tour.tour_index + 1));
+            if (_auto_tour.tour_index != 2) global.selftest_tour_missing += 100;
+            _auto_tour.tour_auto = false;
+            global.tour_delay_seconds = global.selftest_tour_delay;
+            _auto_tour.tour_index = 0;
+            _auto_tour.tour_enter();
+            global.selftest_stage = 1;
+            global.selftest_timer = 0;
+            break;
+
+        case 4:
+            // The category picker, then start with every category ticked.
+            if (global.selftest_timer == 10) screen_save(global.selftest_tour_dir + "/000_menu.png");
+            if (global.selftest_timer < 12) break;
+            var _tour = instance_find(obj_editor_tour, 0);
+            _tour.tour_begin();
+            scr_amiga_selftest_note("tour steps: " + string(array_length(_tour.tour_queue)));
+            // Auto-play at 1 s per step (not saved to settings.ini).
+            global.selftest_tour_delay = global.tour_delay_seconds;
+            global.tour_delay_seconds = 1;
+            _tour.tour_auto = true;
+            _tour.tour_step_started = current_time;
+            global.selftest_tour_auto_from = current_time;
+            global.selftest_stage = 5;
+            global.selftest_timer = 0;
+            break;
+
+        case 1:
+            var _t = instance_find(obj_editor_tour, 0);
+            if (_t == noone) {
+                scr_amiga_selftest_note("tour vanished");
+                scr_amiga_selftest_finish(false);
+                break;
+            }
+            // Let the editor settle and draw, then capture.
+            if (global.selftest_timer == 12) {
+                var _entry = _t.tour_queue[_t.tour_index];
+                var _name = string_replace_all(string_format(_t.tour_index + 1, 3, 0), " ", "0") + "_" + _t.tour_categories[_entry.category_index].id;
+                screen_save(global.selftest_tour_dir + "/" + _name + ".png");
+                var _has_rect = _t.tour_rect != undefined;
+                if (!_has_rect && is_callable(_entry.step.rect)) {
+                    global.selftest_tour_missing += 1;
+                    scr_amiga_selftest_note("NO RECT: " + _name + " '" + _entry.step.title + "'");
+                }
+            }
+            if (global.selftest_timer >= 14) {
+                if (_t.tour_index >= array_length(_t.tour_queue) - 1) {
+                    _t.tour_next();               // to the "done" page
+                    global.selftest_stage = 2;
+                } else {
+                    _t.tour_next();
+                }
+                global.selftest_timer = 0;
+            }
+            break;
+
+        case 2:
+            if (global.selftest_timer == 10) screen_save(global.selftest_tour_dir + "/999_done.png");
+            if (global.selftest_timer < 12) break;
+            with (obj_editor_tour) tour_finish();
+            global.selftest_stage = 3;
+            global.selftest_timer = 0;
+            break;
+
+        case 3:
+            if (global.selftest_timer < 10) break;
+            var _after = scr_amiga_selftest_tour_signature();
+            scr_amiga_selftest_note("after tour: " + _after);
+            scr_amiga_selftest_note("dirty kept: " + string(global.workspace_dirty) + ", tutorial " + string(global.tutorial_current));
+            scr_amiga_selftest_note("steps without highlight: " + string(global.selftest_tour_missing));
+            var _ok = global.selftest_tour_missing == 0 && _after == global.selftest_tour_before && global.workspace_dirty && global.tutorial_current == 1
+                && !instance_exists(obj_editor_tour) && !instance_exists(obj_code_editor) && !instance_exists(obj_tile_editor)
+                && !file_exists(global.amiga_dev_data_path + "/tour_stash_workspace.json");
+            screen_save(global.selftest_tour_dir + "/999_restored.png");
+            global.workspace_dirty = false;
+            scr_amiga_selftest_finish(_ok);
+            break;
+    }
+}
+
+/// Node / root / asset summary used to compare workspaces.
+function scr_amiga_selftest_tour_signature() {
+    var _parts = [];
+    with (obj_amiga_root_node) array_push(_parts, root_type + "@" + string(node_x) + "," + string(node_y));
+    with (obj_opcode_node) array_push(_parts, (is_macro ? macro_type : opcode_mnemonic) + "@" + string(node_x) + "," + string(node_y) + "/" + node_label);
+    array_sort(_parts, true);
+    var _assets = [];
+    var _a = 0;
+    while (_a < array_length(global.asset_list)) {
+        array_push(_assets, global.asset_list[_a].type + ":" + global.asset_list[_a].name);
+        _a += 1;
+    }
+    return string(array_length(_parts)) + " items [" + string_join_ext(" ", _parts) + "] assets [" + string_join_ext(" ", _assets) + "]";
 }

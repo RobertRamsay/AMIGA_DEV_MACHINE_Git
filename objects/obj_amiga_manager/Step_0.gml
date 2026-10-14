@@ -27,7 +27,8 @@ if (global.autosave_recovery_pending || global.tutorial_home_startup_pending) {
 // Autosave is evaluated before modal-editor blocking so bitmap, BOB and colour
 // work can be recovered without closing its editor. Holding a mouse button or
 // editing a text field postpones the save until five quiet seconds have passed.
-if (global.workspace_dirty && global.autosave_due_time >= 0 && current_time >= global.autosave_due_time) {
+// The editor tour runs on a demo workspace: never autosave that over the user's recovery file.
+if (global.workspace_dirty && global.autosave_due_time >= 0 && current_time >= global.autosave_due_time && !instance_exists(obj_editor_tour)) {
     var _autosave_busy = mouse_check_button(mb_left)
         || mouse_check_button(mb_right)
         || global.operand_edit_owner_uid != -1
@@ -293,6 +294,10 @@ if (_over_sound_editor && mouse_check_button_pressed(mb_left)) scr_audio_editor_
 // TILE-EDIT: tilesets, metatiles, maps and animation sets for the Game Kit.
 var _over_tile_editor = point_in_rectangle(mouse_x, mouse_y, top_ui_tutorial_x, top_ui_row_1_y, top_ui_tutorial_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height);
 if (_over_tile_editor && mouse_check_button_pressed(mb_left)) scr_tile_editor_open();
+
+// TOUR (or F1): the guided walkthrough of every panel and editor.
+var _over_tour = point_in_rectangle(mouse_x, mouse_y, top_ui_tutorial_x + 104, top_ui_row_1_y, top_ui_tutorial_x + 104 + top_ui_button_width, top_ui_row_1_y + top_ui_button_height);
+if ((_over_tour && mouse_check_button_pressed(mb_left)) || keyboard_check_pressed(vk_f1)) scr_tour_open();
 
 // TUTORIALS: the opening page with the ten tutorials.
 var _over_tutorials = point_in_rectangle(mouse_x, mouse_y, top_ui_tutorial_x, top_ui_row_2_y, top_ui_tutorial_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height);

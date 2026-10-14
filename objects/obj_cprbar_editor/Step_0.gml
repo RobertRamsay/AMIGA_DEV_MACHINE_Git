@@ -1,3 +1,6 @@
+// The editor tour is presenting this screen: its input belongs to the tour.
+if (instance_exists(obj_editor_tour)) exit;
+
 /// @desc obj_cprbar_editor Step
 if (!instance_exists(target_node_id)) {
     instance_destroy();

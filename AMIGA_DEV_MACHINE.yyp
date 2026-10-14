@@ -213,6 +213,9 @@
   },
   "name":"AMIGA_DEV_MACHINE",
   "resources":[
+    {"id":{"name":"scr_editor_tour_editors","path":"scripts/scr_editor_tour_editors/scr_editor_tour_editors.yy",},},
+    {"id":{"name":"scr_editor_tour_steps","path":"scripts/scr_editor_tour_steps/scr_editor_tour_steps.yy",},},
+    {"id":{"name":"scr_editor_tour","path":"scripts/scr_editor_tour/scr_editor_tour.yy",},},
     {"id":{"name":"scr_gk_node_ui","path":"scripts/scr_gk_node_ui/scr_gk_node_ui.yy",},},
     {"id":{"name":"scr_gamekit_emit","path":"scripts/scr_gamekit_emit/scr_gamekit_emit.yy",},},
     {"id":{"name":"scr_tutorial_builders","path":"scripts/scr_tutorial_builders/scr_tutorial_builders.yy",},},
@@ -247,6 +250,7 @@
     {"id":{"name":"obj_tile_editor","path":"objects/obj_tile_editor/obj_tile_editor.yy",},},
     {"id":{"name":"obj_opcode_palette_item","path":"objects/obj_opcode_palette_item/obj_opcode_palette_item.yy",},},
     {"id":{"name":"obj_tutorial_guide","path":"objects/obj_tutorial_guide/obj_tutorial_guide.yy",},},
+    {"id":{"name":"obj_editor_tour","path":"objects/obj_editor_tour/obj_editor_tour.yy",},},
     {"id":{"name":"obj_tutorial_home","path":"objects/obj_tutorial_home/obj_tutorial_home.yy",},},
     {"id":{"name":"SCENE_AmigaMain","path":"rooms/SCENE_AmigaMain/SCENE_AmigaMain.yy",},},
     {"id":{"name":"scr_addressing_mode_flag","path":"scripts/scr_addressing_mode_flag/scr_addressing_mode_flag.yy",},},

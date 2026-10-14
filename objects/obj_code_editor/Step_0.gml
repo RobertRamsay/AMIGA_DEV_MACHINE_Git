@@ -14,6 +14,9 @@ if (!instance_exists(editor_node)) {
 ed_layout();
 ac_row_h = max(line_h, ui_h) + 2;
 
+// The editor tour is presenting this screen: its input belongs to the tour.
+if (instance_exists(obj_editor_tour)) exit;
+
 var _ctrl = ed_kd(vk_control);
 var _shift = ed_kd(vk_shift);
 var _alt = ed_kd(vk_alt);
