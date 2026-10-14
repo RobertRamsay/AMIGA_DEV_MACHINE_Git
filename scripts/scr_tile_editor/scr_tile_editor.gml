@@ -1,6 +1,7 @@
 /// @desc Helpers for the TILES & MAPS window (obj_tile_editor). Everything
 /// here is plain data work on the Game Kit assets (see scr_gamekit_assets):
-/// no drawing, no instance state, so scr_tile_editor_selftest can check it.
+/// no instance state, so scr_tile_editor_selftest can check it (the only
+/// drawing function is scr_te_rect_in_bevel, at the end).
 /// Assets are always passed in freshly looked up by name; nothing here keeps
 /// a struct between calls.
 
@@ -394,4 +395,47 @@ function scr_te_sprite_names_of_height(_height) {
 /// 12-bit palette entry _i of _tileset as a GameMaker colour.
 function scr_te_palette_colour(_tileset, _i) {
     return make_colour_rgb(_tileset.colour_r[_i] * 17, _tileset.colour_g[_i] * 17, _tileset.colour_b[_i] * 17);
+}
+
+/// @desc scr_te_rect_in_bevel(x1, y1, x2, y2, bx1, by1, bx2, by2)
+/// The one drawing helper here (also used by the code and sound editors):
+/// fills the square rectangle x1..x2 / y1..y2 in the current colour and
+/// alpha, clipped to the bevelled box bx1..bx2 / by1..by2 drawn with
+/// scr_ui_box, so selection rows and scroll thumbs inside a list box never
+/// poke out through its cut top-left / bottom-right corners.
+function scr_te_rect_in_bevel(_x1, _y1, _x2, _y2, _bx1, _by1, _bx2, _by2) {
+    var _b = scr_ui_bevel(_bx2 - _bx1, _by2 - _by1);
+    var _poly = [[_x1, _y1], [_x2 + 1, _y1], [_x2 + 1, _y2 + 1], [_x1, _y2 + 1]];
+    // Keep the side where _s * (x + y) >= _s * _c (Sutherland-Hodgman, one plane).
+    var _clip = function(_p, _s, _c) {
+        var _out = [];
+        var _n = array_length(_p);
+        var _i = 0;
+        while (_i < _n) {
+            var _a = _p[_i];
+            var _q = _p[(_i + 1) mod _n];
+            var _da = _s * (_a[0] + _a[1] - _c);
+            var _dq = _s * (_q[0] + _q[1] - _c);
+            if (_da >= 0) array_push(_out, _a);
+            if ((_da >= 0) != (_dq >= 0)) {
+                var _t = _da / (_da - _dq);
+                array_push(_out, [_a[0] + (_q[0] - _a[0]) * _t, _a[1] + (_q[1] - _a[1]) * _t]);
+            }
+            _i += 1;
+        }
+        return _out;
+    };
+    _poly = _clip(_poly, 1, _bx1 + _by1 + _b);
+    _poly = _clip(_poly, -1, _bx2 + 1 + _by2 + 1 - _b);
+    var _n = array_length(_poly);
+    if (_n < 3) return;
+    draw_primitive_begin(pr_trianglelist);
+    var _k = 1;
+    while (_k < _n - 1) {
+        draw_vertex(_poly[0][0], _poly[0][1]);
+        draw_vertex(_poly[_k][0], _poly[_k][1]);
+        draw_vertex(_poly[_k + 1][0], _poly[_k + 1][1]);
+        _k += 1;
+    }
+    draw_primitive_end();
 }

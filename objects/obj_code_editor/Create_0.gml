@@ -1582,7 +1582,7 @@ ed_apply_font = function() {
         char_w = max(1, max(string_width("M"), string_width("W"), string_width("0")));
     }
     line_h = max(8, ceil(string_height("Mg|")) + 2);
-    draw_set_font(font_CyberVerse);
+    draw_set_font(UI_FONT);
     ui_h = max(12, string_height("Ag"));
 };
 
@@ -1596,7 +1596,7 @@ ed_change_font_size = function(_delta) {
 };
 
 ed_add_button = function(_id, _label, _x1, _y1, _y2, _active) {
-    draw_set_font(font_CyberVerse);
+    draw_set_font(UI_FONT);
     var _w = string_width(_label) + 18;
     array_push(buttons, { id : _id, label : _label, x1 : _x1, y1 : _y1, x2 : _x1 + _w, y2 : _y2, active : _active });
     return _x1 + _w + 6;
@@ -1613,7 +1613,7 @@ ed_layout = function() {
     title_y2 = panel_y1 + ui_h + 12;
 
     // title-bar buttons (right aligned): measure first
-    draw_set_font(font_CyberVerse);
+    draw_set_font(UI_FONT);
     var _right_labels = ["FIND", "REPLACE", "GO TO", "BUILD (F5)", "CLOSE"];
     var _right_ids = ["find", "replace", "goto", "build", "close"];
     var _total = 0;
@@ -1631,8 +1631,8 @@ ed_layout = function() {
 
     toolbar_y1 = title_y2 + 6;
     toolbar_y2 = toolbar_y1 + ui_h + 8;
-    _bx = panel_x1 + 8;
-    draw_set_font(font_CyberVerse);
+    _bx = panel_x1 + 16;
+    draw_set_font(UI_FONT);
     _bx += string_width("INSERT:") + 10;
     _i = 0;
     while (_i < array_length(snippets)) {
@@ -1650,8 +1650,8 @@ ed_layout = function() {
     if (find_open || goto_open) {
         findbar_y1 = _y;
         findbar_y2 = _y + ui_h + 10;
-        var _fx = panel_x1 + 8;
-        draw_set_font(font_CyberVerse);
+        var _fx = panel_x1 + 16;
+        draw_set_font(UI_FONT);
         if (goto_open) {
             _fx += string_width("GO TO LINE:") + 10;
             goto_field_rect = [_fx, findbar_y1, _fx + 160, findbar_y2];

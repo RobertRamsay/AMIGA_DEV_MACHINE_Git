@@ -1,4 +1,6 @@
-draw_set_font(font_CyberVerse);
+// Chrome (window, header, list boxes, buttons) uses the house style
+// (scr_ui_style); waveform, scopes and VU meters stay square.
+draw_set_font(UI_FONT);
 draw_set_halign(fa_left);
 draw_set_valign(fa_top);
 
@@ -8,25 +10,25 @@ var _col_button = make_colour_rgb(45, 65, 85);
 var _col_button_on = make_colour_rgb(35, 110, 75);
 var _col_box = make_colour_rgb(10, 12, 18);
 var _col_dim_text = make_colour_rgb(150, 160, 175);
+var _col_edge = make_colour_rgb(90, 104, 128);
 
 // Dimmed backdrop over the whole workspace.
 draw_set_alpha(0.6);
 draw_set_colour(c_black);
 draw_rectangle(0, 0, room_width, room_height, false);
 draw_set_alpha(0.97);
-draw_set_colour(_col_panel);
-draw_rectangle(panel_x, panel_y, panel_x + panel_w, panel_y + panel_h, false);
+scr_ui_box_fill(panel_x, panel_y, panel_x + panel_w, panel_y + panel_h, _col_panel);
 draw_set_alpha(1);
-draw_set_colour(_col_header);
-draw_rectangle(panel_x, panel_y, panel_x + panel_w, panel_y + header_h, false);
+scr_ui_box_outline(panel_x, panel_y, panel_x + panel_w, panel_y + panel_h, _col_edge);
+scr_ui_box_fill(panel_x + 3, panel_y + 3, panel_x + panel_w - 3, panel_y + header_h, _col_header);
 draw_set_colour(c_white);
-draw_text(panel_x + 10, panel_y + 5, "SOUND & MUSIC");
+scr_ui_text_mid(panel_x + 16, panel_y + 3, panel_y + header_h, "SOUND & MUSIC");
 draw_set_colour(_col_dim_text);
-draw_text(panel_x + 200, panel_y + 5, "Grab to drag   Esc closes   Shift+click steps by 10");
+scr_ui_text_mid(panel_x + 200, panel_y + 3, panel_y + header_h, "Grab to drag   Esc closes   Shift+click steps by 10");
 
-// Import settings line.
+// Import settings line (centred between the < > buttons).
 draw_set_colour(c_white);
-draw_text(panel_x + 42, panel_y + 38, "IMPORT RATE " + string(round(scr_audio_period_rate(global.audio_import_period)))
+scr_ui_text_centred(panel_x + 162, panel_y + 47, "IMPORT RATE " + string(round(scr_audio_period_rate(global.audio_import_period)))
     + " Hz (" + string(global.audio_import_period) + ")");
 
 // --- the two lists -----------------------------------------------------------
@@ -42,42 +44,38 @@ while (_l < 2) {
     var _scroll = _lists[_l][3];
     var _selected = _lists[_l][4];
     var _kind = _lists[_l][5];
+    var _lb = _list_y + list_rows * row_h;
     draw_set_colour(focus_kind == _kind ? c_yellow : c_white);
-    draw_text(_lx, panel_y + 72, _lists[_l][0] + "  (" + string(array_length(_names)) + ")");
-    draw_set_colour(_col_box);
-    draw_rectangle(_lx, _list_y, _lx + 300, _list_y + list_rows * row_h, false);
-    draw_set_colour(c_gray);
-    draw_rectangle(_lx, _list_y, _lx + 300, _list_y + list_rows * row_h, true);
+    scr_ui_text_mid(_lx, panel_y + 66, _list_y, _lists[_l][0] + "  (" + string(array_length(_names)) + ")");
+    scr_ui_box_fill(_lx, _list_y, _lx + 300, _lb, _col_box);
     var _r = 0;
     while (_r < list_rows && _scroll + _r < array_length(_names)) {
         var _name = _names[_scroll + _r];
         var _ry = _list_y + _r * row_h;
         if (_name == _selected) {
             draw_set_colour(focus_kind == _kind ? _col_button_on : _col_button);
-            draw_rectangle(_lx + 1, _ry + 1, _lx + 299, _ry + row_h - 1, false);
+            scr_te_rect_in_bevel(_lx + 1, _ry + 1, _lx + 299, _ry + row_h - 1, _lx, _list_y, _lx + 300, _lb);
         }
         var _shown = _name;
         if (rename_active && rename_kind == _kind && _name == rename_old) {
             _shown = rename_text + ((current_time div 400) mod 2 == 0 ? "_" : "");
-            draw_set_colour(c_black);
-            draw_rectangle(_lx + 1, _ry + 1, _lx + 299, _ry + row_h - 1, false);
-            draw_set_colour(c_yellow);
-            draw_rectangle(_lx + 1, _ry + 1, _lx + 299, _ry + row_h - 1, true);
+            scr_ui_box(_lx + 1, _ry + 1, _lx + 299, _ry + row_h - 1, c_black, c_yellow, false);
         }
         draw_set_colour(global.audio_preview_name == _name ? c_lime : c_white);
-        draw_text(_lx + 6, _ry + 2, _shown);
+        scr_ui_text_mid(_lx + 10, _ry, _ry + row_h, _shown);
         _r += 1;
     }
     if (array_length(_names) > list_rows) {
         var _bar_h = list_rows * row_h * list_rows / array_length(_names);
         var _bar_y = _list_y + (list_rows * row_h - _bar_h) * _scroll / max(1, array_length(_names) - list_rows);
         draw_set_colour(c_gray);
-        draw_rectangle(_lx + 294, _bar_y, _lx + 299, _bar_y + _bar_h, false);
+        scr_te_rect_in_bevel(_lx + 294, _bar_y, _lx + 299, _bar_y + _bar_h, _lx, _list_y, _lx + 300, _lb);
     }
     if (array_length(_names) == 0) {
         draw_set_colour(_col_dim_text);
-        draw_text(_lx + 8, _list_y + 6, "Nothing yet - press IMPORT");
+        scr_ui_text_mid(_lx + 10, _list_y, _list_y + row_h + 4, "Nothing yet - press IMPORT");
     }
+    scr_ui_box_outline(_lx, _list_y, _lx + 300, _lb, c_gray);
     _l += 1;
 }
 if (rename_active) {
@@ -90,30 +88,16 @@ if (rename_active) {
 var _i = 0;
 while (_i < array_length(controls)) {
     var _c = controls[_i];
-    if (_c.id == "close") {
-        draw_set_colour(c_red);
-        draw_text(_c.x1 + 5, _c.y1 + 1, "X");
-    } else {
-        var _hover = point_in_rectangle(mouse_x, mouse_y, _c.x1, _c.y1, _c.x2, _c.y2);
-        draw_set_colour(_c.on ? _col_button_on : _col_button);
-        draw_set_alpha(_c.enabled ? 1 : 0.4);
-        draw_rectangle(_c.x1, _c.y1, _c.x2, _c.y2, false);
-        draw_set_colour(_hover && _c.enabled ? c_white : c_gray);
-        draw_rectangle(_c.x1, _c.y1, _c.x2, _c.y2, true);
-        draw_set_colour(c_white);
-        draw_set_halign(fa_center);
-        draw_text((_c.x1 + _c.x2) div 2, (_c.y1 + _c.y2) div 2 - 10, _c.label);
-        draw_set_halign(fa_left);
-        draw_set_alpha(1);
-    }
+    var _hover = point_in_rectangle(mouse_x, mouse_y, _c.x1, _c.y1, _c.x2, _c.y2);
+    var _fill = (_c.id == "close") ? make_colour_rgb(120, 40, 46) : (_c.on ? _col_button_on : _col_button);
+    scr_ui_button(_c.x1, _c.y1, _c.x2, _c.y2, _c.label, _fill, _hover && _c.enabled, _c.enabled);
     _i += 1;
 }
 
 // --- details panel -----------------------------------------------------------
 var _dx = panel_x + 652;
 var _dy = panel_y + 72;
-draw_set_colour(c_gray);
-draw_rectangle(panel_x + 640, panel_y + 66, panel_x + panel_w - 12, panel_y + panel_h - 12, true);
+scr_ui_box_outline(panel_x + 640, panel_y + 66, panel_x + panel_w - 12, panel_y + panel_h - 12, _col_edge);
 var _pos = scr_audio_preview_pos();
 
 if (focus_kind == "MOD") {
@@ -280,14 +264,14 @@ if (focus_kind == "MOD") {
         // Settings rows (controls drawn above).
         var _row_y = panel_y + 340;
         draw_set_colour(c_white);
-        draw_text(_dx, _row_y + 1, "RATE");
-        draw_text(_dx + 150, _row_y + 1, string(round(scr_audio_period_rate(_sample.period))) + " Hz  period " + string(_sample.period)
+        scr_ui_text_mid(_dx, _row_y, _row_y + 22, "RATE");
+        scr_ui_text_centred(_dx + 306, _row_y + 11, string(round(scr_audio_period_rate(_sample.period))) + " Hz  period " + string(_sample.period)
             + "  " + scr_audio_period_note_name(_sample.period));
-        draw_text(_dx, _row_y + 31, "VOLUME");
-        draw_text(_dx + 165, _row_y + 31, string(_sample.volume));
-        draw_text(_dx, _row_y + 61, "LOOP");
+        scr_ui_text_mid(_dx, _row_y + 30, _row_y + 52, "VOLUME");
+        scr_ui_text_centred(_dx + 186, _row_y + 41, string(_sample.volume));
+        scr_ui_text_mid(_dx, _row_y + 60, _row_y + 82, "LOOP");
         if (_sample.loop) {
-            draw_text(_dx + 262, _row_y + 61, string(_sample.loop_start) + " - " + string(_sample.loop_start + _sample.loop_length)
+            scr_ui_text_mid(_dx + 264, _row_y + 60, _row_y + 82, string(_sample.loop_start) + " - " + string(_sample.loop_start + _sample.loop_length)
                 + "  (" + string(_sample.loop_length) + " b)");
         }
 
