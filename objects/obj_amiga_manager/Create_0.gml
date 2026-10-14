@@ -559,6 +559,7 @@ global.sprite_circle_cy = 0;
 global.sprite_circle_r = 0;
 global.sprite_circle_value = 1;
 global.sprite_circle_button = mb_left;
+global.sprite_slider_drag = -1;   // R / G / B slider being dragged, -1 = none
 global.sprite_drawing = false;
 global.sprite_drawing_value = 1;
 global.sprite_drawing_button = mb_left;

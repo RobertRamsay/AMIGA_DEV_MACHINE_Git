@@ -447,12 +447,21 @@ while (_swatch_index < 32) {
     _swatch_index += 1;
 }
 
-// Live 12-bit RGB sliders for the selected COLOR register.
-if (mouse_check_button(mb_left)) {
+// Live 12-bit RGB sliders for the selected COLOR register. A slider only
+// follows a drag that started on it, so a stroke or line crossing the
+// sliders cannot recolour the palette.
+if (mouse_check_button_pressed(mb_left)) {
+    var _press_on = function(_y, _l) { return point_in_rectangle(mouse_x, mouse_y, _l.slider_x, _y, _l.slider_x + _l.slider_width, _y + _l.slider_height); };
+    if (_press_on(_layout.slider_r_y, _layout)) bitmap_slider_drag = 0;
+    else if (_press_on(_layout.slider_g_y, _layout)) bitmap_slider_drag = 1;
+    else if (_press_on(_layout.slider_b_y, _layout)) bitmap_slider_drag = 2;
+}
+if (!mouse_check_button(mb_left)) bitmap_slider_drag = -1;
+if (mouse_check_button(mb_left) && bitmap_slider_drag >= 0) {
     var _slider_value = clamp(floor((mouse_x - _layout.slider_x) / _layout.slider_step_width), 0, 15);
     var _palette_index = bitmap_palette_edit_index;
 
-    if (point_in_rectangle(mouse_x, mouse_y, _layout.slider_x, _layout.slider_r_y, _layout.slider_x + _layout.slider_width, _layout.slider_r_y + _layout.slider_height)) {
+    if (bitmap_slider_drag == 0) {
         if (bitmap_colour_r[_palette_index] != _slider_value) {
             if (!bitmap_palette_drag_active) {
                 scr_bitmap_push_undo(id);
@@ -464,7 +473,7 @@ if (mouse_check_button(mb_left)) {
         }
     }
 
-    if (point_in_rectangle(mouse_x, mouse_y, _layout.slider_x, _layout.slider_g_y, _layout.slider_x + _layout.slider_width, _layout.slider_g_y + _layout.slider_height)) {
+    if (bitmap_slider_drag == 1) {
         if (bitmap_colour_g[_palette_index] != _slider_value) {
             if (!bitmap_palette_drag_active) {
                 scr_bitmap_push_undo(id);
@@ -476,7 +485,7 @@ if (mouse_check_button(mb_left)) {
         }
     }
 
-    if (point_in_rectangle(mouse_x, mouse_y, _layout.slider_x, _layout.slider_b_y, _layout.slider_x + _layout.slider_width, _layout.slider_b_y + _layout.slider_height)) {
+    if (bitmap_slider_drag == 2) {
         if (bitmap_colour_b[_palette_index] != _slider_value) {
             if (!bitmap_palette_drag_active) {
                 scr_bitmap_push_undo(id);

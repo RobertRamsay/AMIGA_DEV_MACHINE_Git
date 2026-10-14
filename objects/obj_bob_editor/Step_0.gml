@@ -122,10 +122,16 @@ for (var _i = 0; _i < 32; _i += 1) {
 
 // Three genuine Amiga 4-bit component sliders. Palette edits are committed
 // immediately, so the bitmap editor sees them next time it draws/opens.
+// A slider only follows a drag that started on it, so a paint stroke or a
+// line passing over the sliders cannot recolour the pen.
 var _slider_y = panel_y + 250;
+if (!_left) slider_drag = -1;
 for (var _component = 0; _component < 3; _component += 1) {
     var _sy2 = _slider_y + _component * 42;
-    if (_left && point_in_rectangle(_mx, _my, _palette_x + slider_track_x, _sy2, _palette_x + slider_track_x + 15 * slider_step, _sy2 + 20)) {
+    if (_left_press && point_in_rectangle(_mx, _my, _palette_x + slider_track_x, _sy2, _palette_x + slider_track_x + 15 * slider_step, _sy2 + 20)) {
+        slider_drag = _component;
+    }
+    if (_left && slider_drag == _component) {
         var _v = clamp(round((_mx - (_palette_x + slider_track_x)) / slider_step), 0, 15);
         if (_component == 0) colour_r[pen_index] = _v;
         if (_component == 1) colour_g[pen_index] = _v;

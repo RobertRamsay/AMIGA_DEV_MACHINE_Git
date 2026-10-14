@@ -778,14 +778,22 @@ if (global.sprite_editor_open) {
 
     // Live 12-bit Amiga palette editor. Each slider has exactly 16 discrete
     // positions (0-F); dragging updates every sprite pixel using that swatch.
+    // A slider only follows a drag that started on it, so a stroke or line
+    // crossing the sliders cannot recolour the palette.
+    if (mouse_check_button_pressed(mb_left)) {
+        if (point_in_rectangle(mouse_x, mouse_y, _layout.slider_x, _layout.slider_r_y, _layout.slider_x + _layout.slider_width, _layout.slider_r_y + _layout.slider_height)) global.sprite_slider_drag = 0;
+        else if (point_in_rectangle(mouse_x, mouse_y, _layout.slider_x, _layout.slider_g_y, _layout.slider_x + _layout.slider_width, _layout.slider_g_y + _layout.slider_height)) global.sprite_slider_drag = 1;
+        else if (point_in_rectangle(mouse_x, mouse_y, _layout.slider_x, _layout.slider_b_y, _layout.slider_x + _layout.slider_width, _layout.slider_b_y + _layout.slider_height)) global.sprite_slider_drag = 2;
+    }
+    if (!mouse_check_button(mb_left)) global.sprite_slider_drag = -1;
     if (mouse_check_button(mb_left) && global.sprite_palette_edit_index >= 1) {
         var _palette_array_index = global.sprite_palette_edit_index - 1;
         var _slider_value = floor((mouse_x - _layout.slider_x) / _layout.slider_step_width);
         _slider_value = clamp(_slider_value, 0, 15);
 
-        var _over_r_slider = point_in_rectangle(mouse_x, mouse_y, _layout.slider_x, _layout.slider_r_y, _layout.slider_x + _layout.slider_width, _layout.slider_r_y + _layout.slider_height);
-        var _over_g_slider = point_in_rectangle(mouse_x, mouse_y, _layout.slider_x, _layout.slider_g_y, _layout.slider_x + _layout.slider_width, _layout.slider_g_y + _layout.slider_height);
-        var _over_b_slider = point_in_rectangle(mouse_x, mouse_y, _layout.slider_x, _layout.slider_b_y, _layout.slider_x + _layout.slider_width, _layout.slider_b_y + _layout.slider_height);
+        var _over_r_slider = global.sprite_slider_drag == 0;
+        var _over_g_slider = global.sprite_slider_drag == 1;
+        var _over_b_slider = global.sprite_slider_drag == 2;
 
         if (_over_r_slider) {
             global.sprite_colour_r[_palette_array_index] = _slider_value;

@@ -41,6 +41,7 @@ bitmap_line_index = 1;
 bitmap_line_use_dither = false;
 // CIRCLE / DISC drag: centre, radius, colour.
 bitmap_circle_active = false;
+bitmap_slider_drag = -1;   // R / G / B slider being dragged, -1 = none
 bitmap_circle_cx = 0;
 bitmap_circle_cy = 0;
 bitmap_circle_r = 0;

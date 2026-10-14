@@ -18,6 +18,7 @@ swatch_size = 36;
 swatch_step = 43;
 slider_track_x = 22;
 slider_step = 18;
+slider_drag = -1;   // R / G / B slider being dragged, -1 = none
 
 bob_width = 32;
 bob_height = 32;
