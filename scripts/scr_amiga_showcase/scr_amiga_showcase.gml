@@ -70,6 +70,19 @@ function scr_amiga_showcase_shots() {
             global.tutorial_step = 6;
         } },
         { name : "37_tutorial_16_show_me_fades", setup : function() { scr_amiga_showcase_song_step(5); } },
+        { name : "39_init_build_hover", setup : function() {
+            with (obj_tracker_editor) instance_destroy();
+            scr_amiga_showcase_tutorial(1, "");
+            with (obj_tutorial_guide) instance_destroy();
+            // Put the mouse on INIT/BUILD: it pulses and the help panel says BUILD AND RUN.
+            with (obj_amiga_root_node) {
+                if (root_type == "INIT") {
+                    var _mx = node_x + global.pan_x + node_width / 2;
+                    var _my = node_y + global.pan_y + node_height / 2;
+                    window_mouse_set(_mx * window_get_width() / room_width, _my * window_get_height() / room_height);
+                }
+            }
+        } },
         { name : "38_tutorial_16_show_me_b_section", setup : function() { scr_amiga_showcase_song_step(8); } }
     ];
 }
