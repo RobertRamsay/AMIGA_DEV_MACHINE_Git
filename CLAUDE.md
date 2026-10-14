@@ -71,6 +71,14 @@ ptplayer approach.
 - Machines: **A600** (OCS/ECS, 1 MB chip, 68000) and **A1200** (AGA, 2 MB chip, 68020); `global.current_chipset_mode` follows the machine. Toolbar: MACH, RUN (F5), ROM (left click choose Kickstart for this machine, right click back to AROS), BOOT (AUTO/DOS).
 - Args mirror ADAM's: `--amiga_model`, `--chip_memory`, no fast/slow RAM, `--floppy_drive_speed=0`, no input grab, joystick port 1 keyboard (or `auto` gamepad), `--kickstart_file=""` = AROS, private `--base_dir` under `%LOCALAPPDATA%\AmigaDevMachine\fs-uae-data`.
 
+### Classic display macros
+
+- All assume the 320x256 PAL low-res window: DIWSTRT `$2C81` / DIWSTOP `$2CC1`, DDF `$38`/`$D0`, so a sprite's VSTART is `y + $2C` and HSTART `x + 128` (MOVE_SPR, `gk_put_sprite`).
+- **COPPER_BAR** (`scr_emit_macro_copper_bar`): list in its own `BSS_C` section `__cprbar_<uid>`. Each frame starts by resetting the target register (COLOR00: the last SETBKG before it in program order, else black); if no display macro (BITMAP_DISPLAY, SPRITE_DISPLAY, GK_SCREEN, the BOB / sprite tests, GET_BITMAP_BOB) runs before it, the list also sets BPLCON0 `$0200` and DMACON clears BPLEN + SPREN. It replaces COP1LC, so it does not combine with another macro's copper list.
+- **BITMAP_DISPLAY** (`scr_emit_macro_bitmap_display(node, sprite_keep)`): allocates 51,328 bytes of chip RAM (5 planes + copper list + null sprite at +51312). Its copper list reloads the plane pointers every frame; with `sprite_keep >= -1` it also points every sprite channel except that one at the null sprite (SPRITE_BITMAP_TEST passes its channel). Writes BPL1MOD and BPL2MOD.
+- **SPRITE_DISPLAY** points the seven unused sprite channels at its own zero terminator from its copper list.
+- **BOB test / DRAW_BOB / REPLACE_BITMAP_BOB**: the cookie-cut reloads BLTAPT (mask) for every plane; the test restores all five planes with one 400 x 64-word blit; `__bob_state_<id>_drawn` keeps REPLACE from copying an empty save-under before the first DRAW.
+
 ### Music and sound effects
 
 - Assets in `global.asset_list` (look up by name, never keep struct references):
