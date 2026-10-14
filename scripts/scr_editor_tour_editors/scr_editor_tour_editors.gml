@@ -339,7 +339,9 @@ function scr_tour_editor_panel_rect() {
 function scr_tour_home_rect(_part = "cards") {
     if (!instance_exists(obj_tutorial_home)) return undefined;
     switch (_part) {
-        case "cards": return [478, 170, 1882, 1062];
+        case "cards":
+            var _home = instance_find(obj_tutorial_home, 0);
+            return [_home.home_list_x - 2, _home.home_list_top - 6, _home.home_list_x + _home.home_list_w + 2, _home.home_list_bottom + 2];
         case "start":
             var _rect = undefined;
             with (obj_tutorial_home) {

@@ -36,8 +36,17 @@ guide_step_title_y = 0;
 guide_text_y1 = 0;
 guide_text_y2 = 0;
 guide_text_rows = 0;
-guide_line_h = 16;
-guide_title_line_h = 20;
+guide_pad = 10;                     // inner padding of the panel
+
+// Line heights: body text and buttons in the walkthrough font, headings in
+// the title font.
+draw_set_font(UI_FONT_GUIDE);
+guide_line_h = string_height("Ag");
+draw_set_font(UI_FONT_TITLE);
+guide_title_line_h = string_height("Ag");
+guide_header_h = max(guide_title_line_h, guide_line_h) + 10;
+guide_button_h = scr_tutorial_ui_button_h();
+guide_badge_h = guide_line_h + 6;
 
 // Text and highlight cache, rebuilt when the tutorial or step changes.
 guide_cache_key = "";
@@ -50,13 +59,13 @@ guide_refresh_cache = function() {
     guide_cache_key = _key;
     guide_text_scroll = 0;
     var _step = guide_def.steps[global.tutorial_step];
-    draw_set_font(font_Future);
-    guide_title_line_h = string_height("Ag");
-    guide_title_lines = scr_tutorial_ui_wrap_lines(guide_def.title, guide_x2 - guide_x1 - 24);
-    draw_set_font(font_CyberVerse);
-    guide_line_h = string_height("Ag");
-    guide_step_title_lines = scr_tutorial_ui_wrap_lines(_step.title, guide_x2 - guide_x1 - 24);
-    guide_text_lines = scr_tutorial_ui_wrap_lines(_step.text, guide_x2 - guide_x1 - 36);
+    var _inner_w = guide_x2 - guide_x1 - guide_pad * 2;
+    draw_set_font(UI_FONT_TITLE);
+    guide_title_lines = scr_tutorial_ui_wrap_lines(guide_def.title, _inner_w);
+    guide_step_title_lines = scr_tutorial_ui_wrap_lines(_step.title, _inner_w);
+    // The step text leaves room for its scroll bar.
+    draw_set_font(UI_FONT_GUIDE);
+    guide_text_lines = scr_tutorial_ui_wrap_lines(_step.text, _inner_w - 12);
     guide_node_keys = scr_tutorial_ui_node_keys(_step.title + ". " + _step.text);
 };
 
@@ -75,33 +84,41 @@ guide_layout = function() {
     var _number = string(global.tutorial_current + 1);
 
     if (global.tutorial_guide_collapsed) {
-        guide_hit_x1 = guide_x2 - 150;
-        guide_hit_y1 = guide_y1;
+        // A slim tab at the panel's top-right corner; it stops short of the
+        // preview's COLLAPSE ALL button below it.
+        draw_set_font(UI_FONT_GUIDE);
+        var _tab_label = "TUTORIAL " + _number + "  +";
+        guide_hit_x1 = guide_x2 - (string_width(_tab_label) + 32);
+        guide_hit_y1 = guide_y1 - 2;
         guide_hit_x2 = guide_x2;
-        guide_hit_y2 = guide_y1 + 26;
+        guide_hit_y2 = guide_y1 + 22;
         array_push(guide_controls, { action : "expand", x1 : guide_hit_x1, y1 : guide_hit_y1, x2 : guide_hit_x2, y2 : guide_hit_y2,
-            label : "TUTORIAL " + _number + "  +", colour : make_colour_rgb(40, 90, 150), enabled : true });
+            label : _tab_label, colour : make_colour_rgb(40, 90, 150), enabled : true });
         exit;
     }
 
-    // Vertical flow.
-    var _y = guide_y1 + 30;
-    guide_title_y = _y + 4;
-    _y = guide_title_y + array_length(guide_title_lines) * guide_title_line_h + 6;
+    // Vertical flow: header band, title, level + step row, step bar, step
+    // title, step text, three rows of buttons.
+    var _gap = 8;
+    var _y = guide_y1 + guide_header_h + 2 + _gap;
+    guide_title_y = _y;
+    _y += array_length(guide_title_lines) * guide_title_line_h + _gap;
     guide_info_y = _y;
-    _y += guide_line_h + 10;
+    _y += guide_badge_h + _gap + 2;
     guide_dots_y = _y;
-    _y += 16;
+    _y += 6 + _gap + 4;
     guide_step_title_y = _y;
-    _y += array_length(guide_step_title_lines) * guide_line_h + 8;
+    _y += array_length(guide_step_title_lines) * guide_title_line_h + 6;
     guide_text_y1 = _y;
 
-    var _buttons_h = 3 * 26 + 2 * 6 + 12;
+    var _button_gap = 6;
+    var _buttons_h = 3 * guide_button_h + 2 * _button_gap + guide_pad;
     var _text_full_h = array_length(guide_text_lines) * guide_line_h;
-    guide_y2 = min(guide_max_y2, guide_text_y1 + _text_full_h + 14 + _buttons_h);
-    guide_y2 = max(guide_y2, guide_y1 + 300);
-    guide_text_y2 = guide_y2 - _buttons_h - 8;
-    guide_text_rows = max(1, floor((guide_text_y2 - guide_text_y1) / guide_line_h));
+    // At least four lines of text, so the buttons stay put on short steps.
+    var _text_h = clamp(_text_full_h, guide_line_h * 4, guide_max_y2 - _buttons_h - _gap - guide_text_y1);
+    guide_y2 = guide_text_y1 + _text_h + _gap + _buttons_h;
+    guide_text_y2 = guide_text_y1 + _text_h;
+    guide_text_rows = max(1, floor(_text_h / guide_line_h));
     guide_text_scroll = clamp(guide_text_scroll, 0, max(0, array_length(guide_text_lines) - guide_text_rows));
 
     guide_hit_x1 = guide_x1;
@@ -109,20 +126,23 @@ guide_layout = function() {
     guide_hit_x2 = guide_x2;
     guide_hit_y2 = guide_y2;
 
-    // Header buttons.
-    array_push(guide_controls, { action : "collapse", x1 : guide_x2 - 54, y1 : guide_y1 + 4, x2 : guide_x2 - 32, y2 : guide_y1 + 24,
+    // Header buttons, square, centred in the header band.
+    var _hs = guide_header_h - 8;
+    var _hy1 = guide_y1 + 4;
+    array_push(guide_controls, { action : "collapse", x1 : guide_x2 - 6 - _hs * 2 - 4, y1 : _hy1, x2 : guide_x2 - 6 - _hs - 4, y2 : _hy1 + _hs,
         label : "-", colour : make_colour_rgb(55, 65, 90), enabled : true });
-    array_push(guide_controls, { action : "close", x1 : guide_x2 - 26, y1 : guide_y1 + 4, x2 : guide_x2 - 4, y2 : guide_y1 + 24,
+    array_push(guide_controls, { action : "close", x1 : guide_x2 - 6 - _hs, y1 : _hy1, x2 : guide_x2 - 6, y2 : _hy1 + _hs,
         label : "X", colour : make_colour_rgb(150, 30, 30), enabled : true });
 
     // Bottom buttons.
     var _done = scr_tutorial_is_done(guide_def.id);
     var _last = global.tutorial_step >= guide_step_count - 1;
-    var _bx1 = guide_x1 + 10;
-    var _bx2 = guide_x2 - 10;
+    var _bx1 = guide_x1 + guide_pad;
+    var _bx2 = guide_x2 - guide_pad;
     var _bmid = (_bx1 + _bx2) div 2;
-    var _by = guide_y2 - _buttons_h + 6;
-    array_push(guide_controls, { action : "prev", x1 : _bx1, y1 : _by, x2 : _bmid - 4, y2 : _by + 26,
+    var _bh = guide_button_h;
+    var _by = guide_y2 - guide_pad - 3 * _bh - 2 * _button_gap;
+    array_push(guide_controls, { action : "prev", x1 : _bx1, y1 : _by, x2 : _bmid - 3, y2 : _by + _bh,
         label : "< PREV", colour : make_colour_rgb(45, 65, 85), enabled : global.tutorial_step > 0 });
     var _next_action = "next", _next_label = "NEXT >";
     if (_last) {
@@ -134,15 +154,15 @@ guide_layout = function() {
             _next_action = "all"; _next_label = "ALL TUTORIALS";
         }
     }
-    array_push(guide_controls, { action : _next_action, x1 : _bmid + 4, y1 : _by, x2 : _bx2, y2 : _by + 26,
+    array_push(guide_controls, { action : _next_action, x1 : _bmid + 3, y1 : _by, x2 : _bx2, y2 : _by + _bh,
         label : _next_label, colour : _last ? make_colour_rgb(30, 120, 50) : make_colour_rgb(40, 90, 150), enabled : true });
-    _by += 32;
-    array_push(guide_controls, { action : "build", x1 : _bx1, y1 : _by, x2 : _bmid - 4, y2 : _by + 26,
+    _by += _bh + _button_gap;
+    array_push(guide_controls, { action : "build", x1 : _bx1, y1 : _by, x2 : _bmid - 3, y2 : _by + _bh,
         label : "BUILD & RUN", colour : make_colour_rgb(30, 120, 50), enabled : true });
-    array_push(guide_controls, { action : "done", x1 : _bmid + 4, y1 : _by, x2 : _bx2, y2 : _by + 26,
+    array_push(guide_controls, { action : "done", x1 : _bmid + 3, y1 : _by, x2 : _bx2, y2 : _by + _bh,
         label : _done ? "DONE" : "MARK DONE", colour : make_colour_rgb(25, 90, 50), enabled : !_done });
-    _by += 32;
-    array_push(guide_controls, { action : "all", x1 : _bx1, y1 : _by, x2 : _bx2, y2 : _by + 26,
+    _by += _bh + _button_gap;
+    array_push(guide_controls, { action : "all", x1 : _bx1, y1 : _by, x2 : _bx2, y2 : _by + _bh,
         label : "ALL TUTORIALS", colour : make_colour_rgb(75, 65, 35), enabled : true });
 };
 

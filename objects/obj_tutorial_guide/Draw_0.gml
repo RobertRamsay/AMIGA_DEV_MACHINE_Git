@@ -2,7 +2,7 @@ if (instance_exists(obj_tutorial_home)) exit;
 guide_layout();
 if (!guide_visible) exit;
 
-draw_set_font(font_CyberVerse);
+draw_set_font(UI_FONT_GUIDE);
 draw_set_halign(fa_left);
 draw_set_valign(fa_top);
 draw_set_alpha(1);
@@ -37,70 +37,69 @@ if (global.tutorial_guide_collapsed) {
 }
 
 // --- panel -----------------------------------------------------------------------
+var _ix = guide_x1 + guide_pad;
 draw_set_alpha(0.96);
-draw_set_colour(make_colour_rgb(14, 18, 30));
-draw_rectangle(guide_x1, guide_y1, guide_x2, guide_y2, false);
+scr_tutorial_ui_draw_panel(guide_x1, guide_y1, guide_x2, guide_y2, make_colour_rgb(14, 18, 30),
+    guide_header_h, make_colour_rgb(40, 90, 150), _level_col, make_colour_rgb(200, 210, 230));
 draw_set_alpha(1);
-draw_set_colour(make_colour_rgb(40, 90, 150));
-draw_rectangle(guide_x1, guide_y1, guide_x2, guide_y1 + 28, false);
-draw_set_colour(_level_col);
-draw_rectangle(guide_x1, guide_y1 + 28, guide_x2, guide_y1 + 30, false);
+draw_set_font(UI_FONT_GUIDE);
 draw_set_colour(c_white);
-draw_rectangle(guide_x1, guide_y1, guide_x2, guide_y2, true);
-draw_text(guide_x1 + 8, guide_y1 + 6, "TUTORIAL " + string(global.tutorial_current + 1) + " / " + string(array_length(scr_tutorial_defs())));
+scr_ui_text_mid(_ix + 6, guide_y1, guide_y1 + guide_header_h, "TUTORIAL " + string(global.tutorial_current + 1) + " / " + string(array_length(scr_tutorial_defs())));
 
 // Title.
-draw_set_font(font_Future);
+draw_set_font(UI_FONT_TITLE);
 draw_set_colour(c_yellow);
 var _l = 0;
 while (_l < array_length(guide_title_lines)) {
-    draw_text(guide_x1 + 12, guide_title_y + _l * guide_title_line_h, guide_title_lines[_l]);
+    draw_text(_ix, guide_title_y + _l * guide_title_line_h, guide_title_lines[_l]);
     _l += 1;
 }
-draw_set_font(font_CyberVerse);
 
-// Level badge, step counter, done mark.
-var _badge_w = string_width(guide_def.level) + 16;
-draw_set_colour(_level_col);
-draw_rectangle(guide_x1 + 12, guide_info_y, guide_x1 + 12 + _badge_w, guide_info_y + guide_line_h + 4, false);
+// Level badge, step counter and done mark, centred on one row.
+var _info_y2 = guide_info_y + guide_badge_h;
+var _badge_w = scr_tutorial_ui_draw_badge(_ix, guide_info_y, _info_y2, guide_def.level, _level_col);
+draw_set_font(UI_FONT_GUIDE);
 draw_set_colour(c_white);
-draw_text(guide_x1 + 20, guide_info_y + 2, guide_def.level);
-draw_text(guide_x1 + 24 + _badge_w, guide_info_y + 2, "STEP " + string(global.tutorial_step + 1) + " / " + string(guide_step_count));
+scr_ui_text_mid(_ix + _badge_w + 12, guide_info_y, _info_y2, "STEP " + string(global.tutorial_step + 1) + " / " + string(guide_step_count));
 if (scr_tutorial_is_done(guide_def.id)) {
-    scr_tutorial_ui_draw_tick(guide_x2 - 70, guide_info_y + 3, guide_line_h - 3, make_colour_rgb(120, 255, 150));
+    var _tick = guide_line_h - 6;
+    var _done_x = guide_x2 - guide_pad - string_width("DONE");
+    scr_tutorial_ui_draw_tick(_done_x - _tick - 6, (guide_info_y + _info_y2) * 0.5 - _tick * 0.5, _tick, make_colour_rgb(120, 255, 150));
     draw_set_colour(make_colour_rgb(170, 255, 190));
-    draw_text(guide_x2 - 50, guide_info_y + 2, "DONE");
+    scr_ui_text_mid(_done_x, guide_info_y, _info_y2, "DONE");
 }
 
 // Step progress bar: one segment per step.
 var _seg_gap = 4;
-var _seg_w = (guide_x2 - guide_x1 - 24 - _seg_gap * (guide_step_count - 1)) / max(1, guide_step_count);
+var _seg_w = (guide_x2 - guide_x1 - guide_pad * 2 - _seg_gap * (guide_step_count - 1)) / max(1, guide_step_count);
 var _s = 0;
 while (_s < guide_step_count) {
-    var _sx = guide_x1 + 12 + _s * (_seg_w + _seg_gap);
+    var _sx = _ix + _s * (_seg_w + _seg_gap);
     draw_set_colour(_s < global.tutorial_step ? make_colour_rgb(60, 140, 90) : (_s == global.tutorial_step ? c_aqua : make_colour_rgb(45, 55, 80)));
     draw_rectangle(_sx, guide_dots_y, _sx + _seg_w, guide_dots_y + 6, false);
     _s += 1;
 }
 
 // Step title.
+draw_set_font(UI_FONT_TITLE);
 draw_set_colour(c_aqua);
 _l = 0;
 while (_l < array_length(guide_step_title_lines)) {
-    draw_text(guide_x1 + 12, guide_step_title_y + _l * guide_line_h, guide_step_title_lines[_l]);
+    draw_text(_ix, guide_step_title_y + _l * guide_title_line_h, guide_step_title_lines[_l]);
     _l += 1;
 }
 
 // Step text (scrolls by whole lines).
+draw_set_font(UI_FONT_GUIDE);
 draw_set_colour(make_colour_rgb(215, 222, 235));
 var _row = 0;
 while (_row < guide_text_rows && guide_text_scroll + _row < array_length(guide_text_lines)) {
-    draw_text(guide_x1 + 12, guide_text_y1 + _row * guide_line_h, guide_text_lines[guide_text_scroll + _row]);
+    draw_text(_ix, guide_text_y1 + _row * guide_line_h, guide_text_lines[guide_text_scroll + _row]);
     _row += 1;
 }
 var _text_count = array_length(guide_text_lines);
 if (_text_count > guide_text_rows) {
-    var _track_x = guide_x2 - 12;
+    var _track_x = guide_x2 - guide_pad - 6;
     var _track_h = guide_text_y2 - guide_text_y1;
     var _thumb_h = max(16, floor(_track_h * guide_text_rows / _text_count));
     var _thumb_y = guide_text_y1 + floor((_track_h - _thumb_h) * guide_text_scroll / max(1, _text_count - guide_text_rows));
@@ -116,7 +115,8 @@ while (_c < array_length(guide_controls)) {
     var _b = guide_controls[_c];
     scr_tutorial_ui_draw_button(_b.x1, _b.y1, _b.x2, _b.y2, _b.label, _b.colour, guide_hover == _c, _b.enabled);
     if (_b.action == "done" && !_b.enabled) {
-        scr_tutorial_ui_draw_tick(_b.x1 + 10, _b.y1 + 6, 14, make_colour_rgb(120, 255, 150));
+        var _bt = _b.y2 - _b.y1 - 14;
+        scr_tutorial_ui_draw_tick(_b.x1 + 12, (_b.y1 + _b.y2) * 0.5 - _bt * 0.5, _bt, make_colour_rgb(120, 255, 150));
     }
     _c += 1;
 }
