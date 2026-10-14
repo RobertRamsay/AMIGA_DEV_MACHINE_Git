@@ -3,6 +3,11 @@ var _dy = node_y + global.pan_y;
 
 draw_set_font(UI_FONT);
 
+// The flow line in from the column this ORG continues (under the nodes).
+if (root_type == "ORG") {
+    scr_amiga_draw_org_flow(id);
+}
+
 var _body_colour = c_orange;
 
 if (root_type == "INIT") {

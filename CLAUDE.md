@@ -42,7 +42,7 @@ ptplayer approach.
 |---|---|
 | `obj_amiga_manager` | Bootstrap (Create), toolbar (`top_ui_*` columns: SYSTEM, workspace, TEST MACROS, MACROS, AUDIO / CODE, EDITORS, ORG, AMIGA machine / RUN, GAME KIT = TILE-EDIT / TOUR (F1) / TUTORIALS), palette scroll, preview panel, the SPR-EDIT sprite editor panel (`global.sprite_editor_open`, geometry in `scr_sprite_editor_layout`), build state machine (Step), opening page at startup, Esc-to-quit guard (KeyPress_27). |
 | `obj_flashSplash` | Start-up logo fade; afterwards it draws the small logo, copyright, version and FPS in the footer of the preview panel. |
-| `obj_opcode_node` / `obj_amiga_root_node` | Program nodes and INIT/ORG roots. Program order = Y position under a root (`scr_amiga_collect_program_nodes`). |
+| `obj_opcode_node` / `obj_amiga_root_node` | Program nodes and INIT/ORG roots. Program order = Y position under a root (`scr_amiga_collect_program_nodes`). An ORG continues the nearest root to its left (`continues_from_root_uid`, recomputed every Step; no address, no wiring); each ORG draws the glowing flow line in from that column (`scr_amiga_org_flow`: green to orange from INIT, orange ORG to ORG, 45 degree corners, travelling pulse). |
 | `obj_opcode_palette_item` | Opcode palette (Game Kit nodes first, then the 68000 opcodes) and the top-strip macro buttons (`palette_top_strip = true`: sized like the other toolbar buttons, not scrolled); dropping one creates a node. |
 | `scr_emit_opcode_line` → `scr_emit_macro_line` | Node → assembler text `{ text, is_valid }`. |
 | `scr_amiga_trigger_build` → `scr_amiga_start_build` | F5 / RUN / INIT click / F5 in the code editor. |
