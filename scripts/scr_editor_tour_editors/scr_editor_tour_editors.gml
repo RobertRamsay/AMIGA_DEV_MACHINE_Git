@@ -20,6 +20,7 @@ function scr_tour_close_except(_kind) {
     }
     if (_kind != "code") with (obj_code_editor) ed_close(false);
     if (_kind != "audio") with (obj_audio_editor) instance_destroy();
+    if (_kind != "tracker") with (obj_tracker_editor) instance_destroy();
     if (_kind != "tile") with (obj_tile_editor) instance_destroy();
     if (_kind != "bitmap") with (obj_bitmap_editor) instance_destroy();
     if (_kind != "bob") with (obj_bob_editor) instance_destroy();
@@ -122,6 +123,18 @@ function scr_tour_show(_view) {
                 if (array_contains(mod_names, "TutorialTune")) mod_selected = "TutorialTune";
                 if (array_contains(smp_names, "Jump")) smp_selected = "Jump";
                 controls = audio_editor_controls();
+            }
+            break;
+
+        case "tracker":
+            // The demo's TutorialTune, with the cursor a few rows in.
+            if (!instance_exists(obj_tracker_editor)) {
+                var _tracker = scr_tracker_open("");
+                with (_tracker) {
+                    if (scr_asset_find_by_name("TutorialTune") != undefined) tracker_load("TutorialTune");
+                    cur_row = 8;
+                    cur_inst = 1;
+                }
             }
             break;
 
@@ -277,6 +290,22 @@ function scr_tour_audio_rect(_part) {
             return [_w[0] - 4, _w[1] - 26, _w[2] + 4, _w[3] + 4];
         case "sample_settings": return [_px + 646, _py + 332, _px + 652 + 568, _py + 434];
         case "sample_ops": return [_px + 646, _py + 438, _px + 652 + 568, _py + 506];
+    }
+    return undefined;
+}
+
+function scr_tour_tracker_rect(_part) {
+    var _e = scr_tour_inst(obj_tracker_editor);
+    if (_e == noone) return undefined;
+    var _l = _e.tracker_layout();
+    switch (_part) {
+        case "panel": return [_l.x1, _l.y1, _l.x2, _l.y2];
+        case "song": return _l.song;
+        case "order": return _l.order;
+        case "insts": return _l.insts;
+        case "inst": return _l.inst;
+        case "transport": return [_l.transport[0] - 4, _l.transport[1] - 4, _l.transport[2], _l.tools[3] + 4];
+        case "pattern": return [_l.pattern[0], _l.pattern[1], _l.pattern[2], _l.pattern[3] + 40];
     }
     return undefined;
 }
@@ -471,6 +500,26 @@ function scr_tour_editor_categories() {
                   text : "Type to search as you go; F3 / Shift+F3 jump between matches, Aa makes it case-sensitive, Esc closes the bar." },
                 { title : "Problems and status", show : "code", rect : function() { return scr_tour_code_rect("status"); },
                   text : "Every line is checked as you type: errors and warnings for the current line appear here, with the line / column and a count. F8 jumps to the next problem. Errors from vasm itself are marked on their line after a build." }
+            ]
+        },
+        {
+            id : "tracker", title : "Music tracker (TRACKER)",
+            summary : "Composing 4-channel ProTracker music: song, order, instruments, synth sounds, patterns and the note keys.",
+            steps : [
+                { title : "Music tracker", show : "tracker", rect : function() { return scr_tour_tracker_rect("panel"); },
+                  text : "Write your own music, ProTracker / OctaMED style. Four channels (Paula's four voices), 64 rows a pattern. Songs are saved as MOD assets, so a PLAY MUSIC node plays them on the Amiga. Opened from TRACKER under ORG, or from SND-EDIT." },
+                { title : "Song", show : "tracker", rect : function() { return scr_tour_tracker_rect("song"); },
+                  text : "NAME is the MOD asset (and assembler label), TITLE goes in the module. NEW SONG starts one with a lead, bass, pad and drum kit ready; SAVE stores it; SAVE + F5 also builds and runs. OPEN loads any MOD, imported ones too." },
+                { title : "Order", show : "tracker", rect : function() { return scr_tour_tracker_rect("order"); },
+                  text : "The order list plays patterns in sequence. INS repeats the pattern, DEL removes the position, NEW adds an empty pattern, CLONE a copy of this one, and < PATTERN > changes which pattern this position plays." },
+                { title : "Instruments", show : "tracker", rect : function() { return scr_tour_tracker_rect("insts"); },
+                  text : "31 instrument slots. Click one (or Numpad + / -) to use it for new notes." },
+                { title : "Making sounds", show : "tracker", rect : function() { return scr_tour_tracker_rect("inst"); },
+                  text : "Name, volume, finetune and loop of the instrument. The SYNTH buttons make classic chip sounds and drums with no sample files at all; FROM SAMPLE uses a sound imported in SND-EDIT. TO SAMPLE turns an instrument into a sound effect for PLAY SFX." },
+                { title : "Play and edit", show : "tracker", rect : function() { return scr_tour_tracker_rect("transport"); },
+                  text : "PLAY SONG (Shift+Enter), PLAY PATTERN (Enter), STOP or Space. EDIT ON records notes, FOLLOW keeps the cursor on the playing row. OCTAVE, STEP (rows moved after each note), SPEED and BPM; track and pattern copy, paste, clear and transpose." },
+                { title : "Patterns", show : "tracker", rect : function() { return scr_tour_tracker_rect("pattern"); },
+                  text : "Each cell is note, instrument and effect (C-2 01 C20). Play notes on the computer keyboard like a piano: Z to M is one octave, Q to P the next. Type hex digits in the instrument and effect columns; the line below explains the effect under the cursor. MUTE silences a channel while you listen." }
             ]
         },
         {

@@ -120,6 +120,17 @@ switch (_clicked) {
         }
         mouse_clear(mb_left);
         break;
+    case "mod_new_song":
+    case "mod_tracker":
+        // The tracker replaces this window (both are full modals).
+        var _tracker_name = (_clicked == "mod_tracker") ? mod_selected : "";
+        var _tracker = scr_tracker_open(_tracker_name);
+        if (_tracker_name == "") with (_tracker) {
+            song = scr_tracker_song_new();
+            song_name = scr_audio_unique_name("song");
+            dirty = true;
+        }
+        exit;
     case "mod_export":
         var _export_asset = scr_asset_find_by_name(mod_selected);
         var _export_path = get_save_filename("ProTracker module|*.mod", mod_selected + ".mod");

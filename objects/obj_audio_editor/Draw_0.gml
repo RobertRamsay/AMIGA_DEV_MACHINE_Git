@@ -80,7 +80,7 @@ while (_l < 2) {
 }
 if (rename_active) {
     draw_set_colour(rename_error == "" ? _col_dim_text : c_red);
-    draw_text(panel_x + 12, panel_y + 96 + list_rows * row_h + 76,
+    draw_text(panel_x + 12, panel_y + 96 + list_rows * row_h + 106,
         rename_error == "" ? "Type a label name, Enter = OK, Esc = cancel" : rename_error);
 }
 

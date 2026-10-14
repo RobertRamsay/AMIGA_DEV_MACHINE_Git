@@ -213,6 +213,9 @@
   },
   "name":"AMIGA_DEV_MACHINE",
   "resources":[
+    {"id":{"name":"scr_tracker_selftest","path":"scripts/scr_tracker_selftest/scr_tracker_selftest.yy",},},
+    {"id":{"name":"scr_tracker_open","path":"scripts/scr_tracker_open/scr_tracker_open.yy",},},
+    {"id":{"name":"scr_tracker_song","path":"scripts/scr_tracker_song/scr_tracker_song.yy",},},
     {"id":{"name":"scr_window_mode","path":"scripts/scr_window_mode/scr_window_mode.yy",},},
     {"id":{"name":"scr_shape_tools","path":"scripts/scr_shape_tools/scr_shape_tools.yy",},},
     {"id":{"name":"scr_operand_text_mode","path":"scripts/scr_operand_text_mode/scr_operand_text_mode.yy",},},
@@ -247,6 +250,7 @@
     {"id":{"name":"obj_amiga_manager","path":"objects/obj_amiga_manager/obj_amiga_manager.yy",},},
     {"id":{"name":"obj_amiga_root_node","path":"objects/obj_amiga_root_node/obj_amiga_root_node.yy",},},
     {"id":{"name":"obj_audio_editor","path":"objects/obj_audio_editor/obj_audio_editor.yy",},},
+    {"id":{"name":"obj_tracker_editor","path":"objects/obj_tracker_editor/obj_tracker_editor.yy",},},
     {"id":{"name":"obj_audio_service","path":"objects/obj_audio_service/obj_audio_service.yy",},},
     {"id":{"name":"obj_bitmap_editor","path":"objects/obj_bitmap_editor/obj_bitmap_editor.yy",},},
     {"id":{"name":"obj_bob_editor","path":"objects/obj_bob_editor/obj_bob_editor.yy",},},

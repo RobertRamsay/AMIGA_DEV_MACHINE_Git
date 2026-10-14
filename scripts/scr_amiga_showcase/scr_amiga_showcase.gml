@@ -23,6 +23,7 @@ function scr_amiga_showcase_shots() {
         { name : "13_code_editor_find", setup : function() { scr_tour_show("code:find"); } },
         { name : "14_sound_music_modules", setup : function() { scr_tour_show("audio:mod"); } },
         { name : "15_sound_samples_waveform", setup : function() { scr_tour_show("audio:sample"); } },
+        { name : "15b_tracker", setup : function() { scr_tour_show("tracker"); } },
         { name : "16_tile_editor_tiles", setup : function() { scr_tour_show("tile:TILES"); } },
         { name : "17_tile_editor_metatiles", setup : function() { scr_tour_show("tile:METATILES"); } },
         { name : "18_tile_editor_map_start_room", setup : function() { scr_tour_show("tile:MAP"); } },

@@ -94,7 +94,8 @@ function scr_audio_player_new(_song) {
     var _player = {
         song : _song, ord : 0, row : 0, tick : 0, speed : 6, tempo : 125, tick_left : 0,
         next_ord : -1, next_row : 0, frame : 0, marks : [], ch : [], done : false,
-        mono : false, lpl : 0, lpr : 0, loop_row : 0, loop_count : 0, pattern_delay : 0
+        mono : false, lpl : 0, lpr : 0, loop_row : 0, loop_count : 0, pattern_delay : 0,
+        mute : [false, false, false, false]
     };
     var _c = 0;
     while (_c < 4) {
@@ -350,7 +351,8 @@ function scr_audio_player_mix(_player, _buffer, _n) {
                 var _len = _ch.len;
                 var _pos = _ch.pos;
                 var _inc = _ch.inc;
-                var _v = _ch.vol;
+                // A muted voice keeps running silently (the tracker's channel mutes).
+                var _v = _player.mute[_c2] ? 0 : _ch.vol;
                 var _loop = _ch.ll > 2;
                 var _le = _ch.ls + _ch.ll;
                 var _left = _player.mono || _c2 == 0 || _c2 == 3;

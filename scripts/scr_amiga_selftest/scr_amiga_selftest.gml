@@ -124,7 +124,9 @@ function scr_amiga_selftest_step() {
             scr_amiga_selftest_note("scr_opcode_rules_selftest failures: " + string(array_length(_op_failures)) + (array_length(_op_failures) > 0 ? " " + json_stringify(_op_failures) : ""));
             _ced_failures = array_concat(_ced_failures, _op_failures);
             scr_amiga_selftest_note("scr_code_editor_selftest failures: " + string(array_length(_ced_failures)) + (array_length(_ced_failures) > 0 ? " " + json_stringify(_ced_failures) : ""));
-            if (array_length(_asm_failures) + array_length(_audio_failures) + array_length(_tile_failures) + array_length(_ced_failures) > 0) {
+            var _trk_failures = scr_tracker_selftest();
+            scr_amiga_selftest_note("scr_tracker_selftest failures: " + string(array_length(_trk_failures)) + (array_length(_trk_failures) > 0 ? " " + json_stringify(_trk_failures) : ""));
+            if (array_length(_asm_failures) + array_length(_audio_failures) + array_length(_tile_failures) + array_length(_ced_failures) + array_length(_trk_failures) > 0) {
                 scr_amiga_selftest_finish(false);
                 exit;
             }

@@ -312,6 +312,10 @@ if (_over_tutorials && mouse_check_button_pressed(mb_left)) scr_tutorial_home_op
 var _over_window_mode = point_in_rectangle(mouse_x, mouse_y, top_ui_tutorial_x + 104, top_ui_row_2_y, top_ui_tutorial_x + 104 + top_ui_button_width, top_ui_row_2_y + top_ui_button_height);
 if (_over_window_mode && mouse_check_button_pressed(mb_left)) scr_window_toggle();
 
+// TRACKER: compose 4-channel ProTracker music (saved as MOD assets).
+var _over_tracker = point_in_rectangle(mouse_x, mouse_y, top_ui_org_x, top_ui_row_2_y, top_ui_org_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height);
+if (_over_tracker && mouse_check_button_pressed(mb_left)) scr_tracker_open("");
+
 // MACHINE: A600 (OCS, 1 MB chip) <-> A1200 (AGA, 2 MB chip).
 var _over_machine = point_in_rectangle(mouse_x, mouse_y, top_ui_machine_x, top_ui_row_1_y, top_ui_machine_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height);
 if (_over_machine && mouse_check_button_pressed(mb_left) && build_state == "idle") scr_amiga_machine_toggle();

@@ -124,6 +124,8 @@ audio_editor_controls = function() {
     array_push(_list, { id : "mod_rename", x1 : _bx + 204, y1 : _by, x2 : _bx + 300, y2 : _by + 26, label : "RENAME", on : rename_active && rename_kind == "MOD", enabled : _has_mod });
     array_push(_list, { id : "mod_delete", x1 : _bx, y1 : _by + 32, x2 : _bx + 96, y2 : _by + 58, label : "DELETE", on : false, enabled : _has_mod });
     array_push(_list, { id : "mod_export", x1 : _bx + 102, y1 : _by + 32, x2 : _bx + 300, y2 : _by + 58, label : "EXPORT .MOD", on : false, enabled : _has_mod });
+    array_push(_list, { id : "mod_new_song", x1 : _bx, y1 : _by + 64, x2 : _bx + 146, y2 : _by + 90, label : "NEW SONG", on : false, enabled : true });
+    array_push(_list, { id : "mod_tracker", x1 : _bx + 152, y1 : _by + 64, x2 : _bx + 300, y2 : _by + 90, label : "TRACKER", on : false, enabled : _has_mod });
 
     // SAMPLES list buttons.
     _bx = _px + 326;
