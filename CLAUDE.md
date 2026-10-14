@@ -11,7 +11,7 @@ ptplayer approach.
 
 - K&R braces, 4-space indent, `_underscore` locals, `global.` for shared state. Ternaries are fine here (unlike ADAM).
 - Initialise every instance variable in Create; new node fields go in `obj_opcode_node/Create_0.gml`.
-- All drawing is in the normal Draw event in room coordinates (room 1920x1080, no views); `obj_opcode_node/Draw_64` is the only GUI-layer drawing.
+- All drawing is in the normal Draw event in room coordinates (room 1920x1080, no views); the only GUI-layer drawing is the hover help panel (`scr_amiga_hover_tip`, from `obj_opcode_node/Draw_64` and `obj_amiga_root_node/Draw_64`; root help is `scr_amiga_explain_root`).
 - Status messages: `scr_set_status_message(text, colour)`. Unsaved changes: `scr_mark_workspace_dirty()`. Graph undo: `scr_push_undo_snapshot()` before a change.
 - One feature per commit, clear message. Bob reviews diffs.
 

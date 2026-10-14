@@ -1,3 +1,35 @@
+/// The hover help panel under the workspace (Draw GUI of obj_opcode_node and
+/// obj_amiga_root_node). Nothing is drawn for "".
+function scr_amiga_hover_tip(_text) {
+    if (_text == "") return;
+    draw_set_font(UI_FONT);
+    draw_set_halign(fa_left);
+    draw_set_valign(fa_top);
+    var _tip_width = 800;
+    var _tip_x = 272;
+    var _tip_y = 850;
+    // Grow downwards for long help rather than spilling out of the box.
+    var _tip_height = max(100, string_height_ext(_text, 18, _tip_width - 20) + 16);
+    draw_set_alpha(0.85);
+    scr_ui_box_fill(_tip_x, _tip_y, _tip_x + _tip_width, _tip_y + _tip_height, make_colour_rgb(12, 14, 24));
+    draw_set_alpha(1);
+    scr_ui_box_outline(_tip_x, _tip_y, _tip_x + _tip_width, _tip_y + _tip_height, c_yellow);
+    draw_set_colour(c_white);
+    draw_text_ext(_tip_x + 10, _tip_y + 8, _text, 18, _tip_width - 20);
+}
+
+/// Hover help for an INIT / ORG root block.
+function scr_amiga_explain_root(_root) {
+    if (_root.root_type == "INIT") {
+        return "CLICK HERE TO BUILD AND RUN (or press F5). ADM assembles every node under INIT and its ORG columns with vasm, "
+            + "writes a bootable Amiga disk and boots it in FS-UAE. The program starts with the first node under this block.";
+    }
+    if (_root.continues_from_root_uid == -1) {
+        return "This ORG column is not connected: put it to the right of the INIT column (or of another ORG) and it continues the program from there.";
+    }
+    return "ORG continues the program from the column on its left - the flow line shows the way. Drag it to move the whole column.";
+}
+
 /// @desc scr_amiga_explain_node(_node)
 /// Central semantic lookup for hover help. Returns a plain-English explanation
 /// for known Amiga hardware operations, or an empty string when the node has
