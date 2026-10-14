@@ -36,7 +36,7 @@ function scr_tutorial_defs() {
             steps : [
                 { title : "A counter in D0", text : "MOVEQ #0,D0 clears data register D0. Each pass of the loop adds one with ADDQ.W." },
                 { title : "Write a hardware register", text : "MOVE.W D0,$DFF180 stores the counter into COLOR00. Click a node's mode button to cycle addressing modes, and its value box to type a number (H toggles hex)." },
-                { title : "Hover for help", text : "Hover any node: the panel at the bottom explains what the instruction does, its cycles and its size." },
+                { title : "Hover for help", text : "Hover any node: the panel at the bottom says what it does in plain English with your values, what each addressing mode means, its size and cost, and which hardware register an address is." },
                 { title : "Run it", text : "F5: the screen strobes through all 4096 colours as fast as the CPU can count. Try ADDQ #8 for wider bands." }
             ]
         },

@@ -83,6 +83,9 @@ function scr_amiga_showcase_shots() {
                 }
             }
         } },
+        { name : "40_hover_move_to_colour00", setup : function() { scr_amiga_showcase_hover_opcode(2, "MOVE"); } },
+        { name : "41_hover_addq", setup : function() { scr_amiga_showcase_hover_opcode(2, "ADDQ"); } },
+        { name : "42_hover_bra_loop", setup : function() { scr_amiga_showcase_hover_opcode(2, "BRA"); } },
         { name : "38_tutorial_16_show_me_b_section", setup : function() { scr_amiga_showcase_song_step(8); } }
     ];
 }
@@ -110,6 +113,22 @@ function scr_amiga_showcase_tutorial(_number, _edit_type) {
         var _node = scr_tour_find_node(_edit_type);
         if (_node != noone) scr_node_edit_open(_node);
     }
+}
+
+/// Loads tutorial _number without its guide and puts the mouse on the header
+/// of its first _mnemonic node, so the panel shows that node's hover help.
+function scr_amiga_showcase_hover_opcode(_number, _mnemonic) {
+    with (obj_tracker_editor) instance_destroy();
+    scr_amiga_showcase_tutorial(_number, "");
+    with (obj_tutorial_guide) instance_destroy();
+    var _found = noone;
+    with (obj_opcode_node) {
+        if (!is_macro && opcode_mnemonic == _mnemonic && (_found == noone || node_y < _found.node_y)) _found = id;
+    }
+    if (_found == noone) return;
+    var _mx = _found.node_x + global.pan_x + _found.node_width / 2;
+    var _my = _found.node_y + global.pan_y + 8;
+    window_mouse_set(_mx * window_get_width() / room_width, _my * window_get_height() / room_height);
 }
 
 /// Starts (or continues) the tour on the step titled _title.
