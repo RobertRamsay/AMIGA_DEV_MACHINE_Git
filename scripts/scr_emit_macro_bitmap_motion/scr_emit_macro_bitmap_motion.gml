@@ -37,18 +37,18 @@ function scr_emit_macro_bob_bitmap_test(_node) {
     // Restore the complete pristine bitmap (A -> D), ensuring no BOB trails:
     // all five planes (51,200 bytes) in one blit of 400 rows x 64 words
     // (BLTSIZE width 0 = 64 words; 256 x 20 would cover plane 0 only).
-    _s += _restore_wait + ":\n\tBTST #6,2(A5)\n\tBNE.S " + _restore_wait + "\n";
+    _s += _restore_wait + ":\n\tTST.B 2(A5)\n\tBTST #6,2(A5)\n\tBNE.S " + _restore_wait + "\n";
     _s += "\tMOVE.W #2544,64(A5)\n\tCLR.W 66(A5)\n\tMOVE.W #65535,68(A5)\n\tMOVE.W #65535,70(A5)\n";
     _s += "\tMOVE.L A4,80(A5)\n\tMOVE.L A2,84(A5)\n\tCLR.W 100(A5)\n\tCLR.W 102(A5)\n\tMOVE.W #25600,88(A5)\n";
     // Horizontal shift and screen word offset for the 32-pixel cookie-cut.
-    _s += _draw_wait + ":\n\tBTST #6,2(A5)\n\tBNE.S " + _draw_wait + "\n\tMOVE.W D7,D6\n\tANDI.W #15,D6\n\tLSL.W #8,D6\n\tLSL.W #4,D6\n\tMOVE.W D6,D5\n\tORI.W #4042,D5\n\tMOVE.W D5,64(A5)\n\tMOVE.W D6,66(A5)\n";
+    _s += _draw_wait + ":\n\tTST.B 2(A5)\n\tBTST #6,2(A5)\n\tBNE.S " + _draw_wait + "\n\tMOVE.W D7,D6\n\tANDI.W #15,D6\n\tLSL.W #8,D6\n\tLSL.W #4,D6\n\tMOVE.W D6,D5\n\tORI.W #4042,D5\n\tMOVE.W D5,64(A5)\n\tMOVE.W D6,66(A5)\n";
     _s += "\tMOVE.W #65535,68(A5)\n\tMOVE.W #65535,70(A5)\n\tCLR.W 100(A5)\n\tCLR.W 98(A5)\n\tMOVE.W #34,96(A5)\n\tMOVE.W #34,102(A5)\n";
     _s += "\tMOVE.L A3,80(A5)\n\tMOVE.W D7,D4\n\tLSR.W #4,D4\n\tADD.W D4,D4\n\tMOVEA.L A2,A0\n\tADDA.L #4480,A0\n\tADDA.W D4,A0\n";
     for (var _p = 0; _p < 5; _p += 1) {
         // The mask (A) restarts for every plane: the blit leaves BLTAPT past it.
         _s += "\tMOVE.L A3,80(A5)\n\tMOVE.L A3,D0\n\tADD.L #" + string(192 + _p * 192) + ",D0\n\tMOVE.L D0,76(A5)\n";
         _s += "\tMOVE.L A0,72(A5)\n\tMOVE.L A0,84(A5)\n\tMOVE.W #2051,88(A5)\n";
-        if (_p < 4) _s += "__bob_plane_wait_" + _u + "_" + string(_p) + ":\n\tBTST #6,2(A5)\n\tBNE.S __bob_plane_wait_" + _u + "_" + string(_p) + "\n\tADDA.L #10240,A0\n";
+        if (_p < 4) _s += "__bob_plane_wait_" + _u + "_" + string(_p) + ":\n\tTST.B 2(A5)\n\tBTST #6,2(A5)\n\tBNE.S __bob_plane_wait_" + _u + "_" + string(_p) + "\n\tADDA.L #10240,A0\n";
     }
     _s += "\tADDQ.W #1,D7\n\tCMPI.W #288,D7\n\tBLE.W " + _loop + "\n\tMOVEQ #0,D7\n\tBRA.W " + _loop + "\n";
     _s += _fail + ":\n\tBRA.W " + _fail + "\n\tEVEN\n" + _bobdata + ":\n";
@@ -123,7 +123,9 @@ function scr_emit_macro_get_bitmap_bob(_node) {
     }
     _s += "\tEVEN\n" + _state + "_save:\tDC.L 0\n" + _state + "_data:\tDC.L 0\n";
     _s += _state + "_x:\tDC.W 0\n" + _state + "_y:\tDC.W 112\n";
-    _s += _state + "_old_x:\tDC.W 0\n" + _state + "_old_y:\tDC.W 112\n";
+    // _drawn stays 0 until the first DrawBOB, so ReplaceBitmap never copies
+    // an empty save-under (a black box) onto the screen.
+    _s += _state + "_old_x:\tDC.W 0\n" + _state + "_old_y:\tDC.W 112\n" + _state + "_drawn:\tDC.W 0\n";
     _s += _state + "_max_x:\tDC.W " + string(_safe_max_x) + "\n" + _state + "_max_y:\tDC.W " + string(256 - _bob.height) + "\n";
     _s += _after + ":";
     return { text : _s, is_valid : true };
@@ -147,8 +149,9 @@ function scr_emit_macro_replace_bitmap_bob(_node) {
     var _blit_size = (_bob.height << 6) | _row_words;
     var _s = _node.node_label != "" ? _node.node_label + ":\n" : "";
     _s += "\tMOVEA.L " + _state + "_save,A4\n\tMOVE.W " + _state + "_old_x,D3\n\tMOVE.W " + _state + "_old_y,D2\n";
+    _s += "\tTST.W " + _state + "_drawn\n\tBEQ.W " + _done + "\n";
     _s += _vb1 + ":\n\tCMPI.B #255,6(A5)\n\tBNE.S " + _vb1 + "\n" + _vb2 + ":\n\tCMPI.B #255,6(A5)\n\tBEQ.S " + _vb2 + "\n";
-    _s += _wait + ":\n\tBTST #6,2(A5)\n\tBNE.S " + _wait + "\n\tMOVE.W #2544,64(A5)\n\tCLR.W 66(A5)\n\tMOVE.W #65535,68(A5)\n\tMOVE.W #65535,70(A5)\n\tCLR.W 100(A5)\n\tMOVE.W #" + string(_screen_modulo) + ",102(A5)\n";
+    _s += _wait + ":\n\tTST.B 2(A5)\n\tBTST #6,2(A5)\n\tBNE.S " + _wait + "\n\tMOVE.W #2544,64(A5)\n\tCLR.W 66(A5)\n\tMOVE.W #65535,68(A5)\n\tMOVE.W #65535,70(A5)\n\tCLR.W 100(A5)\n\tMOVE.W #" + string(_screen_modulo) + ",102(A5)\n";
     // D3 is the X used by the preceding DrawBOB. Restore the same aligned
     // word rectangle at Y=112, plane by plane, from A4 save-under memory.
     _s += "\tMOVE.W D3,D4\n\tLSR.W #4,D4\n\tADD.W D4,D4\n\tMOVEA.L A2,A0\n\tMOVE.W D2,D1\n\tMULU.W #40,D1\n\tADDA.L D1,A0\n\tADDA.W D4,A0\n";
@@ -156,7 +159,7 @@ function scr_emit_macro_replace_bitmap_bob(_node) {
         _s += "\tMOVE.L A4,D0\n";
         if (_p > 0) _s += "\tADD.L #" + string(_p * _plane_bytes) + ",D0\n";
         _s += "\tMOVE.L D0,80(A5)\n\tMOVE.L A0,84(A5)\n\tMOVE.W #" + string(_blit_size) + ",88(A5)\n";
-        _s += "__replace_plane_wait_" + _u + "_" + string(_p) + ":\n\tBTST #6,2(A5)\n\tBNE.S __replace_plane_wait_" + _u + "_" + string(_p) + "\n";
+        _s += "__replace_plane_wait_" + _u + "_" + string(_p) + ":\n\tTST.B 2(A5)\n\tBTST #6,2(A5)\n\tBNE.S __replace_plane_wait_" + _u + "_" + string(_p) + "\n";
         if (_p < 4) _s += "\tADDA.L #10240,A0\n";
     }
     _s += _done + ":";
@@ -181,8 +184,8 @@ function scr_emit_macro_draw_bob(_node) {
     // this exact rectangle even after the live X coordinate changes.
     _s += "\tMOVEA.L " + _state + "_save,A4\n\tMOVEA.L " + _state + "_data,A3\n";
     _s += "\tMOVE.W " + _state + "_x,D7\n\tMOVE.W " + _state + "_y,D2\n";
-    _s += "\tMOVE.W D7,D3\n\tMOVE.W D7," + _state + "_old_x\n\tMOVE.W D2," + _state + "_old_y\n";
-    _s += _wait + ":\n\tBTST #6,2(A5)\n\tBNE.S " + _wait + "\n\tMOVE.W D7,D4\n\tLSR.W #4,D4\n\tADD.W D4,D4\n\tMOVEA.L A2,A0\n\tMOVE.W D2,D1\n\tMULU.W #40,D1\n\tADDA.L D1,A0\n\tADDA.W D4,A0\n";
+    _s += "\tMOVE.W D7,D3\n\tMOVE.W D7," + _state + "_old_x\n\tMOVE.W D2," + _state + "_old_y\n\tMOVE.W #1," + _state + "_drawn\n";
+    _s += _wait + ":\n\tTST.B 2(A5)\n\tBTST #6,2(A5)\n\tBNE.S " + _wait + "\n\tMOVE.W D7,D4\n\tLSR.W #4,D4\n\tADD.W D4,D4\n\tMOVEA.L A2,A0\n\tMOVE.W D2,D1\n\tMULU.W #40,D1\n\tADDA.L D1,A0\n\tADDA.W D4,A0\n";
     // Grab the complete word-aligned rectangle that the shifted BOB can
     // touch. Five planes are stored consecutively in the A4 save-under.
     _s += "\tMOVE.W #2544,64(A5)\n\tCLR.W 66(A5)\n\tMOVE.W #65535,68(A5)\n\tMOVE.W #65535,70(A5)\n\tMOVE.W #" + string(_screen_modulo) + ",100(A5)\n\tCLR.W 102(A5)\n";
@@ -190,7 +193,7 @@ function scr_emit_macro_draw_bob(_node) {
         _s += "\tMOVE.L A4,D0\n";
         if (_grab_plane > 0) _s += "\tADD.L #" + string(_grab_plane * _plane_bytes) + ",D0\n";
         _s += "\tMOVE.L A0,80(A5)\n\tMOVE.L D0,84(A5)\n\tMOVE.W #" + string(_blit_size) + ",88(A5)\n";
-        _s += "__grab_plane_wait_" + _u + "_" + string(_grab_plane) + ":\n\tBTST #6,2(A5)\n\tBNE.S __grab_plane_wait_" + _u + "_" + string(_grab_plane) + "\n";
+        _s += "__grab_plane_wait_" + _u + "_" + string(_grab_plane) + ":\n\tTST.B 2(A5)\n\tBTST #6,2(A5)\n\tBNE.S __grab_plane_wait_" + _u + "_" + string(_grab_plane) + "\n";
         if (_grab_plane < 4) _s += "\tADDA.L #10240,A0\n";
     }
     // Return A0 to plane zero and perform the masked cookie-cut draw.
@@ -200,7 +203,7 @@ function scr_emit_macro_draw_bob(_node) {
         // bitplane; otherwise plane data becomes the next plane's mask and
         // produces the black rectangular clobber seen in the first version.
         _s += "\tMOVE.L A3,80(A5)\n\tMOVE.L A3,D0\n\tADD.L #" + string(_plane_bytes + _p * _plane_bytes) + ",D0\n\tMOVE.L D0,76(A5)\n\tMOVE.L A0,72(A5)\n\tMOVE.L A0,84(A5)\n\tMOVE.W #" + string(_blit_size) + ",88(A5)\n";
-        _s += "__drawbob_plane_wait_" + _u + "_" + string(_p) + ":\n\tBTST #6,2(A5)\n\tBNE.S __drawbob_plane_wait_" + _u + "_" + string(_p) + "\n";
+        _s += "__drawbob_plane_wait_" + _u + "_" + string(_p) + ":\n\tTST.B 2(A5)\n\tBTST #6,2(A5)\n\tBNE.S __drawbob_plane_wait_" + _u + "_" + string(_p) + "\n";
         if (_p < 4) _s += "\tADDA.L #10240,A0\n";
     }
     return { text : _s, is_valid : true };

@@ -16,8 +16,8 @@
 ;  Amiga Dev Machine patches the fields after the "ADMB" tag and the checksum
 ;  when it writes the ADF:
 ;     readsize  - bytes of the hunk file on disk (informational)
-;     resv_addr - chip RAM the program pokes directly. It is AllocAbs'd and
-;     resv_size   never freed, so the loader's own allocations stay out of
+;     resv_addr - chip RAM the program pokes directly. It is AllocAbs'd (in
+;     resv_size   16K pieces) and never freed, so the loader's allocations stay out of
 ;                 its way (best effort; 0 = none)
 ;
 ;  If anything fails (no memory, read error, bad hunk file) the screen turns
@@ -39,10 +39,20 @@ MEMF_REVERSE equ $40000
 boot:
             move.l  a1,a2                   ; a2 = trackdisk IO request
 
-            move.l  resv_size(pc),d0        ; keep the program's fixed chip area free
-            beq     .noresv
-            move.l  resv_addr(pc),a1
+            move.l  resv_size(pc),d6        ; keep the program's fixed chip area free
+            beq.s   .noresv
+            move.l  resv_addr(pc),d2
+.resv       move.l  #$4000,d0               ; in 16K pieces: AllocAbs fails on a block
+            cmp.l   d0,d6                   ; if any byte of it is in use, so one busy
+            bhs.s   .piece                  ; piece no longer loses the whole area
+            move.l  d6,d0
+.piece      move.l  d0,-(sp)
+            move.l  d2,a1
             jsr     -204(a6)                ; AllocAbs - best effort, result ignored
+            move.l  (sp)+,d0
+            add.l   d0,d2
+            sub.l   d0,d6
+            bne.s   .resv
 .noresv
             move.l  #MEMF_CHIP|MEMF_CLEAR,d0
             cmp.w   #36,20(a6)              ; Kickstart 2.0+ (and AROS): from the top

@@ -69,13 +69,20 @@ gk_screen:
             move.l  d0,gk_copper_ptr
             add.l   #GK_COPPER_BYTES,d0
             move.l  d0,gk_sprbuf
+            move.l  4.w,a0
+            move.w  #303,gk_vbl_line        ; PAL: after the 256-line display
+            cmp.b   #50,530(a0)             ; ExecBase VBlankFrequency
+            beq.s   .pal
+            move.w  #255,gk_vbl_line        ; NTSC frames have 262 lines: 303 never comes
+.pal
 .have
             lea     $dff000,a6
+            tst.b   2(a6)                   ; early Agnus: read DMACONR once before testing BBUSY
 .bw1        btst    #6,2(a6)                ; let any OS blit finish
             bne.s   .bw1
             move.w  #$1fff,$9a(a6)          ; INTENA: OS interrupts off (keep master + EXTER for music)
             move.w  #$1fff,$9c(a6)          ; INTREQ
-            move.w  #$7ff0,$96(a6)          ; DMACON: display/blitter/copper off (audio bits kept)
+            move.w  #$7df0,$96(a6)          ; DMACON: display/blitter/copper off (DMAEN + audio kept, music plays on)
             move.w  #$2c81,$8e(a6)          ; DIWSTRT
             move.w  #$2cc1,$90(a6)          ; DIWSTOP
             move.w  #$0038,$92(a6)          ; DDFSTRT
@@ -472,13 +479,16 @@ gk_player:
 ; WAIT FRAME: until the beam passes line 303 (below the display).
 gk_wait_frame:
             lea     $dff004,a0
+            moveq   #0,d1
+            move.w  gk_vbl_line,d1          ; 303 PAL, 255 NTSC (set by gk_screen)
+            lsl.l   #8,d1
 .w1         move.l  (a0),d0
             and.l   #$1ff00,d0
-            cmp.l   #303<<8,d0
+            cmp.l   d1,d0
             bne.s   .w1
 .w2         move.l  (a0),d0
             and.l   #$1ff00,d0
-            cmp.l   #303<<8,d0
+            cmp.l   d1,d0
             beq.s   .w2
             addq.w  #1,gk_tick
             rts
@@ -1151,6 +1161,7 @@ gk_joy:         dc.w 0
 gk_joy_new:     dc.w 0
 gk_exit_all:    dc.w 0
 gk_tick:        dc.w 0
+gk_vbl_line:    dc.w 303
 gk_en_count:    dc.w 0
 gk_palette:     ds.w 16
 gk_enemies_tab: ds.b GK_EN_SIZE*GK_MAX_EN

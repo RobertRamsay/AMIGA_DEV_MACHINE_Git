@@ -120,6 +120,9 @@ function scr_amiga_selftest_step() {
             var _tile_failures = scr_tile_editor_selftest();
             scr_amiga_selftest_note("scr_tile_editor_selftest failures: " + string(array_length(_tile_failures)) + (array_length(_tile_failures) > 0 ? " " + json_stringify(_tile_failures) : ""));
             var _ced_failures = scr_code_editor_selftest();
+            var _op_failures = scr_opcode_rules_selftest();
+            scr_amiga_selftest_note("scr_opcode_rules_selftest failures: " + string(array_length(_op_failures)) + (array_length(_op_failures) > 0 ? " " + json_stringify(_op_failures) : ""));
+            _ced_failures = array_concat(_ced_failures, _op_failures);
             scr_amiga_selftest_note("scr_code_editor_selftest failures: " + string(array_length(_ced_failures)) + (array_length(_ced_failures) > 0 ? " " + json_stringify(_ced_failures) : ""));
             if (array_length(_asm_failures) + array_length(_audio_failures) + array_length(_tile_failures) + array_length(_ced_failures) > 0) {
                 scr_amiga_selftest_finish(false);

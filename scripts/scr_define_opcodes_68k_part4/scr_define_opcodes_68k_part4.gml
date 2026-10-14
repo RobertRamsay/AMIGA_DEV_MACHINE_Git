@@ -47,12 +47,12 @@ function scr_define_opcodes_68k_part4() {
     };
 
     global.opcode_map[$ "JMP"] = {
-        mnemonic : "JMP", sizes : ["L"], operand_count : 1,
+        mnemonic : "JMP", sizes : [], operand_count : 1,     // no size: vasm warns on JMP.L
         src_modes : global.AM_CONTROL, dst_modes : 0, category : "branch"
     };
 
     global.opcode_map[$ "JSR"] = {
-        mnemonic : "JSR", sizes : ["L"], operand_count : 1,
+        mnemonic : "JSR", sizes : [], operand_count : 1,     // no size: vasm warns on JSR.L
         src_modes : global.AM_CONTROL, dst_modes : 0, category : "branch"
     };
 
