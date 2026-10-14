@@ -35,7 +35,7 @@ function scr_tour_build_demo() {
     _sfx.macro_asset_name = "Pickup";
 
     global.pan_x = 0;
-    global.pan_y = 0;
+    global.pan_y = -80;             // the whole demo column clears the message log
     global.palette_scroll_y = 0;
     global.preview_scroll_y = 0;
     global.undo_stack = [];
