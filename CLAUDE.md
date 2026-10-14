@@ -23,6 +23,7 @@ ptplayer approach.
 - **Igor does not report calls to undefined functions or unknown object names** (they become runtime errors). After adding code, grep every `scr_*(` / `obj_*` you reference against `function` definitions and `objects/`.
 - **End-to-end self test** (no clicking needed): run the built exe with
   `-admselftest "C:\path\song.mod"` — runs `scr_asm_lang_selftest` and `scr_audio_selftest`, imports the MOD, builds PLAY MOD + PLAY SFX + two CODE blocks, presses F5 for real and writes `%LOCALAPPDATA%\AmigaDevMachine\selftest_result.txt` (RESULT: PASS/FAIL), then quits. FS-UAE shows a green screen while Paula audio DMA runs (music playing). `-admselftesterr` instead plants an error on line 3 of a CODE block and checks it is mapped back to that line. The self test autosaves to its own file, never the user's recovery file.
+- The self test also runs `scr_tile_editor_selftest`. **Tutorial self test:** `-admtutorials` loads and builds all ten tutorials (no emulator: `global.build_skip_launch`) and checks vasm + the disk writer for each; `-admtutorial N` builds tutorial N and boots it in FS-UAE. Same result file.
 - **Disk without GameMaker:** `powershell -File tools\make_adf.ps1 -Hunk main.bin -Out test.adf [-Run] [-Model A1200]` (same writer as `scr_amiga_write_boot_adf`).
 - The machine/ROM/boot settings live in `%LOCALAPPDATA%\AMIGA_DEV_MACHINE\settings.ini` (`[machine] model`, `boot_mode`, `[paths] kickstart_a600/a1200`). Build output: `%LOCALAPPDATA%\AmigaDevMachine\build_output\build\` (`main.s`, `vasm.log`, `main.bin`, `disk.adf`).
 
@@ -35,7 +36,7 @@ ptplayer approach.
 | `obj_opcode_palette_item` | Opcode palette and the top-strip macro buttons; dropping one creates a node. |
 | `scr_emit_opcode_line` → `scr_emit_macro_line` | Node → assembler text `{ text, is_valid }`. |
 | `scr_amiga_trigger_build` → `scr_amiga_start_build` | F5 / RUN / INIT click / F5 in the code editor. |
-| Modal editors | `obj_bitmap_editor`, `obj_bob_editor`, `obj_colour_picker`, `obj_cprbar_editor`, `obj_code_editor`, `obj_audio_editor`. **Always test with `scr_amiga_modal_open()`** — add any new modal object there. |
+| Modal editors | `obj_bitmap_editor`, `obj_bob_editor`, `obj_colour_picker`, `obj_cprbar_editor`, `obj_code_editor`, `obj_audio_editor`, `obj_tile_editor`, `obj_tutorial_home`. **Always test with `scr_amiga_modal_open()`** — add any new modal object there. |
 | Persistence | Node fields must be added to `scr_capture_snapshot`, `scr_node_restore_extra_fields` (in `scr_restore_snapshot`), `scr_save_workspace_to_path`, `scr_clone_opcode_node`. `global.asset_list` is saved whole with `json_stringify`, so assets must be plain JSON data. |
 | `scr_macro_node_defaults` | `scr_macro_node_height(type)` (palette + load use it), `scr_macro_node_init` for audio/CODE nodes. |
 
@@ -77,6 +78,19 @@ ptplayer approach.
 - Hardware symbols are case-sensitive in vasm (`DMACON`, not `dmacon`).
 - `scr_amiga_has_core_loop` accepts a CODE block containing an unconditional `BRA`/`JMP` as the program's core loop.
 
+### Game Kit (platformer runtime)
+
+- Data model `scr_gamekit_assets` (assets in `global.asset_list`, plain JSON): **TILESET** (8/16/24/32 px tiles, 16-colour palette, flags `GK_FLAG_SOLID/PLATFORM/HAZARD/COLLECT/EXIT`, metatiles up to 128x128 px), **TILEMAP** (each room is one screen = `320 div size` x `256 div size` tiles, up to 8x8 rooms, spawn point, ≤6 enemies per room), **ANIMSET** (idle/run/jump/fall, each a list of 16 px wide SPRITE asset names + rate). Validation: `scr_gk_map_problem`, `scr_gk_animset_problem`.
+- Ten node types (`GK_NODE_TYPES` in `scr_gamekit_emit`): GAME SCREEN, DRAW MAP, PLAYER, WAIT FRAME, READ JOYSTICK, PHYSICS, TILE EVENTS, ENEMIES, ANIMATE, DRAW SPRITES. Each emits `MOVEM` save → params → `JSR gk_*` → restore. Generic node fields `macro_param_a/b/c`, `macro_param_text_a/b` (meaning per node: see the file header). Row input, drawing and hover help: `scr_gk_node_ui`.
+- Runtime `datafiles/gamekit/gamekit.s`, INCLUDEd once by the footer (`SECTION adm_gamekit,CODE`); baked data goes in `adm_gkdata,DATA_C` as `__gkmap_` / `__gkts_` / `__gkanim_` / `__gksfx_<uid>_<a|b>`. 320x256, 4 planes, its own copper list, 8 sprite buffers; hero = sprite 0 (left-facing frames mirrored at bake time), enemies = sprites 2-7. Positions are room-local; the hero's are in 1/16 px. `gk_screen` turns OS interrupts off but keeps EXTER, so ptplayer music keeps playing; `GK_AUDIO` is defined when sound is used. The data layouts are documented at the top of `gamekit.s`: keep the bake functions in step with them.
+- Typical graph: SCREEN, MAP, PLAYER, then `WAIT FRAME` (labelled), INPUT, PHYSICS, EVENTS, ENEMIES, ANIMATE, DRAW SPRITES, `BRA label`.
+- **TILE-EDIT** (`scr_tile_editor_open` → `obj_tile_editor`, helpers `scr_te_*` in `scr_tile_editor`): Tiles / Metatiles / Map / Animations tabs. Renames carry through to maps, enemies and DRAW MAP / PLAYER nodes.
+
+### Tutorials
+
+- `scr_tutorials`: `scr_tutorial_defs()` (ten tutorials: id, title, level, summary, features, steps), `scr_tutorial_load(i)`, `scr_tutorial_reset_workspace()`. `scr_tutorial_builders`: `scr_tutorial_build(n)` builds each node graph and **generates every asset** (tile art at any size via `scr_tb_tile_colour`, metatiles, maps, hero and slime with 4 frames per state, a 2-pattern M.K. tune and three sfx for tutorial 10).
+- UI (`scr_tutorial_ui`): `obj_tutorial_home` is the opening page, shown after the splash unless switched off (`[ui] show_home` in settings.ini). Its CONTINUE LAST SESSION replaces the old automatic recovery. `obj_tutorial_guide` is the step panel over the preview; it highlights nodes named in capitals. The workspace and preview ignore clicks under it (`scr_tutorial_guide_mouse_over()`). Done flags: `[tutorials] done_<id>`. Toolbar: GAME KIT column (TILE-EDIT, TUTORIALS). Loading any workspace sets `global.tutorial_current = -1`, which closes the guide.
+
 ## Adding a macro node type — checklist
 
 `scr_macro_node_height` / `scr_macro_node_init`, palette button (manager Create + the top-strip list in `obj_opcode_palette_item/Step_0`), node Step (input) and Draw, `scr_emit_macro_line` dispatch + emitter, `scr_amiga_describe_node`, `scr_amiga_explain_node` (hover help), persistence (see table above), and `scr_amiga_build_preview_lines` if the emitted text is huge.
@@ -89,4 +103,6 @@ ptplayer approach.
 - Key-press events run before Step: the manager's Esc handler must bail while any editor or text field is active (it does), or Esc quits the app.
 - vasm: local labels (`.x`) are scoped to the previous global label; cross-section PC-relative references are not allowed; prefer unsized branches and let vasm size them.
 - PowerShell 5.1 reads `0xFFFFFFFF` as Int32 −1 — use `[UInt64]4294967295`.
+- A Copper WAIT holds only 8 bits of the line: lines ≥256 need a `$FFDFFFFE` wait first (handled in `scr_emit_macro_copper_bar`).
+- Perl one-liners expand `\t` / `\n` inside GML string literals; use the Edit tool for lines with escapes.
 - Never test with the user's own autosave: `temp_autosave_workspace.json` is the crash-recovery file that is auto-loaded at start.

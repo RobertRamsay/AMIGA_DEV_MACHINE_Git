@@ -188,9 +188,9 @@ function scr_te_asset_rename(_old, _new) {
         }
         _a += 1;
     }
+    // DRAW MAP and PLAYER nodes name their TILEMAP / ANIMSET in macro_asset_name.
     with (obj_opcode_node) {
-        if (variable_instance_exists(id, "macro_param_text_a") && macro_param_text_a == _old) macro_param_text_a = _new;
-        if (variable_instance_exists(id, "macro_param_text_b") && macro_param_text_b == _old) macro_param_text_b = _new;
+        if (is_macro && (macro_type == "GK_MAP" || macro_type == "GK_PLAYER") && macro_asset_name == _old) macro_asset_name = _new;
     }
     return "";
 }

@@ -96,7 +96,9 @@ function scr_amiga_selftest_step() {
             scr_amiga_selftest_note("scr_asm_lang_selftest failures: " + string(array_length(_asm_failures)) + (array_length(_asm_failures) > 0 ? " " + json_stringify(_asm_failures) : ""));
             var _audio_failures = scr_audio_selftest();
             scr_amiga_selftest_note("scr_audio_selftest failures: " + string(array_length(_audio_failures)) + (array_length(_audio_failures) > 0 ? " " + json_stringify(_audio_failures) : ""));
-            if (array_length(_asm_failures) + array_length(_audio_failures) > 0) {
+            var _tile_failures = scr_tile_editor_selftest();
+            scr_amiga_selftest_note("scr_tile_editor_selftest failures: " + string(array_length(_tile_failures)) + (array_length(_tile_failures) > 0 ? " " + json_stringify(_tile_failures) : ""));
+            if (array_length(_asm_failures) + array_length(_audio_failures) + array_length(_tile_failures) > 0) {
                 scr_amiga_selftest_finish(false);
                 exit;
             }
@@ -199,6 +201,9 @@ function scr_amiga_selftest_tutorial_step() {
         case 0:
             if (global.selftest_timer < 30) break;
             scr_amiga_selftest_note("machine " + global.amiga_machine + ", boot " + global.build_boot_mode);
+            var _te_failures = scr_tile_editor_selftest();
+            scr_amiga_selftest_note("scr_tile_editor_selftest failures: " + string(array_length(_te_failures)) + (array_length(_te_failures) > 0 ? " " + json_stringify(_te_failures) : ""));
+            if (array_length(_te_failures) > 0) global.selftest_tutorial_ok = false;
             global.selftest_tutorial_index = global.selftest_tutorial_first;
             global.selftest_stage = 10;
             break;

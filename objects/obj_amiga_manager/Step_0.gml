@@ -290,6 +290,10 @@ if (_over_sprite_bitmap_test && mouse_check_button_pressed(mb_left)) scr_amiga_r
 var _over_sound_editor = point_in_rectangle(mouse_x, mouse_y, top_ui_editor_2_x, top_ui_row_2_y, top_ui_editor_2_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height);
 if (_over_sound_editor && mouse_check_button_pressed(mb_left)) scr_audio_editor_open();
 
+// TILE-EDIT: tilesets, metatiles, maps and animation sets for the Game Kit.
+var _over_tile_editor = point_in_rectangle(mouse_x, mouse_y, top_ui_tutorial_x, top_ui_row_1_y, top_ui_tutorial_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height);
+if (_over_tile_editor && mouse_check_button_pressed(mb_left)) scr_tile_editor_open();
+
 // TUTORIALS: the opening page with the ten tutorials.
 var _over_tutorials = point_in_rectangle(mouse_x, mouse_y, top_ui_tutorial_x, top_ui_row_2_y, top_ui_tutorial_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height);
 if (_over_tutorials && mouse_check_button_pressed(mb_left)) scr_tutorial_home_open(false);

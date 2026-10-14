@@ -202,6 +202,11 @@ draw_text(top_ui_audio_x, 2, "AUDIO / CODE:");
 
 // Game Kit editor and the tutorials page.
 draw_text(top_ui_tutorial_x, 2, "GAME KIT:");
+draw_set_colour(make_color_rgb(60, 95, 40));
+draw_rectangle(top_ui_tutorial_x, top_ui_row_1_y, top_ui_tutorial_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, false);
+draw_set_colour(c_white);
+draw_rectangle(top_ui_tutorial_x, top_ui_row_1_y, top_ui_tutorial_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, true);
+draw_text(top_ui_tutorial_x + 4, top_ui_row_1_y, "TILE-EDIT");
 draw_set_colour(make_color_rgb(120, 70, 20));
 draw_rectangle(top_ui_tutorial_x, top_ui_row_2_y, top_ui_tutorial_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height, false);
 draw_set_colour(c_white);
