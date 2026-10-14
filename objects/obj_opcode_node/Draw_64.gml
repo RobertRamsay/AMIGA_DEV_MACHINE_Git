@@ -6,7 +6,7 @@ var _dy = node_y + global.pan_y;
 
 var _hovering_node = point_in_rectangle(mouse_x, mouse_y, _dx, _dy, _dx + node_width, _dy + node_height);
 
-if (_hovering_node && !is_dragging && global.operand_edit_owner_uid == -1) {
+if (_hovering_node && !is_dragging && global.operand_edit_owner_uid == -1 && !scr_amiga_modal_open()) {
     var _explanation = scr_amiga_explain_node(id);
 
     if (_explanation != "") {

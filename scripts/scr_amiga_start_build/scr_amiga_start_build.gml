@@ -110,11 +110,16 @@ function scr_amiga_start_build(_node_array, _project_path, _chipset_mode) {
     file_text_write_string(_batch, "@echo off\r\n");
     file_text_write_string(_batch, "cd /D \"%~dp0\"\r\n");
     file_text_write_string(_batch, "\"" + string_replace_all(global.vasm_path, "/", "\\") + "\" " + _vasm_args + " > vasm.log 2>&1\r\n");
-    file_text_write_string(_batch, "echo %errorlevel%> asm.done\r\n");
+    // Not "echo %errorlevel%> asm.done": that expands to "echo 0> ..." and
+    // cmd reads "0>" as a redirect of handle 0, leaving the marker empty.
+    file_text_write_string(_batch, "> asm.done echo exit %errorlevel%\r\n");
     file_text_close(_batch);
 
     show_debug_message("scr_amiga_start_build: launching vasm " + _vasm_args);
-    var _started = execute_shell_simple("cmd.exe", "/D /C build_asm.bat", "open", 0, _build_dir);
+    // ShellExecute wants a native path: LOCALAPPDATA gives backslashes and GML
+    // appends forward slashes, so normalise both the batch and its folder.
+    var _build_dir_native = string_replace_all(_build_dir, "/", "\\");
+    var _started = execute_shell_simple("cmd.exe", "/D /C \"" + _build_dir_native + "\\build_asm.bat\"", "open", 0, _build_dir_native);
     if (!_started) {
         array_push(_result.error_list, "; ERROR: could not start cmd.exe to run vasm");
         return _result;

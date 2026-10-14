@@ -109,7 +109,8 @@ function scr_amiga_start_adf_build(_bin_path, _project_path, _volume_name, _uses
     // Give cmd.exe the build directory separately as its working directory.
     // The /C command is now just a simple filename, with no nested quoted path
     // for ShellExecute or cmd.exe to misparse. SW_HIDE prevents a popup.
-    var _batch_started = execute_shell_simple("cmd.exe", "/D /C build_adf.bat", "open", 5, _build_dir);
+    var _build_dir_native = string_replace_all(_build_dir, "/", "\\");
+    var _batch_started = execute_shell_simple("cmd.exe", "/D /C \"" + _build_dir_native + "\\build_adf.bat\"", "open", 0, _build_dir_native);
     if (!_batch_started) {
         show_debug_message("scr_amiga_start_adf_build: could not launch cmd.exe for " + _batch_path);
     }

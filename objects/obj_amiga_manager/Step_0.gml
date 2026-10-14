@@ -33,6 +33,8 @@ if (global.workspace_dirty && global.autosave_due_time >= 0 && current_time >= g
     }
 }
 
+scr_amiga_selftest_step();
+
 // Build state machine. vasm runs in build_asm.bat, which writes its exit
 // code to asm.done when it finishes; vasm.log holds its messages.
 if (build_state == "waiting_for_asm") {
@@ -80,7 +82,9 @@ if (build_state == "waiting_for_asm") {
                 build_wait_timer = 0;
             }
         }
-    } else if (build_wait_timer > 1200) {
+    }
+
+    if (build_state == "waiting_for_asm" && build_wait_timer > 1200) {
         show_debug_message("Build timed out waiting for vasm.");
         scr_set_status_message("BUILD TIMED OUT - vasm did not finish. Log: " + build_log_path, c_red);
         build_state = "idle";

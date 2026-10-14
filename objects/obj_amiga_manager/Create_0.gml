@@ -684,3 +684,6 @@ global.sprite_anim_end = max(0, array_length(global.sprite_asset_names) - 1);
 global.workspace_dirty = false;
 global.autosave_due_time = -1;
 global.autosave_recovery_pending = file_exists(global.autosave_workspace_path);
+
+// Development self test (-admselftest <mod>), see scr_amiga_selftest.
+scr_amiga_selftest_init();

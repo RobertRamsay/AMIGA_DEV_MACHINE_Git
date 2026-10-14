@@ -4,6 +4,32 @@
 /// no explanation yet. Extend this function as new macros/registers are added.
 function scr_amiga_explain_node(_node) {
     if (_node.is_macro) {
+        if (_node.build_error_text != "") {
+            return "LAST BUILD FAILED HERE: " + string_replace(_node.build_error_text, "; ERROR: ", "");
+        }
+
+        if (_node.macro_type == "CODE") {
+            return "Your own 68000 assembly, assembled exactly where this block sits in the program. "
+                + "Click EDIT CODE (or double-click the code) for the editor: syntax colours, autocomplete, "
+                + "live error checks and hover help. Hardware names such as CUSTOM, DMACON and COLOR00 are predefined.";
+        }
+
+        if (_node.macro_type == "PLAY_MOD") {
+            return "Starts the ProTracker module '" + _node.macro_asset_name + "' from song position " + string(_node.macro_music_pos)
+                + " using ptplayer on CIA-B interrupts, so it keeps playing while your program runs. "
+                + "Click < > to pick the music, the middle of the name to preview it here. Import MODs in SND-EDIT.";
+        }
+
+        if (_node.macro_type == "STOP_MOD") {
+            return "Stops the music and every sound effect (ptplayer _mt_end). PLAY MOD can start music again afterwards.";
+        }
+
+        if (_node.macro_type == "PLAY_SFX") {
+            return "Plays the sample '" + _node.macro_asset_name + "' on "
+                + (_node.macro_sfx_channel < 0 ? "the least busy Paula channel" : "Paula channel " + string(_node.macro_sfx_channel))
+                + ", mixed in with any music. Looped samples repeat until STOP MUSIC. Import WAV / 8SVX / raw samples in SND-EDIT.";
+        }
+
         if (_node.macro_type == "SETBKG") {
             return "Sets bitmap COLOR00 to Amiga 12-bit colour #" + _node.macro_asset_name
                 + ". This is the playfield background colour behind zero-valued bitmap pixels.";
