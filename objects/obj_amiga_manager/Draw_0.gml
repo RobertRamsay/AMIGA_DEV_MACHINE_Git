@@ -211,7 +211,7 @@ var _toolbar_buttons = [
     { bx : top_ui_tutorial_x, by : top_ui_row_1_y, bw : _bw, colour : make_color_rgb(60, 95, 40), text : "TILE-EDIT" },
     { bx : top_ui_tutorial_x + 104, by : top_ui_row_1_y, bw : _bw, colour : make_color_rgb(40, 80, 150), text : "TOUR (F1)" },
     { bx : top_ui_tutorial_x, by : top_ui_row_2_y, bw : _bw, colour : make_color_rgb(120, 70, 20), text : "TUTORIALS" },
-    { bx : top_ui_tutorial_x + 104, by : top_ui_row_2_y, bw : _bw, colour : make_color_rgb(50, 70, 90), text : window_get_fullscreen() ? "WINDOWED" : "FULL SCREEN" },
+    { bx : top_ui_tutorial_x + 104, by : top_ui_row_2_y, bw : _bw, colour : make_color_rgb(50, 70, 90), text : global.window_is_fullscreen ? "WINDOWED" : "FULL SCREEN" },
     { bx : top_ui_org_x, by : top_ui_row_2_y, bw : _bw, colour : make_color_rgb(25, 105, 105), text : "TRACKER" },
     // Machine, run and boot controls.
     { bx : top_ui_machine_x, by : top_ui_row_1_y, bw : _bw, colour : make_color_rgb(70, 60, 110), text : "MACH: " + _machine_profile.name },

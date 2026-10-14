@@ -1,14 +1,20 @@
 /// Window mode: FULL SCREEN or a resizable window (toolbar WINDOWED /
-/// FULL SCREEN button, F11, Alt+Enter). The room is always 1920x1080:
-/// GameMaker scales it to the window keeping the aspect ratio (letterboxed),
-/// and the GUI layer is pinned to the same size so Draw GUI positions and
-/// mouse_x / mouse_y stay in room coordinates in both modes.
+/// FULL SCREEN button, F11). The room is always 1920x1080: GameMaker scales
+/// it to the window keeping the aspect ratio (letterboxed), and the GUI layer
+/// is pinned to the same size so Draw GUI positions and mouse_x / mouse_y
+/// stay in room coordinates in both modes.
+///
+/// FULL SCREEN is a borderless window covering the display, not GameMaker's
+/// window_set_fullscreen: that one is minimised as soon as another window
+/// (FS-UAE, a file dialog, the taskbar) takes the focus.
 ///
 /// settings.ini: [ui] window_mode = "fullscreen" | "windowed",
 ///               [ui] window_w / window_h (last windowed size).
 
 #macro WINDOW_MIN_W 960
 #macro WINDOW_MIN_H 540
+
+global.window_is_fullscreen = true;
 
 /// Applies the saved mode at startup. Self tests (-adm... parameters) always
 /// run full screen so their screenshots have the usual size.
@@ -36,15 +42,17 @@ function scr_window_mode_init() {
 function scr_window_apply(_fullscreen, _remember = false) {
     if (_fullscreen) {
         // Remember the windowed size for next time.
-        if (_remember && !window_get_fullscreen() && window_get_width() >= WINDOW_MIN_W) {
+        if (_remember && !global.window_is_fullscreen && window_get_width() >= WINDOW_MIN_W) {
             ini_open("settings.ini");
             ini_write_real("ui", "window_w", window_get_width());
             ini_write_real("ui", "window_h", window_get_height());
             ini_close();
         }
-        window_set_fullscreen(true);
+        window_set_showborder(false);
+        window_set_position(0, 0);
+        window_set_size(display_get_width(), display_get_height());
     } else {
-        window_set_fullscreen(false);
+        window_set_showborder(true);
         ini_open("settings.ini");
         var _w = ini_read_real("ui", "window_w", 0);
         var _h = ini_read_real("ui", "window_h", 0);
@@ -59,12 +67,13 @@ function scr_window_apply(_fullscreen, _remember = false) {
         window_set_size(_w, _h);
         window_center();
     }
+    global.window_is_fullscreen = _fullscreen;
     display_set_gui_size(room_width, room_height);
 }
 
 /// Toolbar button / F11: flips the mode and saves it.
 function scr_window_toggle() {
-    var _fullscreen = !window_get_fullscreen();
+    var _fullscreen = !global.window_is_fullscreen;
     scr_window_apply(_fullscreen, true);
     ini_open("settings.ini");
     ini_write_string("ui", "window_mode", _fullscreen ? "fullscreen" : "windowed");

@@ -98,7 +98,7 @@ ptplayer approach.
 
 ### Window mode
 
-- `scr_window_mode`: full screen or a resizable window (toolbar WINDOWED / FULL SCREEN under TOUR, F11 at the top of the manager Step, Alt+Enter). Saved as `[ui] window_mode`, and `window_w` / `window_h` when leaving a window. The room stays 1920x1080, scaled with its aspect ratio kept; `display_set_gui_size(1920, 1080)` keeps Draw GUI in room coordinates. Self tests (any `-adm...` parameter) always start full screen. Windows options: not borderless, resizable.
+- `scr_window_mode`: full screen or a resizable window (toolbar WINDOWED / FULL SCREEN under TOUR, F11 at the top of the manager Step). Full screen is a borderless window covering the display (`window_set_showborder(false)`), not `window_set_fullscreen`, which is minimised whenever another window takes the focus. Saved as `[ui] window_mode`, and `window_w` / `window_h` when leaving a window. The room stays 1920x1080, scaled with its aspect ratio kept; `display_set_gui_size(1920, 1080)` keeps Draw GUI in room coordinates. Self tests (any `-adm...` parameter) always start full screen. Windows options: not borderless, resizable, no Alt+Enter switching.
 
 ### CODE blocks
 
