@@ -412,4 +412,4 @@ if (global.tracker_font == -1) {
 if (!variable_global_exists("tracker_last_name")) global.tracker_last_name = "";
 
 scr_audio_preview_stop();
-tracker_message("Space: edit on/off or stop. Enter: play pattern, Shift+Enter: play song. Keys Z-M / Q-P play notes. Esc saves and closes.", c_white);
+tracker_message("Z-M / Q-P play notes. Enter plays the pattern, Space stops or toggles EDIT.", c_white);

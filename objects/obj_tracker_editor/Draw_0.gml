@@ -65,7 +65,10 @@ scr_ui_text_mid(_sx + 12, _sy + 168, _sy + 190, "Positions " + string(array_leng
 scr_ui_text_mid(_sx + 12, _sy + 192, _sy + 214, "Size " + string(_bytes) + " bytes (" + string_format(_bytes / 1024, 1, 1) + " KB of chip RAM)");
 scr_ui_text_mid(_sx + 12, _sy + 216, _sy + 238, "SAVE, then pick it in a PLAY MUSIC node.");
 draw_set_colour(message_colour);
-draw_text_ext(_sx + 12, _sy + 240, message, 18, _l.song[2] - _sx - 24);
+// At most four lines, so a long message never runs into the transport bar.
+var _msg = message;
+while (string_height_ext(_msg, 18, _l.song[2] - _sx - 24) > 72 && string_length(_msg) > 4) _msg = string_copy(_msg, 1, string_length(_msg) - 5) + "..";
+draw_text_ext(_sx + 12, _sy + 240, _msg, 18, _l.song[2] - _sx - 24);
 
 // ORDER list.
 var _ox = _l.order[0] + 8;
