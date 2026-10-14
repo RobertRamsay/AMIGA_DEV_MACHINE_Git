@@ -160,6 +160,7 @@ if (build_state == "waiting_for_adf") {
 // The bitmap editor and colour picker are both modal: do not pan, build,
 // undo, click controls or mutate the graph behind either of them.
 if (scr_amiga_modal_open()) {
+    global.palette_find = "";
     exit;
 }
 
@@ -405,7 +406,9 @@ if (_over_quit_button && mouse_check_button_pressed(mb_left)) {
     }
 }
 
-if (keyboard_check_pressed(ord("H")) && global.operand_edit_owner_uid == -1) {
+// H toggles hex / decimal values, except over the palette, where letters find entries.
+if (keyboard_check_pressed(ord("H")) && global.operand_edit_owner_uid == -1
+    && !point_in_rectangle(mouse_x, mouse_y, global.palette_panel_bounds.left, global.palette_panel_bounds.top, global.palette_panel_bounds.right, global.palette_panel_bounds.bottom)) {
     if (global.value_display_mode == "HEX") {
         global.value_display_mode = "DEC";
     } else {
@@ -456,7 +459,32 @@ if (_over_palette) {
     if (global.palette_scroll_y < _min_scroll) {
         global.palette_scroll_y = _min_scroll;
     }
+
+    // Type to find: the first letter lights up every entry starting with it,
+    // the second narrows it to entries starting with both, a third starts
+    // again with that letter. Backspace takes one back; the list scrolls to
+    // the matches.
+    if (global.operand_edit_owner_uid == -1 && global.sprite_editing_field == ""
+        && !keyboard_check(vk_control) && !keyboard_check(vk_alt)) {
+        var _typed_letter = "";
+        var _letter_i = 0;
+        while (_letter_i < 26) {
+            if (keyboard_check_pressed(ord("A") + _letter_i)) _typed_letter = chr(ord("A") + _letter_i);
+            _letter_i += 1;
+        }
+        if (_typed_letter != "") {
+            if (string_length(global.palette_find) >= 2) global.palette_find = "";
+            global.palette_find += _typed_letter;
+            scr_palette_find_scroll();
+        } else if (keyboard_check_pressed(vk_backspace) && global.palette_find != "") {
+            global.palette_find = string_copy(global.palette_find, 1, string_length(global.palette_find) - 1);
+        }
+    }
+} else if (palette_find_was_over) {
+    // The mouse just left the palette: the search ends.
+    global.palette_find = "";
 }
+palette_find_was_over = _over_palette;
 
 // Wrapping uses real rendered pixel widths, so select the same font used by
 // Draw before rebuilding the cache. This avoids fixed character-count guesses
@@ -644,7 +672,8 @@ if (global.sprite_editor_open) {
     // workspace-save shortcut handled above.
     var _sprite_shortcut_plain = global.sprite_editing_field == ""
         && !keyboard_check(vk_control)
-        && !keyboard_check(vk_alt);
+        && !keyboard_check(vk_alt)
+        && !_over_palette;
     if (_sprite_shortcut_plain) {
         if (keyboard_check_pressed(ord("A"))) sprite_editor_navigate(-1);
         if (keyboard_check_pressed(ord("D"))) sprite_editor_navigate(1);

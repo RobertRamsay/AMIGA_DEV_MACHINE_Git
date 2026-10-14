@@ -86,6 +86,9 @@ function scr_amiga_showcase_shots() {
         { name : "40_hover_move_to_colour00", setup : function() { scr_amiga_showcase_hover_opcode(2, "MOVE"); } },
         { name : "41_hover_addq", setup : function() { scr_amiga_showcase_hover_opcode(2, "ADDQ"); } },
         { name : "42_hover_bra_loop", setup : function() { scr_amiga_showcase_hover_opcode(2, "BRA"); } },
+        { name : "43_palette_find_n", setup : function() { scr_amiga_showcase_palette_find("N"); } },
+        { name : "44_palette_find_no", setup : function() { scr_amiga_showcase_palette_find("NO"); } },
+        { name : "45_palette_find_mo", setup : function() { scr_amiga_showcase_palette_find("MO"); } },
         { name : "38_tutorial_16_show_me_b_section", setup : function() { scr_amiga_showcase_song_step(8); } }
     ];
 }
@@ -129,6 +132,17 @@ function scr_amiga_showcase_hover_opcode(_number, _mnemonic) {
     var _mx = _found.node_x + global.pan_x + _found.node_width / 2;
     var _my = _found.node_y + global.pan_y + 8;
     window_mouse_set(_mx * window_get_width() / room_width, _my * window_get_height() / room_height);
+}
+
+/// Mouse over the palette with _letters typed (type to find), on tutorial 2.
+function scr_amiga_showcase_palette_find(_letters) {
+    with (obj_tracker_editor) instance_destroy();
+    scr_amiga_showcase_tutorial(2, "");
+    with (obj_tutorial_guide) instance_destroy();
+    global.palette_scroll_y = 0;
+    window_mouse_set(268 * window_get_width() / room_width, 1060 * window_get_height() / room_height);
+    global.palette_find = _letters;
+    scr_palette_find_scroll();
 }
 
 /// Starts (or continues) the tour on the step titled _title.

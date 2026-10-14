@@ -30,6 +30,23 @@ if (_has_hover) {
     }
 }
 
+// Type to find over the palette: the letters typed so far and the match count.
+if (global.palette_find != "") {
+    var _find_count = scr_palette_find_count();
+    var _find_text = "FIND: " + global.palette_find + (string_length(global.palette_find) < 2 ? "_" : "")
+        + "   " + (_find_count == 1 ? "1 match" : string(_find_count) + " matches")
+        + (string_length(global.palette_find) >= 2 ? "   (the next letter starts again)" : "   (type a second letter to narrow it)");
+    var _find_w = string_width(_find_text) + 24;
+    var _find_y = 806;
+    draw_set_alpha(0.85);
+    scr_ui_box_fill(272, _find_y, 272 + _find_w, _find_y + 34, make_colour_rgb(12, 14, 24));
+    draw_set_alpha(1);
+    scr_ui_box_outline(272, _find_y, 272 + _find_w, _find_y + 34, _find_count > 0 ? c_yellow : c_red);
+    draw_set_colour(_find_count > 0 ? c_yellow : c_red);
+    scr_ui_text_mid(284, _find_y, _find_y + 34, _find_text);
+    draw_set_colour(c_white);
+}
+
 var _panel_x = room_width - 360;
 // Starts below the toolbar buttons; the bottom edge sits 2 px above the room
 // edge (one pixel to spare), level with the message panel.
