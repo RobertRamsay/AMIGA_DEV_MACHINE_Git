@@ -25,7 +25,7 @@ colour_g = 0;
 colour_b = 0;
 
 panel_width = 280;
-panel_height = 222;
+panel_height = 240;
 panel_x = (room_width - panel_width) / 2;
 panel_y = (room_height - panel_height) / 2;
 
@@ -39,7 +39,8 @@ slider_b_y = panel_y + 122;
 
 // Global recent-colours row — up to 8 swatches, clicking one recalls it
 // into colour_r/g/b for further editing (does not commit by itself).
-recent_row_y = panel_y + 154;
+// The "RECENT:" label sits in the band above the row, clear of the B slider.
+recent_row_y = panel_y + 170;
 recent_swatch_width = 28;
 recent_swatch_height = 20;
 recent_swatch_gap = 4;

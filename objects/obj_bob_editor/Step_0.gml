@@ -88,12 +88,12 @@ if (_grid_press && bob_tool == "FILL") {
     bob_commit();
 }
 
-var _palette_x = panel_x + 560;
+var _palette_x = panel_x + column_x_offset;
 var _palette_y = panel_y + 58;
 for (var _i = 0; _i < 32; _i += 1) {
-    var _sx = _palette_x + ((_i mod 8) * 38);
-    var _sy = _palette_y + ((_i div 8) * 38);
-    if (_left_press && point_in_rectangle(_mx, _my, _sx, _sy, _sx + 31, _sy + 31)) pen_index = _i;
+    var _sx = _palette_x + ((_i mod 8) * swatch_step);
+    var _sy = _palette_y + ((_i div 8) * swatch_step);
+    if (_left_press && point_in_rectangle(_mx, _my, _sx, _sy, _sx + swatch_size - 1, _sy + swatch_size - 1)) pen_index = _i;
 }
 
 // Three genuine Amiga 4-bit component sliders. Palette edits are committed
@@ -101,8 +101,8 @@ for (var _i = 0; _i < 32; _i += 1) {
 var _slider_y = panel_y + 250;
 for (var _component = 0; _component < 3; _component += 1) {
     var _sy2 = _slider_y + _component * 42;
-    if (_left && point_in_rectangle(_mx, _my, _palette_x + 22, _sy2, _palette_x + 262, _sy2 + 20)) {
-        var _v = clamp(round((_mx - (_palette_x + 22)) / 16), 0, 15);
+    if (_left && point_in_rectangle(_mx, _my, _palette_x + slider_track_x, _sy2, _palette_x + slider_track_x + 15 * slider_step, _sy2 + 20)) {
+        var _v = clamp(round((_mx - (_palette_x + slider_track_x)) / slider_step), 0, 15);
         if (_component == 0) colour_r[pen_index] = _v;
         if (_component == 1) colour_g[pen_index] = _v;
         if (_component == 2) colour_b[pen_index] = _v;
@@ -112,8 +112,8 @@ for (var _component = 0; _component < 3; _component += 1) {
 
 var _asset_row_y = panel_y + 370;
 if (_left_press && point_in_rectangle(_mx, _my, _palette_x, _asset_row_y, _palette_x + 28, _asset_row_y + 26)) bob_navigate(-1);
-if (_left_press && point_in_rectangle(_mx, _my, _palette_x + 190, _asset_row_y, _palette_x + 218, _asset_row_y + 26)) bob_navigate(1);
-if (_left_press && point_in_rectangle(_mx, _my, _palette_x + 228, _asset_row_y, _palette_x + 320, _asset_row_y + 26)) bob_add_asset();
+if (_left_press && point_in_rectangle(_mx, _my, _palette_x + 196, _asset_row_y, _palette_x + 224, _asset_row_y + 26)) bob_navigate(1);
+if (_left_press && point_in_rectangle(_mx, _my, _palette_x + 2 * button_step, _asset_row_y, _palette_x + column_width, _asset_row_y + 26)) bob_add_asset();
 
 // Match the hardware-sprite editor's frame controls. Modified keys are ignored
 // so application-level shortcuts such as Ctrl+S keep their existing meaning.
@@ -161,12 +161,14 @@ if (_bob_shortcut_plain) {
 }
 
 var _tool_y = panel_y + 410;
-if (_left_press && point_in_rectangle(_mx, _my, _palette_x, _tool_y, _palette_x + 92, _tool_y + 30)) { bob_tool = "DRAW"; bob_line_active = false; }
-if (_left_press && point_in_rectangle(_mx, _my, _palette_x + 104, _tool_y, _palette_x + 196, _tool_y + 30)) { bob_tool = "LINE"; bob_line_active = false; }
-if (_left_press && point_in_rectangle(_mx, _my, _palette_x + 208, _tool_y, _palette_x + 300, _tool_y + 30)) { bob_tool = "FILL"; bob_line_active = false; }
+var _col_2 = _palette_x + button_step;
+var _col_3 = _palette_x + 2 * button_step;
+if (_left_press && point_in_rectangle(_mx, _my, _palette_x, _tool_y, _palette_x + button_w, _tool_y + 30)) { bob_tool = "DRAW"; bob_line_active = false; }
+if (_left_press && point_in_rectangle(_mx, _my, _col_2, _tool_y, _col_2 + button_w, _tool_y + 30)) { bob_tool = "LINE"; bob_line_active = false; }
+if (_left_press && point_in_rectangle(_mx, _my, _col_3, _tool_y, _col_3 + button_w, _tool_y + 30)) { bob_tool = "FILL"; bob_line_active = false; }
 
 var _anim_y = panel_y + 450;
-if (_left_press && point_in_rectangle(_mx, _my, _palette_x, _anim_y, _palette_x + 92, _anim_y + 30)) {
+if (_left_press && point_in_rectangle(_mx, _my, _palette_x, _anim_y, _palette_x + button_w, _anim_y + 30)) {
     bob_anim_playing = !bob_anim_playing;
     if (bob_anim_playing) {
         bob_commit(); bob_rebuild_asset_names();
@@ -175,18 +177,20 @@ if (_left_press && point_in_rectangle(_mx, _my, _palette_x, _anim_y, _palette_x 
         bob_anim_next_time = current_time + (1000 / bob_anim_rate);
     }
 }
-if (_left_press && point_in_rectangle(_mx, _my, _palette_x + 104, _anim_y, _palette_x + 196, _anim_y + 30)) bob_anim_loop = !bob_anim_loop;
+if (_left_press && point_in_rectangle(_mx, _my, _col_2, _anim_y, _col_2 + button_w, _anim_y + 30)) bob_anim_loop = !bob_anim_loop;
 
+// Value buttons: the left half steps down, the right half steps up.
 var _anim_value_y = panel_y + 490;
+var _half_w = button_w div 2;
 var _frame_max = max(0, array_length(bob_asset_names) - 1);
-if (_left_press && point_in_rectangle(_mx, _my, _palette_x, _anim_value_y, _palette_x + 92, _anim_value_y + 30)) {
-    bob_anim_rate = clamp(bob_anim_rate + (_mx < _palette_x + 46 ? -1 : 1), 1, 60);
+if (_left_press && point_in_rectangle(_mx, _my, _palette_x, _anim_value_y, _palette_x + button_w, _anim_value_y + 30)) {
+    bob_anim_rate = clamp(bob_anim_rate + (_mx < _palette_x + _half_w ? -1 : 1), 1, 60);
 }
-if (_left_press && point_in_rectangle(_mx, _my, _palette_x + 104, _anim_value_y, _palette_x + 196, _anim_value_y + 30)) {
-    bob_anim_start = clamp(bob_anim_start + (_mx < _palette_x + 150 ? -1 : 1), 0, bob_anim_end);
+if (_left_press && point_in_rectangle(_mx, _my, _col_2, _anim_value_y, _col_2 + button_w, _anim_value_y + 30)) {
+    bob_anim_start = clamp(bob_anim_start + (_mx < _col_2 + _half_w ? -1 : 1), 0, bob_anim_end);
 }
-if (_left_press && point_in_rectangle(_mx, _my, _palette_x + 208, _anim_value_y, _palette_x + 300, _anim_value_y + 30)) {
-    bob_anim_end = clamp(bob_anim_end + (_mx < _palette_x + 254 ? -1 : 1), bob_anim_start, _frame_max);
+if (_left_press && point_in_rectangle(_mx, _my, _col_3, _anim_value_y, _col_3 + button_w, _anim_value_y + 30)) {
+    bob_anim_end = clamp(bob_anim_end + (_mx < _col_3 + _half_w ? -1 : 1), bob_anim_start, _frame_max);
 }
 
 if (bob_anim_playing && current_time >= bob_anim_next_time) {
@@ -199,11 +203,12 @@ if (bob_anim_playing && current_time >= bob_anim_next_time) {
     bob_anim_next_time = current_time + (1000 / bob_anim_rate);
 }
 
-if (_left_press && point_in_rectangle(_mx, _my, _palette_x, panel_y + 530, _palette_x + 130, panel_y + 560)) {
+var _test_w = (column_width - 12) div 2;
+if (_left_press && point_in_rectangle(_mx, _my, _palette_x, panel_y + 530, _palette_x + button_w, panel_y + 560)) {
     bob_pixels = array_create(bob_width * bob_height, 0);
     bob_commit();
 }
-if (_left_press && point_in_rectangle(_mx, _my, _palette_x, panel_y + 580, _palette_x + 145, panel_y + 614)) {
+if (_left_press && point_in_rectangle(_mx, _my, _palette_x, panel_y + 580, _palette_x + _test_w, panel_y + 614)) {
     bob_commit();
     global.current_bob_anim_rate = bob_anim_rate;
     global.current_bob_anim_start = bob_anim_start;
@@ -212,7 +217,7 @@ if (_left_press && point_in_rectangle(_mx, _my, _palette_x, panel_y + 580, _pale
     scr_amiga_run_bob_bitmap_test();
     instance_destroy();
 }
-if (_left_press && point_in_rectangle(_mx, _my, _palette_x + 160, panel_y + 580, _palette_x + 305, panel_y + 614)) {
+if (_left_press && point_in_rectangle(_mx, _my, _palette_x + column_width - _test_w, panel_y + 580, _palette_x + column_width, panel_y + 614)) {
     bob_commit();
     scr_amiga_run_sprite_bitmap_test();
     instance_destroy();

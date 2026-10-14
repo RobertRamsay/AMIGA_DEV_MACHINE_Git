@@ -1,13 +1,24 @@
+draw_set_font(UI_FONT);
+draw_set_halign(fa_left);
+draw_set_valign(fa_top);
+
+var _panel_x2 = panel_x + panel_w;
+var _panel_y2 = panel_y + panel_h;
+var _button_fill = make_colour_rgb(45, 65, 85);
+var _active_fill = make_colour_rgb(35, 110, 75);
+
 draw_set_alpha(0.94);
-draw_set_colour(make_colour_rgb(18, 22, 30));
-draw_rectangle(panel_x, panel_y, panel_x + panel_w, panel_y + panel_h, false);
+scr_ui_box_fill(panel_x, panel_y, _panel_x2, _panel_y2, make_colour_rgb(18, 22, 30));
 draw_set_alpha(1);
-draw_set_colour(make_colour_rgb(65, 82, 105));
-draw_rectangle(panel_x, panel_y, panel_x + panel_w, panel_y + header_h, false);
+// Header strip, inset so it stays inside the panel's bevelled corner.
+scr_ui_box_fill(panel_x + 4, panel_y + 4, _panel_x2 - 4, panel_y + header_h, make_colour_rgb(65, 82, 105));
+scr_ui_box_outline(panel_x, panel_y, _panel_x2, _panel_y2, make_colour_rgb(150, 165, 190));
 draw_set_colour(c_white);
-draw_text(panel_x + 8, panel_y + 4, "BOB EDITOR - " + bob_asset_name + " 32x32     Grab to drag");
-draw_set_colour(c_red);
-draw_text(panel_x + panel_w - 21, panel_y + 4, "X");
+scr_ui_text_mid(panel_x + 12, panel_y + 4, panel_y + header_h, "BOB EDITOR - " + bob_asset_name + " 32x32     Grab to drag");
+var _close_x1 = _panel_x2 - 24;
+var _close_y1 = panel_y + 5;
+scr_ui_button(_close_x1, _close_y1, _panel_x2 - 6, panel_y + 21, "X", make_colour_rgb(170, 30, 30),
+    point_in_rectangle(mouse_x, mouse_y, _close_x1, _close_y1, _panel_x2 - 6, panel_y + 21));
 
 var _gx = panel_x + grid_x_offset;
 var _gy = panel_y + grid_y_offset;
@@ -43,71 +54,99 @@ if (bob_line_active) {
     }
 }
 
-var _palette_x = panel_x + 560;
+// Right-hand column: palette, sliders, then three columns of buttons.
+var _palette_x = panel_x + column_x_offset;
 var _palette_y = panel_y + 58;
+var _col_2 = _palette_x + button_step;
+var _col_3 = _palette_x + 2 * button_step;
 draw_set_colour(c_white);
-draw_text(_palette_x, panel_y + 36, "SHARED BITMAP / BOB PALETTE");
+scr_ui_text_mid(_palette_x, panel_y + 32, _palette_y - 4, "SHARED BITMAP / BOB PALETTE");
 for (var _i = 0; _i < 32; _i += 1) {
-    var _sx = _palette_x + ((_i mod 8) * 38);
-    var _sy = _palette_y + ((_i div 8) * 38);
+    var _sx = _palette_x + ((_i mod 8) * swatch_step);
+    var _sy = _palette_y + ((_i div 8) * swatch_step);
     draw_set_colour(make_colour_rgb(colour_r[_i] * 17, colour_g[_i] * 17, colour_b[_i] * 17));
-    draw_rectangle(_sx, _sy, _sx + 31, _sy + 31, false);
+    draw_rectangle(_sx, _sy, _sx + swatch_size - 1, _sy + swatch_size - 1, false);
     draw_set_colour(_i == pen_index ? c_white : c_gray);
-    draw_rectangle(_sx - 1, _sy - 1, _sx + 32, _sy + 32, true);
-    if (_i == 0) { draw_line(_sx, _sy, _sx + 31, _sy + 31); draw_line(_sx + 31, _sy, _sx, _sy + 31); }
+    draw_rectangle(_sx - 1, _sy - 1, _sx + swatch_size, _sy + swatch_size, true);
+    if (_i == pen_index) draw_rectangle(_sx - 2, _sy - 2, _sx + swatch_size + 1, _sy + swatch_size + 1, true);
+    if (_i == 0) {
+        draw_set_colour(c_gray);
+        draw_line(_sx, _sy, _sx + swatch_size - 1, _sy + swatch_size - 1);
+        draw_line(_sx + swatch_size - 1, _sy, _sx, _sy + swatch_size - 1);
+    }
 }
 
 var _names = ["R", "G", "B"];
 var _values = [colour_r[pen_index], colour_g[pen_index], colour_b[pen_index]];
+var _track_x1 = _palette_x + slider_track_x;
+var _track_x2 = _track_x1 + 15 * slider_step;
 for (var _c = 0; _c < 3; _c += 1) {
     var _sy2 = panel_y + 250 + _c * 42;
-    draw_set_colour(c_white); draw_text(_palette_x, _sy2, _names[_c]);
-    draw_set_colour(make_colour_rgb(80, 80, 80)); draw_rectangle(_palette_x + 22, _sy2 + 8, _palette_x + 262, _sy2 + 12, false);
-    draw_set_colour(c_white); draw_rectangle(_palette_x + 19 + _values[_c] * 16, _sy2 + 2, _palette_x + 25 + _values[_c] * 16, _sy2 + 18, false);
-    draw_text(_palette_x + 275, _sy2, string(_values[_c]));
+    draw_set_colour(c_white);
+    scr_ui_text_mid(_palette_x, _sy2, _sy2 + 20, _names[_c]);
+    draw_set_colour(make_colour_rgb(80, 80, 80));
+    draw_rectangle(_track_x1, _sy2 + 8, _track_x2, _sy2 + 12, false);
+    var _knob_x = _track_x1 + _values[_c] * slider_step;
+    draw_set_colour(c_white);
+    draw_rectangle(_knob_x - 3, _sy2 + 2, _knob_x + 3, _sy2 + 18, false);
+    scr_ui_text_mid(_track_x2 + 14, _sy2, _sy2 + 20, string(_values[_c]));
 }
 
+// Asset row: < name > and ADD BOB.
 var _asset_y = panel_y + 370;
-draw_set_colour(make_colour_rgb(45, 65, 85));
-draw_rectangle(_palette_x, _asset_y, _palette_x + 28, _asset_y + 26, false);
-draw_rectangle(_palette_x + 34, _asset_y, _palette_x + 184, _asset_y + 26, false);
-draw_rectangle(_palette_x + 190, _asset_y, _palette_x + 218, _asset_y + 26, false);
-draw_rectangle(_palette_x + 228, _asset_y, _palette_x + 320, _asset_y + 26, false);
+var _asset_y2 = _asset_y + 26;
+scr_ui_button(_palette_x, _asset_y, _palette_x + 28, _asset_y2, "<", _button_fill,
+    point_in_rectangle(mouse_x, mouse_y, _palette_x, _asset_y, _palette_x + 28, _asset_y2));
+scr_ui_box(_palette_x + 34, _asset_y, _palette_x + 190, _asset_y2, make_colour_rgb(28, 36, 48), make_colour_rgb(90, 105, 130));
+var _shown_name = bob_asset_name;
+while (string_length(_shown_name) > 1 && string_width(_shown_name) > 140) {
+    _shown_name = string_copy(_shown_name, 1, string_length(_shown_name) - 1);
+}
+if (_shown_name != bob_asset_name) _shown_name += "..";
 draw_set_colour(c_white);
-draw_text(_palette_x + 9, _asset_y + 4, "<");
-draw_text(_palette_x + 42, _asset_y + 4, bob_asset_name);
-draw_text(_palette_x + 199, _asset_y + 4, ">");
-draw_text(_palette_x + 240, _asset_y + 4, "ADD BOB");
+scr_ui_text_mid(_palette_x + 42, _asset_y, _asset_y2, _shown_name);
+scr_ui_button(_palette_x + 196, _asset_y, _palette_x + 224, _asset_y2, ">", _button_fill,
+    point_in_rectangle(mouse_x, mouse_y, _palette_x + 196, _asset_y, _palette_x + 224, _asset_y2));
+scr_ui_button(_col_3, _asset_y, _palette_x + column_width, _asset_y2, "ADD BOB", _button_fill,
+    point_in_rectangle(mouse_x, mouse_y, _col_3, _asset_y, _palette_x + column_width, _asset_y2));
 
 var _tool_y = panel_y + 410;
 var _tool_names = ["DRAW", "LINE", "FILL"];
 for (var _tool_i = 0; _tool_i < 3; _tool_i += 1) {
-    var _tx = _palette_x + _tool_i * 104;
-    draw_set_colour(bob_tool == _tool_names[_tool_i] ? make_colour_rgb(35, 110, 75) : make_colour_rgb(45, 65, 85));
-    draw_rectangle(_tx, _tool_y, _tx + 92, _tool_y + 30, false);
-    draw_set_colour(c_white); draw_text(_tx + 20, _tool_y + 7, _tool_names[_tool_i]);
+    var _tx = _palette_x + _tool_i * button_step;
+    scr_ui_button(_tx, _tool_y, _tx + button_w, _tool_y + 30, _tool_names[_tool_i],
+        bob_tool == _tool_names[_tool_i] ? _active_fill : _button_fill,
+        point_in_rectangle(mouse_x, mouse_y, _tx, _tool_y, _tx + button_w, _tool_y + 30));
 }
 
 var _anim_y = panel_y + 450;
-draw_set_colour(bob_anim_playing ? make_colour_rgb(35, 110, 75) : make_colour_rgb(45, 65, 85));
-draw_rectangle(_palette_x, _anim_y, _palette_x + 92, _anim_y + 30, false);
-draw_set_colour(bob_anim_loop ? make_colour_rgb(35, 110, 75) : make_colour_rgb(45, 65, 85));
-draw_rectangle(_palette_x + 104, _anim_y, _palette_x + 196, _anim_y + 30, false);
-draw_set_colour(c_white);
-draw_text(_palette_x + 22, _anim_y + 7, bob_anim_playing ? "STOP" : "PLAY");
-draw_text(_palette_x + 116, _anim_y + 7, "LOOP " + (bob_anim_loop ? "ON" : "OFF"));
+scr_ui_button(_palette_x, _anim_y, _palette_x + button_w, _anim_y + 30, bob_anim_playing ? "STOP" : "PLAY",
+    bob_anim_playing ? _active_fill : _button_fill,
+    point_in_rectangle(mouse_x, mouse_y, _palette_x, _anim_y, _palette_x + button_w, _anim_y + 30));
+scr_ui_button(_col_2, _anim_y, _col_2 + button_w, _anim_y + 30, "LOOP " + (bob_anim_loop ? "ON" : "OFF"),
+    bob_anim_loop ? _active_fill : _button_fill,
+    point_in_rectangle(mouse_x, mouse_y, _col_2, _anim_y, _col_2 + button_w, _anim_y + 30));
 
+// Value buttons: left half steps down, right half steps up, so the arrows
+// sit at the two ends with the value centred between them.
 var _anim_value_y = panel_y + 490;
 var _anim_labels = ["RATE " + string(bob_anim_rate), "START " + string(bob_anim_start), "END " + string(bob_anim_end)];
 for (var _anim_i = 0; _anim_i < 3; _anim_i += 1) {
-    var _ax = _palette_x + _anim_i * 104;
-    draw_set_colour(make_colour_rgb(45, 65, 85)); draw_rectangle(_ax, _anim_value_y, _ax + 92, _anim_value_y + 30, false);
-    draw_set_colour(c_white); draw_text(_ax + 5, _anim_value_y + 7, "< " + _anim_labels[_anim_i] + " >");
+    var _ax = _palette_x + _anim_i * button_step;
+    scr_ui_button(_ax, _anim_value_y, _ax + button_w, _anim_value_y + 30, _anim_labels[_anim_i], _button_fill,
+        point_in_rectangle(mouse_x, mouse_y, _ax, _anim_value_y, _ax + button_w, _anim_value_y + 30));
+    draw_set_colour(make_colour_rgb(190, 205, 225));
+    scr_ui_text_centred(_ax + 8, _anim_value_y + 15, "<");
+    scr_ui_text_centred(_ax + button_w - 7, _anim_value_y + 15, ">");
 }
 
-draw_set_colour(make_colour_rgb(90, 45, 45)); draw_rectangle(_palette_x, panel_y + 530, _palette_x + 130, panel_y + 560, false);
-draw_set_colour(c_white); draw_text(_palette_x + 30, panel_y + 537, "CLEAR (0)");
-draw_set_colour(make_colour_rgb(25, 95, 65)); draw_rectangle(_palette_x, panel_y + 580, _palette_x + 145, panel_y + 614, false);
-draw_rectangle(_palette_x + 160, panel_y + 580, _palette_x + 305, panel_y + 614, false);
-draw_set_colour(c_white); draw_text(_palette_x + 14, panel_y + 590, "TEST BOB-BMP"); draw_text(_palette_x + 172, panel_y + 590, "TEST SPR-BMP");
-draw_text(_palette_x, panel_y + 628, "LMB uses pen   RMB uses transparent 0");
+scr_ui_button(_palette_x, panel_y + 530, _palette_x + button_w, panel_y + 560, "CLEAR (0)", make_colour_rgb(90, 45, 45),
+    point_in_rectangle(mouse_x, mouse_y, _palette_x, panel_y + 530, _palette_x + button_w, panel_y + 560));
+var _test_w = (column_width - 12) div 2;
+var _test_x2 = _palette_x + column_width - _test_w;
+scr_ui_button(_palette_x, panel_y + 580, _palette_x + _test_w, panel_y + 614, "TEST BOB-BMP", make_colour_rgb(25, 95, 65),
+    point_in_rectangle(mouse_x, mouse_y, _palette_x, panel_y + 580, _palette_x + _test_w, panel_y + 614));
+scr_ui_button(_test_x2, panel_y + 580, _palette_x + column_width, panel_y + 614, "TEST SPR-BMP", make_colour_rgb(25, 95, 65),
+    point_in_rectangle(mouse_x, mouse_y, _test_x2, panel_y + 580, _palette_x + column_width, panel_y + 614));
+draw_set_colour(make_colour_rgb(190, 200, 215));
+scr_ui_text_mid(_palette_x, panel_y + 624, panel_y + 644, "LMB: pen    RMB: transparent 0");
