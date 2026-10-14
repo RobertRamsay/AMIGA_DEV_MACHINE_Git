@@ -66,6 +66,16 @@ function scr_amiga_selftest_step() {
             if (global.selftest_timer < 30) break;
             scr_amiga_selftest_note("machine " + global.amiga_machine + ", boot " + global.build_boot_mode);
 
+            // Unit self tests of the language module and the audio code.
+            var _asm_failures = scr_asm_lang_selftest();
+            scr_amiga_selftest_note("scr_asm_lang_selftest failures: " + string(array_length(_asm_failures)) + (array_length(_asm_failures) > 0 ? " " + json_stringify(_asm_failures) : ""));
+            var _audio_failures = scr_audio_selftest();
+            scr_amiga_selftest_note("scr_audio_selftest failures: " + string(array_length(_audio_failures)) + (array_length(_audio_failures) > 0 ? " " + json_stringify(_audio_failures) : ""));
+            if (array_length(_asm_failures) + array_length(_audio_failures) > 0) {
+                scr_amiga_selftest_finish(false);
+                exit;
+            }
+
             // Music.
             var _mod_name = "";
             if (global.selftest_mod_path != "" && file_exists(global.selftest_mod_path)) {
