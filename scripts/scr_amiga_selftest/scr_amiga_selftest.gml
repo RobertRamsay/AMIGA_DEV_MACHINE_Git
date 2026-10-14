@@ -13,10 +13,12 @@ function scr_amiga_selftest_init() {
     global.selftest_timer = 0;
     global.selftest_mod_path = "";
     global.selftest_log = "";
+    global.selftest_expect_error = false;
 
     var _p = 0;
     while (_p < parameter_count()) {
-        if (parameter_string(_p) == "-admselftest") {
+        if (parameter_string(_p) == "-admselftesterr") global.selftest_expect_error = true;
+        if (parameter_string(_p) == "-admselftest" || parameter_string(_p) == "-admselftesterr") {
             global.selftest_active = true;
             if (_p + 1 < parameter_count()) global.selftest_mod_path = parameter_string(_p + 1);
         }
@@ -97,6 +99,10 @@ function scr_amiga_selftest_step() {
 
             var _setup = scr_amiga_selftest_add_node(_init, _y, "CODE");
             _setup.macro_code_text = "; screen off, dark blue\n\tlea\tCUSTOM,a6\n\tmove.w\t#$7fff,INTENA(a6)\n\tmove.w\t#$7fff,DMACON(a6)\n\tmove.w\t#$0200,BPLCON0(a6)\n\tmove.w\t#$008,COLOR00(a6)\n";
+            if (global.selftest_expect_error) {
+                // Line 3 (index 2) uses a data register that does not exist.
+                _setup.macro_code_text = "; deliberate error on line 3\n\tlea\tCUSTOM,a6\n\tmove.w\t#1,d9\n";
+            }
             _y += _setup.node_height;
 
             var _music = scr_amiga_selftest_add_node(_init, _y, "PLAY_MOD");
@@ -141,6 +147,11 @@ function scr_amiga_selftest_step() {
                 _log_i += 1;
             }
             scr_amiga_selftest_note(_ok ? "disk.adf written: " + _adf : "no disk.adf");
+            if (global.selftest_expect_error) {
+                var _errors = global.code_editor_build_errors;
+                scr_amiga_selftest_note("mapped CODE errors: " + json_stringify(_errors));
+                _ok = !file_exists(_adf) && array_length(_errors) > 0 && _errors[0].line == 2;
+            }
             scr_amiga_selftest_finish(_ok);
             break;
     }

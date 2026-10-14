@@ -4,6 +4,10 @@
 /// status log messages (drop, delete, etc).
 function scr_amiga_describe_node(_node_id) {
     if (_node_id.is_macro) {
+        if (_node_id.macro_type == "CODE") return "CODE BLOCK";
+        if (_node_id.macro_type == "PLAY_MOD") return "PLAY MOD " + _node_id.macro_asset_name;
+        if (_node_id.macro_type == "STOP_MOD") return "STOP MUSIC";
+        if (_node_id.macro_type == "PLAY_SFX") return "PLAY SFX " + _node_id.macro_asset_name;
         return "MACRO: " + _node_id.macro_type;
     }
 
