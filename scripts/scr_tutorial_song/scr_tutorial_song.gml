@@ -5,7 +5,9 @@
 ///   - an I-V-vi-IV hook (C G Am F) with a call-and-response lead, then a
 ///     B section (F G Em Am / F G C G) that climbs back into the hook;
 ///   - an echo channel: the lead again 3 rows later, quieter (Cxx);
-///   - delayed vibrato (4xy) on held lead notes, a tone-portamento slide (3xx);
+///   - delayed, light vibrato (4A2) on held lead notes, a tone-portamento
+///     slide (3xx), and every lead note fades out (Axy / 6xy) and is cut (C00)
+///     before a rest, so nothing rings on;
 ///   - an octave-bouncing synth bass;
 ///   - chip chord stabs: arpeggio 0xy on a tiny looped square, gated by C00;
 ///   - a one-channel chip drum kit with accents (Cxx) and fills;
@@ -42,40 +44,64 @@ function scr_tb_song_cell(_cells, _row, _ch, _note, _sample, _fx, _prm) {
 }
 
 /// Lead line on channel 0: events [row, "note", length(, "slide")]. Notes of
-/// 6 rows or more get vibrato from their third row on (delayed vibrato).
+/// 6 rows or more get a light, quick vibrato from their third row on (delayed
+/// vibrato). Every note ends: its last row fades out (Axy, or 6xy to keep the
+/// vibrato going), and the row after it is cut (C00) unless the next note
+/// starts there - the looped lead wave never rings on into a rest.
 function scr_tb_song_lead(_cells, _events) {
     var _i = 0;
     while (_i < array_length(_events)) {
         var _e = _events[_i];
+        var _start = _e[0];
+        var _len = _e[2];
         var _note = scr_tb_note(_e[1]);
+        var _vibrato = _len >= 6;
         if (array_length(_e) > 3 && _e[3] == "slide") {
-            scr_tb_song_cell(_cells, _e[0], 0, _note, TB_SONG_LEAD, 3, $28);
-            scr_tb_song_cell(_cells, _e[0] + 1, 0, -1, 0, 3, 0);
+            scr_tb_song_cell(_cells, _start, 0, _note, TB_SONG_LEAD, 3, $28);
+            scr_tb_song_cell(_cells, _start + 1, 0, -1, 0, 3, 0);
         } else {
-            scr_tb_song_cell(_cells, _e[0], 0, _note, TB_SONG_LEAD, 12, 50);
+            scr_tb_song_cell(_cells, _start, 0, _note, TB_SONG_LEAD, 12, 50);
         }
-        if (_e[2] >= 6) {
-            var _r = _e[0] + 2;
-            while (_r < _e[0] + _e[2]) {
-                scr_tb_song_cell(_cells, _r, 0, -1, 0, 4, _r == _e[0] + 2 ? $54 : 0);
+        if (_vibrato) {
+            var _r = _start + 2;
+            while (_r < _start + _len - 1) {
+                scr_tb_song_cell(_cells, _r, 0, -1, 0, 4, _r == _start + 2 ? $A2 : 0);
                 _r += 1;
             }
         }
+        // Fade on the last row: 5 slide ticks a row at speed 6. Long notes
+        // fade a bit more slowly than the short, plucky ones.
+        if (_len >= 2) {
+            var _last = _start + _len - 1;
+            if (_vibrato) scr_tb_song_cell(_cells, _last, 0, -1, 0, 6, $08);
+            else scr_tb_song_cell(_cells, _last, 0, -1, 0, 10, _len >= 4 ? $08 : $04);
+        }
+        // The rest after the note (a later event's note overwrites this cut).
+        scr_tb_song_cell(_cells, _start + _len, 0, -1, 0, 12, 0);
         _i += 1;
     }
 }
 
-/// Channel 1 echoes channel 0: the same notes _delay rows later at _volume.
+/// Channel 1 echoes channel 0 _delay rows later: its notes at _volume, its
+/// fades (gentler, as the echo is quieter) and its cuts, so echoes end too.
 function scr_tb_song_echo(_cells, _delay, _volume) {
     var _row = 63 - _delay;
     while (_row >= 0) {
         var _src = scr_tracker_cell_at(_row, 0);
-        if (_cells[_src] != 0 && _row + _delay <= 63) {
-            var _dst = scr_tracker_cell_at(_row + _delay, 1);
+        var _dst = scr_tracker_cell_at(_row + _delay, 1);
+        var _fx = _cells[_src + 2];
+        var _prm = _cells[_src + 3];
+        if (_cells[_src] != 0) {
             _cells[@ _dst] = _cells[_src];
             _cells[@ _dst + 1] = TB_SONG_LEAD;
             _cells[@ _dst + 2] = 12;
             _cells[@ _dst + 3] = _volume;
+        } else if (_fx == 10 || _fx == 6) {
+            _cells[@ _dst + 2] = 10;
+            _cells[@ _dst + 3] = $03;
+        } else if (_fx == 12 && _prm == 0) {
+            _cells[@ _dst + 2] = 12;
+            _cells[@ _dst + 3] = 0;
         }
         _row -= 1;
     }
