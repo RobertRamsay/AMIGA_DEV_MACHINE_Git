@@ -15,6 +15,13 @@ ptplayer approach.
 - Status messages: `scr_set_status_message(text, colour)`. Unsaved changes: `scr_mark_workspace_dirty()`. Graph undo: `scr_push_undo_snapshot()` before a change.
 - One feature per commit, clear message. Bob reviews diffs.
 
+## UI style (scr_ui_style)
+
+- Buttons, fields, tabs, panels, cards, node bodies: `scr_ui_box` / `scr_ui_box_fill` / `scr_ui_box_outline` / `scr_ui_button` - top-left and bottom-right corners cut at 45 degrees (30% of the shorter side, max 14 px) and a slight diagonal tone (darker bottom-left, lighter top-right). Keep plain rectangles for data: pixel grids, canvases, swatches, map / tile views, waveforms, the code text area, slider cells, scrollbar tracks, dim overlays.
+- Fonts by role: `UI_FONT` (tool text), `UI_FONT_SMALL` (nodes, palette, toolbar labels), `UI_FONT_TITLE` (headings), `UI_FONT_GUIDE` (smaller FutureNow body text of the walkthrough panels: opening page, step guide, tour). **Every Draw event sets its font first** - draw state is global, so an event that doesn't inherits the last object's font.
+- Centre button labels with `scr_ui_button` / `scr_ui_text_centred`; vertically centre row labels with `scr_ui_text_mid`; `scr_ui_fit_label` shortens text to a width; `scr_ui_header_band` fills a header strip that follows the box's cut.
+- Check layouts with `-admtour`: it saves an in-game screenshot of every screen and editor to `<data>/tour_shots/`.
+
 ## Build and check
 
 - **Compile with Igor** (zero errors required). Runtime `C:\ProgramData\GameMakerStudio2-LTS2026\Cache\runtimes\runtime-2026.0.0.23`, user dir from `%APPDATA%\GameMakerStudio2-LTS2026\<name>_<id>`:

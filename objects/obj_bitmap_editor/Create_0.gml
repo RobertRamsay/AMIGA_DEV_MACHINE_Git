@@ -113,7 +113,8 @@ panel_drag_offset_y = 0;
 bitmap_preview_window_width = 324;
 bitmap_preview_window_height = 280;
 bitmap_preview_header_height = 22;
-bitmap_preview_window_x = floor(panel_x + panel_width - bitmap_preview_window_width + 60);
+// Starts inside the editor frame, over the bottom-right of the canvas (drag it anywhere).
+bitmap_preview_window_x = floor(panel_x + panel_width - bitmap_preview_window_width - 12);
 bitmap_preview_window_y = floor(panel_y + panel_height - bitmap_preview_window_height - 58);
 bitmap_preview_dragging = false;
 bitmap_preview_drag_offset_x = 0;

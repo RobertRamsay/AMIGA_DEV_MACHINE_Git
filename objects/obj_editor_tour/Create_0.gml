@@ -22,8 +22,19 @@ tour_title = "";
 tour_lines = [];
 tour_settle = 0;                // frames left in which the graph may run its Step
 
-tour_line_h = 20;
-tour_panel_w = 600;
+tour_panel_w = 540;
+tour_pad = 20;                  // inner padding of the panels
+
+// Line heights (body text in the walkthrough font, headings in the title font).
+draw_set_font(UI_FONT_GUIDE);
+tour_line_h = string_height("Ag");
+draw_set_font(UI_FONT_TITLE);
+tour_title_h = string_height("Ag");
+tour_button_h = scr_tutorial_ui_button_h();
+tour_row_h = 8 + tour_line_h * 2 + 2 + 8;      // a category row in the picker
+// Text positions inside the panel, set by tour_layout.
+tour_title_y = 0;
+tour_text_y = 0;
 
 /// Steps of the selected categories, in order.
 tour_build_queue = function() {
@@ -149,7 +160,7 @@ tour_add_control = function(_x1, _y1, _x2, _y2, _action, _label, _colour, _enabl
 /// Draw reuses the result).
 tour_layout = function() {
     tour_controls = [];
-    draw_set_font(font_Future);
+    draw_set_font(UI_FONT_GUIDE);
     var _blue = make_colour_rgb(40, 80, 150);
     var _green = make_colour_rgb(30, 120, 60);
     var _grey = make_colour_rgb(70, 74, 90);
@@ -158,50 +169,68 @@ tour_layout = function() {
 
     if (tour_state == "menu") {
         tour_rect = undefined;
-        // Two columns of category rows, numbered down the left column first.
+        // Heading, three lines of introduction, two columns of category rows
+        // (numbered down the left column first), then two rows of buttons.
         var _w = 1240;
-        var _row_h = 56;
+        var _pad = tour_pad;
+        var _bh = tour_button_h;
         var _count = array_length(tour_categories);
         var _rows = ceil(_count / 2);
-        var _h = 130 + _rows * _row_h + 120;
+        var _row_gap = 6;
+        tour_title_y = _pad;
+        tour_text_y = tour_title_y + tour_title_h + 12;
+        var _list_dy = tour_text_y + tour_line_h * 3 + 4 + 14;
+        var _list_h = _rows * tour_row_h + (_rows - 1) * _row_gap;
+        var _h = _list_dy + _list_h + 16 + _bh + 14 + (_bh + 10) + _pad;
         var _x1 = (room_width - _w) div 2;
         var _y1 = max(20, (room_height - _h) div 2);
         tour_panel = [_x1, _y1, _x1 + _w, _y1 + _h];
-        var _list_y = _y1 + 130;
-        var _col_w = (_w - 50) div 2;
+        var _list_y = _y1 + _list_dy;
+        var _col_gap = 10;
+        var _col_w = (_w - _pad * 2 - _col_gap) div 2;
         var _c = 0;
         while (_c < _count) {
-            var _rx = _x1 + 20 + (_c div _rows) * (_col_w + 10);
-            var _ry = _list_y + (_c mod _rows) * _row_h;
-            tour_add_control(_rx, _ry, _rx + _col_w, _ry + _row_h - 6, "toggle", tour_categories[_c].title, _grey, true, "row", _c);
+            var _rx = _x1 + _pad + (_c div _rows) * (_col_w + _col_gap);
+            var _ry = _list_y + (_c mod _rows) * (tour_row_h + _row_gap);
+            tour_add_control(_rx, _ry, _rx + _col_w, _ry + tour_row_h, "toggle", tour_categories[_c].title, _grey, true, "row", _c);
             _c += 1;
         }
-        var _by = _list_y + _rows * _row_h + 14;
-        tour_add_control(_x1 + 20, _by, _x1 + 120, _by + 30, "all", "ALL", _blue);
-        tour_add_control(_x1 + 130, _by, _x1 + 230, _by + 30, "none", "NONE", _blue);
-        tour_add_control(_x1 + 300, _by, _x1 + 480, _by + 30, "auto", tour_auto ? "AUTO-PLAY: ON" : "AUTO-PLAY: OFF", tour_auto ? _green : _grey);
-        tour_add_control(_x1 + 490, _by, _x1 + 520, _by + 30, "faster", "-", _grey);
-        tour_add_control(_x1 + 525, _by, _x1 + 625, _by + 30, "", string(global.tour_delay_seconds) + " s / step", _grey, false, "label");
-        tour_add_control(_x1 + 630, _by, _x1 + 660, _by + 30, "slower", "+", _grey);
+        var _by = _list_y + _list_h + 16;
+        var _bx = _x1 + _pad;
+        tour_add_control(_bx, _by, _bx + 100, _by + _bh, "all", "ALL", _blue);
+        tour_add_control(_bx + 108, _by, _bx + 208, _by + _bh, "none", "NONE", _blue);
+        _bx += 260;
+        tour_add_control(_bx, _by, _bx + 180, _by + _bh, "auto", tour_auto ? "AUTO-PLAY: ON" : "AUTO-PLAY: OFF", tour_auto ? _green : _grey);
+        _bx += 188;
+        tour_add_control(_bx, _by, _bx + _bh, _by + _bh, "faster", "-", _grey);
+        _bx += _bh + 6;
+        tour_add_control(_bx, _by, _bx + 100, _by + _bh, "", string(global.tour_delay_seconds) + " s / step", _grey, false, "label");
+        _bx += 106;
+        tour_add_control(_bx, _by, _bx + _bh, _by + _bh, "slower", "+", _grey);
         var _steps = tour_selected_step_count();
-        var _by2 = _by + 50;
-        tour_add_control(_x1 + 20, _by2, _x1 + _w - 200, _by2 + 40, "start", _steps > 0 ? "START TOUR  (" + string(_steps) + " steps)" : "TICK A CATEGORY TO START", _green, _steps > 0);
-        tour_add_control(_x1 + _w - 180, _by2, _x1 + _w - 20, _by2 + 40, "close", "CLOSE", _red);
+        var _by2 = _by + _bh + 14;
+        tour_add_control(_x1 + _pad, _by2, _x1 + _w - _pad - 170, _by2 + _bh + 10, "start", _steps > 0 ? "START TOUR  (" + string(_steps) + " steps)" : "TICK A CATEGORY TO START", _green, _steps > 0);
+        tour_add_control(_x1 + _w - _pad - 160, _by2, _x1 + _w - _pad, _by2 + _bh + 10, "close", "CLOSE", _red);
         return;
     }
+
+    // Run and done pages share one layout: header line, heading, text, buttons.
+    tour_title_y = 14 + tour_line_h + 8;
+    tour_text_y = tour_title_y + tour_title_h + 12;
 
     if (tour_state == "done") {
         tour_rect = undefined;
         var _dw = 560;
         tour_header = "EDITOR TOUR";
         tour_title = "That's the tour!";
-        tour_lines = scr_tutorial_ui_wrap_lines("You've seen " + string(array_length(tour_queue)) + " steps. END TOUR puts your own workspace back exactly as it was; CATEGORIES picks more to see. The TUTORIALS page builds real programs step by step.", _dw - 40);
-        var _dh = 100 + array_length(tour_lines) * tour_line_h + 70;
+        tour_lines = scr_tutorial_ui_wrap_lines("You've seen " + string(array_length(tour_queue)) + " steps. END TOUR puts your own workspace back exactly as it was; CATEGORIES picks more to see. The TUTORIALS page builds real programs step by step.", _dw - tour_pad * 2);
+        var _dh = tour_text_y + array_length(tour_lines) * tour_line_h + 18 + tour_button_h + tour_pad;
         var _dx = (room_width - _dw) div 2;
         var _dy = (room_height - _dh) div 2;
         tour_panel = [_dx, _dy, _dx + _dw, _dy + _dh];
-        tour_add_control(_dx + 20, _dy + _dh - 50, _dx + 200, _dy + _dh - 16, "menu", "CATEGORIES", _blue);
-        tour_add_control(_dx + _dw - 200, _dy + _dh - 50, _dx + _dw - 20, _dy + _dh - 16, "close", "END TOUR", _green);
+        var _dby = _dy + _dh - tour_pad - tour_button_h;
+        tour_add_control(_dx + tour_pad, _dby, _dx + tour_pad + 180, _dby + tour_button_h, "menu", "CATEGORIES", _blue);
+        tour_add_control(_dx + _dw - tour_pad - 180, _dby, _dx + _dw - tour_pad, _dby + tour_button_h, "close", "END TOUR", _green);
         return;
     }
 
@@ -218,21 +247,31 @@ tour_layout = function() {
     var _cat_steps = array_length(_category.steps);
     tour_header = string_upper(_category.title) + "   " + string(_entry.step_index + 1) + "/" + string(_cat_steps) + "   (" + string(tour_index + 1) + " of " + string(array_length(tour_queue)) + ")";
     tour_title = _step.title;
-    tour_lines = scr_tutorial_ui_wrap_lines(_step.text, tour_panel_w - 40);
-    var _ph = 100 + array_length(tour_lines) * tour_line_h + 96;
+    tour_lines = scr_tutorial_ui_wrap_lines(_step.text, tour_panel_w - tour_pad * 2);
+    var _bh = tour_button_h;
+    var _ph = tour_text_y + array_length(tour_lines) * tour_line_h + 18 + _bh * 2 + 8 + tour_pad;
     var _pos = scr_tour_place_panel(tour_panel_w, _ph, tour_rect, scr_tour_editor_panel_rect());
     var _px = _pos[0];
     var _py = _pos[1];
     tour_panel = [_px, _py, _px + tour_panel_w, _py + _ph];
-    var _row1 = _py + _ph - 86;
-    var _row2 = _py + _ph - 46;
+    var _row2 = _py + _ph - tour_pad - _bh;
+    var _row1 = _row2 - 8 - _bh;
     var _last = tour_index >= array_length(tour_queue) - 1;
-    tour_add_control(_px + 20, _row1, _px + 150, _row1 + 32, "prev", "< PREV", _blue, tour_index > 0);
-    tour_add_control(_px + 160, _row1, _px + 330, _row1 + 32, "next", _last ? "FINISH >" : "NEXT >", _green);
-    tour_add_control(_px + 340, _row1, _px + tour_panel_w - 20, _row1 + 32, "skip", "SKIP CATEGORY >>", _orange);
-    tour_add_control(_px + 20, _row2, _px + 190, _row2 + 32, "auto", tour_auto ? "AUTO: ON" : "AUTO: OFF", tour_auto ? _green : _grey);
-    tour_add_control(_px + 200, _row2, _px + 232, _row2 + 32, "faster", "-", _grey);
-    tour_add_control(_px + 236, _row2, _px + 330, _row2 + 32, "", string(global.tour_delay_seconds) + " s", _grey, false, "label");
-    tour_add_control(_px + 334, _row2, _px + 366, _row2 + 32, "slower", "+", _grey);
-    tour_add_control(_px + tour_panel_w - 170, _row2, _px + tour_panel_w - 20, _row2 + 32, "close", "END TOUR", _red);
+    // Row 1: three equal buttons across the panel.
+    var _bx1 = _px + tour_pad;
+    var _bx2 = _px + tour_panel_w - tour_pad;
+    var _third = (_bx2 - _bx1 - 16) / 3;
+    tour_add_control(_bx1, _row1, round(_bx1 + _third), _row1 + _bh, "prev", "< PREV", _blue, tour_index > 0);
+    tour_add_control(round(_bx1 + _third + 8), _row1, round(_bx1 + _third * 2 + 8), _row1 + _bh, "next", _last ? "FINISH >" : "NEXT >", _green);
+    tour_add_control(round(_bx1 + _third * 2 + 16), _row1, _bx2, _row1 + _bh, "skip", "SKIP CATEGORY >>", _orange);
+    // Row 2: auto-play and its delay on the left, END TOUR on the right.
+    var _x = _bx1;
+    tour_add_control(_x, _row2, _x + 140, _row2 + _bh, "auto", tour_auto ? "AUTO: ON" : "AUTO: OFF", tour_auto ? _green : _grey);
+    _x += 148;
+    tour_add_control(_x, _row2, _x + _bh, _row2 + _bh, "faster", "-", _grey);
+    _x += _bh + 6;
+    tour_add_control(_x, _row2, _x + 64, _row2 + _bh, "", string(global.tour_delay_seconds) + " s", _grey, false, "label");
+    _x += 70;
+    tour_add_control(_x, _row2, _x + _bh, _row2 + _bh, "slower", "+", _grey);
+    tour_add_control(round(_bx1 + _third * 2 + 16), _row2, _bx2, _row2 + _bh, "close", "END TOUR", _red);
 };

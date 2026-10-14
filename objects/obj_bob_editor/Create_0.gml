@@ -8,6 +8,17 @@ cell_size = 16;
 grid_x_offset = 24;
 grid_y_offset = 48;
 
+// Right-hand column (Step and Draw share these): starts at panel_x + 560 and
+// is 340 px wide, split into three button columns.
+column_x_offset = 560;
+column_width = 340;
+button_w = 108;
+button_step = 116;
+swatch_size = 36;
+swatch_step = 43;
+slider_track_x = 22;
+slider_step = 18;
+
 bob_width = 32;
 bob_height = 32;
 bob_pixels = array_create(bob_width * bob_height, 0);

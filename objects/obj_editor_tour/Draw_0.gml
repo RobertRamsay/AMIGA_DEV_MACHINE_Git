@@ -21,12 +21,7 @@ var _p = tour_panel;
 if (tour_rect != undefined) {
     var _r2 = tour_rect;
     var _pulse = 0.5 + 0.5 * sin(current_time / 180);
-    draw_set_colour(merge_colour(_accent, c_white, _pulse * 0.6));
-    var _g = 0;
-    while (_g < 3) {
-        draw_rectangle(_r2[0] - 3 - _g, _r2[1] - 3 - _g, _r2[2] + 3 + _g, _r2[3] + 3 + _g, true);
-        _g += 1;
-    }
+    scr_ui_box_outline(_r2[0] - 6, _r2[1] - 6, _r2[2] + 6, _r2[3] + 6, merge_colour(_accent, c_white, _pulse * 0.6), 3);
     var _cx = clamp((_r2[0] + _r2[2]) / 2, _p[0], _p[2]);
     var _cy = clamp((_r2[1] + _r2[3]) / 2, _p[1], _p[3]);
     var _tx = clamp(_cx, _r2[0] - 4, _r2[2] + 4);
@@ -36,46 +31,47 @@ if (tour_rect != undefined) {
 }
 
 // Panel.
-draw_set_colour(make_colour_rgb(18, 22, 36));
-draw_rectangle(_p[0], _p[1], _p[2], _p[3], false);
-draw_set_colour(_accent);
-draw_rectangle(_p[0], _p[1], _p[2], _p[3], true);
-draw_rectangle(_p[0] + 1, _p[1] + 1, _p[2] - 1, _p[3] - 1, true);
+scr_ui_box_fill(_p[0], _p[1], _p[2], _p[3], make_colour_rgb(20, 25, 40));
+scr_ui_box_outline(_p[0], _p[1], _p[2], _p[3], _accent, 2);
 
+draw_set_font(UI_FONT_GUIDE);
 draw_set_halign(fa_left);
 draw_set_valign(fa_top);
 
+var _tx = _p[0] + tour_pad;
 if (tour_state == "menu") {
-    draw_set_font(font_CyberVerse);
+    draw_set_font(UI_FONT_TITLE);
     draw_set_colour(_accent);
-    draw_text(_p[0] + 20, _p[1] + 18, "EDITOR TOUR");
-    draw_set_font(font_Future);
+    draw_text(_tx, _p[1] + tour_title_y, "EDITOR TOUR");
+    draw_set_font(UI_FONT_GUIDE);
     draw_set_colour(c_white);
-    draw_text(_p[0] + 20, _p[1] + 52, "A guided walk through every panel of the editor. Tick the categories you want (or ALL),");
-    draw_text(_p[0] + 20, _p[1] + 72, "then START. During the tour: NEXT / PREV, SKIP CATEGORY, or AUTO-PLAY with a delay per step.");
+    draw_text(_tx, _p[1] + tour_text_y, "A guided walk through every panel of the editor. Tick the categories you want (or ALL),");
+    draw_text(_tx, _p[1] + tour_text_y + tour_line_h, "then START. During the tour: NEXT / PREV, SKIP CATEGORY, or AUTO-PLAY with a delay per step.");
     draw_set_colour(make_colour_rgb(160, 170, 200));
-    draw_text(_p[0] + 20, _p[1] + 96, "The tour runs on a demo project; your own workspace is put back when it ends.");
+    draw_text(_tx, _p[1] + tour_text_y + tour_line_h * 2 + 4, "The tour runs on a demo project; your own workspace is put back when it ends.");
 } else {
-    draw_set_font(font_Future);
+    draw_set_font(UI_FONT_GUIDE);
     draw_set_colour(make_colour_rgb(150, 170, 220));
-    draw_text(_p[0] + 20, _p[1] + 14, tour_header);
-    draw_set_font(font_CyberVerse);
+    draw_text(_tx, _p[1] + 14, tour_header);
+    draw_set_font(UI_FONT_TITLE);
     draw_set_colour(_accent);
-    draw_text(_p[0] + 20, _p[1] + 42, tour_title);
-    draw_set_font(font_Future);
+    draw_text(_tx, _p[1] + tour_title_y, tour_title);
+    draw_set_font(UI_FONT_GUIDE);
     draw_set_colour(c_white);
     var _l = 0;
     while (_l < array_length(tour_lines)) {
-        draw_text(_p[0] + 20, _p[1] + 78 + _l * tour_line_h, tour_lines[_l]);
+        draw_text(_tx, _p[1] + tour_text_y + _l * tour_line_h, tour_lines[_l]);
         _l += 1;
     }
-    // Auto-play progress.
+    // Auto-play progress along the bottom edge, short of the corner cut.
     if (tour_state == "run" && tour_auto) {
         var _t = clamp((current_time - tour_step_started) / (global.tour_delay_seconds * 1000), 0, 1);
+        var _bar_x1 = _p[0] + 3;
+        var _bar_x2 = _p[2] - scr_ui_bevel(_p[2] - _p[0], _p[3] - _p[1]) - 4;
         draw_set_colour(make_colour_rgb(40, 46, 66));
-        draw_rectangle(_p[0] + 2, _p[3] - 8, _p[2] - 2, _p[3] - 3, false);
+        draw_rectangle(_bar_x1, _p[3] - 8, _bar_x2, _p[3] - 3, false);
         draw_set_colour(make_colour_rgb(60, 200, 110));
-        draw_rectangle(_p[0] + 2, _p[3] - 8, _p[0] + 2 + (_p[2] - _p[0] - 4) * _t, _p[3] - 3, false);
+        draw_rectangle(_bar_x1, _p[3] - 8, _bar_x1 + (_bar_x2 - _bar_x1) * _t, _p[3] - 3, false);
     }
 }
 
@@ -87,22 +83,22 @@ while (_i < array_length(tour_controls)) {
     if (_c.kind == "row") {
         var _cat = tour_categories[_c.value];
         var _on = tour_selected[_c.value];
-        draw_set_colour(_hover ? make_colour_rgb(44, 52, 80) : make_colour_rgb(28, 33, 52));
-        draw_rectangle(_c.x1, _c.y1, _c.x2, _c.y2, false);
-        draw_set_colour(_hover ? c_yellow : make_colour_rgb(70, 80, 110));
-        draw_rectangle(_c.x1, _c.y1, _c.x2, _c.y2, true);
-        // Check box.
-        var _bx = _c.x1 + 10;
-        var _by = (_c.y1 + _c.y2) div 2 - 9;
-        draw_set_colour(c_white);
-        draw_rectangle(_bx, _by, _bx + 18, _by + 18, true);
-        if (_on) scr_tutorial_ui_draw_tick(_bx + 2, _by + 2, 14, make_colour_rgb(80, 230, 120));
+        scr_ui_box(_c.x1, _c.y1, _c.x2, _c.y2, _hover ? make_colour_rgb(44, 52, 80) : make_colour_rgb(28, 33, 52), _hover ? c_yellow : make_colour_rgb(70, 80, 110));
+        // Check box, then the title and summary centred as a block.
+        var _box = 20;
+        var _bx = _c.x1 + 12;
+        var _by = (_c.y1 + _c.y2) div 2 - _box div 2;
+        scr_tutorial_ui_draw_checkbox(_bx, _by, _box, _on, _hover);
+        draw_set_font(UI_FONT_GUIDE);
+        var _text_x = _bx + _box + 12;
+        var _text_y = round((_c.y1 + _c.y2 - (tour_line_h * 2 + 2)) * 0.5);
         draw_set_colour(_on ? c_white : make_colour_rgb(140, 145, 160));
-        draw_text(_c.x1 + 40, _c.y1 + 5, string(_c.value + 1) + ". " + _cat.title + "   (" + string(array_length(_cat.steps)) + " steps)");
+        draw_text(_text_x, _text_y, string(_c.value + 1) + ". " + _cat.title + "   (" + string(array_length(_cat.steps)) + " steps)");
         draw_set_colour(make_colour_rgb(150, 160, 190));
         var _summary = _cat.summary;
-        while (string_length(_summary) > 4 && string_width(_summary) > _c.x2 - _c.x1 - 60) _summary = string_copy(_summary, 1, string_length(_summary) - 4) + "...";
-        draw_text(_c.x1 + 40, _c.y1 + 27, _summary);
+        var _summary_w = _c.x2 - _text_x - 16;
+        while (string_length(_summary) > 4 && string_width(_summary) > _summary_w) _summary = string_copy(_summary, 1, string_length(_summary) - 4) + "...";
+        draw_text(_text_x, _text_y + tour_line_h + 2, _summary);
     } else {
         scr_tutorial_ui_draw_button(_c.x1, _c.y1, _c.x2, _c.y2, _c.label, _c.colour, _hover, _c.enabled || _c.kind == "label");
     }

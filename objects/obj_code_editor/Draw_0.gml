@@ -1,5 +1,8 @@
 // obj_code_editor Draw - room coordinates (room 1920x1080, no views).
+// Chrome (panel, bars, buttons, fields, popups) uses the house style
+// (scr_ui_style); the code area, gutter, highlights and scrollbars stay square.
 
+draw_set_font(UI_FONT);
 draw_set_halign(fa_left);
 draw_set_valign(fa_top);
 
@@ -9,84 +12,80 @@ draw_set_colour(c_black);
 draw_rectangle(0, 0, room_width, room_height, false);
 draw_set_alpha(1);
 
-draw_set_colour(col_bg);
-draw_rectangle(panel_x1, panel_y1, panel_x2, panel_y2, false);
-draw_set_colour(col_panel_edge);
-draw_rectangle(panel_x1, panel_y1, panel_x2, panel_y2, true);
+scr_ui_box(panel_x1, panel_y1, panel_x2, panel_y2, col_bg, col_panel_edge);
 
 // ---- title bar ----
-draw_set_font(font_CyberVerse);
-draw_set_colour(make_colour_rgb(26, 34, 58));
-draw_rectangle(panel_x1 + 1, title_y1 + 1, panel_x2 - 1, title_y2, false);
+draw_set_font(UI_FONT);
+scr_ui_box_fill(panel_x1 + 3, title_y1 + 3, panel_x2 - 3, title_y2, make_colour_rgb(26, 34, 58));
 draw_set_colour(c_white);
-draw_text(panel_x1 + 10, title_y1 + 6, editor_title + (is_dirty ? "  *" : ""));
+scr_ui_text_mid(panel_x1 + 16, title_y1 + 3, title_y2, editor_title + (is_dirty ? "  *" : ""));
 draw_set_colour(make_colour_rgb(120, 135, 170));
-draw_text(panel_x1 + 30 + string_width(editor_title + "  *  "), title_y1 + 6,
-    "Esc / Ctrl+Enter close   F5 build   Ctrl+Space complete   F12 definition   F8 next problem"
-    + (font_is_mono ? "" : "   (no monospace font found)"));
+var _hint_x = panel_x1 + 36 + string_width(editor_title + "  *  ");
+var _hint = "Esc / Ctrl+Enter close   F5 build   Ctrl+Space complete   F12 definition   F8 next problem"
+    + (font_is_mono ? "" : "   (no monospace font found)");
+var _hint_max = ((array_length(buttons) > 0) ? buttons[0].x1 : panel_x2) - 16 - _hint_x;
+if (string_width(_hint) > _hint_max) {
+    while (string_length(_hint) > 3 && string_width(_hint + "...") > _hint_max) _hint = string_copy(_hint, 1, string_length(_hint) - 1);
+    _hint += "...";
+}
+scr_ui_text_mid(_hint_x, title_y1 + 3, title_y2, _hint);
 
 // ---- toolbar ----
 draw_set_colour(make_colour_rgb(150, 165, 200));
-draw_text(panel_x1 + 8, toolbar_y1 + 4, "INSERT:");
+scr_ui_text_mid(panel_x1 + 16, toolbar_y1, toolbar_y2, "INSERT:");
 
 var _bi = 0;
 while (_bi < array_length(buttons)) {
     var _b = buttons[_bi];
     var _hover = mouse_x >= _b.x1 && mouse_x < _b.x2 && mouse_y >= _b.y1 && mouse_y < _b.y2;
-    var _fill = _b.active ? make_colour_rgb(70, 110, 170) : (_hover ? make_colour_rgb(60, 76, 122) : make_colour_rgb(38, 48, 78));
-    if (_b.id == "close") _fill = _hover ? make_colour_rgb(150, 60, 60) : make_colour_rgb(100, 40, 45);
-    if (_b.id == "build") _fill = _hover ? make_colour_rgb(50, 130, 80) : make_colour_rgb(35, 90, 55);
-    draw_set_colour(_fill);
-    draw_rectangle(_b.x1, _b.y1, _b.x2, _b.y2, false);
-    draw_set_colour(make_colour_rgb(95, 115, 170));
-    draw_rectangle(_b.x1, _b.y1, _b.x2, _b.y2, true);
-    draw_set_colour(c_white);
-    draw_text(_b.x1 + 9, _b.y1 + ((_b.y2 - _b.y1) - ui_h) * 0.5, _b.label);
+    var _fill = _b.active ? make_colour_rgb(70, 110, 170) : make_colour_rgb(38, 48, 78);
+    if (_b.id == "close") _fill = make_colour_rgb(110, 42, 48);
+    if (_b.id == "build") _fill = make_colour_rgb(35, 95, 58);
+    scr_ui_button(_b.x1, _b.y1, _b.x2, _b.y2, _b.label, _fill, _hover);
     _bi += 1;
 }
 
 // ---- find / goto bar ----
 var _draw_field = function(_rect, _text, _focused) {
-    draw_set_colour(_focused ? make_colour_rgb(20, 28, 48) : make_colour_rgb(16, 20, 34));
-    draw_rectangle(_rect[0], _rect[1], _rect[2], _rect[3], false);
-    draw_set_colour(_focused ? make_colour_rgb(120, 170, 255) : make_colour_rgb(70, 85, 120));
-    draw_rectangle(_rect[0], _rect[1], _rect[2], _rect[3], true);
+    scr_ui_box(_rect[0], _rect[1], _rect[2], _rect[3], _focused ? make_colour_rgb(20, 28, 48) : make_colour_rgb(16, 20, 34),
+        _focused ? make_colour_rgb(120, 170, 255) : make_colour_rgb(70, 85, 120));
     draw_set_font(code_font);
-    var _maxc = max(1, floor((_rect[2] - _rect[0] - 12) / char_w));
+    var _maxc = max(1, floor((_rect[2] - _rect[0] - 20) / char_w));
     var _shown = (string_length(_text) > _maxc) ? string_copy(_text, string_length(_text) - _maxc + 1, _maxc) : _text;
-    var _ty = _rect[1] + ((_rect[3] - _rect[1]) - line_h) * 0.5 + 1;
+    // Code glyphs sit high in line_h (room for descenders): nudge them down to look centred.
+    var _ty = _rect[1] + ((_rect[3] - _rect[1]) - line_h) * 0.5 + 1 + round(line_h * 0.12);
     if (_focused && field_fresh && _shown != "") {
         draw_set_colour(col_selection);
-        draw_rectangle(_rect[0] + 5, _ty, _rect[0] + 6 + string_length(_shown) * char_w, _ty + line_h - 2, false);
+        draw_rectangle(_rect[0] + 9, _ty, _rect[0] + 10 + string_length(_shown) * char_w, _ty + line_h - 2, false);
     }
     draw_set_colour(c_white);
-    ed_draw_code(_rect[0] + 6, _ty, _shown);
+    ed_draw_code(_rect[0] + 10, _ty, _shown);
     if (_focused && (blink_timer div 30) mod 2 == 0) {
-        var _cx = _rect[0] + 6 + string_length(_shown) * char_w;
+        var _cx = _rect[0] + 10 + string_length(_shown) * char_w;
         draw_rectangle(_cx, _ty, _cx + 1, _ty + line_h - 2, false);
     }
-    draw_set_font(font_CyberVerse);
+    draw_set_font(UI_FONT);
 };
 
 if (find_open || goto_open) {
-    draw_set_font(font_CyberVerse);
+    draw_set_font(UI_FONT);
     draw_set_colour(make_colour_rgb(150, 165, 200));
     if (goto_open) {
-        draw_text(panel_x1 + 8, findbar_y1 + 5, "GO TO LINE:");
+        scr_ui_text_mid(panel_x1 + 16, findbar_y1, findbar_y2, "GO TO LINE:");
         _draw_field(goto_field_rect, goto_text, focus == "goto");
     } else {
-        draw_text(panel_x1 + 8, findbar_y1 + 5, "FIND:");
+        scr_ui_text_mid(panel_x1 + 16, findbar_y1, findbar_y2, "FIND:");
         _draw_field(find_field_rect, find_text, focus == "find");
         if (replace_open) {
             draw_set_colour(make_colour_rgb(150, 165, 200));
-            draw_text(replace_field_rect[0] - string_width("REPLACE:") - 8, findbar_y1 + 5, "REPLACE:");
+            scr_ui_text_mid(replace_field_rect[0] - string_width("REPLACE:") - 8, findbar_y1, findbar_y2, "REPLACE:");
             _draw_field(replace_field_rect, replace_text, focus == "replace");
         }
         var _match_label = (find_text == "") ? "" : string(array_length(find_matches)) + " match" + ((array_length(find_matches) == 1) ? "" : "es");
         if (array_length(buttons) > 0) {
             var _lastb = buttons[array_length(buttons) - 1];
             draw_set_colour((array_length(find_matches) == 0 && find_text != "") ? col_error : make_colour_rgb(150, 165, 200));
-            draw_text(_lastb.x2 + 12, findbar_y1 + 5, _match_label);
+            scr_ui_text_mid(_lastb.x2 + 12, findbar_y1, findbar_y2, _match_label);
         }
     }
 }
@@ -299,14 +298,11 @@ if (_hm[3] > 0) {
 }
 
 // ---- status bar ----
-draw_set_font(font_CyberVerse);
-draw_set_colour(make_colour_rgb(20, 26, 44));
-draw_rectangle(panel_x1 + 1, status_y1, panel_x2 - 1, panel_y2 - 1, false);
-draw_set_colour(make_colour_rgb(50, 62, 95));
-draw_line(panel_x1 + 1, status_y1, panel_x2 - 1, status_y1);
+draw_set_font(UI_FONT);
+scr_ui_box(panel_x1 + 3, status_y1, panel_x2 - 3, panel_y2 - 3, make_colour_rgb(20, 26, 44), make_colour_rgb(50, 62, 95));
 
 var _prev_scissor2 = gpu_get_scissor();
-gpu_set_scissor(panel_x1 + 4, status_y1, panel_x2 - panel_x1 - 8, panel_y2 - status_y1);
+gpu_set_scissor(panel_x1 + 8, status_y1, panel_x2 - panel_x1 - 16 - scr_ui_bevel(panel_x2 - panel_x1, panel_y2 - status_y1), panel_y2 - status_y1);
 
 // line 1: diagnostic on the caret line, or the latest note / status message
 var _msg = "";
@@ -328,7 +324,7 @@ if (_cdl != undefined && array_length(_cdl) > 0) {
     }
 }
 draw_set_colour(_msg_col);
-draw_text(panel_x1 + 10, status_y1 + 5, _msg);
+draw_text(panel_x1 + 14, status_y1 + 6, _msg);
 
 // line 2: position, counts and opcode help
 var _counts = string(diag_error_count) + " error" + ((diag_error_count == 1) ? "" : "s") + ", "
@@ -336,8 +332,8 @@ var _counts = string(diag_error_count) + " error" + ((diag_error_count == 1) ? "
 var _pos_text = "Ln " + string(caret_line + 1) + ", Col " + string(caret_col + 1) + "   |   " + string(_n) + " lines   |   ";
 var _y2 = status_y1 + ui_h + 10;
 draw_set_colour(make_colour_rgb(170, 180, 205));
-draw_text(panel_x1 + 10, _y2, _pos_text);
-var _cx2 = panel_x1 + 10 + string_width(_pos_text);
+draw_text(panel_x1 + 14, _y2, _pos_text);
+var _cx2 = panel_x1 + 14 + string_width(_pos_text);
 draw_set_colour((diag_error_count > 0) ? col_error : ((diag_warning_count > 0) ? col_warning : make_colour_rgb(120, 220, 120)));
 draw_text(_cx2, _y2, _counts);
 _cx2 += string_width(_counts);
@@ -371,7 +367,9 @@ if (ac_open) {
         _ai += 1;
     }
     var _text_w = max(10, _tw + 2) * char_w;
-    var _badge_w = 44;
+    draw_set_font(UI_FONT);
+    var _badge_w = string_width("LVO") + 20;
+    draw_set_font(code_font);
     var _detail_w = 560;
     var _pw = _badge_w + _text_w + _detail_w;
     var _ph = _rows * ac_row_h + 4;
@@ -383,11 +381,8 @@ if (ac_open) {
     ac_rect = [_px, _py, _px + _pw, _py + _ph];
 
     draw_set_alpha(0.97);
-    draw_set_colour(make_colour_rgb(20, 26, 44));
-    draw_rectangle(_px, _py, _px + _pw, _py + _ph, false);
+    scr_ui_box_fill(_px, _py, _px + _pw, _py + _ph, make_colour_rgb(20, 26, 44));
     draw_set_alpha(1);
-    draw_set_colour(make_colour_rgb(100, 125, 190));
-    draw_rectangle(_px, _py, _px + _pw, _py + _ph, true);
 
     var _r = 0;
     while (_r < _rows) {
@@ -397,7 +392,7 @@ if (ac_open) {
         var _ry = _py + 2 + _r * ac_row_h;
         if (_idx == ac_index) {
             draw_set_colour(make_colour_rgb(50, 75, 135));
-            draw_rectangle(_px + 1, _ry, _px + _pw - 1, _ry + ac_row_h - 1, false);
+            scr_te_rect_in_bevel(_px + 1, _ry, _px + _pw - 1, _ry + ac_row_h - 1, _px, _py, _px + _pw, _py + _ph);
         }
         var _kc = col_text;
         var _badge = "";
@@ -412,13 +407,13 @@ if (ac_open) {
             case "label": _kc = col_label; _badge = "LBL"; break;
             case "symbol": _kc = col_symbol_known; _badge = "SYM"; break;
         }
-        draw_set_font(font_CyberVerse);
+        draw_set_font(UI_FONT);
         draw_set_colour(_kc);
-        draw_text(_px + 6, _ry + (ac_row_h - ui_h) * 0.5, _badge);
+        scr_ui_text_mid(_px + 10, _ry, _ry + ac_row_h, _badge);
         draw_set_font(code_font);
         draw_set_colour((_idx == ac_index) ? c_white : _kc);
-        ed_draw_code(_px + _badge_w, _ry + (ac_row_h - line_h) * 0.5 + 1, _it.text);
-        draw_set_font(font_CyberVerse);
+        ed_draw_code(_px + _badge_w, _ry + (ac_row_h - line_h) * 0.5 + 1 + round(line_h * 0.12), _it.text);
+        draw_set_font(UI_FONT);
         draw_set_colour(make_colour_rgb(150, 160, 190));
         var _detail = _it.detail;
         var _maxd = _detail_w - 12;
@@ -426,7 +421,7 @@ if (ac_open) {
             while (string_length(_detail) > 3 && string_width(_detail + "...") > _maxd) _detail = string_copy(_detail, 1, string_length(_detail) - 4);
             _detail += "...";
         }
-        draw_text(_px + _badge_w + _text_w + 6, _ry + (ac_row_h - ui_h) * 0.5, _detail);
+        scr_ui_text_mid(_px + _badge_w + _text_w + 6, _ry, _ry + ac_row_h, _detail);
         _r += 1;
     }
 
@@ -434,30 +429,29 @@ if (ac_open) {
         var _sbh = _ph * _rows / _count;
         var _sby = _py + (_ph - _sbh) * (ac_scroll / max(1, _count - _rows));
         draw_set_colour(make_colour_rgb(90, 110, 170));
-        draw_rectangle(_px + _pw - 4, _sby, _px + _pw - 1, _sby + _sbh, false);
+        scr_te_rect_in_bevel(_px + _pw - 5, _sby, _px + _pw - 2, _sby + _sbh, _px, _py, _px + _pw, _py + _ph);
     }
+    scr_ui_box_outline(_px, _py, _px + _pw, _py + _ph, make_colour_rgb(100, 125, 190));
 } else {
     ac_rect = [0, 0, 0, 0];
 }
 
 // ---- hover tooltip ----
 if (hover_text != "" && !ac_open) {
-    draw_set_font(font_CyberVerse);
-    var _tw2 = min(760, string_width_ext(hover_text, ui_h + 2, 760)) + 16;
-    var _th2 = string_height_ext(hover_text, ui_h + 2, 760) + 12;
+    draw_set_font(UI_FONT);
+    var _tw2 = min(760, string_width_ext(hover_text, ui_h + 2, 760)) + 24;
+    var _th2 = string_height_ext(hover_text, ui_h + 2, 760) + 16;
     var _tx = clamp(hover_x + 14, panel_x1 + 4, panel_x2 - _tw2 - 4);
     var _ty3 = hover_y + 20;
     if (_ty3 + _th2 > panel_y2 - 4) _ty3 = hover_y - _th2 - 8;
     draw_set_alpha(0.95);
-    draw_set_colour(c_black);
-    draw_rectangle(_tx, _ty3, _tx + _tw2, _ty3 + _th2, false);
+    scr_ui_box_fill(_tx, _ty3, _tx + _tw2, _ty3 + _th2, make_colour_rgb(12, 14, 22));
     draw_set_alpha(1);
-    draw_set_colour(c_yellow);
-    draw_rectangle(_tx, _ty3, _tx + _tw2, _ty3 + _th2, true);
+    scr_ui_box_outline(_tx, _ty3, _tx + _tw2, _ty3 + _th2, c_yellow);
     draw_set_colour(c_white);
-    draw_text_ext(_tx + 8, _ty3 + 6, hover_text, ui_h + 2, 760);
+    draw_text_ext(_tx + 12, _ty3 + 8, hover_text, ui_h + 2, 760);
 }
 
-draw_set_font(font_CyberVerse);
+draw_set_font(UI_FONT);
 draw_set_colour(c_white);
 draw_set_alpha(1);

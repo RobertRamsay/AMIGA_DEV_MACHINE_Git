@@ -123,9 +123,22 @@ function scr_bitmap_editor_layout(_editor) {
         slider_r_y : _editor.panel_y + 330,
         slider_g_y : _editor.panel_y + 358,
         slider_b_y : _editor.panel_y + 386,
-        preview_x : _editor.panel_x + _editor.panel_width - _right_width + 10,
-        preview_y : _editor.panel_y + 330,
-        preview_width : 18,
-        preview_height : 74
+        // Edited-colour swatch sits on the "COLORn #RGB" label row, clear of
+        // the R/G/B slider labels (it used to cover them).
+        preview_x : _editor.panel_x + _editor.panel_width - _right_width + 150,
+        preview_y : _editor.panel_y + 304,
+        preview_width : 76,
+        preview_height : 20
     };
+}
+
+/// Bitmap-editor button in the house style; hover follows the mouse.
+function scr_bitmap_editor_button(_x1, _y1, _x2, _y2, _label, _fill, _text_colour = c_white) {
+    scr_ui_button(_x1, _y1, _x2, _y2, _label, _fill, point_in_rectangle(mouse_x, mouse_y, _x1, _y1, _x2, _y2), true, _text_colour);
+}
+
+/// Black or white, whichever reads better on _colour.
+function scr_bitmap_editor_contrast(_colour) {
+    var _luma = colour_get_red(_colour) * 0.299 + colour_get_green(_colour) * 0.587 + colour_get_blue(_colour) * 0.114;
+    return _luma > 140 ? c_black : c_white;
 }

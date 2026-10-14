@@ -213,6 +213,7 @@
   },
   "name":"AMIGA_DEV_MACHINE",
   "resources":[
+    {"id":{"name":"scr_ui_style","path":"scripts/scr_ui_style/scr_ui_style.yy",},},
     {"id":{"name":"scr_editor_tour_editors","path":"scripts/scr_editor_tour_editors/scr_editor_tour_editors.yy",},},
     {"id":{"name":"scr_editor_tour_steps","path":"scripts/scr_editor_tour_steps/scr_editor_tour_steps.yy",},},
     {"id":{"name":"scr_editor_tour","path":"scripts/scr_editor_tour/scr_editor_tour.yy",},},

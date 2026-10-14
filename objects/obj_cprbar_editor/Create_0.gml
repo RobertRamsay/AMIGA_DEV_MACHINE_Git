@@ -26,20 +26,22 @@ row_target_register_y = panel_y + 72;
 row_equidistant_y = panel_y + 104;
 row_vp_y = panel_y + 136;
 
+// Every control column starts at panel_x + 150; the value text is centred
+// between each pair of steppers, so the gap must fit "COLOR00".
 band_count_minus_x = panel_x + 150;
-band_count_plus_x = panel_x + 260;
+band_count_plus_x = panel_x + 280;
 
 target_register_minus_x = panel_x + 150;
-target_register_plus_x = panel_x + 260;
+target_register_plus_x = panel_x + 280;
 
 equidistant_toggle_x = panel_x + 150;
-equidistant_toggle_width = 100;
+equidistant_toggle_width = 154;
 equidistant_toggle_height = 24;
 
-vp_start_minus_x = panel_x + 140;
-vp_start_plus_x = panel_x + 210;
-vp_end_minus_x = panel_x + 280;
-vp_end_plus_x = panel_x + 350;
+vp_start_minus_x = panel_x + 150;
+vp_start_plus_x = panel_x + 222;
+vp_end_minus_x = panel_x + 284;
+vp_end_plus_x = panel_x + 356;
 
 // 16 rows stacked with zero gap between them, so the strip reads as a
 // rough vertical preview of the raster bar itself rather than a grid.

@@ -107,21 +107,67 @@ function scr_tutorial_level_colour(_level) {
     return make_colour_rgb(70, 80, 100);
 }
 
-/// Flat ADM-style button: fill, white border, left/centred label.
+/// House-style button (scr_ui_button) with its label in the walkthrough
+/// font, centred both ways.
 function scr_tutorial_ui_draw_button(_x1, _y1, _x2, _y2, _text, _colour, _hover, _enabled) {
-    var _fill = _colour;
-    if (!_enabled) _fill = merge_colour(_colour, make_colour_rgb(30, 32, 40), 0.65);
-    else if (_hover) _fill = merge_colour(_colour, c_white, 0.25);
-    draw_set_colour(_fill);
-    draw_rectangle(_x1, _y1, _x2, _y2, false);
-    draw_set_colour(_enabled ? (_hover ? c_yellow : c_white) : make_colour_rgb(90, 95, 110));
-    draw_rectangle(_x1, _y1, _x2, _y2, true);
-    draw_set_colour(_enabled ? c_white : make_colour_rgb(120, 125, 140));
-    draw_set_halign(fa_center);
-    draw_set_valign(fa_middle);
-    draw_text((_x1 + _x2) div 2, (_y1 + _y2) div 2, _text);
-    draw_set_halign(fa_left);
-    draw_set_valign(fa_top);
+    draw_set_font(UI_FONT_GUIDE);
+    scr_ui_button(_x1, _y1, _x2, _y2, _text, _colour, _hover, _enabled);
+}
+
+/// Height of a walkthrough button: the guide font plus even padding.
+function scr_tutorial_ui_button_h() {
+    draw_set_font(UI_FONT_GUIDE);
+    return string_height("Ag") + 12;
+}
+
+/// A small coloured label box (level badge, DONE, LOADED) with _text centred
+/// in the guide font. Returns its width so callers can line up the next one.
+function scr_tutorial_ui_draw_badge(_x1, _y1, _y2, _text, _fill, _text_colour = c_white) {
+    draw_set_font(UI_FONT_GUIDE);
+    var _w = string_width(_text) + 18;
+    scr_ui_box(_x1, _y1, _x1 + _w, _y2, _fill, merge_colour(_fill, c_white, 0.35));
+    draw_set_colour(_text_colour);
+    scr_ui_text_centred(_x1 + _w * 0.5, (_y1 + _y2) * 0.5, _text);
+    return _w;
+}
+
+/// Width scr_tutorial_ui_draw_badge will use for _text.
+function scr_tutorial_ui_badge_w(_text) {
+    draw_set_font(UI_FONT_GUIDE);
+    return string_width(_text) + 18;
+}
+
+/// A tick box of _size pixels at (_x, _y): bevelled box, tick when _on.
+function scr_tutorial_ui_draw_checkbox(_x, _y, _size, _on, _hover) {
+    scr_ui_box(_x, _y, _x + _size, _y + _size, make_colour_rgb(16, 20, 34), _hover ? c_yellow : c_white);
+    if (_on) {
+        var _inset = max(3, round(_size * 0.2));
+        scr_tutorial_ui_draw_tick(_x + _inset, _y + _inset, _size - _inset * 2, make_colour_rgb(110, 240, 140));
+    }
+}
+
+/// A panel with a header band: bevelled, toned fill (current alpha), the
+/// band clipped to the top-left cut, an accent rule under it and an outline.
+function scr_tutorial_ui_draw_panel(_x1, _y1, _x2, _y2, _fill, _header_h, _header_fill, _rule_colour, _outline) {
+    scr_ui_box_fill(_x1, _y1, _x2, _y2, _fill);
+    if (_header_h > 0) {
+        var _b = scr_ui_bevel(_x2 - _x1, _y2 - _y1);
+        var _hy = _y1 + _header_h;
+        var _top = scr_ui_tone(_header_fill, _x1, _y1, _x2, _hy, _x2, _y1);
+        var _low = scr_ui_tone(_header_fill, _x1, _y1, _x2, _hy, _x1, _hy);
+        var _alpha = draw_get_alpha();
+        // Pentagon: the top-left corner follows the panel's cut.
+        draw_primitive_begin(pr_trianglefan);
+        draw_vertex_colour(_x1 + _b, _y1, _header_fill, _alpha);
+        draw_vertex_colour(_x2 + 1, _y1, _top, _alpha);
+        draw_vertex_colour(_x2 + 1, _hy, _header_fill, _alpha);
+        draw_vertex_colour(_x1, _hy, _low, _alpha);
+        draw_vertex_colour(_x1, _y1 + _b, _header_fill, _alpha);
+        draw_primitive_end();
+        draw_set_colour(_rule_colour);
+        draw_rectangle(_x1, _hy, _x2, _hy + 1, false);
+    }
+    scr_ui_box_outline(_x1, _y1, _x2, _y2, _outline);
 }
 
 /// Word-wraps _text to _width pixels in the current font; returns an array

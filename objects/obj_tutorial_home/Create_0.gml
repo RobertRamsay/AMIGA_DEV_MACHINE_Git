@@ -11,7 +11,8 @@ home_scroll_max = 0;
 home_controls = [];
 home_hover = -1;                    // index into home_controls
 
-// Geometry (room 1920 x 1080).
+// Geometry (room 1920 x 1080). The start column and the card list share
+// their top and bottom edges.
 home_left_x = 40;
 home_left_w = 400;
 home_list_x = 480;
@@ -21,8 +22,25 @@ home_list_bottom = 1060;
 home_card_cols = 2;
 home_card_gap_x = 16;
 home_card_gap_y = 12;
-home_card_h = 166;
 home_card_w = (home_list_w - home_card_gap_x * (home_card_cols - 1)) div home_card_cols;
+home_pad = 12;                      // inner padding of cards and panels
+home_button_pad = 9;                // vertical padding of the start buttons
+
+// Line heights of the page's fonts (body / headings / chips).
+draw_set_font(UI_FONT_GUIDE);
+home_text_h = string_height("Ag");
+draw_set_font(UI_FONT_TITLE);
+home_title_h = string_height("Ag");
+draw_set_font(UI_FONT_SMALL);
+home_chip_h = string_height("Ag") + 6;
+home_button_h = scr_tutorial_ui_button_h();
+home_badge_h = max(home_title_h, home_text_h) + 6;
+
+// Card contents, top to bottom: title row, two lines of summary, two rows of
+// feature chips (the START button sits beside them). The cards share the
+// list height between them but never get smaller than their contents.
+home_card_min_h = home_pad + home_badge_h + 8 + home_text_h * 2 + 10 + home_chip_h * 2 + 4 + home_pad;
+home_card_h = home_card_min_h;
 
 home_col_panel = make_colour_rgb(18, 22, 30);
 home_col_card = make_colour_rgb(16, 20, 34);
@@ -110,11 +128,11 @@ home_action_tutorial = function(_index) {
 home_layout = function() {
     home_controls = [];
 
-    // Start column.
+    // Start column: a heading line and a description in each button.
     var _bx1 = home_left_x;
     var _bx2 = home_left_x + home_left_w;
-    var _by = 176;
-    var _bh = 56;
+    var _by = home_list_top;
+    var _bh = home_button_pad * 2 + home_title_h + 3 + home_text_h;
     var _start = [];
     if (file_exists(global.autosave_workspace_path)) {
         array_push(_start, { action : "continue", label : "CONTINUE LAST SESSION", sub : "Reload the work you had open last time" });
@@ -130,17 +148,24 @@ home_layout = function() {
         var _b = _start[_s];
         array_push(home_controls, { kind : "start", action : _b.action, index : -1,
             x1 : _bx1, y1 : _by, x2 : _bx2, y2 : _by + _bh, label : _b.label, sub : _b.sub });
-        _by += _bh + 12;
+        _by += _bh + 8;
         _s += 1;
     }
+    // The check box row: box plus label, as wide as the label.
+    draw_set_font(UI_FONT_GUIDE);
+    var _check_label = "Show this page at startup";
+    var _check_h = max(18, home_text_h);
     array_push(home_controls, { kind : "check", action : "show_home", index : -1,
-        x1 : _bx1, y1 : _by + 6, x2 : _bx1 + 300, y2 : _by + 26, label : "Show this page at startup", sub : "" });
-    home_left_bottom = _by + 40;
+        x1 : _bx1, y1 : _by + 4, x2 : _bx1 + _check_h + 10 + string_width(_check_label) + 4, y2 : _by + 4 + _check_h,
+        label : _check_label, sub : "" });
+    home_left_bottom = _by + 4 + _check_h;
 
     // Tutorial cards, numbered top to bottom in two columns.
     var _defs = scr_tutorial_defs();
     var _count = array_length(_defs);
     var _rows = ceil(_count / home_card_cols);
+    var _fill_h = floor((home_list_bottom - home_list_top - max(0, _rows - 1) * home_card_gap_y) / max(1, _rows));
+    home_card_h = max(home_card_min_h, _fill_h);
     var _content_h = _rows * home_card_h + max(0, _rows - 1) * home_card_gap_y;
     home_scroll_max = max(0, _content_h - (home_list_bottom - home_list_top));
     home_scroll = clamp(home_scroll, 0, home_scroll_max);

@@ -16,20 +16,12 @@ if fadeTimer>timeToFade
 	}
 if flash==0 and flashrate<0 fadeTimer++
 
-if fade<0 
+if fade<0
 {
 fade=0;
 
 }
-	
-	draw_sprite_ext(spr_ADM_SmallLogo,0,1550,-2,.6,.6,0,c_white,1-fade);
-    draw_set_alpha(1-fade);
-    draw_set_halign(fa_right)
-    draw_text(1910,10,"(C) POLYTRICITY  2026");
-    draw_text(1910,24,"VERSION: "+string(GM_version));
-    draw_text(1910,38,"FPS: "+string(round(fps_real)));
-    
-    
-    draw_set_alpha(1);
-    draw_set_halign(fa_left)
-	
+
+// The small logo, copyright, version and FPS now sit in the footer of the
+// compiled program preview (obj_amiga_manager Draw), fading in with 1 - fade;
+// in the toolbar they overlapped the TOUR and machine buttons.

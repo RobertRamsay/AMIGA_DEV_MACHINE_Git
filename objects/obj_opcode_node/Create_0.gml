@@ -104,7 +104,7 @@ mode_button_src_y = 0;
 mode_button_dst_x = 0;
 mode_button_dst_y = 0;
 
-value_box_width = 70;
+value_box_width = 84;   // wide enough for "$DFF180" inside the inset value field
 operand_editing_slot = "";
 operand_edit_text = "";
 

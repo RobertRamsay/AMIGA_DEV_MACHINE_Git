@@ -159,7 +159,7 @@ function scr_tour_sprite_rect(_part) {
     var _l = scr_sprite_editor_layout();
     switch (_part) {
         case "panel": return [_l.panel_x, _l.panel_y, _l.panel_x + _l.panel_width, _l.panel_y + _l.panel_height];
-        case "assets": return [_l.asset_prev_x, _l.asset_row_y, _l.asset_add_x + 104, _l.asset_row_y + 20];
+        case "assets": return [_l.asset_prev_x, _l.asset_row_y, _l.asset_add_x + _l.asset_add_width, _l.asset_row_y + 20];
         case "fields": return [_l.panel_x + 6, _l.channel_row_y - 2, _l.addr_field_x + 160, _l.addr_row_y + 18];
         case "swatches": return [_l.swatch_x, _l.swatch_row_y, _l.swatch_x + 3 * 46 + _l.swatch_width, _l.swatch_row_y + _l.swatch_height + 16];
         case "grid": return [_l.grid_x, _l.grid_y, _l.grid_x + _l.grid_width, _l.grid_y + _l.grid_height];
@@ -193,14 +193,15 @@ function scr_tour_bob_rect(_part) {
     if (_e == noone) return undefined;
     var _px = _e.panel_x;
     var _py = _e.panel_y;
-    var _pal = _px + 560;
+    var _pal = _px + _e.column_x_offset;
+    var _pal_x2 = _pal + _e.column_width;
     switch (_part) {
         case "panel": return [_px, _py, _px + _e.panel_w, _py + _e.panel_h];
         case "grid": return [_px + 24, _py + 48, _px + 536, _py + 560];
-        case "palette": return [_pal, _py + 34, _pal + 8 * 38, _py + 250 + 2 * 42 + 20];
-        case "assets": return [_pal, _py + 370, _pal + 320, _py + 396];
-        case "tools": return [_pal, _py + 410, _pal + 312, _py + 520];
-        case "tests": return [_pal, _py + 530, _pal + 305, _py + 614];
+        case "palette": return [_pal, _py + 34, _pal_x2, _py + 250 + 2 * 42 + 20];
+        case "assets": return [_pal, _py + 370, _pal_x2, _py + 396];
+        case "tools": return [_pal, _py + 410, _pal_x2, _py + 520];
+        case "tests": return [_pal, _py + 530, _pal_x2, _py + 614];
     }
     return undefined;
 }
@@ -209,9 +210,9 @@ function scr_tour_picker_rect(_part) {
     var _e = scr_tour_inst(obj_colour_picker);
     if (_e == noone) return undefined;
     switch (_part) {
-        case "panel": return [_e.panel_x, _e.panel_y, _e.panel_x + 280, _e.panel_y + 222];
+        case "panel": return [_e.panel_x, _e.panel_y, _e.panel_x + _e.panel_width, _e.panel_y + _e.panel_height];
         case "sliders": return [_e.slider_x - 22, _e.slider_r_y - 2, _e.slider_x + 214, _e.slider_b_y + 20];
-        case "recent": return [_e.recent_row_x, _e.recent_row_y - 16, _e.recent_row_x + 8 * 32, _e.recent_row_y + 20];
+        case "recent": return [_e.recent_row_x, _e.recent_row_y - 22, _e.recent_row_x + 8 * 32, _e.recent_row_y + 20];
         case "close": return [_e.close_button_x, _e.close_button_y, _e.close_button_x + 64, _e.close_button_y + 24];
     }
     return undefined;
@@ -339,7 +340,9 @@ function scr_tour_editor_panel_rect() {
 function scr_tour_home_rect(_part = "cards") {
     if (!instance_exists(obj_tutorial_home)) return undefined;
     switch (_part) {
-        case "cards": return [478, 170, 1882, 1062];
+        case "cards":
+            var _home = instance_find(obj_tutorial_home, 0);
+            return [_home.home_list_x - 2, _home.home_list_top - 6, _home.home_list_x + _home.home_list_w + 2, _home.home_list_bottom + 2];
         case "start":
             var _rect = undefined;
             with (obj_tutorial_home) {

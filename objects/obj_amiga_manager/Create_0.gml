@@ -304,6 +304,16 @@ while (_extra_i < array_length(_extra_macro_buttons)) {
     _extra_i += 1;
 }
 
+// Every top-strip palette button has the toolbar button size, so the strip
+// lines up (they used to be 80/100 x 20 beside 100 x 16 toolbar buttons).
+with (obj_opcode_palette_item) {
+    if (base_palette_y == other.top_ui_row_1_y || base_palette_y == other.top_ui_row_2_y) {
+        palette_top_strip = true;
+        palette_width = other.top_ui_button_width;
+        palette_height = other.top_ui_button_height;
+    }
+}
+
 
 // ============================================================================
 // 10. BUILD STATE MACHINE
