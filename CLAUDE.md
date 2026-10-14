@@ -20,7 +20,9 @@ ptplayer approach.
 - Buttons, fields, tabs, panels, cards, node bodies: `scr_ui_box` / `scr_ui_box_fill` / `scr_ui_box_outline` / `scr_ui_button` - top-left and bottom-right corners cut at 45 degrees (30% of the shorter side, max 14 px) and a slight diagonal tone (darker bottom-left, lighter top-right). Keep plain rectangles for data: pixel grids, canvases, swatches, map / tile views, waveforms, the code text area, slider cells, scrollbar tracks, dim overlays.
 - Fonts by role: `UI_FONT` (tool text), `UI_FONT_SMALL` (nodes, palette, toolbar labels), `UI_FONT_TITLE` (headings), `UI_FONT_GUIDE` (smaller FutureNow body text of the walkthrough panels: opening page, step guide, tour). **Every Draw event sets its font first** - draw state is global, so an event that doesn't inherits the last object's font.
 - Centre button labels with `scr_ui_button` / `scr_ui_text_centred`; vertically centre row labels with `scr_ui_text_mid`; `scr_ui_fit_label` shortens text to a width; `scr_ui_header_band` fills a header strip that follows the box's cut.
-- Check layouts with `-admtour`: it saves an in-game screenshot of every screen and editor to `<data>/tour_shots/`.
+- Shared drawing helpers elsewhere: `scr_node_row` (+ `NODE_ROW_INSET_L/R`, `NODE_TEXT_PAD`) in `scr_gk_node_ui` draws the inset field rows of every node; `scr_te_rect_in_bevel` (in `scr_tile_editor`) clips square selection rows / scroll thumbs so they stay inside a bevelled list box; `scr_tutorial_ui_draw_panel` / `_draw_badge` / `_draw_checkbox` / `_button_h` for the walkthrough panels; `scr_bitmap_editor_button` / `_contrast` for the bitmap editor.
+- Geometry is shared between Step (hit tests), Draw and the tour's rectangle helpers (`scr_editor_tour_editors`): layout functions (`scr_sprite_editor_layout`, `scr_bitmap_editor_layout`, the code editor's `ed_layout`, tile editor `te_controls` / `te_lists` / `te_grids`, audio `audio_editor_controls`) or Create variables (BOB editor `column_x_offset` / `button_step` ..., copper bar and colour picker positions). Move a control in one place only through those, and re-check the tour.
+- Check layouts with `-admtour`: it saves an in-game screenshot of every screen and editor to `<data>/tour_shots/` (3840x2160). Never check layouts with desktop screenshots.
 
 ## Build and check
 
@@ -30,7 +32,7 @@ ptplayer approach.
 - **Igor does not report calls to undefined functions or unknown object names** (they become runtime errors). After adding code, grep every `scr_*(` / `obj_*` you reference against `function` definitions and `objects/`.
 - **End-to-end self test** (no clicking needed): run the built exe with
   `-admselftest "C:\path\song.mod"` — runs `scr_asm_lang_selftest` and `scr_audio_selftest`, imports the MOD, builds PLAY MOD + PLAY SFX + two CODE blocks, presses F5 for real and writes `%LOCALAPPDATA%\AmigaDevMachine\selftest_result.txt` (RESULT: PASS/FAIL), then quits. FS-UAE shows a green screen while Paula audio DMA runs (music playing). `-admselftesterr` instead plants an error on line 3 of a CODE block and checks it is mapped back to that line. The self test autosaves to its own file, never the user's recovery file.
-- The self test also runs `scr_tile_editor_selftest`. **Tutorial self test:** `-admtutorials` loads and builds all ten tutorials (no emulator: `global.build_skip_launch`) and checks vasm + the disk writer for each; `-admtutorial N` builds tutorial N and boots it in FS-UAE. Same result file.
+- The self test also runs `scr_tile_editor_selftest`. **Tutorial self test:** `-admtutorials` loads and builds all ten tutorials (no emulator: `global.build_skip_launch`) and checks vasm + the disk writer for each; `-admtutorial N` builds tutorial N and boots it in FS-UAE. **Tour self test:** `-admtour` walks all tour steps (screenshot of each to `<data>/tour_shots/`), checks auto-play and that the user's workspace is restored. Same result file. Run `-admtour`, `-admtutorials` and `-admselftest` before merging UI or build changes.
 - **Disk without GameMaker:** `powershell -File tools\make_adf.ps1 -Hunk main.bin -Out test.adf [-Run] [-Model A1200]` (same writer as `scr_amiga_write_boot_adf`).
 - The machine/ROM/boot settings live in `%LOCALAPPDATA%\AMIGA_DEV_MACHINE\settings.ini` (`[machine] model`, `boot_mode`, `[paths] kickstart_a600/a1200`). Build output: `%LOCALAPPDATA%\AmigaDevMachine\build_output\build\` (`main.s`, `vasm.log`, `main.bin`, `disk.adf`).
 
@@ -38,9 +40,10 @@ ptplayer approach.
 
 | Piece | Role |
 |---|---|
-| `obj_amiga_manager` | Bootstrap (Create), toolbar, palette scroll, preview panel, build state machine (Step), Esc-to-quit guard (KeyPress_27). |
+| `obj_amiga_manager` | Bootstrap (Create), toolbar (`top_ui_*` columns: SYSTEM, workspace, TEST MACROS, MACROS, AUDIO / CODE, EDITORS, ORG, AMIGA machine / RUN, GAME KIT = TILE-EDIT / TOUR (F1) / TUTORIALS), palette scroll, preview panel, the SPR-EDIT sprite editor panel (`global.sprite_editor_open`, geometry in `scr_sprite_editor_layout`), build state machine (Step), opening page at startup, Esc-to-quit guard (KeyPress_27). |
+| `obj_flashSplash` | Start-up logo fade; afterwards it draws the small logo, copyright, version and FPS in the footer of the preview panel. |
 | `obj_opcode_node` / `obj_amiga_root_node` | Program nodes and INIT/ORG roots. Program order = Y position under a root (`scr_amiga_collect_program_nodes`). |
-| `obj_opcode_palette_item` | Opcode palette and the top-strip macro buttons; dropping one creates a node. |
+| `obj_opcode_palette_item` | Opcode palette (Game Kit nodes first, then the 68000 opcodes) and the top-strip macro buttons (`palette_top_strip = true`: sized like the other toolbar buttons, not scrolled); dropping one creates a node. |
 | `scr_emit_opcode_line` → `scr_emit_macro_line` | Node → assembler text `{ text, is_valid }`. |
 | `scr_amiga_trigger_build` → `scr_amiga_start_build` | F5 / RUN / INIT click / F5 in the code editor. |
 | Modal editors | `obj_bitmap_editor`, `obj_bob_editor`, `obj_colour_picker`, `obj_cprbar_editor`, `obj_code_editor`, `obj_audio_editor`, `obj_tile_editor`, `obj_tutorial_home`, `obj_editor_tour`. **Always test with `scr_amiga_modal_open()`** — add any new modal object there, and give it the editor-tour guard (see Editor tour). |
@@ -108,7 +111,11 @@ ptplayer approach.
 
 ## Adding a macro node type — checklist
 
-`scr_macro_node_height` / `scr_macro_node_init`, palette button (manager Create + the top-strip list in `obj_opcode_palette_item/Step_0`), node Step (input) and Draw, `scr_emit_macro_line` dispatch + emitter, `scr_amiga_describe_node`, `scr_amiga_explain_node` (hover help), persistence (see table above), and `scr_amiga_build_preview_lines` if the emitted text is huge.
+`scr_macro_node_height` / `scr_macro_node_init`, palette button (manager Create + the top-strip list in `obj_opcode_palette_item/Step_0`), node Step (input) and Draw (rows with `scr_node_row`), `scr_emit_macro_line` dispatch + emitter, `scr_amiga_describe_node`, `scr_amiga_explain_node` (hover help), persistence (see table above), and `scr_amiga_build_preview_lines` if the emitted text is huge. Game Kit nodes instead go in `GK_NODE_TYPES` and the `scr_gk_*` functions of `scr_gamekit_emit` / `scr_gk_node_ui`. Mention the node in the tour (`scr_editor_tour_steps`) and, if it belongs to a lesson, a tutorial.
+
+## Adding an editor or panel — checklist
+
+Its own object with a depth below the manager (-300000) if it must draw over it; add it to `scr_amiga_modal_open`; start its Step with `if (instance_exists(obj_editor_tour)) exit;` (after any layout code Draw relies on); handle Esc itself (the manager's Esc quits only when no modal is open); set the font first in Draw and use the `scr_ui_*` style; keep geometry in one layout function or Create variables shared by Step and Draw; add a toolbar button; add a tour category in `scr_tour_editor_categories` with a view in `scr_tour_show` and a rectangle helper; check it with `-admtour`.
 
 ## Pitfalls already hit
 
