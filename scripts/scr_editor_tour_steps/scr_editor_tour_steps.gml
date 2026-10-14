@@ -31,6 +31,7 @@ function scr_tour_build_demo() {
     _move.node_label = "flash";
     var _code = scr_tb_macro(_chain, "CODE");
     _code.macro_code_text = scr_tb_raster_code_text();
+    _code.macro_code_name = "Raster bar";
     var _sfx = scr_tb_macro(_chain, "PLAY_SFX");
     _sfx.macro_asset_name = "Pickup";
 

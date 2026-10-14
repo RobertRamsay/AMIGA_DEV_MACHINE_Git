@@ -105,6 +105,9 @@ global.preview_scroll_y = 0;
 
 preview_line_cache = [];
 preview_scrollbar_dragging = false;
+// Double-click detection on preview lines.
+preview_last_click_time = -100000;
+preview_last_click_index = -1;
 preview_scrollbar_drag_offset = 0;
 
 global.status_message_log = [];

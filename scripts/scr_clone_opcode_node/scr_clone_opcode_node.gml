@@ -50,6 +50,7 @@ function scr_clone_opcode_node(_source_node) {
     _new_node.macro_cprbar_vp_end = _source_node.macro_cprbar_vp_end;
 
     _new_node.macro_code_text = _source_node.macro_code_text;
+    _new_node.macro_code_name = _source_node.macro_code_name;
     _new_node.macro_music_pos = _source_node.macro_music_pos;
     _new_node.macro_sfx_channel = _source_node.macro_sfx_channel;
     _new_node.macro_sfx_volume = _source_node.macro_sfx_volume;

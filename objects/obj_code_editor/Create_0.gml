@@ -9,6 +9,9 @@ depth = -400000;
 editor_node = noone;
 editor_node_uid = -1;
 editor_title = "CODE";
+// The block's name (macro_code_name), edited in the title bar field.
+name_text = "";
+name_field_rect = [0, 0, 0, 0];
 committed_text = "";
 
 // ---- text model ----
@@ -636,6 +639,77 @@ ed_type_text = function(_s) {
     ed_modified();
 };
 
+/// True when col _c of line _l is inside a ; comment (outside quotes).
+ed_in_comment = function(_l, _c) {
+    var _s = lines[_l];
+    if (string_char_at(_s, 1) == "*") return true;
+    var _quote = "";
+    var _i = 1;
+    while (_i <= min(_c, string_length(_s))) {
+        var _ch = string_char_at(_s, _i);
+        if (_quote != "") {
+            if (_ch == _quote) _quote = "";
+        } else if (_ch == "\"" || _ch == "'") {
+            _quote = _ch;
+        } else if (_ch == ";") {
+            return true;
+        }
+        _i += 1;
+    }
+    return false;
+};
+
+/// Typing one character with auto-close on: ( and quotes get their partner,
+/// a closing char already under the caret is typed over, and a selection is
+/// wrapped. Returns false when the plain insert should happen instead.
+ed_type_autoclose = function(_ch) {
+    if (!global.code_editor_autoclose) return false;
+    var _open = (_ch == "(" || _ch == "\"" || _ch == "'");
+    var _close_ch = (_ch == "(") ? ")" : _ch;
+    if (ed_in_comment(caret_line, caret_col)) return false;
+    var _next = string_char_at(lines[caret_line], caret_col + 1);
+
+    if (ed_has_sel()) {
+        if (!_open) return false;
+        var _r = ed_sel_range();
+        if (_r[0] != _r[2]) return false;
+        var _inner = ed_range_text(_r[0], _r[1], _r[2], _r[3]);
+        ed_type_text(_ch + _inner + _close_ch);
+        caret_line = _r[0];
+        caret_col = _r[1] + 1 + string_length(_inner);
+        anchor_line = _r[0];
+        anchor_col = _r[1] + 1;
+        return true;
+    }
+    // Type over the closer that auto-close put there.
+    if ((_ch == ")" || _ch == "\"" || _ch == "'") && _next == _ch) {
+        ed_undo_break();
+        ed_set_caret(caret_line, caret_col + 1, false);
+        return true;
+    }
+    if (!_open) return false;
+    // Only before whitespace / end / a closer / a comma, so typing in front of a word stays plain.
+    if (!(_next == "" || _next == " " || _next == ")" || _next == ",")) return false;
+    // A quote straight after a word character is an apostrophe, not a string.
+    if (_ch != "(" && caret_col > 0 && ed_is_word_code(ord(string_char_at(lines[caret_line], caret_col)))) return false;
+    ed_type_text(_ch + _close_ch);
+    ed_set_caret(caret_line, caret_col - 1, false);
+    return true;
+};
+
+/// Backspace between an empty auto-closed pair removes both halves.
+ed_backspace_pair = function() {
+    if (!global.code_editor_autoclose || ed_has_sel() || caret_col == 0) return false;
+    var _s = lines[caret_line];
+    var _a = string_char_at(_s, caret_col);
+    var _b = string_char_at(_s, caret_col + 1);
+    if (!((_a == "(" && _b == ")") || (_a == "\"" && _b == "\"") || (_a == "'" && _b == "'"))) return false;
+    ed_undo_push("edit");
+    ed_delete_range(caret_line, caret_col - 1, caret_line, caret_col + 1);
+    ed_modified();
+    return true;
+};
+
 ed_is_label_only = function(_s) {
     var _tk = scr_asm_tokenize_line(_s);
     var _has_label = false;
@@ -786,7 +860,8 @@ ed_toggle_comment = function() {
         var _t = string_trim(lines[_l]);
         if (_t != "") {
             _min_indent = min(_min_indent, ed_leading_spaces(lines[_l]));
-            if (string_char_at(_t, 1) != ";") _all_commented = false;
+            // ";" anywhere, or "*" in column 1 (vasm Motorola syntax).
+            if (string_char_at(_t, 1) != ";" && string_char_at(lines[_l], 1) != "*") _all_commented = false;
         }
         _l += 1;
     }
@@ -800,7 +875,7 @@ ed_toggle_comment = function() {
         if (string_trim(_s) != "") {
             var _delta = 0;
             if (_all_commented) {
-                var _p = ed_leading_spaces(_s) + 1;
+                var _p = (string_char_at(_s, 1) == "*") ? 1 : ed_leading_spaces(_s) + 1;
                 var _cut = (string_char_at(_s, _p + 1) == " ") ? 2 : 1;
                 lines[_l] = string_delete(_s, _p, _cut);
                 _delta = -_cut;
@@ -1427,7 +1502,7 @@ ed_ac_update = function(_force) {
         _ctx = "mnemonic";
     }
     var _plen = string_length(_c.prefix);
-    var _auto = (_ctx == "mnemonic" && _plen >= 1) || (_ctx == "operand" && _plen >= 2) || (_ctx == "size");
+    var _auto = global.code_editor_autocomplete && ((_ctx == "mnemonic" && _plen >= 1) || (_ctx == "operand" && _plen >= 2) || (_ctx == "size"));
     if (!_force && !_auto) {
         if (ac_open && _plen > 0 && _c.start_col == ac_start_col) {
             // keep filtering an open list
@@ -1530,9 +1605,23 @@ ed_commit = function() {
     return true;
 };
 
+/// Writes the title-bar name to the node (one undo step when it changed).
+ed_commit_name = function() {
+    if (!instance_exists(editor_node)) return false;
+    var _name = string_trim(name_text);
+    name_text = _name;
+    if (_name == scr_code_block_name(editor_node)) return false;
+    scr_push_undo_snapshot();
+    editor_node.macro_code_name = _name;
+    scr_mark_workspace_dirty();
+    ed_note(_name == "" ? "Block name cleared" : "Block named \"" + _name + "\"", make_colour_rgb(120, 220, 120));
+    return true;
+};
+
 ed_close = function(_commit) {
     if (closing) return;
     closing = true;
+    if (_commit) ed_commit_name();
     if (_commit) ed_commit();
     keyboard_string = "";
     io_clear();
@@ -1550,8 +1639,8 @@ ed_load = function(_node) {
     // block that used tabs / CRLF never rewrites the node or pushes undo.
     committed_text = ed_text();
 
-    var _label = variable_instance_exists(_node, "node_label") ? string(_node.node_label) : "";
-    editor_title = (_label != "") ? "CODE: " + _label : "CODE BLOCK #" + string(editor_node_uid);
+    editor_title = "CODE BLOCK";
+    name_text = scr_code_block_name(_node);
 
     caret_line = 0;
     caret_col = 0;
@@ -1593,6 +1682,7 @@ ed_change_font_size = function(_delta) {
     ed_apply_font();
     ensure_visible = true;
     ed_note("Font size " + string(font_size), c_white);
+    scr_code_editor_prefs_save();
 };
 
 ed_add_button = function(_id, _label, _x1, _y1, _y2, _active) {
@@ -1629,6 +1719,10 @@ ed_layout = function() {
         _i += 1;
     }
 
+    // NAME field after the title.
+    var _nx = panel_x1 + 16 + string_width(editor_title + "  *") + 14 + string_width("NAME:") + 8;
+    name_field_rect = [_nx, title_y1 + 4, _nx + 300, title_y2 - 4];
+
     toolbar_y1 = title_y2 + 6;
     toolbar_y2 = toolbar_y1 + ui_h + 8;
     _bx = panel_x1 + 16;
@@ -1637,6 +1731,23 @@ ed_layout = function() {
     _i = 0;
     while (_i < array_length(snippets)) {
         _bx = ed_add_button("snip" + string(_i), snippets[_i].label, _bx, toolbar_y1, toolbar_y2, false);
+        _i += 1;
+    }
+
+    // Typing aids (right aligned): lit when on.
+    var _opt_labels = ["AUTO-COMPLETE", "AUTO-CLOSE ( ) \" '"];
+    var _opt_ids = ["opt_autocomplete", "opt_autoclose"];
+    var _opt_on = [global.code_editor_autocomplete, global.code_editor_autoclose];
+    var _opt_total = 0;
+    _i = 0;
+    while (_i < 2) {
+        _opt_total += string_width(_opt_labels[_i]) + 18 + 6;
+        _i += 1;
+    }
+    var _ox = panel_x2 - 8 - _opt_total + 6;
+    _i = 0;
+    while (_i < 2) {
+        _ox = ed_add_button(_opt_ids[_i], _opt_labels[_i], _ox, toolbar_y1, toolbar_y2, _opt_on[_i]);
         _i += 1;
     }
 
@@ -1740,6 +1851,7 @@ ed_button_action = function(_id) {
             field_fresh = false;
             break;
         case "build":
+            ed_commit_name();
             ed_commit();
             scr_amiga_trigger_build();
             ed_note("Build started (F5)", make_colour_rgb(120, 220, 255));
@@ -1758,6 +1870,19 @@ ed_button_action = function(_id) {
             ed_close_bars();
             break;
         case "bar_close": ed_close_bars(); break;
+        case "opt_autocomplete":
+            global.code_editor_autocomplete = !global.code_editor_autocomplete;
+            scr_code_editor_prefs_save();
+            if (!global.code_editor_autocomplete) ac_close();
+            ed_note(global.code_editor_autocomplete ? "Autocomplete pops up as you type" : "Autocomplete off - Ctrl+Space still completes", c_white);
+            focus = "text";
+            break;
+        case "opt_autoclose":
+            global.code_editor_autoclose = !global.code_editor_autoclose;
+            scr_code_editor_prefs_save();
+            ed_note(global.code_editor_autoclose ? "Brackets and quotes close themselves" : "Auto-close off", c_white);
+            focus = "text";
+            break;
         default:
             if (string_copy(_id, 1, 4) == "snip") {
                 var _si = real(string_delete(_id, 1, 4));

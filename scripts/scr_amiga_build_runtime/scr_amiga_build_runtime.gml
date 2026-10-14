@@ -305,9 +305,12 @@ function scr_emit_macro_play_sfx(_node) {
 }
 
 /// CODE: the block's own source, label first, column-1 mnemonics indented.
+/// A named block starts with a comment line naming it, so it can be found in
+/// main.s (scr_amiga_start_build counts that line in its line map).
 /// The assembler is the final judge, so editor diagnostics never block a build.
 function scr_emit_macro_code(_node) {
     var _lines = "";
+    if (scr_code_block_name(_node) != "") _lines += "\t; ---- CODE: " + scr_code_block_name(_node) + " ----\n";
     if (_node.node_label != "") _lines += _node.node_label + ":\n";
     var _source = scr_asm_normalise_for_emit(_node.macro_code_text);
     if (string_trim(_source) == "") _source = "\t; (empty CODE block)";

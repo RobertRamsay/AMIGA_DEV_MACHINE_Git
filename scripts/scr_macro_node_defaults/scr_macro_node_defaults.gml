@@ -54,6 +54,18 @@ function scr_macro_node_init(_node, _macro_type) {
     }
 }
 
+/// A CODE block's display name ("" when unnamed), safe for a one-line comment.
+function scr_code_block_name(_node) {
+    if (!variable_instance_exists(_node, "macro_code_name") || !is_string(_node.macro_code_name)) return "";
+    return string_trim(string_replace_all(string_replace_all(_node.macro_code_name, "\n", " "), "\r", ""));
+}
+
+/// Title of a macro node in the preview panel: a named CODE block shows its name.
+function scr_macro_preview_title(_node) {
+    if (_node.macro_type == "CODE" && scr_code_block_name(_node) != "") return scr_code_block_name(_node);
+    return _node.macro_type;
+}
+
 /// Cycles a PLAY_MOD / PLAY_SFX node's asset through the assets of its type.
 function scr_macro_node_cycle_asset(_node, _delta) {
     var _names = scr_audio_list(_node.macro_type == "PLAY_MOD" ? "MOD" : "SAMPLE");

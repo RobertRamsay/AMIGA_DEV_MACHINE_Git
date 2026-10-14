@@ -19,8 +19,10 @@ draw_set_font(UI_FONT);
 scr_ui_box_fill(panel_x1 + 3, title_y1 + 3, panel_x2 - 3, title_y2, make_colour_rgb(26, 34, 58));
 draw_set_colour(c_white);
 scr_ui_text_mid(panel_x1 + 16, title_y1 + 3, title_y2, editor_title + (is_dirty ? "  *" : ""));
+draw_set_colour(make_colour_rgb(150, 165, 200));
+scr_ui_text_mid(name_field_rect[0] - 8 - string_width("NAME:"), title_y1 + 3, title_y2, "NAME:");
 draw_set_colour(make_colour_rgb(120, 135, 170));
-var _hint_x = panel_x1 + 36 + string_width(editor_title + "  *  ");
+var _hint_x = name_field_rect[2] + 20;
 var _hint = "Esc / Ctrl+Enter close   F5 build   Ctrl+Space complete   F12 definition   F8 next problem"
     + (font_is_mono ? "" : "   (no monospace font found)");
 var _hint_max = ((array_length(buttons) > 0) ? buttons[0].x1 : panel_x2) - 16 - _hint_x;
@@ -66,6 +68,13 @@ var _draw_field = function(_rect, _text, _focused) {
     }
     draw_set_font(UI_FONT);
 };
+
+// The block's name (shown on the node, in the preview and in main.s).
+_draw_field(name_field_rect, name_text, focus == "name");
+if (name_text == "" && focus != "name") {
+    draw_set_colour(make_colour_rgb(95, 105, 135));
+    scr_ui_text_mid(name_field_rect[0] + 10, name_field_rect[1], name_field_rect[3], "click to name this block");
+}
 
 if (find_open || goto_open) {
     draw_set_font(UI_FONT);
@@ -139,6 +148,21 @@ if (_bc >= 0) {
     if (_br_a == -1) _br_a = _bc; // unmatched: highlight it alone
 }
 
+// The word to mark everywhere: the caret's word (2+ characters), or a
+// selection that is exactly one word. Not while find is showing its matches.
+var _occ_word = "";
+if (!find_open) {
+    if (_has_sel) {
+        if (_sel[0] == _sel[2]) {
+            var _sel_wb = ed_word_bounds(_sel[0], _sel[1]);
+            if (_sel_wb[0] == _sel[1] && _sel_wb[1] == _sel[3]) _occ_word = ed_range_text(_sel[0], _sel[1], _sel[2], _sel[3]);
+        }
+    } else if (!ed_in_comment(caret_line, caret_col)) {
+        _occ_word = ed_word_at(caret_line, caret_col);
+    }
+    if (string_length(_occ_word) < 2) _occ_word = "";
+}
+
 var _l = _first;
 while (_l <= _last) {
     var _y = text_top + (_l - scroll_line) * line_h;
@@ -198,6 +222,27 @@ while (_l <= _last) {
         var _tk = scr_asm_tokenize_line(_s);
         var _ti = 0;
         var _tn = array_length(_tk);
+
+        // Every use of the word under the caret (or the selected word).
+        if (_occ_word != "") {
+            var _oi = 0;
+            while (_oi < _tn) {
+                var _ot = _tk[_oi];
+                _oi += 1;
+                if (_ot.kind == "comment" || _ot.kind == "string") continue;
+                var _ot_text = _ot.text;
+                if (string_char_at(_ot_text, string_length(_ot_text)) == ":") _ot_text = string_copy(_ot_text, 1, string_length(_ot_text) - 1);
+                if (_ot_text != _occ_word) continue;
+                var _ox1 = text_x + (_ot.start_col - scroll_col) * char_w;
+                var _ox2 = _ox1 + string_length(_ot_text) * char_w;
+                draw_set_alpha(0.45);
+                draw_set_colour(make_colour_rgb(60, 80, 125));
+                draw_rectangle(_ox1, _y, _ox2, _y + line_h - 1, false);
+                draw_set_alpha(1);
+                draw_set_colour(make_colour_rgb(95, 120, 180));
+                draw_rectangle(_ox1, _y, _ox2, _y + line_h - 1, true);
+            }
+        }
         while (_ti < _tn) {
             var _t = _tk[_ti];
             _ti += 1;
