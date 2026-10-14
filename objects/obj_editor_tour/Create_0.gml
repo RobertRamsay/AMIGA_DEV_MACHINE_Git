@@ -22,8 +22,8 @@ tour_title = "";
 tour_lines = [];
 tour_settle = 0;                // frames left in which the graph may run its Step
 
-tour_line_h = 20;
-tour_panel_w = 600;
+tour_line_h = 17;
+tour_panel_w = 540;
 
 /// Steps of the selected categories, in order.
 tour_build_queue = function() {
@@ -149,7 +149,7 @@ tour_add_control = function(_x1, _y1, _x2, _y2, _action, _label, _colour, _enabl
 /// Draw reuses the result).
 tour_layout = function() {
     tour_controls = [];
-    draw_set_font(font_Future);
+    draw_set_font(UI_FONT_GUIDE);
     var _blue = make_colour_rgb(40, 80, 150);
     var _green = make_colour_rgb(30, 120, 60);
     var _grey = make_colour_rgb(70, 74, 90);

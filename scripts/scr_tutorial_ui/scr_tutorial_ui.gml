@@ -109,19 +109,7 @@ function scr_tutorial_level_colour(_level) {
 
 /// Flat ADM-style button: fill, white border, left/centred label.
 function scr_tutorial_ui_draw_button(_x1, _y1, _x2, _y2, _text, _colour, _hover, _enabled) {
-    var _fill = _colour;
-    if (!_enabled) _fill = merge_colour(_colour, make_colour_rgb(30, 32, 40), 0.65);
-    else if (_hover) _fill = merge_colour(_colour, c_white, 0.25);
-    draw_set_colour(_fill);
-    draw_rectangle(_x1, _y1, _x2, _y2, false);
-    draw_set_colour(_enabled ? (_hover ? c_yellow : c_white) : make_colour_rgb(90, 95, 110));
-    draw_rectangle(_x1, _y1, _x2, _y2, true);
-    draw_set_colour(_enabled ? c_white : make_colour_rgb(120, 125, 140));
-    draw_set_halign(fa_center);
-    draw_set_valign(fa_middle);
-    draw_text((_x1 + _x2) div 2, (_y1 + _y2) div 2, _text);
-    draw_set_halign(fa_left);
-    draw_set_valign(fa_top);
+    scr_ui_button(_x1, _y1, _x2, _y2, _text, _colour, _hover, _enabled);
 }
 
 /// Word-wraps _text to _width pixels in the current font; returns an array

@@ -21,12 +21,7 @@ var _p = tour_panel;
 if (tour_rect != undefined) {
     var _r2 = tour_rect;
     var _pulse = 0.5 + 0.5 * sin(current_time / 180);
-    draw_set_colour(merge_colour(_accent, c_white, _pulse * 0.6));
-    var _g = 0;
-    while (_g < 3) {
-        draw_rectangle(_r2[0] - 3 - _g, _r2[1] - 3 - _g, _r2[2] + 3 + _g, _r2[3] + 3 + _g, true);
-        _g += 1;
-    }
+    scr_ui_box_outline(_r2[0] - 6, _r2[1] - 6, _r2[2] + 6, _r2[3] + 6, merge_colour(_accent, c_white, _pulse * 0.6), 3);
     var _cx = clamp((_r2[0] + _r2[2]) / 2, _p[0], _p[2]);
     var _cy = clamp((_r2[1] + _r2[3]) / 2, _p[1], _p[3]);
     var _tx = clamp(_cx, _r2[0] - 4, _r2[2] + 4);
@@ -36,33 +31,30 @@ if (tour_rect != undefined) {
 }
 
 // Panel.
-draw_set_colour(make_colour_rgb(18, 22, 36));
-draw_rectangle(_p[0], _p[1], _p[2], _p[3], false);
-draw_set_colour(_accent);
-draw_rectangle(_p[0], _p[1], _p[2], _p[3], true);
-draw_rectangle(_p[0] + 1, _p[1] + 1, _p[2] - 1, _p[3] - 1, true);
+scr_ui_box_fill(_p[0], _p[1], _p[2], _p[3], make_colour_rgb(20, 25, 40));
+scr_ui_box_outline(_p[0], _p[1], _p[2], _p[3], _accent, 2);
 
 draw_set_halign(fa_left);
 draw_set_valign(fa_top);
 
 if (tour_state == "menu") {
-    draw_set_font(font_CyberVerse);
+    draw_set_font(UI_FONT_TITLE);
     draw_set_colour(_accent);
     draw_text(_p[0] + 20, _p[1] + 18, "EDITOR TOUR");
-    draw_set_font(font_Future);
+    draw_set_font(UI_FONT_GUIDE);
     draw_set_colour(c_white);
     draw_text(_p[0] + 20, _p[1] + 52, "A guided walk through every panel of the editor. Tick the categories you want (or ALL),");
     draw_text(_p[0] + 20, _p[1] + 72, "then START. During the tour: NEXT / PREV, SKIP CATEGORY, or AUTO-PLAY with a delay per step.");
     draw_set_colour(make_colour_rgb(160, 170, 200));
     draw_text(_p[0] + 20, _p[1] + 96, "The tour runs on a demo project; your own workspace is put back when it ends.");
 } else {
-    draw_set_font(font_Future);
+    draw_set_font(UI_FONT_GUIDE);
     draw_set_colour(make_colour_rgb(150, 170, 220));
     draw_text(_p[0] + 20, _p[1] + 14, tour_header);
-    draw_set_font(font_CyberVerse);
+    draw_set_font(UI_FONT_TITLE);
     draw_set_colour(_accent);
     draw_text(_p[0] + 20, _p[1] + 42, tour_title);
-    draw_set_font(font_Future);
+    draw_set_font(UI_FONT_GUIDE);
     draw_set_colour(c_white);
     var _l = 0;
     while (_l < array_length(tour_lines)) {
@@ -87,10 +79,7 @@ while (_i < array_length(tour_controls)) {
     if (_c.kind == "row") {
         var _cat = tour_categories[_c.value];
         var _on = tour_selected[_c.value];
-        draw_set_colour(_hover ? make_colour_rgb(44, 52, 80) : make_colour_rgb(28, 33, 52));
-        draw_rectangle(_c.x1, _c.y1, _c.x2, _c.y2, false);
-        draw_set_colour(_hover ? c_yellow : make_colour_rgb(70, 80, 110));
-        draw_rectangle(_c.x1, _c.y1, _c.x2, _c.y2, true);
+        scr_ui_box(_c.x1, _c.y1, _c.x2, _c.y2, _hover ? make_colour_rgb(44, 52, 80) : make_colour_rgb(28, 33, 52), _hover ? c_yellow : make_colour_rgb(70, 80, 110));
         // Check box.
         var _bx = _c.x1 + 10;
         var _by = (_c.y1 + _c.y2) div 2 - 9;
