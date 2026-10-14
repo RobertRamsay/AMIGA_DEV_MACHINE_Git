@@ -1,3 +1,6 @@
+// F11 flips full screen / windowed, even with an editor open.
+if (keyboard_check_pressed(vk_f11)) scr_window_toggle();
+
 // Recover only after the startup logo has fully faded. If the splash object is
 // ever removed from the room, recovery still proceeds rather than waiting
 // forever for an object that does not exist.
@@ -304,6 +307,10 @@ if ((_over_tour && mouse_check_button_pressed(mb_left)) || keyboard_check_presse
 // TUTORIALS: the opening page with the ten tutorials.
 var _over_tutorials = point_in_rectangle(mouse_x, mouse_y, top_ui_tutorial_x, top_ui_row_2_y, top_ui_tutorial_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height);
 if (_over_tutorials && mouse_check_button_pressed(mb_left)) scr_tutorial_home_open(false);
+
+// WINDOWED / FULL SCREEN (or F11, at the top of this Step).
+var _over_window_mode = point_in_rectangle(mouse_x, mouse_y, top_ui_tutorial_x + 104, top_ui_row_2_y, top_ui_tutorial_x + 104 + top_ui_button_width, top_ui_row_2_y + top_ui_button_height);
+if (_over_window_mode && mouse_check_button_pressed(mb_left)) scr_window_toggle();
 
 // MACHINE: A600 (OCS, 1 MB chip) <-> A1200 (AGA, 2 MB chip).
 var _over_machine = point_in_rectangle(mouse_x, mouse_y, top_ui_machine_x, top_ui_row_1_y, top_ui_machine_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height);

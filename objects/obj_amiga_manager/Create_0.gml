@@ -1,7 +1,7 @@
 /// @description Amiga Dev Machine — World Bootstrap Manager
 
-window_set_size(display_get_width(),display_get_height()); // ensure full screen
-window_set_position(0,0);
+// Full screen or a resizable window, as last chosen (scr_window_mode).
+scr_window_mode_init();
 
 // ============================================================================
 // 0. GRID CONSTANT

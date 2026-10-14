@@ -125,7 +125,7 @@ function scr_tour_categories() {
             { title : "Machine and run", show : "main", rect : function() { return [1398, 2, 1602, 60]; },
               text : "MACH switches between an A600 (68000, 1 MB chip RAM) and an A1200 (68020, AGA, 2 MB). RUN (or F5) builds and boots the program. ROM picks a Kickstart ROM file (right-click: back to the free AROS ROM). BOOT chooses the auto-boot floppy or a DOS disk." },
             { title : "Game Kit, tutorials and tour", show : "main", rect : function() { return [1618, 2, 1826, 60]; },
-              text : "TILE-EDIT opens the tile, map and animation editor for the Game Kit, TUTORIALS opens the tutorials page, and TOUR (F1) starts this walkthrough." }
+              text : "TILE-EDIT opens the tile, map and animation editor for the Game Kit, TUTORIALS opens the tutorials page, TOUR (F1) starts this walkthrough, and WINDOWED / FULL SCREEN (F11) switches between a resizable window and full screen." }
         ]
     });
 
