@@ -553,6 +553,12 @@ global.sprite_line_value = 1;
 global.sprite_line_current_x = 0;
 global.sprite_line_current_y = 0;
 global.sprite_line_button = mb_left;
+global.sprite_circle_active = false;
+global.sprite_circle_cx = 0;
+global.sprite_circle_cy = 0;
+global.sprite_circle_r = 0;
+global.sprite_circle_value = 1;
+global.sprite_circle_button = mb_left;
 global.sprite_drawing = false;
 global.sprite_drawing_value = 1;
 global.sprite_drawing_button = mb_left;
@@ -622,6 +628,7 @@ sprite_editor_load_asset = function(_name) {
     global.sprite_colour_b = [_asset.colour_b[0], _asset.colour_b[1], _asset.colour_b[2]];
     sprite_editor_load_shared_colours();
     global.sprite_line_active = false;
+    global.sprite_circle_active = false;
 };
 
 sprite_editor_navigate = function(_delta) {
@@ -650,6 +657,7 @@ sprite_editor_add_asset = function() {
     global.sprite_asset_index = array_length(global.sprite_asset_names) - 1;
     global.sprite_anim_end = max(0, array_length(global.sprite_asset_names) - 1);
     global.sprite_line_active = false;
+    global.sprite_circle_active = false;
 };
 
 sprite_editor_apply_line = function(_x0, _y0, _x1, _y1, _value) {

@@ -33,20 +33,23 @@ if (bitmap_preview_dragging) {
     _over_bitmap_preview = true;
 }
 
-if (_over_bitmap_preview) {
+// A line / gradient / circle drag that started on the canvas keeps going
+// over the preview (it ends on the canvas edge), instead of being dropped.
+var _shape_drag = bitmap_line_active || bitmap_gradient_active || bitmap_circle_active;
+if (_over_bitmap_preview && !_shape_drag) {
     if (mouse_check_button_released(mb_left) || mouse_check_button_released(mb_right)) {
         bitmap_stroke_active = false;
-        bitmap_line_active = false;
-        bitmap_gradient_active = false;
         bitmap_palette_drag_active = false;
     }
     exit;
 }
 
-var _over_close = point_in_rectangle(mouse_x, mouse_y, _layout.close_x, _layout.close_y, _layout.close_x + 18, _layout.close_y + 18);
+// The close box takes a few pixels of margin; Esc closes too (the image is
+// kept in the TestBitmap asset as you paint).
+var _over_close = point_in_rectangle(mouse_x, mouse_y, _layout.close_x - 4, _layout.close_y - 3, _layout.close_x + 22, _layout.close_y + 21);
 var _over_header = point_in_rectangle(mouse_x, mouse_y, _layout.header_x, _layout.header_y, _layout.header_x + _layout.header_width, _layout.header_y + _layout.header_height);
 
-if (_over_close && mouse_check_button_pressed(mb_left)) {
+if ((_over_close && mouse_check_button_pressed(mb_left)) || keyboard_check_pressed(vk_escape)) {
     instance_destroy();
     exit;
 }
@@ -208,18 +211,19 @@ while (_brush_button_index < array_length(_brush_sizes)) {
     _brush_button_index += 1;
 }
 
-var _tool_names = ["DRAW", "LINE", "FILL"];
+var _tool_names = ["DRAW", "LINE", "FILL", "CIRCLE", "DISC"];
 var _tool_index = 0;
 
 while (_tool_index < array_length(_tool_names)) {
-    var _tool_x = _layout.tool_x + _tool_index * (_layout.tool_width + _layout.tool_gap);
+    var _tool_rect = scr_bitmap_editor_tool_rect(_layout, _tool_index);
 
-    if (point_in_rectangle(mouse_x, mouse_y, _tool_x, _layout.tool_y, _tool_x + _layout.tool_width, _layout.tool_y + _layout.tool_height)
+    if (point_in_rectangle(mouse_x, mouse_y, _tool_rect[0], _tool_rect[1], _tool_rect[2], _tool_rect[3])
     && mouse_check_button_pressed(mb_left)) {
         bitmap_tool = _tool_names[_tool_index];
         bitmap_stroke_active = false;
         bitmap_line_active = false;
         bitmap_gradient_active = false;
+        bitmap_circle_active = false;
     }
 
     _tool_index += 1;
@@ -553,16 +557,50 @@ if (bitmap_tool == "LINE" && _over_canvas && _canvas_pixel_valid
     bitmap_line_use_dither = bitmap_use_dither && !mouse_check_button_pressed(mb_right);
 }
 
+// The end follows the pointer even off the canvas (clamped to its edge).
+var _clamped_pixel_x = scr_shape_clamp_pixel(_canvas_pixel_x, bitmap_width);
+var _clamped_pixel_y = scr_shape_clamp_pixel(_canvas_pixel_y, bitmap_height);
+
 if (bitmap_line_active && (mouse_check_button(mb_left) || mouse_check_button(mb_right))) {
-    if (_over_canvas && _canvas_pixel_valid) {
-        bitmap_line_end_x = _canvas_pixel_x;
-        bitmap_line_end_y = _canvas_pixel_y;
-    }
+    bitmap_line_end_x = _clamped_pixel_x;
+    bitmap_line_end_y = _clamped_pixel_y;
 }
 
 if (bitmap_line_active && (mouse_check_button_released(mb_left) || mouse_check_button_released(mb_right))) {
     scr_bitmap_apply_line(id, bitmap_line_start_x, bitmap_line_start_y, bitmap_line_end_x, bitmap_line_end_y, bitmap_line_index, bitmap_line_use_dither);
     bitmap_line_active = false;
+}
+
+// CIRCLE / DISC: press sets the centre, drag the radius, release draws it.
+// The outline uses the brush (and dither); the disc is filled solid.
+if ((bitmap_tool == "CIRCLE" || bitmap_tool == "DISC") && _over_canvas && _canvas_pixel_valid
+&& !keyboard_check(vk_alt) && !keyboard_check(vk_space)
+&& (mouse_check_button_pressed(mb_left) || mouse_check_button_pressed(mb_right))) {
+    bitmap_circle_active = true;
+    bitmap_circle_cx = _canvas_pixel_x;
+    bitmap_circle_cy = _canvas_pixel_y;
+    bitmap_circle_r = 0;
+    bitmap_circle_index = mouse_check_button_pressed(mb_right) ? 0 : bitmap_paint_index;
+    bitmap_circle_use_dither = bitmap_use_dither && !mouse_check_button_pressed(mb_right);
+}
+
+if (bitmap_circle_active && (mouse_check_button(mb_left) || mouse_check_button(mb_right))) {
+    bitmap_circle_r = scr_shape_circle_radius(bitmap_circle_cx, bitmap_circle_cy, _canvas_pixel_x, _canvas_pixel_y);
+}
+
+if (bitmap_circle_active && (mouse_check_button_released(mb_left) || mouse_check_button_released(mb_right))) {
+    scr_bitmap_push_undo(id);
+    var _disc = (bitmap_tool == "DISC");
+    var _circle_pixels = scr_shape_circle_pixels(bitmap_circle_cx, bitmap_circle_cy, bitmap_circle_r, _disc, bitmap_width, bitmap_height);
+    var _keep_brush = bitmap_brush_size;
+    if (_disc) bitmap_brush_size = 1;
+    var _cp = 0;
+    while (_cp < array_length(_circle_pixels)) {
+        scr_bitmap_apply_line(id, _circle_pixels[_cp], _circle_pixels[_cp + 1], _circle_pixels[_cp], _circle_pixels[_cp + 1], bitmap_circle_index, bitmap_circle_use_dither);
+        _cp += 2;
+    }
+    bitmap_brush_size = _keep_brush;
+    bitmap_circle_active = false;
 }
 
 // FILL: iterative four-way flood fill, safe for the complete 320x256 image.
@@ -641,10 +679,8 @@ if (bitmap_tool == "GRADIENT" && _over_canvas && _canvas_pixel_valid
 }
 
 if (bitmap_gradient_active && mouse_check_button(mb_left)) {
-    if (_over_canvas && _canvas_pixel_valid) {
-        bitmap_gradient_end_x = _canvas_pixel_x;
-        bitmap_gradient_end_y = _canvas_pixel_y;
-    }
+    bitmap_gradient_end_x = _clamped_pixel_x;
+    bitmap_gradient_end_y = _clamped_pixel_y;
 }
 
 if (bitmap_gradient_active && mouse_check_button_released(mb_left)) {

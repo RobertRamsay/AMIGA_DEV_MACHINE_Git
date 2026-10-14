@@ -39,6 +39,13 @@ bitmap_line_end_x = 0;
 bitmap_line_end_y = 0;
 bitmap_line_index = 1;
 bitmap_line_use_dither = false;
+// CIRCLE / DISC drag: centre, radius, colour.
+bitmap_circle_active = false;
+bitmap_circle_cx = 0;
+bitmap_circle_cy = 0;
+bitmap_circle_r = 0;
+bitmap_circle_index = 1;
+bitmap_circle_use_dither = false;
 bitmap_gradient_colour_1 = 1;
 bitmap_gradient_colour_2 = 2;
 bitmap_gradient_custom_active = false;

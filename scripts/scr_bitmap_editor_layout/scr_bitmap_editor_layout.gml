@@ -67,45 +67,48 @@ function scr_bitmap_editor_layout(_editor) {
         tool_width : 82,
         tool_height : 24,
         tool_gap : 8,
+        // Second tool row: CIRCLE and FILLED CIRCLE.
+        shape_tool_y : _editor.panel_y + 264,
+        shape_tool_width : 127,
         gradient_tool_x : _editor.panel_x + 10,
-        gradient_tool_y : _editor.panel_y + 438,
+        gradient_tool_y : _editor.panel_y + 468,
         gradient_tool_width : 262,
-        gradient_colour_label_y : _editor.panel_y + 470,
-        gradient_colour_y : _editor.panel_y + 488,
+        gradient_colour_label_y : _editor.panel_y + 500,
+        gradient_colour_y : _editor.panel_y + 518,
         gradient_colour_width : 127,
         gradient_custom_toggle_x : _editor.panel_x + 10,
-        gradient_custom_toggle_y : _editor.panel_y + 520,
+        gradient_custom_toggle_y : _editor.panel_y + 550,
         gradient_custom_toggle_width : 262,
         gradient_custom_slots_x : _editor.panel_x + 10,
-        gradient_custom_slots_y : _editor.panel_y + 552,
+        gradient_custom_slots_y : _editor.panel_y + 582,
         gradient_custom_slot_width : 19,
         gradient_custom_slot_height : 22,
         gradient_custom_slot_gap : 3,
         gradient_edge_x : _editor.panel_x + 10,
-        gradient_edge_y : _editor.panel_y + 582,
+        gradient_edge_y : _editor.panel_y + 612,
         gradient_edge_width : 262,
         dither_tool_x : _editor.panel_x + 10,
-        dither_tool_y : _editor.panel_y + 270,
+        dither_tool_y : _editor.panel_y + 300,
         dither_tool_width : 262,
         dither_pair_x : _editor.panel_x + 10,
-        dither_pair_y : _editor.panel_y + 302,
+        dither_pair_y : _editor.panel_y + 332,
         dither_pair_width : 262,
         dither_pattern_x : _editor.panel_x + 10,
-        dither_pattern_y : _editor.panel_y + 334,
+        dither_pattern_y : _editor.panel_y + 364,
         dither_pattern_width : 262,
         dither_invert_x : _editor.panel_x + 10,
-        dither_invert_y : _editor.panel_y + 366,
+        dither_invert_y : _editor.panel_y + 396,
         dither_invert_width : 262,
         transparency_lock_x : _editor.panel_x + 10,
-        transparency_lock_y : _editor.panel_y + 398,
+        transparency_lock_y : _editor.panel_y + 428,
         transparency_lock_width : 262,
         flip_x : _editor.panel_x + 10,
-        flip_y : _editor.panel_y + 624,
+        flip_y : _editor.panel_y + 654,
         flip_width : 262,
-        history_y : _editor.panel_y + 664,
-        file_y : _editor.panel_y + 696,
-        iff_y : _editor.panel_y + 728,
-        output_y : _editor.panel_y + 760,
+        history_y : _editor.panel_y + 694,
+        file_y : _editor.panel_y + 726,
+        iff_y : _editor.panel_y + 758,
+        output_y : _editor.panel_y + 790,
         utility_button_width : 127,
         utility_button_height : 24,
         utility_button_gap : 8,
@@ -141,4 +144,15 @@ function scr_bitmap_editor_button(_x1, _y1, _x2, _y2, _label, _fill, _text_colou
 function scr_bitmap_editor_contrast(_colour) {
     var _luma = colour_get_red(_colour) * 0.299 + colour_get_green(_colour) * 0.587 + colour_get_blue(_colour) * 0.114;
     return _luma > 140 ? c_black : c_white;
+}
+
+/// Rectangle [x1, y1, x2, y2] of tool button _index: DRAW / LINE / FILL on
+/// the first row, CIRCLE / DISC (filled circle) on the second.
+function scr_bitmap_editor_tool_rect(_layout, _index) {
+    if (_index < 3) {
+        var _x = _layout.tool_x + _index * (_layout.tool_width + _layout.tool_gap);
+        return [_x, _layout.tool_y, _x + _layout.tool_width, _layout.tool_y + _layout.tool_height];
+    }
+    var _sx = _layout.tool_x + (_index - 3) * (_layout.shape_tool_width + _layout.tool_gap);
+    return [_sx, _layout.shape_tool_y, _sx + _layout.shape_tool_width, _layout.shape_tool_y + _layout.tool_height];
 }

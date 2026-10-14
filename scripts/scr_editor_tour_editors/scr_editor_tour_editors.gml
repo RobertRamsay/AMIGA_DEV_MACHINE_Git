@@ -163,7 +163,7 @@ function scr_tour_sprite_rect(_part) {
         case "fields": return [_l.panel_x + 6, _l.channel_row_y - 2, _l.addr_field_x + 160, _l.addr_row_y + 18];
         case "swatches": return [_l.swatch_x, _l.swatch_row_y, _l.swatch_x + 3 * 46 + _l.swatch_width, _l.swatch_row_y + _l.swatch_height + 16];
         case "grid": return [_l.grid_x, _l.grid_y, _l.grid_x + _l.grid_width, _l.grid_y + _l.grid_height];
-        case "tools": return [_l.tool_x, _l.tool_y, _l.tool_x + _l.tool_width, _l.tool_y + 2 * 36 + _l.tool_height];
+        case "tools": return [_l.tool_x, _l.tool_y, _l.tool_x + _l.tool_width, _l.tool_y + (_l.tool_count - 1) * _l.tool_step + _l.tool_height];
         case "anim": return [_l.anim_x, _l.anim_play_y, _l.anim_x + _l.anim_width, _l.anim_end_y + _l.anim_height];
         case "colours": return [_l.palette_preview_x, _l.palette_y, _l.slider_x + _l.slider_width + 24, _l.slider_b_y + _l.slider_height];
     }
@@ -178,7 +178,7 @@ function scr_tour_bitmap_rect(_part) {
     switch (_part) {
         case "canvas": return [_l.canvas_x, _l.canvas_y, _l.canvas_x + _l.canvas_width, _l.canvas_y + _l.canvas_height];
         case "view": return [_l.left_x, _l.zoom_y - 4, _l.left_x + _left_w, _l.grid_toggle_y + 24];
-        case "tools": return [_l.left_x, _l.tool_y, _l.left_x + _left_w, _l.tool_y + _l.tool_height];
+        case "tools": return [_l.left_x, _l.tool_y, _l.left_x + _left_w, _l.shape_tool_y + _l.tool_height];
         case "dither": return [_l.left_x, _l.dither_tool_y, _l.left_x + _left_w, _l.transparency_lock_y + _l.tool_height];
         case "gradient": return [_l.left_x, _l.gradient_tool_y, _l.left_x + _left_w, _l.gradient_edge_y + _l.tool_height];
         case "files": return [_l.left_x, _l.flip_y, _l.left_x + _left_w, _l.output_y + _l.utility_button_height];
@@ -200,8 +200,8 @@ function scr_tour_bob_rect(_part) {
         case "grid": return [_px + 24, _py + 48, _px + 536, _py + 560];
         case "palette": return [_pal, _py + 34, _pal_x2, _py + 250 + 2 * 42 + 20];
         case "assets": return [_pal, _py + 370, _pal_x2, _py + 396];
-        case "tools": return [_pal, _py + 410, _pal_x2, _py + 520];
-        case "tests": return [_pal, _py + 530, _pal_x2, _py + 614];
+        case "tools": return [_pal, _py + 410, _pal_x2, _py + 560];
+        case "tests": return [_pal, _py + 570, _pal_x2, _py + 654];
     }
     return undefined;
 }
@@ -378,7 +378,7 @@ function scr_tour_editor_categories() {
                 { title : "Pixels", show : "sprite", rect : function() { return scr_tour_sprite_rect("grid"); },
                   text : "Paint here: left button with the selected colour, right button erases." },
                 { title : "Tools", show : "sprite", rect : function() { return scr_tour_sprite_rect("tools"); },
-                  text : "DRAW paints freehand, LINE draws from press to release, FILL floods an area." },
+                  text : "DRAW paints freehand, LINE draws from press to release, FILL floods an area. CIRCLE and FILL CIRCLE: press for the centre, drag for the radius." },
                 { title : "Animation preview", show : "sprite", rect : function() { return scr_tour_sprite_rect("anim"); },
                   text : "PLAY runs the frames from START to END at RATE frames per second, LOOP repeats. Click the left half of RATE / START / END to lower, the right half to raise. S starts and stops." },
                 { title : "Palette", show : "sprite", rect : function() { return scr_tour_sprite_rect("colours"); },
@@ -394,7 +394,7 @@ function scr_tour_editor_categories() {
                 { title : "Zoom, clear, grid, brush", show : "bitmap", rect : function() { return scr_tour_bitmap_rect("view"); },
                   text : "Zoom from 1x to 16x, CLEAR fills with colour 0, GRID cycles an overlay of 4 to 32 pixels, and BRUSH picks the pen size 1 to 9 ([ and ] also change it)." },
                 { title : "Tools", show : "bitmap", rect : function() { return scr_tour_bitmap_rect("tools"); },
-                  text : "DRAW (D), LINE (L) and FILL (F)." },
+                  text : "DRAW (D), LINE (L) and FILL (F); CIRCLE and FILLED CIRCLE take the centre from the press and the radius from the drag. Lines and shapes keep their end on the edge if the pointer leaves the canvas." },
                 { title : "Dithering and lock", show : "bitmap", rect : function() { return scr_tour_bitmap_rect("dither"); },
                   text : "USE DITHER mixes COL1 and COL2 (or COL1 and transparent) in a pattern: checker, interlace or Bayer. INVERT flips the pattern. TRANSPARENCY LOCK (T) only paints over pixels that are already coloured." },
                 { title : "Gradients", show : "bitmap", rect : function() { return scr_tour_bitmap_rect("gradient"); },
@@ -420,7 +420,7 @@ function scr_tour_editor_categories() {
                 { title : "Frames", show : "bob", rect : function() { return scr_tour_bob_rect("assets"); },
                   text : "< > step through BOB assets (animation frames), ADD BOB makes a new one. A / D / W / Q / E work as in the sprite editor." },
                 { title : "Tools and animation", show : "bob", rect : function() { return scr_tour_bob_rect("tools"); },
-                  text : "DRAW, LINE and FILL; PLAY, LOOP, RATE, START and END preview the animation." },
+                  text : "DRAW, LINE, FILL, CIRCLE and FILLED CIRCLE (press for the centre, drag for the radius); PLAY, LOOP, RATE, START and END preview the animation." },
                 { title : "Clear and test", show : "bob", rect : function() { return scr_tour_bob_rect("tests"); },
                   text : "CLEAR empties the frame. TEST BOB-BMP and TEST SPR-BMP build test programs that move this BOB (or a sprite) over the bitmap on the Amiga." }
             ]

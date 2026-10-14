@@ -12,10 +12,10 @@ function scr_sprite_editor_layout() {
     var _grid_y = _panel_y + 160;
     var _grid_width = 16 * _cell_size;
     var _grid_height = global.sprite_height * _cell_size;
-    // The tool / animation column beside the grid ends 292 px below its top;
+    // The tool / animation column beside the grid ends 340 px below its top;
     // the palette editor starts below whichever is taller, so a short sprite
     // no longer runs the PLAY / RATE / END buttons into the sliders.
-    var _palette_y = max(_grid_y + _grid_height, _grid_y + 292) + 24;
+    var _palette_y = max(_grid_y + _grid_height, _grid_y + 340) + 24;
     // Sliders start right of the 40 px colour preview (x +12..+52), leaving
     // room for their R / G / B labels in between.
     var _slider_x = _panel_x + 76;
@@ -59,12 +59,14 @@ function scr_sprite_editor_layout() {
         tool_y : _grid_y,
         tool_width : 116,
         tool_height : 28,
+        tool_step : 32,
+        tool_count : 5,
         anim_x : _panel_x + 252,
-        anim_play_y : _grid_y + 120,
-        anim_loop_y : _grid_y + 156,
-        anim_rate_y : _grid_y + 192,
-        anim_start_y : _grid_y + 228,
-        anim_end_y : _grid_y + 264,
+        anim_play_y : _grid_y + 168,
+        anim_loop_y : _grid_y + 204,
+        anim_rate_y : _grid_y + 240,
+        anim_start_y : _grid_y + 276,
+        anim_end_y : _grid_y + 312,
         anim_width : 116,
         anim_height : 28,
         palette_y : _palette_y,

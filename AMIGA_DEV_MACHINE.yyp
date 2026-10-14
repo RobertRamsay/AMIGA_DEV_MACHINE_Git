@@ -213,6 +213,7 @@
   },
   "name":"AMIGA_DEV_MACHINE",
   "resources":[
+    {"id":{"name":"scr_shape_tools","path":"scripts/scr_shape_tools/scr_shape_tools.yy",},},
     {"id":{"name":"scr_operand_text_mode","path":"scripts/scr_operand_text_mode/scr_operand_text_mode.yy",},},
     {"id":{"name":"scr_code_editor_selftest","path":"scripts/scr_code_editor_selftest/scr_code_editor_selftest.yy",},},
     {"id":{"name":"scr_amiga_focus_node","path":"scripts/scr_amiga_focus_node/scr_amiga_focus_node.yy",},},

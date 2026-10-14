@@ -418,12 +418,13 @@ if (global.sprite_editor_open) {
         _row += 1;
     }
 
-    var _sprite_tool_names = ["DRAW", "LINE", "FILL"];
+    var _sprite_tool_names = ["DRAW", "LINE", "FILL", "CIRCLE", "DISC"];
+    var _sprite_tool_labels = ["DRAW", "LINE", "FILL", "CIRCLE", "FILL CIRCLE"];
     var _sprite_tool_i = 0;
-    while (_sprite_tool_i < 3) {
-        var _sprite_tool_y = _layout.tool_y + _sprite_tool_i * 36;
+    while (_sprite_tool_i < _layout.tool_count) {
+        var _sprite_tool_y = _layout.tool_y + _sprite_tool_i * _layout.tool_step;
         var _tool_on = global.sprite_tool == _sprite_tool_names[_sprite_tool_i];
-        scr_ui_button(_layout.tool_x, _sprite_tool_y, _layout.tool_x + _layout.tool_width, _sprite_tool_y + _layout.tool_height, _sprite_tool_names[_sprite_tool_i], _tool_on ? _on_colour : _field_colour,
+        scr_ui_button(_layout.tool_x, _sprite_tool_y, _layout.tool_x + _layout.tool_width, _sprite_tool_y + _layout.tool_height, scr_ui_fit_label(_sprite_tool_labels[_sprite_tool_i], _layout.tool_width - 8), _tool_on ? _on_colour : _field_colour,
             point_in_rectangle(mouse_x, mouse_y, _layout.tool_x, _sprite_tool_y, _layout.tool_x + _layout.tool_width, _sprite_tool_y + _layout.tool_height));
         _sprite_tool_i += 1;
     }
@@ -478,6 +479,27 @@ if (global.sprite_editor_open) {
             if (_le2 >= _ldy) { _lerr += _ldy; _lx += _lsx; }
             if (_le2 <= _ldx) { _lerr += _ldx; _ly += _lsy; }
         }
+    }
+
+    if (global.sprite_circle_active) {
+        var _circle_colour = c_black;
+        if (global.sprite_circle_value >= 1) {
+            var _circle_index = global.sprite_circle_value - 1;
+            _circle_colour = make_color_rgb(global.sprite_colour_r[_circle_index] * 17,
+                global.sprite_colour_g[_circle_index] * 17, global.sprite_colour_b[_circle_index] * 17);
+        }
+        var _circle = scr_shape_circle_pixels(global.sprite_circle_cx, global.sprite_circle_cy, global.sprite_circle_r,
+            global.sprite_tool == "DISC", 16, global.sprite_height);
+        draw_set_colour(_circle_colour);
+        for (var _ci = 0; _ci < array_length(_circle); _ci += 2) {
+            var _circle_x = _layout.grid_x + _circle[_ci] * _layout.cell_size;
+            var _circle_y = _layout.grid_y + _circle[_ci + 1] * _layout.cell_size;
+            draw_rectangle(_circle_x, _circle_y, _circle_x + _layout.cell_size, _circle_y + _layout.cell_size, false);
+        }
+        draw_set_colour(c_yellow);
+        var _centre_x = _layout.grid_x + global.sprite_circle_cx * _layout.cell_size;
+        var _centre_y = _layout.grid_y + global.sprite_circle_cy * _layout.cell_size;
+        draw_rectangle(_centre_x, _centre_y, _centre_x + _layout.cell_size, _centre_y + _layout.cell_size, true);
     }
 
     // --------------------------------------------------------------------

@@ -1,8 +1,8 @@
 /// @description 32x32 BOB editor sharing the bitmap's 32-colour palette
 panel_x = max(20, (room_width - 920) div 2);
-panel_y = max(20, (room_height - 610) div 2);
+panel_y = max(20, (room_height - 710) div 2);
 panel_w = 920;
-panel_h = 670;
+panel_h = 710;
 header_h = 24;
 cell_size = 16;
 grid_x_offset = 24;
@@ -46,12 +46,28 @@ bob_line_value = 1;
 bob_line_current_x = 0;
 bob_line_current_y = 0;
 bob_line_button = mb_left;
+bob_circle_active = false;
+bob_circle_cx = 0;
+bob_circle_cy = 0;
+bob_circle_r = 0;
+bob_circle_value = 1;
+bob_circle_button = mb_left;
 bob_anim_playing = false;
 bob_anim_rate = 8;
 bob_anim_start = 0;
 bob_anim_end = 0;
 bob_anim_loop = true;
 bob_anim_next_time = 0;
+
+// Tool buttons (Step and Draw): DRAW LINE FILL on the first row, CIRCLE and the
+// wider FILLED CIRCLE on the second. Returns [x1, y1, x2, y2].
+function bob_tool_rect(_index) {
+    var _x = panel_x + column_x_offset;
+    var _y = panel_y + 410;
+    if (_index < 3) return [_x + _index * button_step, _y, _x + _index * button_step + button_w, _y + 30];
+    if (_index == 3) return [_x, _y + 40, _x + button_w, _y + 70];
+    return [_x + button_step, _y + 40, _x + column_width, _y + 70];
+}
 
 function bob_commit() {
     scr_asset_define_bob(bob_asset_name, bob_width, bob_height, bob_pixels);

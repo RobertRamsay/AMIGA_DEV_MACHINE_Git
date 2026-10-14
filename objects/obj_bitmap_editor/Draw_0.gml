@@ -106,14 +106,15 @@ while (_brush_button_index < array_length(_brush_sizes)) {
     _brush_button_index += 1;
 }
 
-var _tool_names = ["DRAW", "LINE", "FILL"];
+var _tool_names = ["DRAW", "LINE", "FILL", "CIRCLE", "DISC"];
+var _tool_labels = ["DRAW", "LINE", "FILL", "CIRCLE", "FILLED CIRCLE"];
 var _tool_index = 0;
 
 while (_tool_index < array_length(_tool_names)) {
-    var _tool_x = _layout.tool_x + _tool_index * (_layout.tool_width + _layout.tool_gap);
+    var _tool_rect = scr_bitmap_editor_tool_rect(_layout, _tool_index);
     var _tool_name = _tool_names[_tool_index];
-    scr_bitmap_editor_button(_tool_x, _layout.tool_y, _tool_x + _layout.tool_width, _layout.tool_y + _layout.tool_height,
-        _tool_name, bitmap_tool == _tool_name ? c_olive : c_dkgray);
+    scr_bitmap_editor_button(_tool_rect[0], _tool_rect[1], _tool_rect[2], _tool_rect[3],
+        _tool_labels[_tool_index], bitmap_tool == _tool_name ? c_olive : c_dkgray);
     _tool_index += 1;
 }
 
@@ -292,6 +293,23 @@ if (bitmap_tool == "LINE" && bitmap_line_active) {
         }
     }
 
+    draw_set_alpha(1);
+}
+
+// CIRCLE / DISC preview: the exact pixels the release will draw (the outline
+// is shown one pixel wide; the brush thickens it when committed).
+if ((bitmap_tool == "CIRCLE" || bitmap_tool == "DISC") && bitmap_circle_active) {
+    var _circle_preview = scr_shape_circle_pixels(bitmap_circle_cx, bitmap_circle_cy, bitmap_circle_r, bitmap_tool == "DISC", bitmap_width, bitmap_height);
+    var _ci = bitmap_circle_index;
+    draw_set_alpha(0.78);
+    draw_set_colour(make_color_rgb(bitmap_colour_r[_ci] * 17, bitmap_colour_g[_ci] * 17, bitmap_colour_b[_ci] * 17));
+    var _cpi = 0;
+    while (_cpi < array_length(_circle_preview)) {
+        var _cell_x = _layout.display_x + (_circle_preview[_cpi] * bitmap_zoom) - bitmap_scroll_x;
+        var _cell_y = _layout.display_y + (_circle_preview[_cpi + 1] * bitmap_zoom) - bitmap_scroll_y;
+        draw_rectangle(_cell_x, _cell_y, _cell_x + bitmap_zoom, _cell_y + bitmap_zoom, false);
+        _cpi += 2;
+    }
     draw_set_alpha(1);
 }
 

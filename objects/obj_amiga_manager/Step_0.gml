@@ -677,14 +677,15 @@ if (global.sprite_editor_open) {
     }
 
     var _tool_i = 0;
-    var _tool_names = ["DRAW", "LINE", "FILL"];
-    while (_tool_i < 3) {
-        var _tool_y = _layout.tool_y + _tool_i * 36;
+    var _tool_names = ["DRAW", "LINE", "FILL", "CIRCLE", "DISC"];
+    while (_tool_i < _layout.tool_count) {
+        var _tool_y = _layout.tool_y + _tool_i * _layout.tool_step;
         if (mouse_check_button_pressed(mb_left) && point_in_rectangle(mouse_x, mouse_y, _layout.tool_x, _tool_y, _layout.tool_x + _layout.tool_width, _tool_y + _layout.tool_height)) {
             global.sprite_tool = _tool_names[_tool_i];
             global.sprite_anim_playing = false;
             global.sprite_line_active = false;
             global.sprite_drawing = false;
+            global.sprite_circle_active = false;
         }
         _tool_i += 1;
     }
@@ -826,15 +827,36 @@ if (global.sprite_editor_open) {
         } else if (global.sprite_tool == "FILL") {
             sprite_editor_apply_fill(_cell_col, _cell_row, _value);
             sprite_editor_commit_asset();
+        } else if (global.sprite_tool == "CIRCLE" || global.sprite_tool == "DISC") {
+            // Press sets the centre, drag sets the radius, release draws.
+            global.sprite_circle_active = true;
+            global.sprite_circle_cx = _cell_col; global.sprite_circle_cy = _cell_row;
+            global.sprite_circle_r = 0;
+            global.sprite_circle_value = _value;
+            global.sprite_circle_button = _sprite_right_press ? mb_right : mb_left;
         }
     }
 
+    if (global.sprite_circle_active) {
+        if (mouse_check_button(global.sprite_circle_button)) {
+            global.sprite_circle_r = scr_shape_circle_radius(global.sprite_circle_cx, global.sprite_circle_cy,
+                floor((mouse_x - _layout.grid_x) / _layout.cell_size), floor((mouse_y - _layout.grid_y) / _layout.cell_size));
+        } else {
+            var _circle = scr_shape_circle_pixels(global.sprite_circle_cx, global.sprite_circle_cy, global.sprite_circle_r,
+                global.sprite_tool == "DISC", 16, global.sprite_height);
+            for (var _ci = 0; _ci < array_length(_circle); _ci += 2) {
+                global.sprite_pixels[_circle[_ci + 1] * 16 + _circle[_ci]] = global.sprite_circle_value;
+            }
+            global.sprite_circle_active = false;
+            sprite_editor_commit_asset();
+        }
+    }
+
+    // Off the grid the line end sticks to its edge, so the line is never dropped.
     if (global.sprite_line_active) {
         if (mouse_check_button(global.sprite_line_button)) {
-            if (_over_grid) {
-                global.sprite_line_current_x = _cell_col;
-                global.sprite_line_current_y = _cell_row;
-            }
+            global.sprite_line_current_x = _cell_col;
+            global.sprite_line_current_y = _cell_row;
         } else {
             sprite_editor_apply_line(global.sprite_line_start_x, global.sprite_line_start_y,
                 global.sprite_line_current_x, global.sprite_line_current_y, global.sprite_line_value);
