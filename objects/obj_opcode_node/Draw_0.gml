@@ -4,7 +4,9 @@
 var _dx = node_x + global.pan_x;
 var _dy = node_y + global.pan_y;
 
-draw_set_font(font_CyberVerse_OpCode);
+draw_set_font(UI_FONT_SMALL);
+draw_set_halign(fa_left);
+draw_set_valign(fa_top);
 
 var _body_colour = node_colour;
 
@@ -12,8 +14,13 @@ if (is_macro) {
     _body_colour = make_color_rgb(120, 60, 160);
 }
 
-draw_set_colour(_body_colour);
-draw_rectangle(_dx + 1, _dy + 1, _dx + node_width - 1, _dy + node_height - 1, false);
+// Body box: the outer shape is bevelled (top-left and bottom-right cuts);
+// the header band follows the top-left cut and the rows are inset fields.
+var _bx1 = _dx + 1;
+var _by1 = _dy + 1;
+var _bx2 = _dx + node_width - 1;
+var _by2 = _dy + node_height - 1;
+scr_ui_box_fill(_bx1, _by1, _bx2, _by2, _body_colour);
 
 // Dark category header. Every channel stays below 160 so the header remains
 // clearly separate from the body without competing with white text.
@@ -132,11 +139,7 @@ if (is_macro) {
     }
 }
 
-draw_set_colour(_header_colour);
-draw_rectangle(_dx + 1, _dy + 1, _dx + node_width - 1, _dy + 19, false);
-
-draw_set_colour(c_white);
-draw_rectangle(_dx + 1, _dy + 1, _dx + node_width - 1, _dy + node_height - 1, true);
+scr_ui_header_band(_bx1, _by1, _bx2, _by2, _dy + 19, _header_colour);
 
 var _header_text = scr_opcode_display_label(opcode_mnemonic);
 
@@ -153,7 +156,8 @@ if (is_macro) {
     if (scr_gk_is_node_type(macro_type)) _header_text = "GK: " + scr_gk_node_label(macro_type);
 }
 
-draw_text(_dx + 6, _dy, _header_text);
+draw_set_colour(c_white);
+scr_ui_text_mid(_dx + NODE_TEXT_PAD, _dy + 1, _dy + 20, scr_ui_fit_label(_header_text, node_width - NODE_TEXT_PAD - 8));
 
 var _label_display_text = node_label;
 var _lab_width = 80;
@@ -184,13 +188,11 @@ if (_label_display_text != "" || operand_editing_slot == "node_label") {
         _label_grow = _pulse_t * 3;
     }
 
-    draw_set_colour(_label_background_colour);
-    draw_rectangle(_label_box_x1 - _label_grow, _label_box_y1 - _label_grow, _label_box_x2 + _label_grow, _label_box_y2 + _label_grow, false);
-    draw_set_colour(_label_border_colour);
-    draw_rectangle(_label_box_x1 - _label_grow, _label_box_y1 - _label_grow, _label_box_x2 + _label_grow, _label_box_y2 + _label_grow, true);
+    scr_ui_box(_label_box_x1 - _label_grow, _label_box_y1 - _label_grow, _label_box_x2 + _label_grow, _label_box_y2 + _label_grow, _label_background_colour, _label_border_colour);
     draw_set_colour(_label_text_colour);
     draw_set_halign(fa_right);
-    draw_text(_label_box_x2 - 4, _label_box_y1 + 2, _label_display_text);
+    // While typing the text may run out to the left so the end stays visible.
+    scr_ui_text_mid(_label_box_x2 - 6, _label_box_y1, _label_box_y2 + 1, operand_editing_slot == "node_label" ? _label_display_text : scr_ui_fit_label(_label_display_text, _lab_width - 10));
     draw_set_halign(fa_left);
     draw_set_colour(c_white);
 }
@@ -202,43 +204,33 @@ if (is_macro) {
     var _is_anim_macro_draw = (macro_type == "ANIM_BOB" || macro_type == "ANIM_SPR");
     var _is_bob_ref_draw = (macro_type == "GET_BITMAP_BOB" || macro_type == "DRAW_BOB" || macro_type == "REPLACE_BITMAP_BOB" || macro_type == "BOB_BITMAP_TEST");
     var _is_sprite_ref_draw = (macro_type == "SPRITE_DISPLAY" || macro_type == "SPRITE_BITMAP_TEST");
-
     if (scr_gk_is_node_type(macro_type)) {
         scr_gk_node_draw(id, _asset_field_dx, _asset_field_dy - 20);
     } else if (macro_type == "PLAY_MOD" || macro_type == "PLAY_SFX") {
         var _audio_asset_draw = scr_asset_find_by_name(macro_asset_name);
-        var _audio_rows = macro_type == "PLAY_MOD" ? 2 : 3;
-        draw_set_colour(c_dkgray);
-        draw_rectangle(_asset_field_dx, _asset_field_dy, _asset_field_dx + node_width, _asset_field_dy + 20 * _audio_rows, false);
-        draw_set_colour(_audio_asset_draw == undefined ? c_red : c_white);
         var _audio_name = macro_asset_name == "" ? "(none - SND-EDIT)" : macro_asset_name;
-        draw_text(_asset_field_dx + 4, _asset_field_dy + 2, "<  " + _audio_name);
-        draw_set_halign(fa_right);
-        draw_text(_asset_field_dx + node_width - 4, _asset_field_dy + 2, ">");
-        draw_set_halign(fa_left);
-        draw_set_colour(c_white);
+        scr_node_row(_asset_field_dx, node_width, _asset_field_dy, _audio_name, c_dkgray, _audio_asset_draw == undefined ? c_red : c_white, true);
         if (macro_type == "PLAY_MOD") {
-            draw_text(_asset_field_dx + 4, _asset_field_dy + 22, "<   SONG POS: " + string(macro_music_pos) + "   >");
+            scr_node_row(_asset_field_dx, node_width, _asset_field_dy + 20, "SONG POS: " + string(macro_music_pos), c_dkgray, c_white, true);
         } else {
-            draw_text(_asset_field_dx + 4, _asset_field_dy + 22, "<   CHANNEL: " + (macro_sfx_channel < 0 ? "AUTO" : string(macro_sfx_channel)) + "   >");
+            scr_node_row(_asset_field_dx, node_width, _asset_field_dy + 20, "CHANNEL: " + (macro_sfx_channel < 0 ? "AUTO" : string(macro_sfx_channel)), c_dkgray, c_white, true);
             var _vol_text = macro_sfx_volume < 0 ? "SAMPLE" : string(macro_sfx_volume);
-            draw_text(_asset_field_dx + 4, _asset_field_dy + 42, "<   VOLUME: " + _vol_text + "   >");
+            scr_node_row(_asset_field_dx, node_width, _asset_field_dy + 40, "VOLUME: " + _vol_text, c_dkgray, c_white, true);
         }
     } else if (macro_type == "STOP_MOD") {
         draw_set_colour(c_white);
-        draw_text(_asset_field_dx + 4, _asset_field_dy + 2, "stops music + sound fx");
+        scr_ui_text_mid(_asset_field_dx + NODE_TEXT_PAD, _asset_field_dy, _asset_field_dy + 20, scr_ui_fit_label("stops music + sound fx", node_width - 2 * NODE_TEXT_PAD));
     } else if (macro_type == "CODE") {
         var _over_edit_draw = point_in_rectangle(mouse_x, mouse_y, _asset_field_dx, _asset_field_dy, _asset_field_dx + node_width, _asset_field_dy + 20);
-        draw_set_colour(_over_edit_draw ? make_colour_rgb(30, 130, 150) : make_colour_rgb(20, 90, 110));
-        draw_rectangle(_asset_field_dx, _asset_field_dy, _asset_field_dx + node_width, _asset_field_dy + 20, false);
-        draw_set_colour(c_white);
         var _code_lines_all = string_split(macro_code_text, "\n");
-        draw_text(_asset_field_dx + 4, _asset_field_dy + 2, "EDIT CODE  (" + string(array_length(_code_lines_all)) + " lines)");
+        scr_node_row(_asset_field_dx, node_width, _asset_field_dy, "EDIT CODE  (" + string(array_length(_code_lines_all)) + " lines)",
+            _over_edit_draw ? make_colour_rgb(30, 130, 150) : make_colour_rgb(20, 90, 110), c_white, false);
 
         // First few non-blank lines as a preview, on a dark code panel.
-        draw_set_colour(make_colour_rgb(14, 18, 30));
-        draw_rectangle(_asset_field_dx + 1, _asset_field_dy + 21, _asset_field_dx + node_width - 1, _dy + node_height - 1, false);
-        var _code_preview_y = _asset_field_dy + 22;
+        var _code_x1 = _asset_field_dx + NODE_ROW_INSET_L;
+        var _code_x2 = _asset_field_dx + node_width - NODE_ROW_INSET_R;
+        scr_ui_box(_code_x1, _asset_field_dy + 21, _code_x2, _dy + node_height - 4, make_colour_rgb(14, 18, 30), make_colour_rgb(50, 70, 100));
+        var _code_preview_y = _asset_field_dy + 23;
         var _code_preview_i = 0;
         var _code_preview_shown = 0;
         while (_code_preview_i < array_length(_code_lines_all) && _code_preview_shown < 4) {
@@ -246,10 +238,10 @@ if (is_macro) {
             if (string_trim(_preview_line) != "") {
                 var _trimmed_preview = string_trim(_preview_line);
                 draw_set_colour(string_char_at(_trimmed_preview, 1) == ";" ? make_colour_rgb(90, 170, 90) : make_colour_rgb(170, 210, 255));
-                while (string_length(_preview_line) > 1 && string_width(_preview_line) > node_width - 8) {
+                while (string_length(_preview_line) > 1 && string_width(_preview_line) > _code_x2 - _code_x1 - 12) {
                     _preview_line = string_copy(_preview_line, 1, string_length(_preview_line) - 1);
                 }
-                draw_text(_asset_field_dx + 4, _code_preview_y, _preview_line);
+                draw_text(_code_x1 + 6, _code_preview_y, _preview_line);
                 _code_preview_y += 18;
                 _code_preview_shown += 1;
             }
@@ -257,21 +249,15 @@ if (is_macro) {
         }
         draw_set_colour(c_white);
     } else if (_is_move_macro_draw) {
-        draw_set_colour(c_dkgray);
-        draw_rectangle(_asset_field_dx, _asset_field_dy, _asset_field_dx + node_width, _asset_field_dy + 60, false);
-        draw_set_colour(c_white);
-        draw_text(_asset_field_dx + 4, _asset_field_dy + 2, "<   ID: " + string(macro_object_id) + "   >");
-        draw_text(_asset_field_dx + 4, _asset_field_dy + 22, "<   X SPEED: " + string(macro_speed_x) + "   >");
-        draw_text(_asset_field_dx + 4, _asset_field_dy + 42, "<   Y SPEED: " + string(macro_speed_y) + "   >");
+        scr_node_row(_asset_field_dx, node_width, _asset_field_dy, "ID: " + string(macro_object_id), c_dkgray, c_white, true);
+        scr_node_row(_asset_field_dx, node_width, _asset_field_dy + 20, "X SPEED: " + string(macro_speed_x), c_dkgray, c_white, true);
+        scr_node_row(_asset_field_dx, node_width, _asset_field_dy + 40, "Y SPEED: " + string(macro_speed_y), c_dkgray, c_white, true);
     } else if (_is_anim_macro_draw) {
-        draw_set_colour(c_dkgray);
-        draw_rectangle(_asset_field_dx, _asset_field_dy, _asset_field_dx + node_width, _asset_field_dy + 100, false);
-        draw_set_colour(c_white);
-        draw_text(_asset_field_dx + 4, _asset_field_dy + 2, "<   ID: " + string(macro_object_id) + "   >");
-        draw_text(_asset_field_dx + 4, _asset_field_dy + 22, "<   RATE: " + string(macro_anim_rate) + " FPS   >");
-        draw_text(_asset_field_dx + 4, _asset_field_dy + 42, "<   START: " + string(macro_anim_start) + "   >");
-        draw_text(_asset_field_dx + 4, _asset_field_dy + 62, "<   END: " + string(macro_anim_end) + "   >");
-        draw_text(_asset_field_dx + 4, _asset_field_dy + 82, "LOOP: " + (macro_anim_loop ? "ON" : "OFF"));
+        scr_node_row(_asset_field_dx, node_width, _asset_field_dy, "ID: " + string(macro_object_id), c_dkgray, c_white, true);
+        scr_node_row(_asset_field_dx, node_width, _asset_field_dy + 20, "RATE: " + string(macro_anim_rate) + " FPS", c_dkgray, c_white, true);
+        scr_node_row(_asset_field_dx, node_width, _asset_field_dy + 40, "START: " + string(macro_anim_start), c_dkgray, c_white, true);
+        scr_node_row(_asset_field_dx, node_width, _asset_field_dy + 60, "END: " + string(macro_anim_end), c_dkgray, c_white, true);
+        scr_node_row(_asset_field_dx, node_width, _asset_field_dy + 80, "LOOP: " + (macro_anim_loop ? "ON" : "OFF"), c_dkgray, c_white, false);
     } else {
 
     var _asset_field_colour = c_dkgray;
@@ -279,10 +265,6 @@ if (is_macro) {
     if (operand_editing_slot == "macro_asset") {
         _asset_field_colour = c_olive;
     }
-
-    draw_set_colour(_asset_field_colour);
-    draw_rectangle(_asset_field_dx, _asset_field_dy, _asset_field_dx + node_width, _asset_field_dy + 20, false);
-    draw_set_colour(c_white);
 
     var _asset_field_label = "ASSET: ";
 
@@ -300,20 +282,21 @@ if (is_macro) {
         _asset_field_text = "Click to edit colours";
     }
 
-    draw_text(_asset_field_dx + 4, _asset_field_dy + 2, _asset_field_text);
+    scr_node_row(_asset_field_dx, node_width, _asset_field_dy, _asset_field_text, _asset_field_colour, c_white, false);
 
     var _info_text = "asset not found";
 
     if (macro_type == "SETBKG") {
-        _info_text = "hex colour 000-FFF -> COLOR00";
+        _info_text = "000-FFF -> COLOR00";
     } else if (macro_type == "COPPER_BAR") {
-        var _cprbar_range_text = "full height";
+        // Short enough to fit the node: the range only shows when it is set.
+        var _cprbar_range_text = "";
 
         if (!macro_cprbar_equidistant) {
-            _cprbar_range_text = "vp " + string(macro_cprbar_vp_start) + "-" + string(macro_cprbar_vp_end);
+            _cprbar_range_text = " " + string(macro_cprbar_vp_start) + "-" + string(macro_cprbar_vp_end);
         }
 
-        _info_text = string(macro_cprbar_band_count) + " bands, COLOR" + string(macro_cprbar_target_register) + ", " + _cprbar_range_text;
+        _info_text = string(macro_cprbar_band_count) + " bands, COLOR" + string(macro_cprbar_target_register) + _cprbar_range_text;
     } else {
         var _asset_for_info = scr_asset_find_by_name(macro_asset_name);
 
@@ -326,15 +309,13 @@ if (is_macro) {
         }
     }
 
-    var _info_y = _asset_field_dy + 24;
+    var _info_y = _asset_field_dy + 20;
     if (_is_bob_ref_draw || _is_sprite_ref_draw) {
-        draw_set_colour(c_dkgray);
-        draw_rectangle(_asset_field_dx, _asset_field_dy + 20, _asset_field_dx + node_width, _asset_field_dy + 40, false);
-        draw_set_colour(c_white);
-        draw_text(_asset_field_dx + 4, _asset_field_dy + 22, "<   ID: " + string(macro_object_id) + "   >");
-        _info_y = _asset_field_dy + 44;
+        scr_node_row(_asset_field_dx, node_width, _asset_field_dy + 20, "ID: " + string(macro_object_id), c_dkgray, c_white, true);
+        _info_y = _asset_field_dy + 40;
     }
-    draw_text(_asset_field_dx + 4, _info_y, _info_text);
+    draw_set_colour(c_white);
+    scr_ui_text_mid(_asset_field_dx + NODE_TEXT_PAD, _info_y, _info_y + 20, scr_ui_fit_label(_info_text, node_width - 2 * NODE_TEXT_PAD));
     }
 } else {
     var _mode_src_dx = mode_button_src_x + global.pan_x;
@@ -346,23 +327,9 @@ if (is_macro) {
 
     if (_entry_for_draw != undefined) {
         var _mode_zone_width = mode_button_width - value_box_width;
+        var _slots = [];
 
         if (_entry_for_draw.operand_count >= 1) {
-            draw_set_colour(c_dkgray);
-            draw_rectangle(_mode_src_dx, _mode_src_dy, _mode_src_dx + _mode_zone_width, _mode_src_dy + mode_button_height, false);
-            draw_set_colour(c_white);
-            draw_text(_mode_src_dx + 4, _mode_src_dy, addressing_mode_src);
-
-            var _src_value_colour = c_dkgray;
-
-            if (operand_editing_slot == "src") {
-                _src_value_colour = c_olive;
-            }
-
-            draw_set_colour(_src_value_colour);
-            draw_rectangle(_mode_src_dx + _mode_zone_width, _mode_src_dy, _mode_src_dx + mode_button_width, _mode_src_dy + mode_button_height, false);
-            draw_set_colour(c_white);
-
             var _src_is_register_display = scr_operand_mode_uses_register_index(addressing_mode_src);
             var _src_value_text = string(operand_src);
 
@@ -378,27 +345,10 @@ if (is_macro) {
                 _src_value_text = operand_edit_text;
             }
 
-            draw_set_halign(fa_right);
-            draw_text(_mode_src_dx + mode_button_width - 4, _mode_src_dy, _src_value_text);
-            draw_set_halign(fa_left);
+            array_push(_slots, { sx : _mode_src_dx, sy : _mode_src_dy, mode : addressing_mode_src, value : _src_value_text, editing : operand_editing_slot == "src" });
         }
 
         if (_entry_for_draw.operand_count >= 2) {
-            draw_set_colour(c_dkgray);
-            draw_rectangle(_mode_dst_dx, _mode_dst_dy, _mode_dst_dx + _mode_zone_width, _mode_dst_dy + mode_button_height, false);
-            draw_set_colour(c_white);
-            draw_text(_mode_dst_dx + 4, _mode_dst_dy, addressing_mode_dst);
-
-            var _dst_value_colour = c_dkgray;
-
-            if (operand_editing_slot == "dst") {
-                _dst_value_colour = c_olive;
-            }
-
-            draw_set_colour(_dst_value_colour);
-            draw_rectangle(_mode_dst_dx + _mode_zone_width, _mode_dst_dy, _mode_dst_dx + mode_button_width, _mode_dst_dy + mode_button_height, false);
-            draw_set_colour(c_white);
-
             var _dst_is_register_display = scr_operand_mode_uses_register_index(addressing_mode_dst);
             var _dst_value_text = string(operand_dst);
 
@@ -414,12 +364,35 @@ if (is_macro) {
                 _dst_value_text = operand_edit_text;
             }
 
+            array_push(_slots, { sx : _mode_dst_dx, sy : _mode_dst_dy, mode : addressing_mode_dst, value : _dst_value_text, editing : operand_editing_slot == "dst" });
+        }
+
+        // Each operand row: addressing-mode field on the left, value box on
+        // the right (same split as the Step hit tests), both inset fields.
+        var _slot_i = 0;
+        while (_slot_i < array_length(_slots)) {
+            var _slot = _slots[_slot_i];
+            var _sy1 = _slot.sy + 1;
+            var _sy2 = _slot.sy + mode_button_height;
+            var _mode_x1 = _slot.sx + NODE_ROW_INSET_L;
+            var _split_x = _slot.sx + _mode_zone_width;
+            var _value_x2 = _slot.sx + mode_button_width - NODE_ROW_INSET_R;
+
+            scr_ui_box(_mode_x1, _sy1, _split_x - 2, _sy2, c_dkgray, merge_colour(c_dkgray, c_white, 0.22));
+            scr_ui_box(_split_x + 1, _sy1, _value_x2, _sy2, _slot.editing ? c_olive : make_colour_rgb(40, 44, 52), _slot.editing ? c_yellow : merge_colour(c_dkgray, c_white, 0.22));
+            draw_set_colour(c_white);
+            scr_ui_text_mid(_mode_x1 + 6, _sy1, _sy2 + 1, scr_ui_fit_label(_slot.mode, _split_x - _mode_x1 - 10));
             draw_set_halign(fa_right);
-            draw_text(_mode_dst_dx + mode_button_width - 4, _mode_dst_dy, _dst_value_text);
+            scr_ui_text_mid(_value_x2 - 5, _sy1, _sy2 + 1, _slot.editing ? _slot.value : scr_ui_fit_label(_slot.value, _value_x2 - _split_x - 9));
             draw_set_halign(fa_left);
+            _slot_i += 1;
         }
     }
 }
+
+// Outline last, over the header band and rows.
+scr_ui_box_outline(_bx1, _by1, _bx2, _by2, c_white);
+
 
 var _src_colour = c_lime;
 var _dst_colour = c_lime;
@@ -448,26 +421,24 @@ if (is_connected) {
 
 // The last build reported an error here: red outline, message on hover.
 if (build_error_text != "") {
-    draw_set_colour(c_red);
-    draw_rectangle(_dx - 1, _dy - 1, _dx + node_width + 1, _dy + node_height + 1, true);
-    draw_rectangle(_dx - 2, _dy - 2, _dx + node_width + 2, _dy + node_height + 2, true);
+    scr_ui_box_outline(_dx - 2, _dy - 2, _dx + node_width + 2, _dy + node_height + 2, c_red, 2);
     if (point_in_rectangle(mouse_x, mouse_y, _dx, _dy, _dx + node_width, _dy + node_height)) {
         var _err_text = string_replace(build_error_text, "; ERROR: ", "");
-        var _err_w = string_width(_err_text) + 12;
+        var _err_w = string_width(_err_text) + 16;
+        var _err_y1 = _dy + node_height + 4;
+        var _err_y2 = _err_y1 + 22;
         draw_set_alpha(0.9);
-        draw_set_colour(c_black);
-        draw_rectangle(_dx, _dy + node_height + 4, _dx + _err_w, _dy + node_height + 24, false);
+        scr_ui_box_fill(_dx, _err_y1, _dx + _err_w, _err_y2, c_black);
         draw_set_alpha(1);
+        scr_ui_box_outline(_dx, _err_y1, _dx + _err_w, _err_y2, c_red);
         draw_set_colour(c_red);
-        draw_rectangle(_dx, _dy + node_height + 4, _dx + _err_w, _dy + node_height + 24, true);
-        draw_text(_dx + 6, _dy + node_height + 6, _err_text);
+        scr_ui_text_mid(_dx + 8, _err_y1, _err_y2 + 1, _err_text);
     }
     draw_set_colour(c_white);
 }
 
 if (wedge_target_found && is_dragging) {
-    draw_set_colour(c_yellow);
-    draw_rectangle(_dx - 3, _dy - 3, _dx + node_width + 3, _dy + node_height + 3, true);
+    scr_ui_box_outline(_dx - 3, _dy - 3, _dx + node_width + 3, _dy + node_height + 3, c_yellow);
     draw_set_colour(c_white);
 }
 

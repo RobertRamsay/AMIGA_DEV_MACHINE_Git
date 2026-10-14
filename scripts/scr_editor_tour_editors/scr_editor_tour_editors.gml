@@ -159,7 +159,7 @@ function scr_tour_sprite_rect(_part) {
     var _l = scr_sprite_editor_layout();
     switch (_part) {
         case "panel": return [_l.panel_x, _l.panel_y, _l.panel_x + _l.panel_width, _l.panel_y + _l.panel_height];
-        case "assets": return [_l.asset_prev_x, _l.asset_row_y, _l.asset_add_x + 104, _l.asset_row_y + 20];
+        case "assets": return [_l.asset_prev_x, _l.asset_row_y, _l.asset_add_x + _l.asset_add_width, _l.asset_row_y + 20];
         case "fields": return [_l.panel_x + 6, _l.channel_row_y - 2, _l.addr_field_x + 160, _l.addr_row_y + 18];
         case "swatches": return [_l.swatch_x, _l.swatch_row_y, _l.swatch_x + 3 * 46 + _l.swatch_width, _l.swatch_row_y + _l.swatch_height + 16];
         case "grid": return [_l.grid_x, _l.grid_y, _l.grid_x + _l.grid_width, _l.grid_y + _l.grid_height];
