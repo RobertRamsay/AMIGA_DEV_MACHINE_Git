@@ -1,3 +1,28 @@
+/// Program-order helpers for macros that share one screen (a BOB scene with
+/// a sprite on it): the first node of _type before / after _node, or noone.
+function scr_program_node_before(_node, _type) {
+    var _program = scr_amiga_collect_program_nodes();
+    var _i = 0;
+    var _found = noone;
+    while (_i < array_length(_program) && _program[_i] != _node.id) {
+        if (_program[_i].is_macro && _program[_i].macro_type == _type) _found = _program[_i];
+        _i += 1;
+    }
+    return _found;
+}
+
+function scr_program_node_after(_node, _type) {
+    var _program = scr_amiga_collect_program_nodes();
+    var _seen = false;
+    var _i = 0;
+    while (_i < array_length(_program)) {
+        if (_seen && _program[_i].is_macro && _program[_i].macro_type == _type) return _program[_i];
+        if (_program[_i] == _node.id) _seen = true;
+        _i += 1;
+    }
+    return noone;
+}
+
 /// Shared five-bitplane display followed by a masked, Blitter-driven BOB.
 function scr_emit_macro_bob_bitmap_test(_node) {
     var _bob = scr_asset_find_by_name(_node.macro_asset_name);
@@ -82,7 +107,15 @@ function scr_emit_macro_get_bitmap_bob(_node) {
     if (_bob == undefined || _bob.type != "BOB") return { text : "; ERROR: BOB asset not found", is_valid : false };
     if (_bitmap == undefined || _bitmap.type != "BITMAP") return { text : "; ERROR: TestBitmap not found", is_valid : false };
     var _saved = _node.macro_asset_name; _node.macro_asset_name = "TestBitmap";
-    var _base = scr_emit_macro_bitmap_display(_node); _node.macro_asset_name = _saved;
+    // A sprite test later in the program shares this screen: the copper list
+    // keeps its channel free and parks the other seven on a null sprite.
+    var _sprite_node = scr_program_node_after(_node, "SPRITE_BITMAP_TEST");
+    var _sprite_keep = -2;
+    if (_sprite_node != noone) {
+        var _sprite_asset = scr_asset_find_by_name(_sprite_node.macro_asset_name);
+        if (_sprite_asset != undefined && _sprite_asset.type == "SPRITE") _sprite_keep = clamp(_sprite_asset.channel, 0, 7);
+    }
+    var _base = scr_emit_macro_bitmap_display(_node, _sprite_keep); _node.macro_asset_name = _saved;
     if (!_base.is_valid) return _base;
     var _u = string(floor(_node.uid));
     var _id = string(clamp(floor(_node.macro_object_id), 0, 63));
@@ -232,9 +265,12 @@ function scr_emit_macro_sprite_bitmap_test(_node) {
     var _bitmap = scr_asset_find_by_name("TestBitmap");
     if (_sprite == undefined || _sprite.type != "SPRITE") return { text : "; ERROR: TestSprite not found", is_valid : false };
     if (_bitmap == undefined || _bitmap.type != "BITMAP") return { text : "; ERROR: TestBitmap not found", is_valid : false };
-    var _saved = _node.macro_asset_name; _node.macro_asset_name = "TestBitmap";
-    var _base = scr_emit_macro_bitmap_display(_node, clamp(_sprite.channel, 0, 7)); _node.macro_asset_name = _saved;
-    if (!_base.is_valid) return _base;
+    var _base = { text : "\t; the sprite joins the BOB scene's screen (GET BITMAP BOB above)", is_valid : true };
+    if (scr_program_node_before(_node, "GET_BITMAP_BOB") == noone) {
+        var _saved = _node.macro_asset_name; _node.macro_asset_name = "TestBitmap";
+        _base = scr_emit_macro_bitmap_display(_node, clamp(_sprite.channel, 0, 7)); _node.macro_asset_name = _saved;
+        if (!_base.is_valid) return _base;
+    }
     var _u = string(floor(_node.uid));
     var _id = string(clamp(floor(_node.macro_object_id), 0, 63));
     var _state = "__spr_state_" + _id;
@@ -273,7 +309,11 @@ function scr_emit_macro_move_spr(_node) {
     var _state = "__spr_state_" + _id;
     var _u = string(floor(_node.uid));
     var _s = _node.node_label != "" ? _node.node_label + ":\n" : "";
-    _s += "__movespr_vb1_" + _u + ":\n\tCMPI.B #255,6(A5)\n\tBNE.S __movespr_vb1_" + _u + "\n__movespr_vb2_" + _u + ":\n\tCMPI.B #255,6(A5)\n\tBEQ.S __movespr_vb2_" + _u + "\n";
+    // After a REPLACE BITMAP BOB (which already waited for the frame) the
+    // sprite updates in the same vertical blank: one wait per frame, 50 fps.
+    if (scr_program_node_before(_node, "REPLACE_BITMAP_BOB") == noone) {
+        _s += "__movespr_vb1_" + _u + ":\n\tCMPI.B #255,6(A5)\n\tBNE.S __movespr_vb1_" + _u + "\n__movespr_vb2_" + _u + ":\n\tCMPI.B #255,6(A5)\n\tBEQ.S __movespr_vb2_" + _u + "\n";
+    }
     _s += "\tMOVEA.L " + _state + "_ptr,A3\n\tMOVEA.L " + _state + "_ptrreg,A0\n\tMOVE.L A3,(A0)\n";
     _s += "\tMOVE.W " + _state + "_x,D0\n\tADDI.W #128,D0\n\tMOVE.W D0,D4\n\tLSR.W #1,D4\n\tANDI.W #255,D4\n";
     // VSTART: the display starts on line $2C (DIWSTRT $2C81), as gk_put_sprite.

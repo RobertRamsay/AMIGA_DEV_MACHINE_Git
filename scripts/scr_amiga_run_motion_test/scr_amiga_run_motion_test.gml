@@ -88,8 +88,59 @@ function scr_amiga_run_bob_bitmap_test() {
     scr_set_status_message("BOB-BMP test loaded — GetBitmap, ReplaceBitmap and DrawBOB are individually expandable.");
 }
 
+/// Pushes every node of root _root_uid at or below _y down by _dy.
+function scr_amiga_motion_shift_column(_root_uid, _y, _dy) {
+    with (obj_opcode_node) {
+        if (is_connected && root_uid == _root_uid && node_y >= _y) node_y += _dy;
+    }
+}
+
+/// With the BOB test loaded, T: SPR-BMP adds the sprite to that scene
+/// instead of replacing it: SPRITE BITMAP TEST under GET BITMAP BOB (same
+/// screen), MOVE SPR + ANIM SPR after REPLACE BITMAP BOB (same frame).
+function scr_amiga_add_sprite_to_bob_scene() {
+    var _get = noone;
+    var _replace = noone;
+    with (obj_opcode_node) {
+        if (is_macro && macro_type == "GET_BITMAP_BOB" && is_connected) _get = id;
+        if (is_macro && macro_type == "REPLACE_BITMAP_BOB" && is_connected) _replace = id;
+    }
+    if (_get == noone || _replace == noone) return false;
+    scr_push_undo_snapshot();
+    with (obj_opcode_node) if (is_macro && (macro_type == "SPRITE_BITMAP_TEST" || macro_type == "MOVE_SPR" || macro_type == "ANIM_SPR")) instance_destroy();
+
+    var _root = _get.root_uid;
+    var _x = _get.node_x;
+    // SPRITE BITMAP TEST right under GET BITMAP BOB.
+    var _at = _get.node_y + _get.node_height;
+    scr_amiga_motion_shift_column(_root, _at, 100);
+    var _spr = instance_create_layer(_x, _at, "Instances", obj_opcode_node);
+    _spr.node_x = _x; _spr.node_y = _at; _spr.node_height = 100;
+    _spr.is_macro = true; _spr.macro_type = "SPRITE_BITMAP_TEST"; _spr.macro_asset_name = global.sprite_asset_name;
+    _spr.macro_object_id = 0; _spr.is_connected = true; _spr.root_uid = _root;
+
+    // MOVE SPR and ANIM SPR right after REPLACE BITMAP BOB.
+    _at = _replace.node_y + _replace.node_height;
+    scr_amiga_motion_shift_column(_root, _at, 220);
+    var _move = instance_create_layer(_x, _at, "Instances", obj_opcode_node);
+    _move.node_x = _x; _move.node_y = _at; _move.node_height = 100;
+    _move.is_macro = true; _move.macro_type = "MOVE_SPR"; _move.macro_object_id = 0;
+    _move.macro_speed_x = 2; _move.macro_speed_y = 1;
+    _move.is_connected = true; _move.root_uid = _root;
+    var _anim = instance_create_layer(_x, _at + 100, "Instances", obj_opcode_node);
+    _anim.node_x = _x; _anim.node_y = _at + 100; _anim.node_height = 120;
+    _anim.is_macro = true; _anim.macro_type = "ANIM_SPR"; _anim.macro_object_id = 0;
+    _anim.macro_anim_rate = global.sprite_anim_rate; _anim.macro_anim_start = global.sprite_anim_start;
+    _anim.macro_anim_end = global.sprite_anim_end; _anim.macro_anim_loop = global.sprite_anim_loop;
+    _anim.is_connected = true; _anim.root_uid = _root;
+    scr_mark_workspace_dirty();
+    scr_set_status_message("Sprite added to the BOB scene: same screen, moved by MOVE SPR in the same frame.");
+    return true;
+}
+
 function scr_amiga_run_sprite_bitmap_test() {
     scr_asset_define_sprite(global.sprite_asset_name, global.sprite_channel, global.sprite_height, global.sprite_address, global.sprite_pixels, global.sprite_colour_r, global.sprite_colour_g, global.sprite_colour_b);
     scr_amiga_get_shared_bitmap_palette();
+    if (scr_amiga_add_sprite_to_bob_scene()) return;
     scr_amiga_run_motion_test("SPRITE_BITMAP_TEST", global.sprite_asset_name, "SPR-BMP test loaded — MOVE_SPR controls its signed X/Y speed.");
 }
