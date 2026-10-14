@@ -347,8 +347,8 @@ if (is_macro) {
         slot_dst_is_valid = false;
     } else {
         if (_entry_for_validity.operand_count >= 1) {
-            if (addressing_mode_src == "LABEL") {
-                slot_src_is_valid = (operand_label_src != "");
+            if (scr_operand_mode_is_text(addressing_mode_src)) {
+                slot_src_is_valid = scr_operand_text_problem(opcode_mnemonic, addressing_mode_src, operand_label_src, _entry_for_validity.src_modes, "source") == "";
             } else {
                 var _src_flag = scr_addressing_mode_flag(addressing_mode_src);
                 slot_src_is_valid = (_src_flag & _entry_for_validity.src_modes) != 0;
@@ -358,8 +358,8 @@ if (is_macro) {
         }
 
         if (_entry_for_validity.operand_count >= 2) {
-            if (addressing_mode_dst == "LABEL") {
-                slot_dst_is_valid = (operand_label_dst != "");
+            if (scr_operand_mode_is_text(addressing_mode_dst)) {
+                slot_dst_is_valid = scr_operand_text_problem(opcode_mnemonic, addressing_mode_dst, operand_label_dst, _entry_for_validity.dst_modes, "destination") == "";
             } else {
                 var _dst_flag = scr_addressing_mode_flag(addressing_mode_dst);
                 slot_dst_is_valid = (_dst_flag & _entry_for_validity.dst_modes) != 0;
@@ -390,9 +390,9 @@ if (is_macro) {
                 global.operand_edit_owner_uid = uid;
                 operand_editing_slot = "src";
 
-                if (addressing_mode_src == "LABEL") {
+                if (scr_operand_mode_is_text(addressing_mode_src)) {
                     operand_edit_text = operand_label_src;
-                    scr_set_status_message("Enter target label name, click away or enter to commit, right click to cancel");
+                    scr_set_status_message(operand_editing_slot == "src" && addressing_mode_src == "regs" || operand_editing_slot == "dst" && addressing_mode_dst == "regs" ? "Enter a register list like d0-d7/a0-a6, Enter to commit, right click to cancel" : "Enter target label name, click away or enter to commit, right click to cancel");
                 } else {
                     var _src_is_register_seed = scr_operand_mode_uses_register_index(addressing_mode_src);
 
@@ -425,9 +425,9 @@ if (is_macro) {
                 global.operand_edit_owner_uid = uid;
                 operand_editing_slot = "dst";
 
-                if (addressing_mode_dst == "LABEL") {
+                if (scr_operand_mode_is_text(addressing_mode_dst)) {
                     operand_edit_text = operand_label_dst;
-                    scr_set_status_message("Enter target label name, click away or enter to commit, right click to cancel");
+                    scr_set_status_message(operand_editing_slot == "src" && addressing_mode_src == "regs" || operand_editing_slot == "dst" && addressing_mode_dst == "regs" ? "Enter a register list like d0-d7/a0-a6, Enter to commit, right click to cancel" : "Enter target label name, click away or enter to commit, right click to cancel");
                 } else {
                     var _dst_is_register_seed = scr_operand_mode_uses_register_index(addressing_mode_dst);
 
@@ -470,11 +470,11 @@ if (operand_editing_slot != "" && global.operand_edit_owner_uid == uid) {
 
     var _is_text_field = (operand_editing_slot == "node_label") || (operand_editing_slot == "macro_asset");
 
-    if (operand_editing_slot == "src" && addressing_mode_src == "LABEL") {
+    if (operand_editing_slot == "src" && scr_operand_mode_is_text(addressing_mode_src)) {
         _is_text_field = true;
     }
 
-    if (operand_editing_slot == "dst" && addressing_mode_dst == "LABEL") {
+    if (operand_editing_slot == "dst" && scr_operand_mode_is_text(addressing_mode_dst)) {
         _is_text_field = true;
     }
 
@@ -502,6 +502,9 @@ if (operand_editing_slot != "" && global.operand_edit_owner_uid == uid) {
             var _is_underscore = (_this_char == "_");
 
             _accept_char = _is_letter_lower || _is_letter_upper || _is_digit_char || _is_underscore;
+            // Register lists (MOVEM) also need ranges and separators: d0-d7/a0-a6.
+            var _editing_reglist = (operand_editing_slot == "src" && addressing_mode_src == "regs") || (operand_editing_slot == "dst" && addressing_mode_dst == "regs");
+            if (_editing_reglist && (_this_char == "-" || _this_char == "/")) _accept_char = true;
         } else {
             var _is_hex_entry = (global.value_display_mode == "HEX") && (!_uses_register_index);
 

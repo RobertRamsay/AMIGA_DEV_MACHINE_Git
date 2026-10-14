@@ -337,7 +337,7 @@ if (is_macro) {
                 _src_value_text = "$" + scr_number_to_hex_string(operand_src);
             }
 
-            if (addressing_mode_src == "LABEL") {
+            if (scr_operand_mode_is_text(addressing_mode_src)) {
                 _src_value_text = operand_label_src;
             }
 
@@ -356,7 +356,7 @@ if (is_macro) {
                 _dst_value_text = "$" + scr_number_to_hex_string(operand_dst);
             }
 
-            if (addressing_mode_dst == "LABEL") {
+            if (scr_operand_mode_is_text(addressing_mode_dst)) {
                 _dst_value_text = operand_label_dst;
             }
 

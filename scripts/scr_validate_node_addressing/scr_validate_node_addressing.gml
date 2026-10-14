@@ -32,10 +32,11 @@ function scr_validate_node_addressing(_node) {
     }
 
     if (_entry.operand_count >= 1) {
-        if (_node.addressing_mode_src == "LABEL") {
-            if (_node.operand_label_src == "") {
+        if (scr_operand_mode_is_text(_node.addressing_mode_src)) {
+            var _src_problem = scr_operand_text_problem(_node.opcode_mnemonic, _node.addressing_mode_src, _node.operand_label_src, _entry.src_modes, "source");
+            if (_src_problem != "") {
                 _result.is_valid = false;
-                _result.error_message = _node.opcode_mnemonic + " has no label target set";
+                _result.error_message = _src_problem;
                 return _result;
             }
         } else {
@@ -51,10 +52,11 @@ function scr_validate_node_addressing(_node) {
     }
 
     if (_entry.operand_count >= 2) {
-        if (_node.addressing_mode_dst == "LABEL") {
-            if (_node.operand_label_dst == "") {
+        if (scr_operand_mode_is_text(_node.addressing_mode_dst)) {
+            var _dst_problem = scr_operand_text_problem(_node.opcode_mnemonic, _node.addressing_mode_dst, _node.operand_label_dst, _entry.dst_modes, "destination");
+            if (_dst_problem != "") {
                 _result.is_valid = false;
-                _result.error_message = _node.opcode_mnemonic + " has no label target set";
+                _result.error_message = _dst_problem;
                 return _result;
             }
         } else {
@@ -67,6 +69,13 @@ function scr_validate_node_addressing(_node) {
                 return _result;
             }
         }
+    }
+
+    // MOVEM moves a register list to or from memory: exactly one side is the list.
+    if (_node.opcode_mnemonic == "MOVEM" && ((_node.addressing_mode_src == "regs") == (_node.addressing_mode_dst == "regs"))) {
+        _result.is_valid = false;
+        _result.error_message = "MOVEM needs a register list (regs) on exactly one side";
+        return _result;
     }
 
     return _result;

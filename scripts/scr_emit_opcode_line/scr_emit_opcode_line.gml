@@ -30,7 +30,7 @@ function scr_emit_opcode_line(_node) {
     if (_entry.operand_count >= 1) {
         var _src_operand_value = _node.operand_src;
 
-        if (_node.addressing_mode_src == "LABEL") {
+        if (scr_operand_mode_is_text(_node.addressing_mode_src)) {
             _src_operand_value = _node.operand_label_src;
         }
 
@@ -41,13 +41,16 @@ function scr_emit_opcode_line(_node) {
     if (_entry.operand_count >= 2) {
         var _dst_operand_value = _node.operand_dst;
 
-        if (_node.addressing_mode_dst == "LABEL") {
+        if (scr_operand_mode_is_text(_node.addressing_mode_dst)) {
             _dst_operand_value = _node.operand_label_dst;
         }
 
         var _dst_text = scr_format_operand(_node.addressing_mode_dst, _dst_operand_value, _node.operand_extra_dst);
         _line += "," + _dst_text;
     }
+
+    // SR / CCR / USP forms: the destination register is part of the opcode.
+    if (variable_struct_exists(_entry, "fixed_dst")) _line += "," + _entry.fixed_dst;
 
     var _result = { text : _line, is_valid : true };
     return _result;

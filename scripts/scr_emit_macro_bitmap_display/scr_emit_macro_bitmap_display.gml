@@ -1,8 +1,8 @@
-/// @desc scr_emit_macro_bitmap_display(_node)
+/// @desc scr_emit_macro_bitmap_display(_node, _sprite_keep = -2)
 /// Converts a 320x256 indexed bitmap to five interleaved-by-plane Amiga
 /// bitplanes, embeds them in a Hunk executable, allocates real chip RAM and
 /// programs a standard PAL low-resolution 32-colour display.
-function scr_emit_macro_bitmap_display(_node) {
+function scr_emit_macro_bitmap_display(_node, _sprite_keep = -2) {
     var _asset = scr_asset_find_by_name(_node.macro_asset_name);
 
     if (_asset == undefined || _asset.type != "BITMAP") {
@@ -18,10 +18,12 @@ function scr_emit_macro_bitmap_display(_node) {
 
     if (_node.node_label != "") _lines += _node.node_label + ":\n";
 
-    // Ask Exec for the bitmap plus a 48-byte Copper list. The Hunk may load in
+    // Ask Exec for the bitmap plus a 112-byte Copper list and a null sprite
+    // (_sprite_keep >= -1: the list also points every sprite channel except
+    // _sprite_keep at that empty sprite each frame). The Hunk may load in
     // Fast RAM on expanded machines, so bitplane data is explicitly copied.
     _lines += "\tMOVEA.L 4.W,A6\n";
-    _lines += "\tMOVE.L #51248,D0\n";
+    _lines += "\tMOVE.L #51328,D0\n";
     _lines += "\tMOVE.L #65538,D1\n"; // MEMF_CHIP | MEMF_CLEAR
     _lines += "\tJSR -198(A6)\n";     // exec.library AllocMem
     _lines += "\tTST.L D0\n";
@@ -36,6 +38,8 @@ function scr_emit_macro_bitmap_display(_node) {
 
     // Take over display DMA only after allocation/copying is complete.
     _lines += "\tMOVE.W #32767,14676122.L\n";
+    // With music in the program, keep ptplayer's CIA-B interrupt (EXTER) running.
+    _lines += "\tIFD ADM_AUDIO\n\tMOVE.W #$E000,14676122.L\n\tENDC\n";
     _lines += "\tMOVE.W #32767,14676118.L\n";
     _lines += "\tMOVE.W #56,14676114.L\n";
     _lines += "\tMOVE.W #208,14676116.L\n";
@@ -48,6 +52,7 @@ function scr_emit_macro_bitmap_display(_node) {
     _lines += "\tMOVE.W #32,14676228.L\n";
     _lines += "\tMOVE.W #0,14676230.L\n";
     _lines += "\tMOVE.W #0,14676232.L\n";
+    _lines += "\tMOVE.W #0,14676234.L\n"; // BPL2MOD: even planes, or they shear
     _lines += "\tMOVE.W #0,14676476.L\n";
 
     var _plane = 0;
@@ -75,6 +80,20 @@ function scr_emit_macro_bitmap_display(_node) {
         _lines += "\tSWAP D0\n";
         _lines += "\tMOVE.W D0,(A3)+\n";
         _plane += 1;
+    }
+    // Sprite DMA walks past a sprite's terminator, so unused channels are
+    // reloaded with the (cleared) null sprite at +51312 every frame.
+    if (_sprite_keep >= -1) {
+        var _spr = 0;
+        while (_spr < 8) {
+            if (_spr != _sprite_keep) {
+                var _spr_offset = 288 + (_spr * 4);
+                _lines += "\tMOVE.L A2,D0\n\tADD.L #51312,D0\n";
+                _lines += "\tMOVE.W #" + string(_spr_offset) + ",(A3)+\n\tSWAP D0\n\tMOVE.W D0,(A3)+\n";
+                _lines += "\tMOVE.W #" + string(_spr_offset + 2) + ",(A3)+\n\tSWAP D0\n\tMOVE.W D0,(A3)+\n";
+            }
+            _spr += 1;
+        }
     }
     _lines += "\tMOVE.L #4294967294,(A3)+\n";
     _lines += "\tMOVE.L A2,D0\n";

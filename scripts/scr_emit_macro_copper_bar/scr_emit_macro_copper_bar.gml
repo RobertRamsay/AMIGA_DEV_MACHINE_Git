@@ -43,9 +43,9 @@ function scr_emit_macro_copper_bar(_node) {
         _band_index += 1;
     }
 
-    // Spread each macro instance's buffer out by uid so multiple copper
-    // bar macros on the same build don't collide in chip RAM.
-    var _buffer_base = 131072 + ((_node.uid mod 1000) * 512);
+    // Each copper bar macro gets its own list in a BSS_C (chip RAM) section,
+    // placed by the loader - no fixed address to collide with other macros.
+    var _buffer_base = "__cprbar_" + string(floor(_node.uid));
 
     var _lines = "";
 
@@ -72,25 +72,28 @@ function scr_emit_macro_copper_bar(_node) {
         // first waits for the end of line 255 ($FFDF), then counts from 0 again.
         if (_vp >= 256 && !_wrapped) {
             _wrapped = true;
-            _lines += "\tMOVE.L #4292870142," + string(_buffer_base + _copper_offset) + ".L\n";
+            _lines += "\tMOVE.L #4292870142," + _buffer_base + "+" + string(_copper_offset) + "\n";
             _copper_offset += 4;
         }
 
         var _wait_longword = (((_vp mod 256) * 256 + 1) * 65536) + 65280;
         var _move_longword = (_register_offset * 65536) + _colour;
 
-        _lines += "\tMOVE.L #" + string(_wait_longword) + "," + string(_buffer_base + _copper_offset) + ".L\n";
+        _lines += "\tMOVE.L #" + string(_wait_longword) + "," + _buffer_base + "+" + string(_copper_offset) + "\n";
         _copper_offset += 4;
 
-        _lines += "\tMOVE.L #" + string(_move_longword) + "," + string(_buffer_base + _copper_offset) + ".L\n";
+        _lines += "\tMOVE.L #" + string(_move_longword) + "," + _buffer_base + "+" + string(_copper_offset) + "\n";
         _copper_offset += 4;
 
         _b += 1;
     }
 
-    _lines += "\tMOVE.L #4294967294," + string(_buffer_base + _copper_offset) + ".L\n";
-    _lines += "\tMOVE.L #" + string(_buffer_base) + ",14676096.L\n";
-    _lines += "\tMOVE.W #33408,14676118.L";
+    _lines += "\tMOVE.L #4294967294," + _buffer_base + "+" + string(_copper_offset) + "\n";
+    _lines += "\tMOVE.L #" + _buffer_base + ",14676096.L\n";
+    _lines += "\tMOVE.W #33408,14676118.L\n";
+    _lines += "\tSECTION adm_cprbar_" + string(floor(_node.uid)) + ",BSS_C\n";
+    _lines += _buffer_base + ":\tDS.B " + string(_copper_offset + 4) + "\n";
+    _lines += "\tSECTION code,CODE";
 
     var _result = { text : _lines, is_valid : true };
     return _result;
