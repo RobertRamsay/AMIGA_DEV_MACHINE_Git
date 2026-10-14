@@ -1,21 +1,29 @@
 /// The hover help panel under the workspace (Draw GUI of obj_opcode_node and
-/// obj_amiga_root_node). Nothing is drawn for "".
-function scr_amiga_hover_tip(_text) {
+/// obj_amiga_root_node). Nothing is drawn for "". With a title (an opcode
+/// node's instruction) the first line is yellow. Long help grows upwards so
+/// it stays on screen.
+function scr_amiga_hover_tip(_text, _title = "") {
     if (_text == "") return;
     draw_set_font(UI_FONT);
     draw_set_halign(fa_left);
     draw_set_valign(fa_top);
-    var _tip_width = 800;
+    var _tip_width = 1000;
     var _tip_x = 272;
-    var _tip_y = 850;
-    // Grow downwards for long help rather than spilling out of the box.
-    var _tip_height = max(100, string_height_ext(_text, 18, _tip_width - 20) + 16);
+    var _line_h = 18;
+    var _title_h = _title == "" ? 0 : _line_h + 6;
+    var _tip_height = max(100, _title_h + string_height_ext(_text, _line_h, _tip_width - 20) + 16);
+    // Ends above the status message panel (y 958).
+    var _tip_y = min(850, 952 - _tip_height);
     draw_set_alpha(0.85);
     scr_ui_box_fill(_tip_x, _tip_y, _tip_x + _tip_width, _tip_y + _tip_height, make_colour_rgb(12, 14, 24));
     draw_set_alpha(1);
     scr_ui_box_outline(_tip_x, _tip_y, _tip_x + _tip_width, _tip_y + _tip_height, c_yellow);
+    if (_title != "") {
+        draw_set_colour(c_yellow);
+        draw_text(_tip_x + 10, _tip_y + 8, _title);
+    }
     draw_set_colour(c_white);
-    draw_text_ext(_tip_x + 10, _tip_y + 8, _text, 18, _tip_width - 20);
+    draw_text_ext(_tip_x + 10, _tip_y + 8 + _title_h, _text, _line_h, _tip_width - 20);
 }
 
 /// Hover help for an INIT / ORG root block.
@@ -169,16 +177,13 @@ function scr_amiga_explain_node_base(_node) {
         return "";
     }
 
-    if (_node.opcode_mnemonic == "BRA" && _node.addressing_mode_src == "LABEL") {
-        return "Branches back to '" + _node.operand_label_src
-            + "'. In the test programs this forms the permanent idle loop after hardware setup.";
-    }
+    var _op = scr_opcode_explain_node(_node);
+    return _op.title + "\n" + _op.body;
+}
 
-    if (_node.opcode_mnemonic == "NOP" && _node.node_label != "") {
-        return "Does no processor work. The label '" + _node.node_label
-            + "' provides a safe target for the program's idle loop.";
-    }
-
+/// What a MOVE #value,address to a known hardware register / Copper list does
+/// (part of an opcode node's hover help); "" for anything else.
+function scr_amiga_explain_hw_write(_node) {
     if (_node.opcode_mnemonic != "MOVE" || _node.addressing_mode_src != "#imm" || _node.addressing_mode_dst != "abs.L") {
         return "";
     }

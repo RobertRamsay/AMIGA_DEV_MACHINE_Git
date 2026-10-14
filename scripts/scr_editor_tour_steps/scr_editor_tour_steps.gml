@@ -153,7 +153,7 @@ function scr_tour_categories() {
             { title : "ORG columns", show : "main", rect : function() { return scr_tour_column_rect("ORG"); },
               text : "An ORG column continues the program from the column to its left. Drag ORG's body to move the whole column; a red 'not connected' means there is no column to its left." },
             { title : "An instruction node", show : "main", rect : function() { return scr_tour_node_rect(scr_tour_find_node("MOVE", true)); },
-              text : "An instruction node: the header shows the instruction and its size (.B, .W or .L). Drag the header to move it. Hover it for help on what it does." },
+              text : "An instruction node: the header shows the instruction and its size (.B, .W or .L). Drag the header to move it. Hover it: the help box says what it does with its values in plain English, explains each addressing mode and names any hardware register it writes." },
             { title : "Addressing modes", show : "main", rect : function() { var _n = scr_tour_find_node("MOVE", true); var _r = scr_tour_node_rect(_n, 20, 58); if (_r != undefined) _r[2] = _r[0] + _n.node_width - _n.value_box_width; return _r; },
               text : "The left part of each operand row is its addressing mode - Dn, An, (An), #imm, abs.L, a label ... Click it to cycle through the modes the instruction allows." },
             { title : "Operand values", show : "main", rect : function() { var _n = scr_tour_find_node("MOVE", true); var _r = scr_tour_node_rect(_n, 20, 58); if (_r != undefined) _r[0] = _r[2] - _n.value_box_width; return _r; },

@@ -341,6 +341,7 @@
     {"id":{"name":"scr_number_to_hex_string","path":"scripts/scr_number_to_hex_string/scr_number_to_hex_string.yy",},},
     {"id":{"name":"scr_opcode_condition_family_key","path":"scripts/scr_opcode_condition_family_key/scr_opcode_condition_family_key.yy",},},
     {"id":{"name":"scr_opcode_display_label","path":"scripts/scr_opcode_display_label/scr_opcode_display_label.yy",},},
+    {"id":{"name":"scr_opcode_explain","path":"scripts/scr_opcode_explain/scr_opcode_explain.yy",},},
     {"id":{"name":"scr_opcode_helper_68k_part2","path":"scripts/scr_opcode_helper_68k_part2/scr_opcode_helper_68k_part2.yy",},},
     {"id":{"name":"scr_opcode_helper_68k_part3","path":"scripts/scr_opcode_helper_68k_part3/scr_opcode_helper_68k_part3.yy",},},
     {"id":{"name":"scr_opcode_helper_68k","path":"scripts/scr_opcode_helper_68k/scr_opcode_helper_68k.yy",},},
