@@ -23,6 +23,9 @@ function scr_amiga_selftest_init() {
     global.build_skip_launch = false;
     // -admtour runs the whole editor tour, saving a screenshot of every step.
     global.selftest_tour = false;
+    // -admshowcase: clean screenshots of every screen into <data>/showcase/.
+    global.selftest_showcase = false;
+    global.selftest_showcase_index = 0;
 
     var _p = 0;
     while (_p < parameter_count()) {
@@ -30,6 +33,10 @@ function scr_amiga_selftest_init() {
         if (parameter_string(_p) == "-admselftest" || parameter_string(_p) == "-admselftesterr") {
             global.selftest_active = true;
             if (_p + 1 < parameter_count()) global.selftest_mod_path = parameter_string(_p + 1);
+        }
+        if (parameter_string(_p) == "-admshowcase") {
+            global.selftest_active = true;
+            global.selftest_showcase = true;
         }
         if (parameter_string(_p) == "-admtour") {
             global.selftest_active = true;
@@ -93,6 +100,10 @@ function scr_amiga_selftest_step() {
     }
     if (global.selftest_tour) {
         scr_amiga_selftest_tour_step();
+        return;
+    }
+    if (global.selftest_showcase) {
+        scr_amiga_selftest_showcase_step();
         return;
     }
 
