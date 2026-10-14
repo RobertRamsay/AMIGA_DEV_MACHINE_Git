@@ -57,6 +57,34 @@ function scr_emit_macro_copper_bar(_node) {
     // 384 decimal), so the target register just shifts the base offset.
     var _register_offset = 384 + (_node.macro_cprbar_target_register * 2);
     var _copper_offset = 0;
+
+    // What runs before this node: the background colour (last SETBKG) and
+    // whether some other macro already owns the display.
+    var _top_colour = 0;
+    var _display_before = false;
+    var _program = scr_amiga_collect_program_nodes();
+    var _pi = 0;
+    while (_pi < array_length(_program) && _program[_pi] != _node.id) {
+        var _prev = _program[_pi];
+        if (_prev.is_macro) {
+            if (_prev.macro_type == "SETBKG" && scr_is_valid_hex_colour(_prev.macro_asset_name)) _top_colour = scr_hex_string_to_number(_prev.macro_asset_name);
+            if (_prev.macro_type == "BITMAP_DISPLAY" || _prev.macro_type == "SPRITE_DISPLAY" || _prev.macro_type == "GK_SCREEN"
+                || _prev.macro_type == "BOB_BITMAP_TEST" || _prev.macro_type == "SPRITE_BITMAP_TEST" || _prev.macro_type == "GET_BITMAP_BOB") _display_before = true;
+        }
+        _pi += 1;
+    }
+    if (_node.macro_cprbar_target_register != 0) _top_colour = 0;
+
+    // Top of every frame: the register goes back to its colour above the
+    // first band (otherwise the last band's colour fills the top). With no
+    // display of our own, bitplanes are switched off so whatever screen was
+    // up at boot does not show through.
+    if (!_display_before) {
+        _lines += "\tMOVE.L #" + string((256 * 65536) + 512) + "," + _buffer_base + "+" + string(_copper_offset) + "\n"; // BPLCON0 = $0200
+        _copper_offset += 4;
+    }
+    _lines += "\tMOVE.L #" + string((_register_offset * 65536) + _top_colour) + "," + _buffer_base + "+" + string(_copper_offset) + "\n";
+    _copper_offset += 4;
     var _wrapped = false;
     var _b = 0;
 
@@ -90,6 +118,7 @@ function scr_emit_macro_copper_bar(_node) {
 
     _lines += "\tMOVE.L #4294967294," + _buffer_base + "+" + string(_copper_offset) + "\n";
     _lines += "\tMOVE.L #" + _buffer_base + ",14676096.L\n";
+    if (!_display_before) _lines += "\tMOVE.W #288,14676118.L\n"; // DMACON clear BPLEN + SPREN
     _lines += "\tMOVE.W #33408,14676118.L\n";
     _lines += "\tSECTION adm_cprbar_" + string(floor(_node.uid)) + ",BSS_C\n";
     _lines += _buffer_base + ":\tDS.B " + string(_copper_offset + 4) + "\n";

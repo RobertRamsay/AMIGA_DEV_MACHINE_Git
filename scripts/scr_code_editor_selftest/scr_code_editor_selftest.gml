@@ -76,3 +76,50 @@ function scr_code_editor_selftest() {
 function scr_code_editor_selftest_check(_fail, _name, _got, _want) {
     if (_got != _want) array_push(_fail, _name + ": got [" + string(_got) + "] want [" + string(_want) + "]");
 }
+
+/// Opcode nodes that the mode table alone used to get wrong: the emitted
+/// text, or the validator's verdict. Returns failure strings.
+function scr_opcode_rules_selftest() {
+    var _fail = [];
+    var _node = instance_create_layer(-5000, -5000, "Instances", obj_opcode_node);
+    var _cases = [
+        // mnemonic, size, src mode, src value, dst mode, dst value, src text, dst text, expected text ("" = invalid)
+        ["MOVE_SR", "W", "Dn", 0, "", 0, "", "", "\tMOVE.W D0,SR"],
+        ["ANDI_SR", "W", "#imm", 63743, "", 0, "", "", "\tANDI.W #63743,SR"],
+        ["ORI_CCR", "B", "#imm", 4, "", 0, "", "", "\tORI.B #4,CCR"],
+        ["MOVE_USP", "L", "An", 1, "", 0, "", "", "\tMOVE.L A1,USP"],
+        ["MOVEM", "L", "regs", 0, "-(An)", 7, "d0-d7/a0-a6", "", "\tMOVEM.L d0-d7/a0-a6,-(A7)"],
+        ["MOVEM", "L", "(An)+", 7, "regs", 0, "", "d0/d2-d3", "\tMOVEM.L (A7)+,d0/d2-d3"],
+        ["MOVEM", "L", "regs", 0, "-(An)", 7, "d0-d9", "", ""],
+        ["MOVEM", "L", "(An)+", 7, "-(An)", 6, "", "", ""],
+        ["MOVEQ", "L", "#imm", 127, "Dn", 0, "", "", "\tMOVEQ.L #127,D0"],
+        ["MOVEQ", "L", "#imm", 200, "Dn", 0, "", "", ""],
+        ["ADDQ", "W", "#imm", 8, "Dn", 1, "", "", "\tADDQ.W #8,D1"],
+        ["ADDQ", "W", "#imm", 9, "Dn", 1, "", "", ""],
+        ["SUBQ", "B", "#imm", 1, "An", 0, "", "", ""],
+        ["ASL", "W", "#imm", 1, "(An)", 0, "", "", "\tASL.W (A0)"],
+        ["ASL", "L", "#imm", 1, "(An)", 0, "", "", ""],
+        ["LSR", "W", "#imm", 9, "Dn", 0, "", "", ""],
+        ["JMP", "L", "(An)", 0, "", 0, "", "", "\tJMP (A0)"]
+    ];
+    var _i = 0;
+    while (_i < array_length(_cases)) {
+        var _c = _cases[_i];
+        _node.is_macro = false;
+        _node.node_label = "";
+        _node.opcode_mnemonic = _c[0];
+        _node.opcode_size = _c[1];
+        _node.addressing_mode_src = _c[2];
+        _node.operand_src = _c[3];
+        _node.addressing_mode_dst = _c[4];
+        _node.operand_dst = _c[5];
+        _node.operand_label_src = _c[6];
+        _node.operand_label_dst = _c[7];
+        var _out = scr_emit_opcode_line(_node);
+        var _got = _out.is_valid ? _out.text : "";
+        if (_got != _c[8]) array_push(_fail, _c[0] + " case " + string(_i) + ": got [" + _out.text + "] want [" + _c[8] + "]");
+        _i += 1;
+    }
+    with (_node) instance_destroy();
+    return _fail;
+}

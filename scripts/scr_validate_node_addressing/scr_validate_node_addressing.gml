@@ -71,6 +71,13 @@ function scr_validate_node_addressing(_node) {
         }
     }
 
+    var _problem = scr_opcode_value_problem(_node);
+    if (_problem != "") {
+        _result.is_valid = false;
+        _result.error_message = _problem;
+        return _result;
+    }
+
     // MOVEM moves a register list to or from memory: exactly one side is the list.
     if (_node.opcode_mnemonic == "MOVEM" && ((_node.addressing_mode_src == "regs") == (_node.addressing_mode_dst == "regs"))) {
         _result.is_valid = false;
@@ -79,4 +86,33 @@ function scr_validate_node_addressing(_node) {
     }
 
     return _result;
+}
+/// Rules on values and sizes the addressing-mode table cannot express
+/// ("" = fine): MOVEQ's signed byte, ADDQ / SUBQ 1-8 and no .B on An,
+/// and memory shifts / rotates, which shift one bit of a word.
+function scr_opcode_value_problem(_node) {
+    var _m = _node.opcode_mnemonic;
+    var _src_imm = (_node.addressing_mode_src == "#imm");
+    if (_m == "MOVEQ" && _src_imm && (_node.operand_src < -128 || _node.operand_src > 127)) {
+        return "MOVEQ takes -128..127 (it sign-extends a byte: " + string(_node.operand_src) + " would not load as written)";
+    }
+    if (_m == "ADDQ" || _m == "SUBQ") {
+        if (_src_imm && (_node.operand_src < 1 || _node.operand_src > 8)) return _m + " adds 1..8 only - use " + (_m == "ADDQ" ? "ADDI" : "SUBI") + " for " + string(_node.operand_src);
+        if (_node.addressing_mode_dst == "An" && _node.opcode_size == "B") return _m + ".B cannot target an address register (use .W or .L)";
+    }
+    if (scr_opcode_is_memory_shift(_node)) {
+        if (_node.opcode_size != "W") return _m + " on memory shifts a word: use size .W";
+        if (!_src_imm || _node.operand_src != 1) return _m + " on memory shifts by 1 only: set the count to #1";
+    } else if ((_m == "ASL" || _m == "ASR" || _m == "LSL" || _m == "LSR" || _m == "ROL" || _m == "ROR" || _m == "ROXL" || _m == "ROXR")
+        && _src_imm && (_node.operand_src < 1 || _node.operand_src > 8)) {
+        return _m + " #count is 1..8 - put a larger count in a data register";
+    }
+    return "";
+}
+
+/// Shift / rotate with a memory destination: one operand ("ASL.W (A0)").
+function scr_opcode_is_memory_shift(_node) {
+    var _m = _node.opcode_mnemonic;
+    var _shift = (_m == "ASL" || _m == "ASR" || _m == "LSL" || _m == "LSR" || _m == "ROL" || _m == "ROR" || _m == "ROXL" || _m == "ROXR");
+    return _shift && _node.addressing_mode_dst != "Dn";
 }

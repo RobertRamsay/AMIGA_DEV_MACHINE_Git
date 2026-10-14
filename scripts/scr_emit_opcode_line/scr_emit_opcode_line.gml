@@ -27,7 +27,10 @@ function scr_emit_opcode_line(_node) {
 
     _line += "\t" + _entry.mnemonic + _size_suffix;
 
-    if (_entry.operand_count >= 1) {
+    // A shift / rotate of memory has only the destination ("ASL.W (A0)").
+    var _memory_shift = scr_opcode_is_memory_shift(_node);
+
+    if (_entry.operand_count >= 1 && !_memory_shift) {
         var _src_operand_value = _node.operand_src;
 
         if (scr_operand_mode_is_text(_node.addressing_mode_src)) {
@@ -46,7 +49,7 @@ function scr_emit_opcode_line(_node) {
         }
 
         var _dst_text = scr_format_operand(_node.addressing_mode_dst, _dst_operand_value, _node.operand_extra_dst);
-        _line += "," + _dst_text;
+        _line += (_memory_shift ? " " : ",") + _dst_text;
     }
 
     // SR / CCR / USP forms: the destination register is part of the opcode.
