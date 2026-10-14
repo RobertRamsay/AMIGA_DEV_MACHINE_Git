@@ -12,11 +12,16 @@ function scr_sprite_editor_layout() {
     var _grid_y = _panel_y + 160;
     var _grid_width = 16 * _cell_size;
     var _grid_height = global.sprite_height * _cell_size;
-    var _palette_y = _grid_y + _grid_height + 78;
-    var _slider_x = _panel_x + 32;
+    // The tool / animation column beside the grid ends 292 px below its top;
+    // the palette editor starts below whichever is taller, so a short sprite
+    // no longer runs the PLAY / RATE / END buttons into the sliders.
+    var _palette_y = max(_grid_y + _grid_height, _grid_y + 292) + 24;
+    // Sliders start right of the 40 px colour preview (x +12..+52), leaving
+    // room for their R / G / B labels in between.
+    var _slider_x = _panel_x + 76;
     var _slider_width = 192;
     var _slider_step_width = _slider_width / 16;
-    var _panel_height = (_palette_y - _panel_y) + 126;
+    var _panel_height = (_palette_y - _panel_y) + 96;
 
     var _layout = {
         panel_x : _panel_x,
@@ -37,13 +42,14 @@ function scr_sprite_editor_layout() {
         asset_prev_x : _panel_x + 12,
         asset_next_x : _panel_x + 210,
         asset_add_x : _panel_x + 250,
+        asset_add_width : 116,
         asset_row_y : _panel_y + 24,
-        channel_minus_x : _panel_x + 90,
-        channel_plus_x : _panel_x + 130,
+        channel_minus_x : _panel_x + 108,
+        channel_plus_x : _panel_x + 148,
         channel_row_y : _panel_y + 48,
-        height_field_x : _panel_x + 90,
+        height_field_x : _panel_x + 108,
         height_row_y : _panel_y + 68,
-        addr_field_x : _panel_x + 90,
+        addr_field_x : _panel_x + 108,
         addr_row_y : _panel_y + 88,
         swatch_row_y : _panel_y + 112,
         swatch_width : 40,
@@ -51,7 +57,7 @@ function scr_sprite_editor_layout() {
         swatch_x : _panel_x + 12,
         tool_x : _panel_x + 252,
         tool_y : _grid_y,
-        tool_width : 104,
+        tool_width : 116,
         tool_height : 28,
         anim_x : _panel_x + 252,
         anim_play_y : _grid_y + 120,
@@ -59,7 +65,7 @@ function scr_sprite_editor_layout() {
         anim_rate_y : _grid_y + 192,
         anim_start_y : _grid_y + 228,
         anim_end_y : _grid_y + 264,
-        anim_width : 104,
+        anim_width : 116,
         anim_height : 28,
         palette_y : _palette_y,
         palette_preview_x : _panel_x + 12,

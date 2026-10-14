@@ -1,6 +1,8 @@
 var _dx = node_x + global.pan_x;
 var _dy = node_y + global.pan_y;
 
+draw_set_font(UI_FONT);
+
 var _body_colour = c_orange;
 
 if (root_type == "INIT") {
@@ -12,13 +14,7 @@ if (_is_orphaned) {
     _body_colour = c_red;
 }
 
-draw_set_colour(_body_colour);
-draw_rectangle(_dx + 1, _dy + 1, _dx + node_width - 1, _dy + node_height - 1, false);
-
-draw_set_colour(c_white);
-draw_rectangle(_dx + 1, _dy + 1, _dx + node_width - 1, _dy + node_height - 1, true);
-draw_set_halign(fa_center);
-draw_set_valign(fa_middle);
+scr_ui_box(_dx + 1, _dy + 1, _dx + node_width - 1, _dy + node_height - 1, _body_colour, c_white);
 
 var _root_display_text = root_type;
 
@@ -26,10 +22,13 @@ if (root_type == "INIT") {
     _root_display_text = "INIT/BUILD";
 }
 
-draw_text(_dx + (node_width / 2), _dy + (node_height / 2), _root_display_text);
-draw_set_halign(fa_left);
-draw_set_valign(fa_top);
-
+draw_set_colour(c_white);
 if (_is_orphaned) {
-    draw_text(_dx + 6, _dy + 18, "not connected");
+    // Title in the upper half, the warning in the lower half.
+    scr_ui_text_centred(_dx + (node_width / 2), _dy + (node_height * 0.3), _root_display_text);
+    draw_set_font(UI_FONT_SMALL);
+    scr_ui_text_centred(_dx + (node_width / 2), _dy + (node_height * 0.72), "not connected");
+    draw_set_font(UI_FONT);
+} else {
+    scr_ui_text_centred(_dx + (node_width / 2), _dy + (node_height / 2), _root_display_text);
 }

@@ -457,7 +457,8 @@ var _preview_panel_width = 350;
 var _preview_panel_height = room_height - 60;
 var _preview_line_height = 16;
 var _preview_content_top = _preview_panel_y + 56;
-var _preview_content_bottom = _preview_panel_y + _preview_panel_height - 8;
+// 64 px footer (logo, version, FPS) at the bottom: keep in step with Draw.
+var _preview_content_bottom = _preview_panel_y + _preview_panel_height - 64 - 8;
 var _preview_viewport_height = _preview_content_bottom - _preview_content_top;
 var _preview_list_height = array_length(preview_line_cache) * _preview_line_height;
 var _preview_scroll_range = max(0, _preview_list_height - _preview_viewport_height);
@@ -607,7 +608,7 @@ if (global.sprite_editor_open) {
 
     var _over_asset_prev = point_in_rectangle(mouse_x, mouse_y, _layout.asset_prev_x, _layout.asset_row_y, _layout.asset_prev_x + 28, _layout.asset_row_y + 20);
     var _over_asset_next = point_in_rectangle(mouse_x, mouse_y, _layout.asset_next_x, _layout.asset_row_y, _layout.asset_next_x + 28, _layout.asset_row_y + 20);
-    var _over_asset_add = point_in_rectangle(mouse_x, mouse_y, _layout.asset_add_x, _layout.asset_row_y, _layout.asset_add_x + 104, _layout.asset_row_y + 20);
+    var _over_asset_add = point_in_rectangle(mouse_x, mouse_y, _layout.asset_add_x, _layout.asset_row_y, _layout.asset_add_x + _layout.asset_add_width, _layout.asset_row_y + 20);
     if (_over_asset_prev && mouse_check_button_pressed(mb_left)) sprite_editor_navigate(-1);
     if (_over_asset_next && mouse_check_button_pressed(mb_left)) sprite_editor_navigate(1);
     if (_over_asset_add && mouse_check_button_pressed(mb_left)) sprite_editor_add_asset();

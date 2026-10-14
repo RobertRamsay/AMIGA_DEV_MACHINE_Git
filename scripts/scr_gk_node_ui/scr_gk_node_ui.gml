@@ -86,12 +86,12 @@ function scr_gk_node_draw(_node, _dx, _dy) {
     var _info = "";
 
     switch (_type) {
-        case "GK_SCREEN": _info = "320x256, 16 colours, sprites"; break;
-        case "GK_WAIT": _info = "sync to the 50 Hz display"; break;
-        case "GK_INPUT": _info = "stick + fire in port 2"; break;
-        case "GK_ENEMIES": _info = "patrol, turn, hurt the hero"; break;
-        case "GK_ANIMATE": _info = "idle / run / jump / fall"; break;
-        case "GK_DRAW": _info = "hero + enemies -> sprites"; break;
+        case "GK_SCREEN": _info = "320x256, 16 colours"; break;
+        case "GK_WAIT": _info = "sync to 50 Hz display"; break;
+        case "GK_INPUT": _info = "stick + fire, port 2"; break;
+        case "GK_ENEMIES": _info = "walk, turn, hurt hero"; break;
+        case "GK_ANIMATE": _info = "idle/run/jump/fall"; break;
+        case "GK_DRAW": _info = "draws hero + enemies"; break;
         case "GK_MAP":
             array_push(_rows, "<  " + (_node.macro_asset_name == "" ? "(no map)" : _node.macro_asset_name) + "  >");
             var _map = scr_asset_find_by_name(_node.macro_asset_name);
@@ -126,20 +126,50 @@ function scr_gk_node_draw(_node, _dx, _dy) {
 
     var _i = 0;
     while (_i < array_length(_rows)) {
-        var _ry = _dy + 20 + _i * 20;
-        draw_set_colour(c_dkgray);
-        draw_rectangle(_dx, _ry, _dx + _w, _ry + 20, false);
-        draw_set_colour(c_white);
         var _text = _rows[_i];
-        while (string_length(_text) > 1 && string_width(_text) > _w - 8) _text = string_copy(_text, 1, string_length(_text) - 1);
-        draw_text(_dx + 4, _ry + 2, _text);
+        // "<  value  >" rows step / cycle: draw them as stepper rows.
+        var _stepper = string_copy(_text, 1, 3) == "<  " && string_copy(_text, string_length(_text) - 2, 3) == "  >";
+        if (_stepper) _text = string_copy(_text, 4, string_length(_text) - 6);
+        scr_node_row(_dx, _w, _dy + 20 + _i * 20, _text, c_dkgray, c_white, _stepper);
         _i += 1;
     }
     if (_info != "") {
         draw_set_colour(make_colour_rgb(200, 230, 210));
-        draw_text(_dx + 4, _dy + 22, _info);
+        scr_ui_text_mid(_dx + NODE_TEXT_PAD, _dy + 20, _dy + 40, scr_ui_fit_label(_info, _w - 2 * NODE_TEXT_PAD));
         draw_set_colour(c_white);
     }
+}
+
+// ---------------------------------------------------------------------------
+// Shared node row drawing (obj_opcode_node Draw and the Game Kit rows above).
+// Node rows are 20 px slots under the 20 px header. Each is drawn as an inset
+// bevelled field; the insets keep the last row inside the node's own
+// bevelled bottom-right corner.
+
+#macro NODE_ROW_INSET_L 9
+#macro NODE_ROW_INSET_R 10
+#macro NODE_TEXT_PAD 15
+
+/// One row card in the 20 px slot at _ry of a node at _dx, _w wide.
+/// _stepper: "<" at the left, ">" at the right, _text centred between them
+/// (the left half of the row steps down, the right half up).
+function scr_node_row(_dx, _w, _ry, _text, _fill, _text_colour, _stepper) {
+    var _x1 = _dx + NODE_ROW_INSET_L;
+    var _x2 = _dx + _w - NODE_ROW_INSET_R;
+    var _y1 = _ry + 1;
+    var _y2 = _ry + 18;
+    scr_ui_box(_x1, _y1, _x2, _y2, _fill, merge_colour(_fill, c_white, 0.22));
+    draw_set_colour(_text_colour);
+    if (_stepper) {
+        scr_ui_text_mid(_x1 + 6, _y1, _y2 + 1, "<");
+        draw_set_halign(fa_right);
+        scr_ui_text_mid(_x2 - 6, _y1, _y2 + 1, ">");
+        draw_set_halign(fa_left);
+        scr_ui_text_centred((_x1 + _x2) * 0.5, (_y1 + _y2 + 1) * 0.5, scr_ui_fit_label(_text, _x2 - _x1 - 36));
+    } else {
+        scr_ui_text_mid(_x1 + 6, _y1, _y2 + 1, scr_ui_fit_label(_text, _x2 - _x1 - 12));
+    }
+    draw_set_colour(c_white);
 }
 
 /// Hover help for a Game Kit node.
