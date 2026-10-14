@@ -454,9 +454,9 @@ draw_set_font(font_CyberVerse);
 preview_line_cache = scr_amiga_build_preview_lines();
 
 var _preview_panel_x = room_width - 360;
-var _preview_panel_y = 60;
+var _preview_panel_y = 72;
 var _preview_panel_width = 350;
-var _preview_panel_height = room_height - 60;
+var _preview_panel_height = room_height - 2 - _preview_panel_y;
 var _preview_line_height = 16;
 var _preview_content_top = _preview_panel_y + 56;
 // 64 px footer (logo, version, FPS) at the bottom: keep in step with Draw.

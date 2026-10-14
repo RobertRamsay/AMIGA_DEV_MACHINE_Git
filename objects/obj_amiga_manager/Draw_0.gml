@@ -31,9 +31,11 @@ if (_has_hover) {
 }
 
 var _panel_x = room_width - 360;
-var _panel_y = 60;
+// Starts below the toolbar buttons; the bottom edge sits 2 px above the room
+// edge (one pixel to spare), level with the message panel.
+var _panel_y = 72;
 var _panel_width = 350;
-var _panel_height = room_height - 60;
+var _panel_height = room_height - 2 - _panel_y;
 // The bottom of the panel is a footer (logo, version, FPS); code lines and
 // the scrollbar stop above it. Step uses the same content bottom.
 var _footer_height = 64;
@@ -249,9 +251,9 @@ if (array_length(global.status_message_log) > 0) {
     var _status_bar_width = 1280;
 
     draw_set_alpha(0.8);
-    scr_ui_box_fill(_status_bar_x, _status_bar_y, _status_bar_x + _status_bar_width, room_height - 1, make_colour_rgb(6, 8, 16));
+    scr_ui_box_fill(_status_bar_x, _status_bar_y, _status_bar_x + _status_bar_width, room_height - 2, make_colour_rgb(6, 8, 16));
     draw_set_alpha(1);
-    scr_ui_box_outline(_status_bar_x, _status_bar_y, _status_bar_x + _status_bar_width, room_height - 1, c_white);
+    scr_ui_box_outline(_status_bar_x, _status_bar_y, _status_bar_x + _status_bar_width, room_height - 2, c_white);
 
     var _log_count = array_length(global.status_message_log);
     var _status_line_y = _status_bar_y + 6;

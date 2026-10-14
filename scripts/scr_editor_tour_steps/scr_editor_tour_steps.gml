@@ -74,7 +74,7 @@ function scr_tour_palette_gk_rect() {
 }
 
 function scr_tour_preview_rect() {
-    return [room_width - 360, 60, room_width - 10, room_height - 2];
+    return [room_width - 360, 72, room_width - 10, room_height - 2];
 }
 
 // ---------------------------------------------------------------------------
