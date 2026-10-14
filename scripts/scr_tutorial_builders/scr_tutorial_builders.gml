@@ -1,7 +1,9 @@
-/// @desc Node graphs and assets for the ten tutorials (see scr_tutorials).
+/// @desc Node graphs and assets for the tutorials (see scr_tutorials).
 /// Everything is generated: tile art for 8/16/24/32 px tilesets, metatiles up
 /// to 128 x 128, maps, a hero and an enemy with four frames in every animation
-/// state, and (tutorial 10) a short ProTracker tune and three sound effects.
+/// state, (tutorial 10) a short ProTracker tune and three sound effects, and
+/// for the classic-hardware tutorials 11-15 bitmaps, a 4-frame sprite bird, a
+/// 4-frame BOB ship and a song written with the TRACKER's song model.
 /// The user can repaint and re-tune all of it afterwards.
 
 // Tile indices every tutorial tileset shares.
@@ -31,6 +33,11 @@ function scr_tutorial_build(_number) {
         case 8: scr_tutorial_build_8(_chain); break;
         case 9: scr_tutorial_build_9(_chain); break;
         case 10: scr_tutorial_build_10(_chain); break;
+        case 11: scr_tutorial_build_11(_chain); break;
+        case 12: scr_tutorial_build_12(_chain); break;
+        case 13: scr_tutorial_build_13(_chain); break;
+        case 14: scr_tutorial_build_14(_chain); break;
+        case 15: scr_tutorial_build_15(_chain); break;
         default: return false;
     }
     return true;
@@ -894,4 +901,306 @@ function scr_tutorial_build_10(_chain) {
     scr_tb_macro(_chain, "GK_ANIMATE");
     scr_tb_macro(_chain, "GK_DRAW");
     scr_tb_loop(_chain, _wait, "gameloop");
+}
+
+// ---------------------------------------------------------------------------
+// Classic hardware tutorials (11-15): macros, bitmaps, sprites, BOBs, sound.
+
+/// An ORG root to the right of _chain's root (room for its nodes' labels),
+/// continuing it; returns its chain.
+function scr_tb_org(_chain) {
+    var _org = instance_create_layer(_chain.root.node_x + 320, _chain.root.node_y, "Instances", obj_amiga_root_node);
+    _org.root_type = "ORG";
+    _org.node_x = scr_snap_to_grid(_chain.root.node_x + 320, global.grid_size);
+    _org.node_y = _chain.root.node_y;
+    _org.continues_from_root_uid = _chain.root.uid;
+    return { root : _org, y : _org.node_y + _org.node_height };
+}
+
+/// Index of asset _name among the assets of _type (the frame numbers ANIM
+/// BOB / ANIM SPR count), or 0.
+function scr_tb_frame_index(_type, _name) {
+    var _count = 0;
+    var _i = 0;
+    while (_i < array_length(global.asset_list)) {
+        if (global.asset_list[_i].type == _type) {
+            if (global.asset_list[_i].name == _name) return _count;
+            _count += 1;
+        }
+        _i += 1;
+    }
+    return 0;
+}
+
+/// TestBitmap for tutorial 13: a moonlit sky over hills, colours 0-14, and
+/// the bird's sprite colours in 17-19 (sprite channels 0 / 1 read them).
+function scr_tb_night_bitmap() {
+    //          0  1  2  3  4  5  6  7  8  9  10 11 12 13 14  15 16 17  18  19
+    var _r = [0, 0, 0, 0, 1, 1, 2, 2, 3, 15, 12, 15, 1, 0, 15, 0, 0, 14, 15, 15];
+    var _g = [0, 0, 1, 1, 1, 2, 2, 3, 4, 15, 12, 15, 2, 1, 13, 0, 0, 4,  10, 15];
+    var _b = [1, 2, 3, 4, 5, 5, 6, 6, 7, 13, 10, 15, 3, 2, 5,  0, 0, 0,  0,  15];
+    var _cr = array_create(32, 0);
+    var _cg = array_create(32, 0);
+    var _cb = array_create(32, 0);
+    var _i = 0;
+    while (_i < array_length(_r)) {
+        _cr[_i] = _r[_i];
+        _cg[_i] = _g[_i];
+        _cb[_i] = _b[_i];
+        _i += 1;
+    }
+    // 90 stars scattered by a fixed pseudo-random sequence.
+    var _star = array_create(320 * 256, false);
+    var _seed = 2024;
+    var _s = 0;
+    while (_s < 90) {
+        _seed = (_seed * 1103515245 + 12345) mod 2147483648;
+        var _sx = (_seed div 65536) mod 320;
+        _seed = (_seed * 1103515245 + 12345) mod 2147483648;
+        var _sy = (_seed div 65536) mod 150;
+        _star[_sy * 320 + _sx] = true;
+        _s += 1;
+    }
+    var _pixels = array_create(320 * 256, 0);
+    var _y = 0;
+    while (_y < 256) {
+        var _x = 0;
+        while (_x < 320) {
+            // Sky: eight dithered bands, darkest at the top.
+            var _band = _y / 200 * 8;
+            var _k = floor(_band);
+            if (frac(_band) > 0.5 && ((_x + _y) mod 2) == 0) _k += 1;
+            var _c = 1 + clamp(_k, 0, 7);
+            // Stars in the upper sky.
+            if (_star[_y * 320 + _x]) _c = 11;
+            // The moon, with a shaded crescent.
+            var _mx = _x - 250;
+            var _my = _y - 56;
+            if (_mx * _mx + _my * _my < 22 * 22) _c = (_mx + 8) * (_mx + 8) + (_my - 6) * (_my - 6) < 18 * 18 ? 9 : 10;
+            // Far and near hills.
+            if (_y > 178 + 16 * sin(_x * 0.021) + 7 * sin(_x * 0.057 + 2)) _c = 12;
+            if (_y > 210 + 11 * sin(_x * 0.034 + 1) + 4 * sin(_x * 0.11)) _c = 13;
+            _pixels[_y * 320 + _x] = _c;
+            _x += 1;
+        }
+        _y += 1;
+    }
+    scr_asset_define_bitmap("TestBitmap", _pixels, _cr, _cg, _cb);
+}
+
+/// Bird sprite frame _frame (0..3: wings up, level, down, level), 16 x 16.
+/// Colours: 1 body, 2 wing, 3 eye and beak.
+function scr_tb_bird_pixels(_frame) {
+    var _canvas = { h : 16, p : array_create(16 * 16, 0) };
+    var _tip = [2, 7, 13, 7][_frame];
+    // Wing behind the body: from the shoulder out to the tip.
+    scr_tb_limb(_canvas, 7, 8, 4, _tip, 2);
+    scr_tb_limb(_canvas, 8, 8, 6, _tip, 2);
+    scr_tb_limb(_canvas, 6, 8, 3, _tip, 2);
+    // Body and tail.
+    var _y = 0;
+    while (_y < 16) {
+        var _x = 0;
+        while (_x < 16) {
+            var _dx = (_x - 8) / 5.5;
+            var _dy = (_y - 9) / 2.6;
+            if (_dx * _dx + _dy * _dy <= 1) scr_tb_px(_canvas, _x, _y, 1);
+            _x += 1;
+        }
+        _y += 1;
+    }
+    scr_tb_rect(_canvas, 1, 8, 3, 9, 1);
+    scr_tb_px(_canvas, 0, 7, 1);
+    // Head, eye, beak.
+    scr_tb_rect(_canvas, 11, 5, 13, 8, 1);
+    scr_tb_px(_canvas, 12, 6, 3);
+    scr_tb_rect(_canvas, 14, 7, 15, 7, 3);
+    // The near wing again in front for the downstroke.
+    if (_frame == 2) scr_tb_limb(_canvas, 8, 9, 7, _tip, 2);
+    return _canvas.p;
+}
+
+/// The song of tutorial 15, written with the TRACKER's song model
+/// (scr_tracker_song): its starter kit - 1 pulse lead, 2 bass, 3 organ,
+/// 4 kick, 5 snare, 6 hi-hat - and two patterns of Am F C G / F G Em Am.
+/// Returns the MOD asset name, or "" when it could not be saved.
+function scr_tb_tracker_song(_name) {
+    var _song = scr_tracker_song_new();
+    _song.title = "adm chiptune";
+    array_push(_song.patterns, scr_tracker_pattern_empty());
+    _song.order = [0, 1];
+    var _periods = scr_audio_note_periods();
+    // Chords as note numbers in octave 1 (0 = C, 9 = A ...): root, third, fifth.
+    var _chords = [
+        [[9, 12, 16], [5, 9, 12], [0, 4, 7], [7, 11, 14]],
+        [[5, 9, 12], [7, 11, 14], [4, 7, 11], [9, 12, 16]]
+    ];
+    var _arp = [0, 1, 2, 1, 0, 1, 2, 2];
+    var _p = 0;
+    while (_p < 2) {
+        var _cells = _song.patterns[_p];
+        var _row = 0;
+        while (_row < 64) {
+            var _chord = _chords[_p][_row div 16];
+            var _at = 0;
+            // Lead arpeggio, an octave up in the second pattern's last bar.
+            if (_row mod 2 == 0) {
+                var _note = clamp(_chord[_arp[(_row div 2) mod 8]] + 12 + ((_p == 1 && _row >= 48) ? 12 : 0), 0, 35);
+                _at = scr_tracker_cell_at(_row, 0);
+                _cells[@ _at] = _periods[_note];
+                _cells[@ _at + 1] = 1;
+            }
+            // Bass on the root.
+            if (_row mod 4 == 0) {
+                _at = scr_tracker_cell_at(_row, 1);
+                _cells[@ _at] = _periods[clamp(_chord[0] + 12, 0, 35)];
+                _cells[@ _at + 1] = 2;
+            }
+            // Drums: kick on the beat, snare on the back beat, hi-hat between.
+            _at = scr_tracker_cell_at(_row, 2);
+            if (_row mod 8 == 0) {
+                _cells[@ _at] = _periods[12];
+                _cells[@ _at + 1] = 4;
+            } else if (_row mod 8 == 4) {
+                _cells[@ _at] = _periods[12];
+                _cells[@ _at + 1] = 5;
+            }
+            if (_row mod 4 == 2) {
+                _at = scr_tracker_cell_at(_row, 3);
+                _cells[@ _at] = _periods[12];
+                _cells[@ _at + 1] = 6;
+            }
+            _row += 1;
+        }
+        _p += 1;
+    }
+    var _error = scr_tracker_song_save(_song, _name);
+    if (_error != "") {
+        show_debug_message("[tutorial] tracker song not saved: " + _error);
+        return "";
+    }
+    return _name;
+}
+
+/// 11: how macros work - SETBKG and COPPER BAR in INIT, the loop in an ORG column.
+function scr_tutorial_build_11(_chain) {
+    var _bkg = scr_tb_macro(_chain, "SETBKG");
+    _bkg.macro_asset_name = "112";
+    var _bar = scr_tb_macro(_chain, "COPPER_BAR");
+    _bar.macro_cprbar_band_count = 6;
+    _bar.macro_cprbar_target_register = 0;
+    _bar.macro_cprbar_equidistant = true;
+    _bar.macro_cprbar_vp_start = 44;
+    _bar.macro_cprbar_vp_end = 300;
+    var _rainbow = ["E22", "F82", "FE3", "3C4", "38E", "84C"];
+    var _b = 0;
+    while (_b < 6) {
+        _bar.macro_cprbar_bands[_b] = _rainbow[_b];
+        _b += 1;
+    }
+    var _org = scr_tb_org(_chain);
+    var _nop = scr_tb_op(_org, "NOP", "", "", 0, "", 0);
+    scr_tb_loop(_org, _nop, "forever");
+}
+
+/// 12: a 32-colour bitmap picture.
+function scr_tutorial_build_12(_chain) {
+    scr_amiga_art_sunset_bitmap();
+    var _show = scr_tb_macro(_chain, "BITMAP_DISPLAY");
+    _show.macro_asset_name = "TestBitmap";
+    var _nop = scr_tb_op(_chain, "NOP", "", "", 0, "", 0);
+    scr_tb_loop(_chain, _nop, "forever");
+}
+
+/// 13: a flapping hardware-sprite bird over a night sky.
+function scr_tutorial_build_13(_chain) {
+    scr_tb_night_bitmap();
+    var _f = 0;
+    while (_f < 4) {
+        scr_asset_define_sprite("Bird_" + string(_f), 0, 16, 262144, scr_tb_bird_pixels(_f), [14, 15, 15], [4, 10, 15], [0, 0, 15]);
+        _f += 1;
+    }
+    var _first = scr_tb_frame_index("SPRITE", "Bird_0");
+    var _show = scr_tb_macro(_chain, "SPRITE_BITMAP_TEST");
+    _show.macro_asset_name = "Bird_0";
+    _show.macro_object_id = 0;
+    var _org = scr_tb_org(_chain);
+    var _move = scr_tb_macro(_org, "MOVE_SPR");
+    _move.macro_object_id = 0;
+    _move.macro_speed_x = 2;
+    _move.macro_speed_y = 1;
+    var _anim = scr_tb_macro(_org, "ANIM_SPR");
+    _anim.macro_object_id = 0;
+    _anim.macro_anim_rate = 10;
+    _anim.macro_anim_start = _first;
+    _anim.macro_anim_end = _first + 3;
+    _anim.macro_anim_loop = true;
+    scr_tb_loop(_org, _move, "fly");
+}
+
+/// 14: a BOB spaceship over the sunset, restored and redrawn every frame.
+function scr_tutorial_build_14(_chain) {
+    scr_amiga_art_sunset_bitmap();
+    var _f = 0;
+    while (_f < 4) {
+        scr_asset_define_bob("Ship_" + string(_f), 32, 32, scr_amiga_art_ship_pixels(_f));
+        _f += 1;
+    }
+    global.current_bob_asset_name = "Ship_0";
+    var _first = scr_tb_frame_index("BOB", "Ship_0");
+    var _get = scr_tb_macro(_chain, "GET_BITMAP_BOB");
+    _get.macro_asset_name = "Ship_0";
+    _get.macro_object_id = 0;
+    var _org = scr_tb_org(_chain);
+    var _draw = scr_tb_macro(_org, "DRAW_BOB");
+    _draw.macro_asset_name = "Ship_0";
+    _draw.macro_object_id = 0;
+    var _replace = scr_tb_macro(_org, "REPLACE_BITMAP_BOB");
+    _replace.macro_asset_name = "Ship_0";
+    _replace.macro_object_id = 0;
+    var _move = scr_tb_macro(_org, "MOVE_BOB");
+    _move.macro_object_id = 0;
+    _move.macro_speed_x = 2;
+    _move.macro_speed_y = 0;
+    var _anim = scr_tb_macro(_org, "ANIM_BOB");
+    _anim.macro_object_id = 0;
+    _anim.macro_anim_rate = 12;
+    _anim.macro_anim_start = _first;
+    _anim.macro_anim_end = _first + 3;
+    _anim.macro_anim_loop = true;
+    scr_tb_loop(_org, _draw, "bobloop");
+}
+
+/// 15: music from the TRACKER, and a sound effect on the fire button.
+function scr_tutorial_build_15(_chain) {
+    var _music = scr_tb_tracker_song("Chiptune");
+    scr_tb_sfx("Zap", 2400, "jump");
+    if (_music != "") {
+        var _play = scr_tb_macro(_chain, "PLAY_MOD");
+        _play.macro_asset_name = _music;
+        _play.macro_music_pos = 0;
+    }
+    var _bkg = scr_tb_macro(_chain, "SETBKG");
+    _bkg.macro_asset_name = "024";
+    var _org = scr_tb_org(_chain);
+    var _press = scr_tb_macro(_org, "CODE");
+    _press.macro_code_name = "Wait for fire";
+    _press.macro_code_text = "; Wait for the fire button of the joystick in port 2\n"
+        + "; (right Ctrl in FS-UAE). CIA-A port A bit 7 is 0 while it is held.\n"
+        + "fire_down:\n"
+        + "\tbtst\t#7,$bfe001\n"
+        + "\tbne.s\tfire_down\n"
+        + "\tmove.w\t#$f80,$dff180\t; orange flash (COLOR00)\n";
+    var _sfx = scr_tb_macro(_org, "PLAY_SFX");
+    _sfx.macro_asset_name = "Zap";
+    _sfx.macro_sfx_channel = -1;
+    _sfx.macro_sfx_volume = -1;
+    var _release = scr_tb_macro(_org, "CODE");
+    _release.macro_code_name = "Wait for release";
+    _release.macro_code_text = "; Wait until fire is let go, then back to blue.\n"
+        + "fire_up:\n"
+        + "\tbtst\t#7,$bfe001\n"
+        + "\tbeq.s\tfire_up\n"
+        + "\tmove.w\t#$024,$dff180\n";
+    scr_tb_loop(_org, _press, "shoot");
 }

@@ -1,5 +1,6 @@
-/// @desc Tutorial registry. scr_tutorial_defs() describes the ten tutorials
-/// (simplest first, ending with a complete platformer); scr_tutorial_load(i)
+/// @desc Tutorial registry. scr_tutorial_defs() describes the tutorials
+/// (1-10: from one node to a complete Game Kit platformer; 11-15: how macros
+/// work, bitmaps, sprites, BOBs, music and sound); scr_tutorial_load(i)
 /// replaces the workspace with tutorial i's node graph and assets (built by
 /// scr_tutorial_build_* in scr_tutorial_builders). The opening page
 /// (obj_tutorial_home) lists them and the guide panel (obj_tutorial_guide)
@@ -7,6 +8,9 @@
 ///
 /// Each tutorial: { id, title, level ("Beginner" / "Intermediate" / "Advanced"),
 ///   summary, features[] (what it proves), steps[] { title, text } }
+
+/// Number of tutorials (the length of scr_tutorial_defs(); -admtutorials builds them all).
+#macro TUTORIAL_COUNT 15
 
 function scr_tutorial_defs() {
     if (is_array(global.tutorial_defs_cache)) return global.tutorial_defs_cache;
@@ -118,6 +122,64 @@ function scr_tutorial_defs() {
                 { title : "The world", text : "Six rooms (3 x 2) are built from 64 x 64 and 128 x 128 metatiles - open TILE-EDIT's Map tab to see and stamp them." },
                 { title : "The goal", text : "Collect the gems, then reach the Exit door: the screen flashes and the level starts again." },
                 { title : "Make it yours", text : "Repaint tiles, redraw the hero's frames in SPR-EDIT, move enemies and the start point, tune PHYSICS, and press F5." }
+            ]
+        },
+        {
+            id : 11, title : "How macros work", level : "Beginner",
+            summary : "What a macro node is, how its rows and EDIT buttons work, the program preview, labels and ORG columns.",
+            features : ["macro vs opcode", "program preview", "node rows + EDIT buttons", "ORG column", "labels", "hover help"],
+            steps : [
+                { title : "One node, many instructions", text : "SETBKG and COPPER BAR are macros: each node writes many lines of 68000 code for you. The program preview on the right lists every line - click a macro's title line there to fold or unfold it, and any line to jump to its node." },
+                { title : "Rows are settings", text : "Each row under a node's title is one setting. A row with < and > steps: click its left half to go down, its right half to go up. Coloured rows are buttons - COPPER BAR's row opens its colour editor, and EDIT buttons open the picture, sprite, BOB, map or song a node uses." },
+                { title : "Order and columns", text : "Nodes run from top to bottom. An ORG block carries the program on in a new column: it continues the column to its left, and the glowing flow line shows the way. The box on a node's left is its label - BRA forever jumps back to the NOP labelled forever." },
+                { title : "Checks and help", text : "The dots beside a node turn red when a setting is wrong, and a failed build outlines the node in red with the reason. Hover any node to read what it does. Ctrl+Z undoes any change." },
+                { title : "Run it", text : "F5: SETBKG sets the background, the Copper paints six colour bands down the screen, and the CPU waits in the forever loop." }
+            ]
+        },
+        {
+            id : 12, title : "A bitmap picture", level : "Beginner",
+            summary : "Show a 320 x 256 picture in 32 colours and open it in the bitmap editor with one click.",
+            features : ["BITMAP DISPLAY", "EDIT BITMAP", "5 bitplanes, 32 colours", "bitmap editor", "PNG / IFF import"],
+            steps : [
+                { title : "Bitplanes", text : "BITMAP DISPLAY shows a 320 x 256 picture with 32 colours. The Amiga keeps it as five bitplanes - each holds one bit of every pixel's colour number - and DMA reads them as the beam draws the screen." },
+                { title : "Edit the picture", text : "Click EDIT BITMAP on the BITMAP DISPLAY node. The bitmap editor has pencil, line, circle, fill and gradient tools, 32 palette slots with 12-bit colour sliders, and imports PNG and IFF pictures. Esc closes it." },
+                { title : "Run it", text : "F5: the sunset fills the screen. Repaint it, close the editor and press F5 again." }
+            ]
+        },
+        {
+            id : 13, title : "Hardware sprites", level : "Intermediate",
+            summary : "A four-frame bird flaps across a moonlit bitmap: hardware sprites moved and animated by macros.",
+            features : ["SPRITE BITMAP TEST", "MOVE SPR", "ANIM SPR", "SPR-EDIT", "sprite colours 17-19"],
+            steps : [
+                { title : "Sprites", text : "A hardware sprite is a 16 pixel wide picture the display chip draws over the bitmap by itself - no CPU drawing at all. SPRITE BITMAP TEST shows the night sky and puts the bird on sprite channel 0." },
+                { title : "Sprite colours", text : "A sprite pixel is colour 1, 2 or 3 (0 is see-through). Sprite channels 0 and 1 take their colours from palette entries 17-19 of the bitmap, so the bird's orange lives in the bitmap's palette." },
+                { title : "Move and animate", text : "MOVE SPR adds its X and Y speed every frame and wraps at the edges. ANIM SPR steps through frames START to END at RATE frames a second - frames count every sprite, in SPR-EDIT's order. Both use runtime ID 0, so they work on the same sprite." },
+                { title : "Draw the frames", text : "Click EDIT FRAMES on ANIM SPR (or EDIT SPRITE on SPRITE BITMAP TEST): SPR-EDIT opens on Bird_0, and its < > step through the other frames." },
+                { title : "Run it", text : "F5: the bird flaps across the sky above the hills." }
+            ]
+        },
+        {
+            id : 14, title : "BOBs: blitter objects", level : "Intermediate",
+            summary : "A spaceship drawn into the bitmap by the Blitter, its background saved and put back every frame.",
+            features : ["GET BITMAP BOB", "DRAW BOB", "REPLACE BITMAP BOB", "MOVE BOB", "ANIM BOB", "BOB editor"],
+            steps : [
+                { title : "BOBs", text : "A BOB (blitter object) is drawn into the bitmap itself by the Blitter, so it can be any size and use all 32 colours. The price: the program must put the background back before the BOB moves." },
+                { title : "The loop", text : "GET BITMAP BOB opens the screen and prepares BOB 0. Every frame DRAW BOB saves the background under the ship and cuts the ship in; REPLACE BITMAP BOB waits for the next frame and puts that background back; MOVE BOB moves it on." },
+                { title : "Animate", text : "ANIM BOB cycles the four ship frames - the engine flame flickers. Frames count every BOB in the BOB editor's order, and the frames of one animation must all be the same size." },
+                { title : "Edit the ship", text : "Click EDIT BOB on DRAW BOB, or EDIT FRAMES on ANIM BOB: the BOB editor opens on that frame. It shares the bitmap's 32 colours." },
+                { title : "Run it", text : "F5: the ship glides over the sunset and never leaves a trail." }
+            ]
+        },
+        {
+            id : 15, title : "Music and sound effects", level : "Intermediate",
+            summary : "A song written in the TRACKER plays in the background; the fire button plays a sound effect over it.",
+            features : ["TRACKER", "PLAY MOD", "PLAY SFX", "CODE: joystick fire", "SND-EDIT"],
+            steps : [
+                { title : "The tracker", text : "The song Chiptune was written in the TRACKER: four channels, 64 rows a pattern, built-in synth instruments. Click EDIT on PLAY MOD to open it - Enter plays a pattern, the Z-M and Q-P keys play notes, Esc saves and closes." },
+                { title : "PLAY MOD", text : "PLAY MOD starts the music from its song position and it keeps playing by itself (ptplayer on a CIA timer interrupt) while the program runs. PLAY and STOP on the node preview it here." },
+                { title : "Sound effects", text : "PLAY SFX plays the sample Zap on a free channel, mixed in with the music. Samples come from SND-EDIT (import WAV, IFF 8SVX or raw files) or from a tracker instrument with TO SAMPLE." },
+                { title : "Fire!", text : "The CODE block Wait for fire waits for the joystick button (right Ctrl in FS-UAE) and flashes the background; Wait for release waits for it to be let go. BRA shoot repeats it for ever. STOP MUSIC would end the music and effects." },
+                { title : "Run it", text : "F5, wait for the music to start, then press fire." }
             ]
         }
     ];

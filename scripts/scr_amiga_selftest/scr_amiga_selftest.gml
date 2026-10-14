@@ -14,7 +14,7 @@ function scr_amiga_selftest_init() {
     global.selftest_mod_path = "";
     global.selftest_log = "";
     global.selftest_expect_error = false;
-    // -admtutorials builds all ten tutorials (no emulator); -admtutorial N builds
+    // -admtutorials builds every tutorial (no emulator); -admtutorial N builds
     // tutorial N and boots it in FS-UAE.
     global.selftest_tutorial_first = -1;
     global.selftest_tutorial_last = -1;
@@ -45,12 +45,12 @@ function scr_amiga_selftest_init() {
         if (parameter_string(_p) == "-admtutorials") {
             global.selftest_active = true;
             global.selftest_tutorial_first = 1;
-            global.selftest_tutorial_last = 10;
+            global.selftest_tutorial_last = TUTORIAL_COUNT;
             global.build_skip_launch = true;
         }
         if (parameter_string(_p) == "-admtutorial" && _p + 1 < parameter_count()) {
             global.selftest_active = true;
-            global.selftest_tutorial_first = clamp(real(parameter_string(_p + 1)), 1, 10);
+            global.selftest_tutorial_first = clamp(real(parameter_string(_p + 1)), 1, TUTORIAL_COUNT);
             global.selftest_tutorial_last = global.selftest_tutorial_first;
         }
         _p += 1;

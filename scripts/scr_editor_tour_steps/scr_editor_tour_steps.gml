@@ -115,7 +115,7 @@ function scr_tour_categories() {
             { title : "Test programs", show : "main", rect : function() { return [310, 20, 514, 60]; },
               text : "Ready-made test setups that load a small program into the workspace: a basic setup, a sprite test, and BOB / sprite bitmap tests. Handy to see a feature working before building your own." },
             { title : "Macros", show : "main", rect : function() { return [530, 20, 818, 64]; },
-              text : "Macros are nodes that write many instructions for you. CPRBAR makes a Copper colour gradient, SETBKG sets the background colour, MOVE / ANIM BOB and SPR move and animate graphic objects. Drag a button into the workspace." },
+              text : "Macros are nodes that write many instructions for you. CPRBAR makes a Copper colour gradient, SETBKG sets the background colour, MOVE / ANIM BOB and SPR move and animate graphic objects. Drag a button into the workspace. Nodes that use a picture, sprite, BOB or map have an EDIT button that opens it in its editor; tutorial 11 explains macros step by step." },
             { title : "Audio and CODE", show : "main", rect : function() { return [842, 20, 1046, 64]; },
               text : "PLAY MOD starts music, STOP MUSIC stops it and all effects, PLAY SFX plays a sound sample. CODE BLOCK is a node you fill with your own assembly in a full code editor." },
             { title : "Editors", show : "main", rect : function() { return [1062, 20, 1386, 62]; },
@@ -191,7 +191,7 @@ function scr_tour_categories() {
         summary : "The platformer building blocks and the settings on each node.",
         steps : [
             { title : "Set-up", show : "main", rect : function() { return scr_tour_rect_union(scr_tour_node_rect(scr_tour_find_node("GK_SCREEN")), scr_tour_node_rect(scr_tour_find_node("GK_PLAYER"))); },
-              text : "GAME SCREEN takes over the display (320 x 256, 16 colours, sprites), DRAW MAP draws the first room of a tile map and PLAYER puts the hero at the map's start point. The < > row on MAP and PLAYER chooses which map or hero." },
+              text : "GAME SCREEN takes over the display (320 x 256, 16 colours, sprites), DRAW MAP draws the first room of a tile map and PLAYER puts the hero at the map's start point. The < > row on MAP and PLAYER chooses which map or hero; their EDIT MAP / EDIT HERO row opens it in TILE-EDIT." },
             { title : "The game loop", show : "main", rect : function() { return scr_tour_rect_union(scr_tour_node_rect(scr_tour_find_node("GK_WAIT")), scr_tour_node_rect(scr_tour_find_node("BRA", true))); },
               text : "Every frame: WAIT FRAME syncs to the 50 Hz display, READ JOYSTICK, PHYSICS, TILE EVENTS, ENEMIES, ANIMATE and DRAW SPRITES, then BRA jumps back to the labelled WAIT FRAME." },
             { title : "PHYSICS settings", show : "main", rect : function() { return scr_tour_node_rect(scr_tour_find_node("GK_PHYSICS")); },
@@ -233,7 +233,7 @@ function scr_tour_categories() {
         summary : "The tutorials page, the step guide and how to come back to this tour.",
         steps : [
             { title : "The tutorials page", show : "home", rect : function() { return scr_tour_home_rect("cards"); },
-              text : "Ten tutorials from a one-node program to a complete platformer. Click a card to load it: the nodes and every asset are made for you, ready for F5." },
+              text : "Fifteen tutorials: from a one-node program to a complete platformer, then how macros work, bitmaps, sprites, BOBs, music and sound. Click a card to load it: the nodes and every asset are made for you, ready for F5." },
             { title : "Getting started", show : "home", rect : function() { return scr_tour_home_rect("start"); },
               text : "The page opens at start-up: carry on with your last session, start an empty workspace, open a saved one, or take this tour. Untick 'Show this page at startup' to go straight to the workspace; TUTORIALS on the toolbar brings it back." },
             { title : "The step guide", show : "guide", rect : function() { return scr_tour_guide_rect(); },

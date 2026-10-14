@@ -41,8 +41,47 @@ function scr_amiga_showcase_shots() {
         } },
         { name : "22_editor_tour_step_nodes", setup : function() { scr_amiga_showcase_tour_step("Addressing modes"); } },
         { name : "23_editor_tour_step_sprite", setup : function() { scr_amiga_showcase_tour_step("Frames"); } },
-        { name : "24_editor_tour_step_map", setup : function() { scr_amiga_showcase_tour_step("Painting the map"); } }
+        { name : "24_editor_tour_step_map", setup : function() { scr_amiga_showcase_tour_step("Painting the map"); } },
+        { name : "25_tutorials_page", setup : function() {
+            with (obj_editor_tour) instance_destroy();
+            scr_tour_show("main");
+            scr_tutorial_home_open(true);
+            with (obj_tutorial_home) {
+                home_scroll = home_scroll_max;
+                home_layout();
+            }
+        } },
+        { name : "26_tutorial_11_macros", setup : function() { scr_amiga_showcase_tutorial(11, ""); } },
+        { name : "27_tutorial_12_bitmap", setup : function() { scr_amiga_showcase_tutorial(12, ""); } },
+        { name : "28_tutorial_12_edit_bitmap", setup : function() { scr_amiga_showcase_tutorial(12, "BITMAP_DISPLAY"); } },
+        { name : "29_tutorial_13_sprites", setup : function() { scr_amiga_showcase_tutorial(13, ""); } },
+        { name : "30_tutorial_13_edit_frames", setup : function() { scr_amiga_showcase_tutorial(13, "ANIM_SPR"); } },
+        { name : "31_tutorial_14_bobs", setup : function() { scr_amiga_showcase_tutorial(14, ""); } },
+        { name : "32_tutorial_14_edit_bob", setup : function() { scr_amiga_showcase_tutorial(14, "DRAW_BOB"); } },
+        { name : "33_tutorial_15_music", setup : function() { scr_amiga_showcase_tutorial(15, ""); } },
+        { name : "34_tutorial_15_edit_song", setup : function() {
+            scr_amiga_showcase_tutorial(15, "");
+            var _play = scr_tour_find_node("PLAY_MOD");
+            if (_play != noone) scr_tracker_open_for_node(_play);
+        } },
+        { name : "35_tutorial_10_edit_map", setup : function() { scr_amiga_showcase_tutorial(10, "GK_MAP"); } }
     ];
+}
+
+/// Loads tutorial _number with its step guide; with _edit_type, presses the
+/// EDIT button of the first node of that type.
+function scr_amiga_showcase_tutorial(_number, _edit_type) {
+    with (obj_editor_tour) instance_destroy();
+    scr_tour_show("main");
+    global.workspace_dirty = false;
+    scr_tutorial_load(_number - 1);
+    global.tutorial_step = 0;
+    global.tutorial_guide_collapsed = false;
+    scr_tutorial_guide_open();
+    if (_edit_type != "") {
+        var _node = scr_tour_find_node(_edit_type);
+        if (_node != noone) scr_node_edit_open(_node);
+    }
 }
 
 /// Starts (or continues) the tour on the step titled _title.
@@ -63,6 +102,13 @@ function scr_amiga_showcase_tour_step(_title) {
 
 /// A 32-colour sunset for the bitmap editor and a spaceship BOB.
 function scr_amiga_showcase_art() {
+    scr_amiga_art_sunset_bitmap();
+    scr_asset_define_bob("TestBob", 32, 32, scr_amiga_art_ship_pixels(0));
+}
+
+/// TestBitmap: a sunset over the sea, palette 0..10 + a 16-colour sky (16..31).
+/// Also the picture of tutorials 12 and 14.
+function scr_amiga_art_sunset_bitmap() {
     var _r = array_create(32, 0);
     var _g = array_create(32, 0);
     var _b = array_create(32, 0);
@@ -117,10 +163,14 @@ function scr_amiga_showcase_art() {
         _y += 1;
     }
     scr_asset_define_bitmap("TestBitmap", _pixels, _r, _g, _b);
+}
 
-    // A little spaceship, 32 x 32, colours from the same palette.
+/// A little spaceship, 32 x 32, colours from the sunset palette. _frame 0..3
+/// flickers the engine flame (the frames of tutorial 14's ANIM BOB).
+function scr_amiga_art_ship_pixels(_frame) {
+    var _flame = [3, 1, 2, 0][_frame mod 4];      // frame 0 = the full flame
     var _bob = array_create(32 * 32, 0);
-    _y = 0;
+    var _y = 0;
     while (_y < 32) {
         var _x2 = 0;
         while (_x2 < 32) {
@@ -130,13 +180,13 @@ function scr_amiga_showcase_art() {
             if (abs(_cx) < 4 && _cy > -14 && _cy < 10 - abs(_cx)) _c2 = 9;               // hull
             if (abs(_cx) < 2 && _cy > -10 && _cy < -4) _c2 = 1;                           // cockpit
             if (_cy > -2 && _cy < 8 && abs(_cx) < 4 + (_cy + 2) * 1.1 && abs(_cx) >= 4) _c2 = 5;   // wings
-            if (_cy >= 8 && _cy < 14 && abs(_cx) < 2.5 - (_cy - 8) * 0.3) _c2 = (_y mod 2) == 0 ? 2 : 3;   // flame
+            if (_cy >= 8 && _cy < 11 + _flame && abs(_cx) < 2.5 - (_cy - 8) * 0.3) _c2 = ((_y + _frame) mod 2) == 0 ? 2 : 3;   // flame
             _bob[_y * 32 + _x2] = _c2;
             _x2 += 1;
         }
         _y += 1;
     }
-    scr_asset_define_bob("TestBob", 32, 32, _bob);
+    return _bob;
 }
 
 function scr_amiga_selftest_showcase_step() {
