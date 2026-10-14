@@ -216,6 +216,8 @@ top_ui_system_x = palette_start_x;
 top_ui_workspace_x = 114;
 top_ui_workspace_width = 150;
 top_ui_org_x = 1282;
+// Game Kit editor and the tutorials page.
+top_ui_tutorial_x = 1618;
 
 var _org_palette_instance = instance_create_layer(
     top_ui_org_x,
@@ -697,6 +699,9 @@ global.autosave_recovery_pending = file_exists(global.autosave_workspace_path);
 global.tutorial_defs_cache = undefined;
 global.tutorial_current = -1;
 global.tutorial_step = 0;
+// Opening page: shown once the splash has faded (unless switched off in its footer).
+global.tutorial_home_startup_pending = true;
+scr_tutorial_ui_init();
 
 // Development self test (-admselftest <mod>), see scr_amiga_selftest.
 scr_amiga_selftest_init();

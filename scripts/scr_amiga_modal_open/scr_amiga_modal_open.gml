@@ -8,5 +8,6 @@ function scr_amiga_modal_open() {
         || instance_exists(obj_colour_picker)
         || instance_exists(obj_cprbar_editor)
         || instance_exists(obj_code_editor)
-        || instance_exists(obj_audio_editor);
+        || instance_exists(obj_audio_editor)
+        || instance_exists(obj_tutorial_home);
 }

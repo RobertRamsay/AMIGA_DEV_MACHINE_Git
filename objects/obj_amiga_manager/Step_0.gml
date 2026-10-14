@@ -1,11 +1,18 @@
 // Recover only after the startup logo has fully faded. If the splash object is
 // ever removed from the room, recovery still proceeds rather than waiting
 // forever for an object that does not exist.
-if (global.autosave_recovery_pending) {
+if (global.autosave_recovery_pending || global.tutorial_home_startup_pending) {
     var _startup_fade_finished = !instance_exists(obj_flashSplash);
     if (!_startup_fade_finished) _startup_fade_finished = obj_flashSplash.fade <= 0;
 
-    if (_startup_fade_finished) {
+    // The opening page offers CONTINUE LAST SESSION itself, so opening it
+    // replaces the automatic recovery below.
+    if (_startup_fade_finished && global.tutorial_home_startup_pending) {
+        global.tutorial_home_startup_pending = false;
+        if (scr_tutorial_home_show_at_startup()) scr_tutorial_home_open(true);
+    }
+
+    if (_startup_fade_finished && global.autosave_recovery_pending) {
         global.autosave_recovery_pending = false;
         try {
             scr_load_workspace_from_path(global.autosave_workspace_path);
@@ -110,7 +117,7 @@ if (build_state == "closing_fsuae") {
 
             if (_adf_result.ok) {
                 scr_set_status_message(_adf_result.message, make_colour_rgb(0, 255, 255));
-                scr_amiga_fsuae_launch(build_adf_path);
+                if (!global.build_skip_launch) scr_amiga_fsuae_launch(build_adf_path);
             } else {
                 scr_set_status_message("DISK NOT WRITTEN: " + _adf_result.message, c_red);
             }
@@ -283,6 +290,10 @@ if (_over_sprite_bitmap_test && mouse_check_button_pressed(mb_left)) scr_amiga_r
 var _over_sound_editor = point_in_rectangle(mouse_x, mouse_y, top_ui_editor_2_x, top_ui_row_2_y, top_ui_editor_2_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height);
 if (_over_sound_editor && mouse_check_button_pressed(mb_left)) scr_audio_editor_open();
 
+// TUTORIALS: the opening page with the ten tutorials.
+var _over_tutorials = point_in_rectangle(mouse_x, mouse_y, top_ui_tutorial_x, top_ui_row_2_y, top_ui_tutorial_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height);
+if (_over_tutorials && mouse_check_button_pressed(mb_left)) scr_tutorial_home_open(false);
+
 // MACHINE: A600 (OCS, 1 MB chip) <-> A1200 (AGA, 2 MB chip).
 var _over_machine = point_in_rectangle(mouse_x, mouse_y, top_ui_machine_x, top_ui_row_1_y, top_ui_machine_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height);
 if (_over_machine && mouse_check_button_pressed(mb_left) && build_state == "idle") scr_amiga_machine_toggle();
@@ -444,7 +455,9 @@ var _preview_scroll_range = max(0, _preview_list_height - _preview_viewport_heig
 var _preview_min_scroll = -_preview_scroll_range;
 var _preview_scroll_consumed = false;
 
-var _over_preview_panel = point_in_rectangle(mouse_x, mouse_y, _preview_panel_x, _preview_panel_y, _preview_panel_x + _preview_panel_width, _preview_panel_y + _preview_panel_height);
+// The tutorial guide floats over the preview: clicks and the wheel there are its own.
+var _guide_hover = scr_tutorial_guide_mouse_over();
+var _over_preview_panel = point_in_rectangle(mouse_x, mouse_y, _preview_panel_x, _preview_panel_y, _preview_panel_x + _preview_panel_width, _preview_panel_y + _preview_panel_height) && !_guide_hover;
 
 if (_over_preview_panel) {
     var _preview_wheel_amount = 0;
@@ -470,7 +483,7 @@ if (_over_preview_panel) {
 
 var _collapse_x = _preview_panel_x + 6;
 var _collapse_y = _preview_panel_y + 24;
-if (mouse_check_button_pressed(mb_left) && point_in_rectangle(mouse_x, mouse_y, _collapse_x, _collapse_y, _preview_panel_x + _preview_panel_width - 16, _collapse_y + 17)) {
+if (!_guide_hover && mouse_check_button_pressed(mb_left) && point_in_rectangle(mouse_x, mouse_y, _collapse_x, _collapse_y, _preview_panel_x + _preview_panel_width - 16, _collapse_y + 17)) {
     with (obj_opcode_node) {
         if (is_macro) preview_collapsed = true;
     }
@@ -490,7 +503,7 @@ if (_preview_scroll_range > 0) {
     var _thumb_ratio = clamp((-global.preview_scroll_y) / _preview_scroll_range, 0, 1);
     var _thumb_y = _track_y1 + floor(_thumb_range * _thumb_ratio);
 
-    if (mouse_check_button_pressed(mb_left) && point_in_rectangle(mouse_x, mouse_y, _track_x1, _track_y1, _track_x2, _track_y2)) {
+    if (!_guide_hover && mouse_check_button_pressed(mb_left) && point_in_rectangle(mouse_x, mouse_y, _track_x1, _track_y1, _track_x2, _track_y2)) {
         _preview_scroll_consumed = true;
         if (point_in_rectangle(mouse_x, mouse_y, _track_x1, _thumb_y, _track_x2, _thumb_y + _thumb_height)) {
             preview_scrollbar_drag_offset = mouse_y - _thumb_y;
@@ -531,7 +544,7 @@ if (keyboard_check_pressed(ord("O")) && global.operand_edit_owner_uid == -1 && !
     scr_set_status_message("ORG spawned at mouse position.");
 }
 
-if (mouse_check_button_pressed(mb_left) && !_preview_scroll_consumed) {
+if (mouse_check_button_pressed(mb_left) && !_preview_scroll_consumed && !_guide_hover) {
     var _click_line_y = _preview_content_top + global.preview_scroll_y;
     var _click_line_index = 0;
     var _click_line_count = array_length(preview_line_cache);

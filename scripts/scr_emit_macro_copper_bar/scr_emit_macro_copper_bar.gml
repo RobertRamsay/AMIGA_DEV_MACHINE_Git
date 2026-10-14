@@ -57,6 +57,7 @@ function scr_emit_macro_copper_bar(_node) {
     // 384 decimal), so the target register just shifts the base offset.
     var _register_offset = 384 + (_node.macro_cprbar_target_register * 2);
     var _copper_offset = 0;
+    var _wrapped = false;
     var _b = 0;
 
     while (_b < _band_count) {
@@ -67,7 +68,15 @@ function scr_emit_macro_copper_bar(_node) {
         var _vp = floor(_vp_start + (_vp_end - _vp_start) * _t);
         var _colour = scr_hex_string_to_number(_node.macro_cprbar_bands[_b]);
 
-        var _wait_longword = ((_vp * 256 + 1) * 65536) + 65280;
+        // WAIT holds only the low 8 bits of the line: past line 255 the list
+        // first waits for the end of line 255 ($FFDF), then counts from 0 again.
+        if (_vp >= 256 && !_wrapped) {
+            _wrapped = true;
+            _lines += "\tMOVE.L #4292870142," + string(_buffer_base + _copper_offset) + ".L\n";
+            _copper_offset += 4;
+        }
+
+        var _wait_longword = (((_vp mod 256) * 256 + 1) * 65536) + 65280;
         var _move_longword = (_register_offset * 65536) + _colour;
 
         _lines += "\tMOVE.L #" + string(_wait_longword) + "," + string(_buffer_base + _copper_offset) + ".L\n";

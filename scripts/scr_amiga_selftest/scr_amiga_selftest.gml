@@ -14,6 +14,13 @@ function scr_amiga_selftest_init() {
     global.selftest_mod_path = "";
     global.selftest_log = "";
     global.selftest_expect_error = false;
+    // -admtutorials builds all ten tutorials (no emulator); -admtutorial N builds
+    // tutorial N and boots it in FS-UAE.
+    global.selftest_tutorial_first = -1;
+    global.selftest_tutorial_last = -1;
+    global.selftest_tutorial_index = -1;
+    global.selftest_tutorial_ok = true;
+    global.build_skip_launch = false;
 
     var _p = 0;
     while (_p < parameter_count()) {
@@ -22,12 +29,24 @@ function scr_amiga_selftest_init() {
             global.selftest_active = true;
             if (_p + 1 < parameter_count()) global.selftest_mod_path = parameter_string(_p + 1);
         }
+        if (parameter_string(_p) == "-admtutorials") {
+            global.selftest_active = true;
+            global.selftest_tutorial_first = 1;
+            global.selftest_tutorial_last = 10;
+            global.build_skip_launch = true;
+        }
+        if (parameter_string(_p) == "-admtutorial" && _p + 1 < parameter_count()) {
+            global.selftest_active = true;
+            global.selftest_tutorial_first = clamp(real(parameter_string(_p + 1)), 1, 10);
+            global.selftest_tutorial_last = global.selftest_tutorial_first;
+        }
         _p += 1;
     }
 
     if (global.selftest_active) {
         // A recovered autosave would replace the test graph mid-run, and the
         // test must never overwrite the user's own recovery file.
+        global.tutorial_home_startup_pending = false;
         global.autosave_recovery_pending = false;
         global.autosave_workspace_path = global.current_project_path + "/selftest_autosave_workspace.json";
     }
@@ -62,6 +81,10 @@ function scr_amiga_selftest_add_node(_root, _y, _macro_type) {
 function scr_amiga_selftest_step() {
     if (!global.selftest_active) return;
     global.selftest_timer += 1;
+    if (global.selftest_tutorial_first > 0) {
+        scr_amiga_selftest_tutorial_step();
+        return;
+    }
 
     switch (global.selftest_stage) {
         case 0:
@@ -165,6 +188,88 @@ function scr_amiga_selftest_step() {
                 _ok = !file_exists(_adf) && array_length(_errors) > 0 && _errors[0].line == 2;
             }
             scr_amiga_selftest_finish(_ok);
+            break;
+    }
+}
+
+/// -admtutorials / -admtutorial N: loads each tutorial, builds it with F5's
+/// pipeline and checks that vasm and the disk writer succeeded.
+function scr_amiga_selftest_tutorial_step() {
+    switch (global.selftest_stage) {
+        case 0:
+            if (global.selftest_timer < 30) break;
+            scr_amiga_selftest_note("machine " + global.amiga_machine + ", boot " + global.build_boot_mode);
+            global.selftest_tutorial_index = global.selftest_tutorial_first;
+            global.selftest_stage = 10;
+            break;
+
+        case 10:
+            var _n = global.selftest_tutorial_index;
+            global.status_message_log = [];
+            global.workspace_dirty = false;
+            if (!scr_tutorial_load(_n - 1)) {
+                scr_amiga_selftest_note("tutorial " + string(_n) + ": load failed");
+                global.selftest_tutorial_ok = false;
+                global.selftest_stage = 12;
+                break;
+            }
+            var _assets = "";
+            var _a = 0;
+            while (_a < array_length(global.asset_list)) {
+                _assets += global.asset_list[_a].type + ":" + global.asset_list[_a].name + " ";
+                _a += 1;
+            }
+            scr_amiga_selftest_note("tutorial " + string(_n) + ": " + string(array_length(scr_amiga_collect_program_nodes())) + " program nodes; assets " + _assets);
+            var _old_adf = global.current_project_path + "/build/disk.adf";
+            if (file_exists(_old_adf)) file_delete(_old_adf);
+            scr_amiga_trigger_build();
+            if (obj_amiga_manager.build_state == "idle") {
+                scr_amiga_selftest_note("tutorial " + string(_n) + ": build did not start");
+                global.selftest_tutorial_ok = false;
+                global.selftest_stage = 12;
+                break;
+            }
+            global.selftest_stage = 11;
+            global.selftest_timer = 0;
+            break;
+
+        case 11:
+            if (obj_amiga_manager.build_state != "idle") {
+                if (global.selftest_timer > 3000) {
+                    scr_amiga_selftest_note("build stuck in " + obj_amiga_manager.build_state);
+                    global.selftest_tutorial_ok = false;
+                    global.selftest_stage = 12;
+                }
+                break;
+            }
+            var _ok = file_exists(global.current_project_path + "/build/disk.adf");
+            var _i = 0;
+            while (_i < array_length(global.status_message_log)) {
+                var _text = global.status_message_log[_i].text;
+                if (string_pos("FAILED", _text) > 0 || string_pos("TIMED OUT", _text) > 0 || string_pos("ERROR", _text) > 0 || string_pos("NOT WRITTEN", _text) > 0 || string_pos("Assembled", _text) > 0) {
+                    scr_amiga_selftest_note("  status: " + _text);
+                }
+                if (string_pos("FAILED", _text) > 0 || string_pos("TIMED OUT", _text) > 0 || string_pos("ERROR", _text) > 0 || string_pos("NOT WRITTEN", _text) > 0) _ok = false;
+                _i += 1;
+            }
+            scr_amiga_selftest_note("tutorial " + string(global.selftest_tutorial_index) + (_ok ? ": OK" : ": FAILED"));
+            if (!_ok) {
+                global.selftest_tutorial_ok = false;
+                // Keep the failing program for inspection.
+                var _src = global.current_project_path + "/build/main.s";
+                if (file_exists(_src)) file_copy(_src, global.amiga_dev_data_path + "/selftest_tutorial_" + string(global.selftest_tutorial_index) + ".s");
+            }
+            global.selftest_stage = 12;
+            break;
+
+        case 12:
+            global.selftest_tutorial_index += 1;
+            if (global.selftest_tutorial_index > global.selftest_tutorial_last) {
+                scr_amiga_selftest_finish(global.selftest_tutorial_ok);
+            } else {
+                global.selftest_stage = 10;
+                global.selftest_timer = 0;
+            }
             break;
     }
 }
