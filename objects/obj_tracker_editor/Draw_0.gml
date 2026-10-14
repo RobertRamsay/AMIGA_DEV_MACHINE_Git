@@ -117,7 +117,7 @@ for (var _k = 0; _k < _l.inst_rows; _k += 1) {
 }
 scr_ui_box_outline(_ix, _iy, _ix2, _iy2, c_gray);
 draw_set_colour(_col_dim);
-scr_ui_text_mid(_ix, _iy2 + 4, _iy2 + 24, "Numpad + / - picks the instrument for new notes.");
+scr_ui_text_mid(_ix, _iy2 + 4, _iy2 + 24, scr_ui_fit_label("Numpad + / - : instrument for new notes", _ix2 - _ix));
 
 // INSTRUMENT detail: name label, waveform, synth and sample rows.
 var _cur = song.samples[cur_inst - 1];
