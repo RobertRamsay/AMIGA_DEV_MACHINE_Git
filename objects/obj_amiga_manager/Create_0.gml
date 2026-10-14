@@ -150,6 +150,14 @@ var _mnemonic_list = variable_struct_get_names(global.opcode_map);
 
 array_sort(_mnemonic_list, true);
 
+// The Game Kit (platformer engine) nodes head the palette, before the opcodes.
+var _game_kit_list = GK_NODE_TYPES;
+var _gk_i = array_length(_game_kit_list) - 1;
+while (_gk_i >= 0) {
+    array_insert(_mnemonic_list, 0, _game_kit_list[_gk_i]);
+    _gk_i -= 1;
+}
+
 var _mnemonic_count = array_length(_mnemonic_list);
 var _i = 0;
 
@@ -174,7 +182,7 @@ while (_i < _mnemonic_count) {
     _palette_instance.palette_mnemonic = _mnemonic_key;
 
     _palette_instance.palette_display_label =
-        scr_opcode_display_label(_mnemonic_key);
+        scr_gk_is_node_type(_mnemonic_key) ? scr_gk_palette_label(_mnemonic_key) : scr_opcode_display_label(_mnemonic_key);
 
     _palette_instance.palette_x = _item_x;
     _palette_instance.base_palette_y = _item_y;
@@ -208,6 +216,8 @@ top_ui_system_x = palette_start_x;
 top_ui_workspace_x = 114;
 top_ui_workspace_width = 150;
 top_ui_org_x = 1282;
+// Game Kit editor and the tutorials page.
+top_ui_tutorial_x = 1618;
 
 var _org_palette_instance = instance_create_layer(
     top_ui_org_x,
@@ -684,6 +694,14 @@ global.sprite_anim_end = max(0, array_length(global.sprite_asset_names) - 1);
 global.workspace_dirty = false;
 global.autosave_due_time = -1;
 global.autosave_recovery_pending = file_exists(global.autosave_workspace_path);
+
+// Tutorials (scr_tutorials): definitions cache, loaded tutorial (-1 = none), guide step.
+global.tutorial_defs_cache = undefined;
+global.tutorial_current = -1;
+global.tutorial_step = 0;
+// Opening page: shown once the splash has faded (unless switched off in its footer).
+global.tutorial_home_startup_pending = true;
+scr_tutorial_ui_init();
 
 // Development self test (-admselftest <mod>), see scr_amiga_selftest.
 scr_amiga_selftest_init();

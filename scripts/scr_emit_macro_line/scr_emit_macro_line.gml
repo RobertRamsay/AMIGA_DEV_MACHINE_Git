@@ -24,6 +24,7 @@ function scr_emit_macro_line(_node) {
     if (_node.macro_type == "ANIM_SPR") return scr_emit_macro_anim_spr(_node);
 
     if (_node.macro_type == "CODE") return scr_emit_macro_code(_node);
+    if (scr_gk_is_node_type(_node.macro_type)) return scr_emit_macro_gamekit(_node);
     if (_node.macro_type == "PLAY_MOD") return scr_emit_macro_play_mod(_node);
     if (_node.macro_type == "STOP_MOD") return scr_emit_macro_stop_mod(_node);
     if (_node.macro_type == "PLAY_SFX") return scr_emit_macro_play_sfx(_node);

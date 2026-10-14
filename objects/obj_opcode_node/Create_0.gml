@@ -119,3 +119,10 @@ macro_sfx_volume = -1;
 build_error_text = "";
 // Double-click timing for opening a CODE block from its body.
 code_last_click_time = -1000000;
+// Game Kit nodes: three numeric parameters and two asset names, meaning
+// depends on the node (see scr_gamekit_emit).
+macro_param_a = 0;
+macro_param_b = 0;
+macro_param_c = 0;
+macro_param_text_a = "";
+macro_param_text_b = "";

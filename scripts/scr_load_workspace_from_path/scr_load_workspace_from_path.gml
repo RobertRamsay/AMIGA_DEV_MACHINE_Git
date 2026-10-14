@@ -9,6 +9,9 @@ function scr_load_workspace_from_path(_path) {
         return;
     }
 
+    // A loaded workspace is no longer the tutorial the guide is walking through.
+    global.tutorial_current = -1;
+
     var _file = file_text_open_read(_path);
     var _json_text = "";
 

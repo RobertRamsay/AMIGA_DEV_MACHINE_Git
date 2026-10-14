@@ -2,6 +2,11 @@ if (scr_amiga_modal_open()) {
     exit;
 }
 
+// Clicks on the tutorial guide panel are not meant for the graph behind it.
+if (scr_tutorial_guide_mouse_over() && !is_dragging) {
+    exit;
+}
+
 var _world_mouse_x = mouse_x - global.pan_x;
 var _world_mouse_y = mouse_y - global.pan_y;
 

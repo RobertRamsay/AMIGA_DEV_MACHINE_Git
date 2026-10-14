@@ -83,6 +83,11 @@ if (is_macro) {
             _header_colour = make_color_rgb(15, 95, 115);
             break;
 
+        case "GK_SCREEN": case "GK_MAP": case "GK_PLAYER": case "GK_WAIT": case "GK_INPUT":
+        case "GK_PHYSICS": case "GK_EVENTS": case "GK_ENEMIES": case "GK_ANIMATE": case "GK_DRAW":
+            _header_colour = make_color_rgb(150, 70, 20);
+            break;
+
         default:
             _header_colour = make_color_rgb(90, 50, 110);
             break;
@@ -145,6 +150,7 @@ if (is_macro) {
     if (macro_type == "PLAY_MOD") _header_text = "PLAY MUSIC (MOD)";
     if (macro_type == "STOP_MOD") _header_text = "STOP MUSIC";
     if (macro_type == "PLAY_SFX") _header_text = "PLAY SOUND FX";
+    if (scr_gk_is_node_type(macro_type)) _header_text = "GK: " + scr_gk_node_label(macro_type);
 }
 
 draw_text(_dx + 6, _dy, _header_text);
@@ -197,7 +203,9 @@ if (is_macro) {
     var _is_bob_ref_draw = (macro_type == "GET_BITMAP_BOB" || macro_type == "DRAW_BOB" || macro_type == "REPLACE_BITMAP_BOB" || macro_type == "BOB_BITMAP_TEST");
     var _is_sprite_ref_draw = (macro_type == "SPRITE_DISPLAY" || macro_type == "SPRITE_BITMAP_TEST");
 
-    if (macro_type == "PLAY_MOD" || macro_type == "PLAY_SFX") {
+    if (scr_gk_is_node_type(macro_type)) {
+        scr_gk_node_draw(id, _asset_field_dx, _asset_field_dy - 20);
+    } else if (macro_type == "PLAY_MOD" || macro_type == "PLAY_SFX") {
         var _audio_asset_draw = scr_asset_find_by_name(macro_asset_name);
         var _audio_rows = macro_type == "PLAY_MOD" ? 2 : 3;
         draw_set_colour(c_dkgray);

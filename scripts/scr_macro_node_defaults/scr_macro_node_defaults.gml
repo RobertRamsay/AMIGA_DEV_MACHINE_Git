@@ -15,6 +15,20 @@ function scr_macro_node_height(_macro_type) {
             return 80;
         case "CODE":
             return 120;
+        case "GK_SCREEN":
+        case "GK_WAIT":
+        case "GK_INPUT":
+        case "GK_ENEMIES":
+        case "GK_ANIMATE":
+        case "GK_DRAW":
+            return 40;
+        case "GK_MAP":
+        case "GK_PLAYER":
+            return 60;
+        case "GK_PHYSICS":
+            return 100;
+        case "GK_EVENTS":
+            return 80;
     }
     return 100;
 }
