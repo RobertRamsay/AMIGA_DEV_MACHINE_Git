@@ -73,6 +73,16 @@ if (is_macro) {
             _header_colour = make_color_rgb(150, 150, 40);
             break;
 
+        case "PLAY_MOD":
+        case "STOP_MOD":
+        case "PLAY_SFX":
+            _header_colour = make_color_rgb(20, 110, 60);
+            break;
+
+        case "CODE":
+            _header_colour = make_color_rgb(15, 95, 115);
+            break;
+
         default:
             _header_colour = make_color_rgb(90, 50, 110);
             break;
@@ -131,6 +141,10 @@ if (opcode_size != "") {
 
 if (is_macro) {
     _header_text = "MACRO: " + macro_type;
+    if (macro_type == "CODE") _header_text = "CODE BLOCK";
+    if (macro_type == "PLAY_MOD") _header_text = "PLAY MUSIC (MOD)";
+    if (macro_type == "STOP_MOD") _header_text = "STOP MUSIC";
+    if (macro_type == "PLAY_SFX") _header_text = "PLAY SOUND FX";
 }
 
 draw_text(_dx + 6, _dy, _header_text);
@@ -183,7 +197,58 @@ if (is_macro) {
     var _is_bob_ref_draw = (macro_type == "GET_BITMAP_BOB" || macro_type == "DRAW_BOB" || macro_type == "REPLACE_BITMAP_BOB" || macro_type == "BOB_BITMAP_TEST");
     var _is_sprite_ref_draw = (macro_type == "SPRITE_DISPLAY" || macro_type == "SPRITE_BITMAP_TEST");
 
-    if (_is_move_macro_draw) {
+    if (macro_type == "PLAY_MOD" || macro_type == "PLAY_SFX") {
+        var _audio_asset_draw = scr_asset_find_by_name(macro_asset_name);
+        var _audio_rows = macro_type == "PLAY_MOD" ? 2 : 3;
+        draw_set_colour(c_dkgray);
+        draw_rectangle(_asset_field_dx, _asset_field_dy, _asset_field_dx + node_width, _asset_field_dy + 20 * _audio_rows, false);
+        draw_set_colour(_audio_asset_draw == undefined ? c_red : c_white);
+        var _audio_name = macro_asset_name == "" ? "(none - SND-EDIT)" : macro_asset_name;
+        draw_text(_asset_field_dx + 4, _asset_field_dy + 2, "<  " + _audio_name);
+        draw_set_halign(fa_right);
+        draw_text(_asset_field_dx + node_width - 4, _asset_field_dy + 2, ">");
+        draw_set_halign(fa_left);
+        draw_set_colour(c_white);
+        if (macro_type == "PLAY_MOD") {
+            draw_text(_asset_field_dx + 4, _asset_field_dy + 22, "<   SONG POS: " + string(macro_music_pos) + "   >");
+        } else {
+            draw_text(_asset_field_dx + 4, _asset_field_dy + 22, "<   CHANNEL: " + (macro_sfx_channel < 0 ? "AUTO" : string(macro_sfx_channel)) + "   >");
+            var _vol_text = macro_sfx_volume < 0 ? "SAMPLE" : string(macro_sfx_volume);
+            draw_text(_asset_field_dx + 4, _asset_field_dy + 42, "<   VOLUME: " + _vol_text + "   >");
+        }
+    } else if (macro_type == "STOP_MOD") {
+        draw_set_colour(c_white);
+        draw_text(_asset_field_dx + 4, _asset_field_dy + 2, "stops music + sound fx");
+    } else if (macro_type == "CODE") {
+        var _over_edit_draw = point_in_rectangle(mouse_x, mouse_y, _asset_field_dx, _asset_field_dy, _asset_field_dx + node_width, _asset_field_dy + 20);
+        draw_set_colour(_over_edit_draw ? make_colour_rgb(30, 130, 150) : make_colour_rgb(20, 90, 110));
+        draw_rectangle(_asset_field_dx, _asset_field_dy, _asset_field_dx + node_width, _asset_field_dy + 20, false);
+        draw_set_colour(c_white);
+        var _code_lines_all = string_split(macro_code_text, "\n");
+        draw_text(_asset_field_dx + 4, _asset_field_dy + 2, "EDIT CODE  (" + string(array_length(_code_lines_all)) + " lines)");
+
+        // First few non-blank lines as a preview, on a dark code panel.
+        draw_set_colour(make_colour_rgb(14, 18, 30));
+        draw_rectangle(_asset_field_dx + 1, _asset_field_dy + 21, _asset_field_dx + node_width - 1, _dy + node_height - 1, false);
+        var _code_preview_y = _asset_field_dy + 22;
+        var _code_preview_i = 0;
+        var _code_preview_shown = 0;
+        while (_code_preview_i < array_length(_code_lines_all) && _code_preview_shown < 4) {
+            var _preview_line = string_replace_all(_code_lines_all[_code_preview_i], "\t", "  ");
+            if (string_trim(_preview_line) != "") {
+                var _trimmed_preview = string_trim(_preview_line);
+                draw_set_colour(string_char_at(_trimmed_preview, 1) == ";" ? make_colour_rgb(90, 170, 90) : make_colour_rgb(170, 210, 255));
+                while (string_length(_preview_line) > 1 && string_width(_preview_line) > node_width - 8) {
+                    _preview_line = string_copy(_preview_line, 1, string_length(_preview_line) - 1);
+                }
+                draw_text(_asset_field_dx + 4, _code_preview_y, _preview_line);
+                _code_preview_y += 18;
+                _code_preview_shown += 1;
+            }
+            _code_preview_i += 1;
+        }
+        draw_set_colour(c_white);
+    } else if (_is_move_macro_draw) {
         draw_set_colour(c_dkgray);
         draw_rectangle(_asset_field_dx, _asset_field_dy, _asset_field_dx + node_width, _asset_field_dy + 60, false);
         draw_set_colour(c_white);
@@ -370,6 +435,25 @@ draw_set_colour(c_white);
 if (is_connected) {
     draw_set_colour(c_yellow);
     draw_line_width(_dx + (node_width / 2), _dy, _dx + (node_width / 2), _dy - 6, 3);
+    draw_set_colour(c_white);
+}
+
+// The last build reported an error here: red outline, message on hover.
+if (build_error_text != "") {
+    draw_set_colour(c_red);
+    draw_rectangle(_dx - 1, _dy - 1, _dx + node_width + 1, _dy + node_height + 1, true);
+    draw_rectangle(_dx - 2, _dy - 2, _dx + node_width + 2, _dy + node_height + 2, true);
+    if (point_in_rectangle(mouse_x, mouse_y, _dx, _dy, _dx + node_width, _dy + node_height)) {
+        var _err_text = string_replace(build_error_text, "; ERROR: ", "");
+        var _err_w = string_width(_err_text) + 12;
+        draw_set_alpha(0.9);
+        draw_set_colour(c_black);
+        draw_rectangle(_dx, _dy + node_height + 4, _dx + _err_w, _dy + node_height + 24, false);
+        draw_set_alpha(1);
+        draw_set_colour(c_red);
+        draw_rectangle(_dx, _dy + node_height + 4, _dx + _err_w, _dy + node_height + 24, true);
+        draw_text(_dx + 6, _dy + node_height + 6, _err_text);
+    }
     draw_set_colour(c_white);
 }
 

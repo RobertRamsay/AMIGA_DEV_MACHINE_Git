@@ -58,6 +58,7 @@ function scr_restore_snapshot(_snapshot) {
         if (variable_struct_exists(_node_data, "macro_anim_start")) _new_node.macro_anim_start = _node_data.macro_anim_start;
         if (variable_struct_exists(_node_data, "macro_anim_end")) _new_node.macro_anim_end = _node_data.macro_anim_end;
         if (variable_struct_exists(_node_data, "macro_anim_loop")) _new_node.macro_anim_loop = _node_data.macro_anim_loop;
+        scr_node_restore_extra_fields(_new_node, _node_data);
         _new_node.preview_collapsed = _node_data.preview_collapsed;
         _new_node.opcode_mnemonic = _node_data.opcode_mnemonic;
         _new_node.opcode_size = _node_data.opcode_size;
@@ -125,4 +126,21 @@ function scr_restore_snapshot(_snapshot) {
             y = node_y;
         }
     }
+}
+
+/// Copies the copper-bar, CODE and audio fields from saved/snapshot data
+/// onto a rebuilt node. Each is optional so older files and snapshots load.
+function scr_node_restore_extra_fields(_node, _data) {
+    if (variable_struct_exists(_data, "macro_cprbar_band_count")) {
+        _node.macro_cprbar_band_count = _data.macro_cprbar_band_count;
+        _node.macro_cprbar_target_register = _data.macro_cprbar_target_register;
+        _node.macro_cprbar_equidistant = _data.macro_cprbar_equidistant;
+        _node.macro_cprbar_vp_start = _data.macro_cprbar_vp_start;
+        _node.macro_cprbar_vp_end = _data.macro_cprbar_vp_end;
+        if (is_array(_data.macro_cprbar_bands)) _node.macro_cprbar_bands = variable_clone(_data.macro_cprbar_bands);
+    }
+    if (variable_struct_exists(_data, "macro_code_text") && is_string(_data.macro_code_text)) _node.macro_code_text = _data.macro_code_text;
+    if (variable_struct_exists(_data, "macro_music_pos")) _node.macro_music_pos = _data.macro_music_pos;
+    if (variable_struct_exists(_data, "macro_sfx_channel")) _node.macro_sfx_channel = _data.macro_sfx_channel;
+    if (variable_struct_exists(_data, "macro_sfx_volume")) _node.macro_sfx_volume = _data.macro_sfx_volume;
 }

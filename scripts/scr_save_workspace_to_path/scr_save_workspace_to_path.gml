@@ -51,7 +51,11 @@ function scr_save_workspace_to_path(_path, _mark_clean = true) {
             macro_cprbar_equidistant : macro_cprbar_equidistant,
             macro_cprbar_vp_start : macro_cprbar_vp_start,
             macro_cprbar_vp_end : macro_cprbar_vp_end,
-            macro_cprbar_bands : macro_cprbar_bands
+            macro_cprbar_bands : macro_cprbar_bands,
+            macro_code_text : macro_code_text,
+            macro_music_pos : macro_music_pos,
+            macro_sfx_channel : macro_sfx_channel,
+            macro_sfx_volume : macro_sfx_volume
         };
 
         array_push(_node_array, _node_data);

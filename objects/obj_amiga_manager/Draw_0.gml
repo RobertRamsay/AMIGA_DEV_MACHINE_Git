@@ -192,6 +192,36 @@ draw_set_colour(c_white);
 draw_rectangle(top_ui_editor_2_x, top_ui_row_1_y, top_ui_editor_2_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height, true);
 draw_text(top_ui_editor_2_x + 4, top_ui_row_1_y , "BOB-EDIT");
 
+draw_set_colour(make_color_rgb(30, 90, 95));
+draw_rectangle(top_ui_editor_2_x, top_ui_row_2_y, top_ui_editor_2_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height, false);
+draw_set_colour(c_white);
+draw_rectangle(top_ui_editor_2_x, top_ui_row_2_y, top_ui_editor_2_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height, true);
+draw_text(top_ui_editor_2_x + 4, top_ui_row_2_y , "SND-EDIT");
+
+draw_text(top_ui_audio_x, 2, "AUDIO / CODE:");
+
+// Machine, run and boot controls.
+var _machine_profile = scr_amiga_machine_profile();
+var _run_busy = build_state != "idle";
+var _machine_buttons = [
+    { bx : top_ui_machine_x, by : top_ui_row_1_y, colour : make_color_rgb(70, 60, 110), text : "MACH: " + _machine_profile.name },
+    { bx : top_ui_machine_x, by : top_ui_row_2_y, colour : _run_busy ? make_color_rgb(110, 90, 20) : make_color_rgb(30, 120, 50), text : _run_busy ? "BUILDING.." : "RUN (F5)" },
+    { bx : top_ui_machine_2_x, by : top_ui_row_1_y, colour : make_color_rgb(60, 60, 70), text : scr_amiga_kickstart_current() == "" ? "ROM: AROS" : "ROM: KICK" },
+    { bx : top_ui_machine_2_x, by : top_ui_row_2_y, colour : make_color_rgb(60, 60, 70), text : "BOOT: " + global.build_boot_mode }
+];
+var _machine_button_i = 0;
+while (_machine_button_i < array_length(_machine_buttons)) {
+    var _mb = _machine_buttons[_machine_button_i];
+    var _mb_hover = point_in_rectangle(mouse_x, mouse_y, _mb.bx, _mb.by, _mb.bx + top_ui_button_width, _mb.by + top_ui_button_height);
+    draw_set_colour(_mb_hover ? merge_colour(_mb.colour, c_white, 0.25) : _mb.colour);
+    draw_rectangle(_mb.bx, _mb.by, _mb.bx + top_ui_button_width, _mb.by + top_ui_button_height, false);
+    draw_set_colour(c_white);
+    draw_rectangle(_mb.bx, _mb.by, _mb.bx + top_ui_button_width, _mb.by + top_ui_button_height, true);
+    draw_text(_mb.bx + 4, _mb.by, _mb.text);
+    _machine_button_i += 1;
+}
+draw_text(top_ui_machine_x, 2, "AMIGA: " + _machine_profile.chipset + " " + string(_machine_profile.chip_kb div 1024) + "MB CHIP");
+
 // Workspace I/O sits directly beside QUIT/KILL as part of the SYSTEM cluster.
 // The wider buttons leave enough room for their full labels.
 var _workspace_but_width = top_ui_workspace_width;

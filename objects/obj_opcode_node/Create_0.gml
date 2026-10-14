@@ -107,3 +107,15 @@ mode_button_dst_y = 0;
 value_box_width = 70;
 operand_editing_slot = "";
 operand_edit_text = "";
+
+// CODE blocks: free-form vasm source edited in obj_code_editor.
+macro_code_text = "";
+// PLAY_MOD: song position to start from.
+macro_music_pos = 0;
+// PLAY_SFX: Paula channel (-1 = ptplayer picks) and volume (-1 = the sample's own).
+macro_sfx_channel = -1;
+macro_sfx_volume = -1;
+// First error the last build reported for this node ("" = none): red outline.
+build_error_text = "";
+// Double-click timing for opening a CODE block from its body.
+code_last_click_time = -1000000;

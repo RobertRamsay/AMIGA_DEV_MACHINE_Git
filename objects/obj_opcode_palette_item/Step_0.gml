@@ -1,4 +1,4 @@
-if (instance_exists(obj_bitmap_editor) || instance_exists(obj_bob_editor) || instance_exists(obj_colour_picker) || instance_exists(obj_cprbar_editor)) {
+if (scr_amiga_modal_open()) {
     exit;
 }
 
@@ -55,6 +55,8 @@ if (_over_item && mouse_check_button_pressed(mb_left) && !global.left_click_pick
             }
             _new_node.macro_anim_end = max(0, _frame_count - 1);
             _new_node.macro_anim_loop = true;
+        } else if (palette_mnemonic == "PLAY_MOD" || palette_mnemonic == "STOP_MOD" || palette_mnemonic == "PLAY_SFX" || palette_mnemonic == "CODE") {
+            scr_macro_node_init(_new_node, palette_mnemonic);
         } else {
             _new_node.opcode_mnemonic = palette_mnemonic;
 
@@ -77,7 +79,7 @@ if (_over_item && mouse_check_button_pressed(mb_left) && !global.left_click_pick
 }
 
 // Top-strip entries are fixed controls, not part of the scrolling opcode list.
-if (palette_mnemonic == "ORG" || palette_mnemonic == "CPRBAR" || palette_mnemonic == "SETBKG" || palette_mnemonic == "MOVE_BOB" || palette_mnemonic == "MOVE_SPR" || palette_mnemonic == "ANIM_BOB" || palette_mnemonic == "ANIM_SPR") {
+if (palette_mnemonic == "ORG" || palette_mnemonic == "CPRBAR" || palette_mnemonic == "SETBKG" || palette_mnemonic == "MOVE_BOB" || palette_mnemonic == "MOVE_SPR" || palette_mnemonic == "ANIM_BOB" || palette_mnemonic == "ANIM_SPR" || palette_mnemonic == "PLAY_MOD" || palette_mnemonic == "STOP_MOD" || palette_mnemonic == "PLAY_SFX" || palette_mnemonic == "CODE") {
     palette_y = base_palette_y;
 } else {
     palette_y = base_palette_y + global.palette_scroll_y;

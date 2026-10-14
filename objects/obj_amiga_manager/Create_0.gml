@@ -65,6 +65,7 @@ if (!directory_exists(_amiga_dev_data_path)) {
     directory_create(_amiga_dev_data_path);
 }
 
+global.amiga_dev_data_path = _amiga_dev_data_path;
 global.current_project_path = _amiga_dev_data_path + "/build_output";
 global.current_volume_name = "AmigaDevDisk";
 global.current_chipset_mode = "AGA";
@@ -195,12 +196,18 @@ top_ui_button_height = 16;
 top_ui_test_x = 310;
 top_ui_test_2_x = 414;
 top_ui_macro_x = 530;
-top_ui_editor_x = 842;
-top_ui_editor_2_x = 946;
+// Two more MACROS columns (audio + CODE) push the editors, ORG and the
+// machine/run controls to the right; everything still ends left of 1920.
+top_ui_audio_x = 842;
+top_ui_audio_2_x = 946;
+top_ui_editor_x = 1062;
+top_ui_editor_2_x = 1166;
+top_ui_machine_x = 1398;
+top_ui_machine_2_x = 1502;
 top_ui_system_x = palette_start_x;
 top_ui_workspace_x = 114;
 top_ui_workspace_width = 150;
-top_ui_org_x = 1062;
+top_ui_org_x = 1282;
 
 var _org_palette_instance = instance_create_layer(
     top_ui_org_x,
@@ -267,6 +274,26 @@ _anim_spr_palette_instance.palette_display_label = "ANIM SPR";
 _anim_spr_palette_instance.palette_x = top_ui_macro_x + 208;
 _anim_spr_palette_instance.base_palette_y = top_ui_row_2_y;
 
+// Audio and CODE macros. Display labels are what the button shows; the
+// mnemonic is the macro_type the dropped node gets.
+var _extra_macro_buttons = [
+    { mnemonic : "PLAY_MOD", label : "PLAY MOD", px : top_ui_audio_x, py : top_ui_row_1_y },
+    { mnemonic : "STOP_MOD", label : "STOP MUSIC", px : top_ui_audio_x, py : top_ui_row_2_y },
+    { mnemonic : "PLAY_SFX", label : "PLAY SFX", px : top_ui_audio_2_x, py : top_ui_row_1_y },
+    { mnemonic : "CODE", label : "CODE BLOCK", px : top_ui_audio_2_x, py : top_ui_row_2_y }
+];
+var _extra_i = 0;
+while (_extra_i < array_length(_extra_macro_buttons)) {
+    var _extra = _extra_macro_buttons[_extra_i];
+    var _extra_instance = instance_create_layer(_extra.px, _extra.py, "Instances", obj_opcode_palette_item);
+    _extra_instance.palette_mnemonic = _extra.mnemonic;
+    _extra_instance.palette_display_label = _extra.label;
+    _extra_instance.palette_x = _extra.px;
+    _extra_instance.base_palette_y = _extra.py;
+    _extra_instance.palette_width = 100;
+    _extra_i += 1;
+}
+
 
 // ============================================================================
 // 10. BUILD STATE MACHINE
@@ -283,6 +310,14 @@ build_timeout_frames = 600;
 build_adf_ready_timer = 0;
 build_exe_last_size = -1;
 build_exe_stable_timer = 0;
+build_done_path = "";
+build_log_path = "";
+build_line_map = [];
+
+// vasm messages for CODE blocks: { node_uid, line, message }, filled by
+// scr_amiga_vasm_report after every build and drawn by the code editor.
+global.code_editor_build_errors = [];
+global.ptplayer_equ_names_cache = undefined;
 
 
 // ============================================================================
@@ -331,6 +366,10 @@ if (global.kickstart_path != "") {
     }
 }
 
+// Machine (A600 / A1200), per-machine Kickstart ROMs and launch options.
+// Sets global.current_chipset_mode to follow the machine.
+scr_amiga_machine_settings_load();
+
 
 // ============================================================================
 // 13. VALIDATE BUNDLED TOOLS
@@ -345,10 +384,24 @@ if (!file_exists(global.vasm_path)) {
         + global.vasm_path;
 }
 
-if (!file_exists(global.xdftool_path)) {
+// xdftool is only needed for the optional DOS boot mode; auto-boot disks are
+// written by scr_amiga_write_boot_adf from the bundled loader.
+if (global.build_boot_mode == "DOS" && !file_exists(global.xdftool_path)) {
     _missing_tools +=
         "\n\nxdftool:\n"
         + global.xdftool_path;
+}
+
+if (!file_exists(scr_amiga_boot_loader_path())) {
+    _missing_tools +=
+        "\n\nAuto-boot loader:\n"
+        + scr_amiga_boot_loader_path();
+}
+
+if (!file_exists(working_directory + "audio/ptplayer.asm")) {
+    _missing_tools +=
+        "\n\nptplayer (music/SFX runtime):\n"
+        + working_directory + "audio/ptplayer.asm";
 }
 
 if (!file_exists(global.fsuae_path)) {
@@ -403,6 +456,9 @@ _init_instance.node_y = scr_snap_to_grid(
 // ============================================================================
 
 global.asset_list = [];
+
+// Sound & music (MOD and SAMPLE assets, SND-EDIT, editor preview playback).
+scr_audio_init();
 
 scr_asset_define_copper_bar(
     "SunriseWater",

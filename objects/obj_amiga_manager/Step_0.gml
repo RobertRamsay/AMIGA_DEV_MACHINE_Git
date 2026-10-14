@@ -33,9 +33,118 @@ if (global.workspace_dirty && global.autosave_due_time >= 0 && current_time >= g
     }
 }
 
+// Build state machine. vasm runs in build_asm.bat, which writes its exit
+// code to asm.done when it finishes; vasm.log holds its messages.
+if (build_state == "waiting_for_asm") {
+    build_wait_timer += 1;
+
+    if (file_exists(build_done_path)) {
+        var _exit_code = -1;
+        var _done_file = file_text_open_read(build_done_path);
+        if (_done_file >= 0) {
+            var _done_text = string_digits(file_text_read_string(_done_file));
+            file_text_close(_done_file);
+            if (_done_text != "") _exit_code = real(_done_text);
+        }
+
+        // cmd.exe can write the marker a moment before the file is complete;
+        // an empty marker is simply read again next frame.
+        if (_exit_code >= 0) {
+            var _report = scr_amiga_vasm_report(build_log_path, build_line_map);
+            var _shown = 0;
+            var _m = 0;
+            while (_m < array_length(_report.messages) && _shown < 8) {
+                var _msg = _report.messages[_m];
+                scr_set_status_message(_msg.text, _msg.is_error ? c_red : c_orange);
+                _shown += 1;
+                _m += 1;
+            }
+
+            if (_exit_code != 0 || _report.error_count > 0 || !file_exists(build_exe_path)) {
+                show_debug_message("vasm failed with exit code " + string(_exit_code));
+                scr_set_status_message("BUILD FAILED - " + string(max(1, _report.error_count)) + " assembler error(s). Full log: " + build_log_path, c_red);
+                build_state = "idle";
+            } else {
+                var _bin_size = 0;
+                var _bin_file = file_bin_open(build_exe_path, 0);
+                if (_bin_file >= 0) {
+                    _bin_size = file_bin_size(_bin_file);
+                    file_bin_close(_bin_file);
+                }
+                scr_set_status_message("Assembled OK: " + string(_bin_size) + " bytes" + (_report.warning_count > 0 ? ", " + string(_report.warning_count) + " warning(s)" : "") + ".", make_colour_rgb(0, 255, 255));
+
+                // Close any emulator left from an earlier run first: it holds
+                // disk.adf open, and the new disk is written in its place.
+                scr_amiga_fsuae_close();
+                build_state = "closing_fsuae";
+                build_wait_timer = 0;
+            }
+        }
+    } else if (build_wait_timer > 1200) {
+        show_debug_message("Build timed out waiting for vasm.");
+        scr_set_status_message("BUILD TIMED OUT - vasm did not finish. Log: " + build_log_path, c_red);
+        build_state = "idle";
+    }
+}
+
+if (build_state == "closing_fsuae") {
+    build_wait_timer += 1;
+
+    if (build_wait_timer >= 20) {
+        build_wait_timer = 0;
+
+        if (build_uses_dos_loader) {
+            // DOS boot mode: an OFS disk with S/Startup-Sequence, made by
+            // xdftool (needs a real Kickstart to run by itself).
+            build_adf_path = scr_amiga_start_adf_build(build_exe_path, build_project_path, build_volume_name, true);
+            build_adf_ready_timer = 0;
+            build_state = "waiting_for_adf";
+        } else {
+            // Auto-boot disk (ADAM-style): written right here, no tools.
+            build_adf_path = build_project_path + "/build/disk.adf";
+            var _adf_result = scr_amiga_write_boot_adf(build_exe_path, build_adf_path);
+
+            if (_adf_result.ok) {
+                scr_set_status_message(_adf_result.message, make_colour_rgb(0, 255, 255));
+                scr_amiga_fsuae_launch(build_adf_path);
+            } else {
+                scr_set_status_message("DISK NOT WRITTEN: " + _adf_result.message, c_red);
+            }
+
+            build_state = "idle";
+        }
+    }
+}
+
+if (build_state == "waiting_for_adf") {
+    build_wait_timer += 1;
+
+    if (file_exists(build_adf_path)) {
+        // scr_amiga_start_adf_build publishes disk.adf only after xdftool has
+        // completed every write and installed the boot block. Retain a short
+        // filesystem settling delay.
+        build_adf_ready_timer += 1;
+
+        if (build_adf_ready_timer >= 30) {
+            scr_amiga_fsuae_launch(build_adf_path);
+            build_state = "idle";
+        }
+    } else {
+        build_adf_ready_timer = 0;
+
+        // The bundled one-file xdftool may need extra time for extraction on
+        // its first run. It publishes disk.adf only on completion.
+        if (build_wait_timer > 1800) {
+            scr_set_status_message("Build timed out waiting for xdftool to produce disk.adf.", c_red);
+            build_state = "idle";
+        }
+    }
+}
+
+
 // The bitmap editor and colour picker are both modal: do not pan, build,
 // undo, click controls or mutate the graph behind either of them.
-if (instance_exists(obj_bitmap_editor) || instance_exists(obj_bob_editor) || instance_exists(obj_colour_picker) || instance_exists(obj_cprbar_editor)) {
+if (scr_amiga_modal_open()) {
     exit;
 }
 
@@ -89,100 +198,6 @@ if (_ctrl_held_for_undo && keyboard_check_pressed(ord("Y")) && global.operand_ed
 
 if (keyboard_check_pressed(vk_f5) && build_state == "idle") {
     scr_amiga_trigger_build();
-}
-
-if (build_state == "waiting_for_asm") {
-    build_wait_timer += 1;
-
-    if (file_exists(build_exe_path)) {
-        // vasm creates main.bin before it has finished writing it. In
-        // particular, the bitmap Hunk executable is about 50 KiB, so passing
-        // the file to xdftool on the first visible frame can copy a truncated
-        // executable and abort xdftool before it installs the boot block.
-        var _exe_size = -1;
-        var _exe_file = file_bin_open(build_exe_path, 0);
-
-        // The writer may briefly have the file locked. Treat that exactly like
-        // a changing size and simply try again on the next Step frame.
-        if (_exe_file >= 0) {
-            _exe_size = file_bin_size(_exe_file);
-            file_bin_close(_exe_file);
-        }
-
-        if (_exe_size > 0 && _exe_size == build_exe_last_size) {
-            build_exe_stable_timer += 1;
-        } else {
-            build_exe_last_size = _exe_size;
-            build_exe_stable_timer = 0;
-        }
-
-        if (build_exe_stable_timer >= 30) {
-            show_debug_message("obj_amiga_manager: main.bin stable at " + string(_exe_size) + " bytes after " + string(build_wait_timer) + " frames");
-            build_adf_path = scr_amiga_start_adf_build(build_exe_path, build_project_path, build_volume_name, build_uses_dos_loader);
-            build_state = "waiting_for_adf";
-            build_wait_timer = 0;
-            build_adf_ready_timer = 0;
-        }
-    }
-
-    // Safety net — covers both "main.bin never appears" and "main.bin
-    // appears but stays at 0 bytes forever" (e.g. an empty/no-op build).
-    // The stability check above only ever progresses once size is > 0, so
-    // without this a stuck-at-zero file would leave build_state here
-    // permanently and F5 would never fire again.
-    if (build_state == "waiting_for_asm" && build_wait_timer > build_timeout_frames) {
-        show_debug_message("Build timed out waiting for vasm to produce a valid main.bin.");
-        build_state = "idle";
-    }
-}
-
-if (build_state == "waiting_for_adf") {
-    build_wait_timer += 1;
-
-    if (file_exists(build_adf_path)) {
-        // scr_amiga_start_adf_build publishes disk.adf only after xdftool has
-        // completed every write and installed the boot block. Retain a short
-        // filesystem settling delay, but no long guessed build delay is needed.
-        build_adf_ready_timer += 1;
-        var _adf_settle_frames = 30;
-
-        if (build_adf_ready_timer >= _adf_settle_frames) {
-            show_debug_message("obj_amiga_manager: disk.adf ready after " + string(build_wait_timer) + " frames — closing previous FS-UAE sessions");
-
-            // Close any emulator left behind by an earlier F5 run. taskkill
-            // returns immediately, so use a short state-machine delay before
-            // launching the replacement process.
-            execute_shell_simple("taskkill.exe", "/F /T /IM fs-uae.exe", "open", 0);
-            build_state = "waiting_to_launch_fsuae";
-            build_wait_timer = 0;
-        }
-    } else {
-        build_adf_ready_timer = 0;
-
-        // The bundled one-file xdftool may need extra time for extraction on
-        // its first run. It now publishes disk.adf only on completion.
-        var _adf_timeout_frames = build_uses_dos_loader ? 1800 : build_timeout_frames;
-        if (build_wait_timer > _adf_timeout_frames) {
-            show_debug_message("Build timed out waiting for xdftool to produce disk.adf.");
-            build_state = "idle";
-        }
-    }
-}
-
-if (build_state == "waiting_to_launch_fsuae") {
-    build_wait_timer += 1;
-
-    if (build_wait_timer >= 15) {
-        show_debug_message("obj_amiga_manager: previous FS-UAE sessions closed — launching new session");
-
-        // Kickstart picker is disabled for now (see the F5 handler above) —
-        // don't pass --kickstart_file at all, so FS-UAE always uses its own
-        // bundled default rather than picking up something stale left over
-        // in settings.ini from earlier testing. Revisit together.
-        var _uae_args = "--floppy_drive_0=\"" + build_adf_path + "\" --fullscreen=0 --window_x=500 --window_y=200 --window_width=900 --window_height=700 --zoom=1";
-execute_shell_simple(global.fsuae_path, _uae_args);
-        build_state = "idle";
-    }
 }
 
 var _test_button_x = top_ui_test_x;
@@ -259,6 +274,36 @@ if (_over_bob_test && mouse_check_button_pressed(mb_left)) scr_amiga_run_bob_bit
 
 var _over_sprite_bitmap_test = point_in_rectangle(mouse_x, mouse_y, top_ui_test_2_x, top_ui_row_2_y, top_ui_test_2_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height);
 if (_over_sprite_bitmap_test && mouse_check_button_pressed(mb_left)) scr_amiga_run_sprite_bitmap_test();
+
+// SND-EDIT: the Sound & Music editor (MOD and sample assets).
+var _over_sound_editor = point_in_rectangle(mouse_x, mouse_y, top_ui_editor_2_x, top_ui_row_2_y, top_ui_editor_2_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height);
+if (_over_sound_editor && mouse_check_button_pressed(mb_left)) scr_audio_editor_open();
+
+// MACHINE: A600 (OCS, 1 MB chip) <-> A1200 (AGA, 2 MB chip).
+var _over_machine = point_in_rectangle(mouse_x, mouse_y, top_ui_machine_x, top_ui_row_1_y, top_ui_machine_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height);
+if (_over_machine && mouse_check_button_pressed(mb_left) && build_state == "idle") scr_amiga_machine_toggle();
+
+// RUN: the same as F5 - assemble, write the auto-boot disk, boot FS-UAE.
+var _over_run = point_in_rectangle(mouse_x, mouse_y, top_ui_machine_x, top_ui_row_2_y, top_ui_machine_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height);
+if (_over_run && mouse_check_button_pressed(mb_left)) scr_amiga_trigger_build();
+
+// ROM: left click picks a Kickstart for this machine, right click goes back to AROS.
+var _over_rom = point_in_rectangle(mouse_x, mouse_y, top_ui_machine_2_x, top_ui_row_1_y, top_ui_machine_2_x + top_ui_button_width, top_ui_row_1_y + top_ui_button_height);
+if (_over_rom && mouse_check_button_pressed(mb_left)) scr_amiga_kickstart_choose();
+if (_over_rom && mouse_check_button_pressed(mb_right)) scr_amiga_kickstart_clear();
+
+// BOOT: AUTO (trackloader bootblock, runs on any ROM) <-> DOS (OFS disk with
+// S/Startup-Sequence, readable on Workbench; needs a real Kickstart to auto-run).
+var _over_boot_mode = point_in_rectangle(mouse_x, mouse_y, top_ui_machine_2_x, top_ui_row_2_y, top_ui_machine_2_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height);
+if (_over_boot_mode && mouse_check_button_pressed(mb_left) && build_state == "idle") {
+    global.build_boot_mode = global.build_boot_mode == "AUTO" ? "DOS" : "AUTO";
+    scr_amiga_machine_settings_save();
+    if (global.build_boot_mode == "AUTO") {
+        scr_set_status_message("Boot: AUTO - the disk boots straight into the program on any Kickstart (AROS too).", make_colour_rgb(0, 255, 255));
+    } else {
+        scr_set_status_message("Boot: DOS - OFS disk with Startup-Sequence; set a real Kickstart ROM for it to run by itself.", make_colour_rgb(0, 255, 255));
+    }
+}
 
 var _kill_fsuae_button_x = top_ui_system_x;
 var _kill_fsuae_button_y = top_ui_row_2_y;

@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_amiga_vasm_report",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_amiga_vasm_report",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/Extensions/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

@@ -104,8 +104,10 @@ function scr_load_workspace_from_path(_path) {
         // palette-spawn time — loading skips that path entirely, so it
         // would otherwise sit at the generic default (60) forever. Snap it
         // back to the correct taller height here instead.
+        scr_node_restore_extra_fields(_new_node, _node_data);
+
         if (_new_node.is_macro) {
-            _new_node.node_height = (_new_node.macro_type == "ANIM_BOB" || _new_node.macro_type == "ANIM_SPR") ? 120 : 100;
+            _new_node.node_height = scr_macro_node_height(_new_node.macro_type);
         }
 
         _n += 1;

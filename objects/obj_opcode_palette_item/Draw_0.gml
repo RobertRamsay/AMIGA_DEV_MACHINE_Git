@@ -14,7 +14,17 @@ if (palette_mnemonic == "SETBKG") {
 
 draw_set_colour(_body_colour);
 
-draw_rectangle_colour(palette_x, palette_y, palette_x + palette_width, palette_y + palette_height, col1,col2,col1,col2, false);
+var _grad_1 = col1;
+var _grad_2 = col2;
+if (palette_mnemonic == "PLAY_MOD" || palette_mnemonic == "STOP_MOD" || palette_mnemonic == "PLAY_SFX") {
+    _grad_1 = make_colour_rgb(20, 170, 90);
+    _grad_2 = make_colour_rgb(10, 80, 45);
+} else if (palette_mnemonic == "CODE") {
+    _grad_1 = make_colour_rgb(20, 160, 180);
+    _grad_2 = make_colour_rgb(10, 70, 90);
+}
+
+draw_rectangle_colour(palette_x, palette_y, palette_x + palette_width, palette_y + palette_height, _grad_1, _grad_2, _grad_1, _grad_2, false);
 
 if (palette_mnemonic == "ORG") {
     _body_colour = make_color_rgb(160, 40, 160);

@@ -1,4 +1,4 @@
-if (instance_exists(obj_bitmap_editor) || instance_exists(obj_bob_editor) || instance_exists(obj_colour_picker) || instance_exists(obj_cprbar_editor)) {
+if (scr_amiga_modal_open()) {
     exit;
 }
 
@@ -180,7 +180,79 @@ if (is_macro) {
     var _is_bob_reference = (macro_type == "GET_BITMAP_BOB" || macro_type == "DRAW_BOB" || macro_type == "REPLACE_BITMAP_BOB" || macro_type == "BOB_BITMAP_TEST");
     var _is_sprite_reference = (macro_type == "SPRITE_DISPLAY" || macro_type == "SPRITE_BITMAP_TEST");
 
-    if (_is_move_macro || _is_anim_macro) {
+    var _is_audio_or_code = (macro_type == "PLAY_MOD" || macro_type == "STOP_MOD" || macro_type == "PLAY_SFX" || macro_type == "CODE");
+
+    if (_is_audio_or_code) {
+        _asset_resolved = true;
+        if (macro_type == "PLAY_MOD" || macro_type == "PLAY_SFX") {
+            var _audio_asset = scr_asset_find_by_name(macro_asset_name);
+            _asset_resolved = _audio_asset != undefined && _audio_asset.type == (macro_type == "PLAY_MOD" ? "MOD" : "SAMPLE");
+        }
+        if (build_error_text != "") _asset_resolved = false;
+
+        var _field_left = _world_mouse_x < node_x + node_width * 0.5;
+        var _field_delta = _field_left ? -1 : 1;
+        var _pressed_here = mouse_check_button_pressed(mb_left) && global.operand_edit_owner_uid == -1;
+        var _in_middle_third = abs(_world_mouse_x - (node_x + node_width * 0.5)) < node_width / 6;
+        var _preview_click = false;
+        if (_pressed_here && _in_middle_third && point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y + 20, node_x + node_width, node_y + 40)
+            && (macro_type == "PLAY_MOD" || macro_type == "PLAY_SFX")) {
+            _preview_click = true;
+            _pressed_here = false;
+        }
+
+        if (macro_type == "CODE") {
+            var _over_edit_button = point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y + 20, node_x + node_width, node_y + 40);
+            var _over_code_body = point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y + 40, node_x + node_width, node_y + node_height);
+            if (_pressed_here && _over_edit_button) {
+                scr_code_editor_open(id);
+            } else if (_pressed_here && _over_code_body) {
+                if (current_time - code_last_click_time < 400) {
+                    code_last_click_time = -1000000;
+                    scr_code_editor_open(id);
+                } else {
+                    code_last_click_time = current_time;
+                }
+            }
+        } else if (macro_type == "PLAY_MOD" && _pressed_here) {
+            if (point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y + 20, node_x + node_width, node_y + 40)) {
+                scr_push_undo_snapshot();
+                scr_macro_node_cycle_asset(id, _field_delta);
+            } else if (point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y + 40, node_x + node_width, node_y + 60)) {
+                scr_push_undo_snapshot();
+                macro_music_pos = clamp(macro_music_pos + _field_delta, 0, 127);
+            }
+        } else if (macro_type == "PLAY_SFX" && _pressed_here) {
+            if (point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y + 20, node_x + node_width, node_y + 40)) {
+                scr_push_undo_snapshot();
+                scr_macro_node_cycle_asset(id, _field_delta);
+            } else if (point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y + 40, node_x + node_width, node_y + 60)) {
+                scr_push_undo_snapshot();
+                macro_sfx_channel = clamp(macro_sfx_channel + _field_delta, -1, 3);
+            } else if (point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y + 60, node_x + node_width, node_y + 80)) {
+                scr_push_undo_snapshot();
+                // -1 = the sample's own volume, then 0..64 in steps of 4.
+                if (macro_sfx_volume < 0) {
+                    macro_sfx_volume = _field_delta > 0 ? 0 : -1;
+                } else {
+                    macro_sfx_volume = macro_sfx_volume + _field_delta * 4;
+                    if (macro_sfx_volume < 0) macro_sfx_volume = -1;
+                    macro_sfx_volume = min(macro_sfx_volume, 64);
+                }
+            }
+        }
+
+        // The middle third of the asset row plays the asset in the editor
+        // (preview only); the outer thirds cycle through the assets.
+        if ((macro_type == "PLAY_MOD" || macro_type == "PLAY_SFX") && _preview_click
+            && point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y + 20, node_x + node_width, node_y + 40)) {
+            var _preview_asset = scr_asset_find_by_name(macro_asset_name);
+            if (_preview_asset != undefined) {
+                if (_preview_asset.type == "MOD") scr_audio_preview_mod(_preview_asset);
+                else if (_preview_asset.type == "SAMPLE") scr_audio_preview_sample(_preview_asset);
+            }
+        }
+    } else if (_is_move_macro || _is_anim_macro) {
         _asset_resolved = true;
     } else if (macro_type == "SETBKG") {
         _asset_resolved = scr_is_valid_hex_colour(macro_asset_name);
@@ -200,7 +272,7 @@ if (is_macro) {
     var _over_asset_field = point_in_rectangle(_world_mouse_x, _world_mouse_y, _asset_field_x, _asset_field_y, _asset_field_x + _asset_field_width, _asset_field_y + _asset_field_height);
     var _can_start_asset_edit = ((global.operand_edit_owner_uid == -1) || (global.operand_edit_owner_uid == uid)) && (operand_editing_slot != "macro_asset");
 
-    if (_over_asset_field && mouse_check_button_pressed(mb_left) && _can_start_asset_edit && !_is_move_macro && !_is_anim_macro) {
+    if (_over_asset_field && mouse_check_button_pressed(mb_left) && _can_start_asset_edit && !_is_move_macro && !_is_anim_macro && !_is_audio_or_code) {
         if (macro_type == "SETBKG") {
             scr_colour_picker_open(id, "macro_asset_name", -1, "SETBKG colour");
         } else if (macro_type == "COPPER_BAR") {

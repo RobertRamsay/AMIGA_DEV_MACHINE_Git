@@ -1,11 +1,12 @@
 /// @desc scr_amiga_trigger_build()
-/// The full F5 build sequence, extracted so both the F5 keypress and
-/// clicking the INIT node can trigger it identically. Wrapped in
-/// with(obj_amiga_manager) so build_state and friends resolve correctly
-/// no matter which instance actually calls this.
+/// The full F5 build sequence, extracted so the F5 key, the RUN button,
+/// clicking the INIT node and F5 inside the code editor all trigger it
+/// identically. Wrapped in with(obj_amiga_manager) so build_state and
+/// friends resolve correctly no matter which instance calls this.
 function scr_amiga_trigger_build() {
     with (obj_amiga_manager) {
         if (build_state != "idle") {
+            scr_set_status_message("A build is already running.");
             exit;
         }
 
@@ -20,46 +21,29 @@ function scr_amiga_trigger_build() {
             // that here rather than let it build clean and crash in FS-UAE.
             scr_set_status_message("F5 - BAD BUILD (NO CORE LOOP)", c_red);
         } else {
-            // Only the DOS-loader path (a BITMAP_DISPLAY macro anywhere in
-            // the program) needs a real Kickstart to auto-run
-            // Startup-Sequence. Plain direct-bootblock tests boot fine on
-            // FS-UAE's built-in AROS replacement, so there's no reason to
-            // interrupt those with a prompt.
-            var _requires_kickstart = false;
-            var _node_scan_index = 0;
-            var _node_count = array_length(_node_array);
-
-            while (_node_scan_index < _node_count) {
-                if (_node_array[_node_scan_index].is_macro && (_node_array[_node_scan_index].macro_type == "BITMAP_DISPLAY" || _node_array[_node_scan_index].macro_type == "BOB_BITMAP_TEST" || _node_array[_node_scan_index].macro_type == "GET_BITMAP_BOB" || _node_array[_node_scan_index].macro_type == "SPRITE_BITMAP_TEST")) {
-                    _requires_kickstart = true;
-                }
-                _node_scan_index += 1;
-            }
-
-            // Kickstart ROM picker disabled for now — internal testing
-            // only, boots straight to FS-UAE's bundled AROS fallback as
-            // before. Revisit once a licensed ROM workflow is needed.
-            // if (_requires_kickstart) {
-            //     scr_amiga_ensure_kickstart_path();
-            // }
-
-            if (_requires_kickstart) {
-                scr_set_status_message("Booting with unknown Kickstart - at CLI 1> please enter " + chr(34) + "DF0:main" + chr(34));
-            }
-
+            with (obj_opcode_node) build_error_text = "";
             var _start_result = scr_amiga_start_build(_node_array, global.current_project_path, global.current_chipset_mode);
 
             if (_start_result.success) {
                 build_project_path = global.current_project_path;
                 build_volume_name = global.current_volume_name;
                 build_exe_path = _start_result.exe_path;
+                build_done_path = _start_result.done_path;
+                build_log_path = _start_result.log_path;
+                build_line_map = _start_result.line_map;
                 build_uses_dos_loader = _start_result.uses_dos_loader;
                 build_state = "waiting_for_asm";
                 build_wait_timer = 0;
                 build_exe_last_size = -1;
                 build_exe_stable_timer = 0;
+                global.code_editor_build_errors = [];
+                scr_set_status_message("Assembling (" + scr_amiga_machine_profile().name + ")...");
             } else {
-                show_debug_message("Build blocked by opcode errors — see previous debug lines.");
+                var _e = 0;
+                while (_e < array_length(_start_result.error_list) && _e < 5) {
+                    scr_set_status_message(string_replace(_start_result.error_list[_e], "; ERROR: ", "ERROR: "), c_red);
+                    _e += 1;
+                }
                 scr_set_status_message("WONT BUILD (ERRORS IN CODE)", c_red);
             }
         }
