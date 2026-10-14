@@ -2,7 +2,23 @@
 /// Central semantic lookup for hover help. Returns a plain-English explanation
 /// for known Amiga hardware operations, or an empty string when the node has
 /// no explanation yet. Extend this function as new macros/registers are added.
+/// Graphics nodes also say what their EDIT button opens.
 function scr_amiga_explain_node(_node) {
+    var _text = scr_amiga_explain_node_base(_node);
+    if (_text == "" || _node.build_error_text != "") return _text;
+    switch (scr_node_edit_kind(_node)) {
+        case "bitmap": return _text + " EDIT BITMAP opens the picture in the bitmap editor.";
+        case "sprite": return _text + " EDIT SPRITE opens '" + _node.macro_asset_name + "' in SPR-EDIT.";
+        case "bob": return _text + " EDIT BOB opens '" + _node.macro_asset_name + "' in the BOB editor.";
+        case "sprite_anim": return _text + " Frames count every sprite in order (SPR-EDIT's < >); EDIT opens the START frame in SPR-EDIT.";
+        case "bob_anim": return _text + " Frames count every BOB in order (the BOB editor's < >); EDIT opens the START frame in the BOB editor.";
+        case "map": return _text + " Click the EDIT MAP row to paint it in TILE-EDIT.";
+        case "hero": return _text + " Click the EDIT HERO row to change its frames in TILE-EDIT's Animations tab.";
+    }
+    return _text;
+}
+
+function scr_amiga_explain_node_base(_node) {
     if (_node.is_macro) {
         if (_node.build_error_text != "") {
             return "LAST BUILD FAILED HERE: " + string_replace(_node.build_error_text, "; ERROR: ", "");

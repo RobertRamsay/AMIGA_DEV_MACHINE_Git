@@ -347,8 +347,18 @@ if (is_macro) {
             scr_push_undo_snapshot(); macro_anim_start = clamp(macro_anim_start + _anim_delta, 0, macro_anim_end);
         } else if (point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y + 80, node_x + node_width, node_y + 100)) {
             scr_push_undo_snapshot(); macro_anim_end = clamp(macro_anim_end + _anim_delta, macro_anim_start, _anim_max_frame);
-        } else if (point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y + 100, node_x + node_width, node_y + 120)) {
+        } else if (point_in_rectangle(_world_mouse_x, _world_mouse_y, node_x, node_y + 100, node_x + node_width * 0.5, node_y + 120)) {
             scr_push_undo_snapshot(); macro_anim_loop = !macro_anim_loop;
+        }
+    }
+
+    // EDIT: the node's graphic in its editor (ANIM nodes: right half of the LOOP row).
+    var _edit_kind = scr_node_edit_kind(id);
+    if (_edit_kind != "" && !_is_game_kit && mouse_check_button_pressed(mb_left) && global.operand_edit_owner_uid == -1) {
+        var _edit_y = scr_node_edit_row_y(id);
+        var _edit_x1 = _is_anim_macro ? node_x + node_width * 0.5 : node_x;
+        if (point_in_rectangle(_world_mouse_x, _world_mouse_y, _edit_x1, _edit_y, node_x + node_width, _edit_y + 20)) {
+            scr_node_edit_open(id);
         }
     }
 } else {

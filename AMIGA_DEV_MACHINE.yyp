@@ -213,6 +213,7 @@
   },
   "name":"AMIGA_DEV_MACHINE",
   "resources":[
+    {"id":{"name":"scr_node_edit","path":"scripts/scr_node_edit/scr_node_edit.yy",},},
     {"id":{"name":"scr_tracker_selftest","path":"scripts/scr_tracker_selftest/scr_tracker_selftest.yy",},},
     {"id":{"name":"scr_tracker_open","path":"scripts/scr_tracker_open/scr_tracker_open.yy",},},
     {"id":{"name":"scr_tracker_song","path":"scripts/scr_tracker_song/scr_tracker_song.yy",},},

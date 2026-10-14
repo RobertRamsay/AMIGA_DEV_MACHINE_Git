@@ -274,7 +274,10 @@ if (is_macro) {
         scr_node_row(_asset_field_dx, node_width, _asset_field_dy + 20, "RATE: " + string(macro_anim_rate) + " FPS", c_dkgray, c_white, true);
         scr_node_row(_asset_field_dx, node_width, _asset_field_dy + 40, "START: " + string(macro_anim_start), c_dkgray, c_white, true);
         scr_node_row(_asset_field_dx, node_width, _asset_field_dy + 60, "END: " + string(macro_anim_end), c_dkgray, c_white, true);
-        scr_node_row(_asset_field_dx, node_width, _asset_field_dy + 80, "LOOP: " + (macro_anim_loop ? "ON" : "OFF"), c_dkgray, c_white, false);
+        // LOOP on the left half, EDIT FRAMES on the right (Step splits the row the same way).
+        var _loop_x2 = _asset_field_dx + node_width * 0.5;
+        scr_node_row(_asset_field_dx, node_width * 0.5 + NODE_ROW_INSET_R - 2, _asset_field_dy + 80, "LOOP: " + (macro_anim_loop ? "ON" : "OFF"), c_dkgray, c_white, false);
+        scr_node_edit_draw_button(id, _loop_x2 + 2, _asset_field_dx + node_width - NODE_ROW_INSET_R, _asset_field_dy + 80);
     } else {
 
     var _asset_field_colour = c_dkgray;
@@ -333,6 +336,11 @@ if (is_macro) {
     }
     draw_set_colour(c_white);
     scr_ui_text_mid(_asset_field_dx + NODE_TEXT_PAD, _info_y, _info_y + 20, scr_ui_fit_label(_info_text, node_width - 2 * NODE_TEXT_PAD));
+
+    // EDIT BITMAP / SPRITE / BOB (Step tests the same row).
+    if (scr_node_edit_kind(id) != "") {
+        scr_node_edit_draw_button(id, _asset_field_dx + NODE_ROW_INSET_L, _asset_field_dx + node_width - NODE_ROW_INSET_R, scr_node_edit_row_y(id) + global.pan_y);
+    }
     }
 } else {
     var _mode_src_dx = mode_button_src_x + global.pan_x;

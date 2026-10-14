@@ -42,6 +42,11 @@ function scr_gk_node_click(_node, _wx, _wy) {
         if (_node.macro_asset_name == "") scr_set_status_message("No animation sets yet - make one in TILE-EDIT (Animations).", c_orange);
         return true;
     }
+    // The second row of DRAW MAP / PLAYER is their EDIT button (TILE-EDIT).
+    if ((_type == "GK_MAP" || _type == "GK_PLAYER") && _row == 1) {
+        scr_node_edit_open(_node);
+        return true;
+    }
     if (_type == "GK_PHYSICS") {
         scr_push_undo_snapshot();
         if (_row == 0) _node.macro_param_a = clamp(_node.macro_param_a + _delta * 4, 4, 96);
@@ -97,18 +102,18 @@ function scr_gk_node_draw(_node, _dx, _dy) {
             var _map = scr_asset_find_by_name(_node.macro_asset_name);
             var _tileset = _map != undefined && _map.type == "TILEMAP" ? scr_asset_find_by_name(_map.tileset) : undefined;
             if (_tileset != undefined && _tileset.type == "TILESET") {
-                array_push(_rows, string(_tileset.tile_size) + "px tiles, " + string(_map.rooms_x) + "x" + string(_map.rooms_y) + " rooms");
+                array_push(_rows, "EDIT MAP: " + string(_tileset.tile_size) + "px, " + string(_map.rooms_x) + "x" + string(_map.rooms_y) + " rooms");
             } else {
-                array_push(_rows, "map not found");
+                array_push(_rows, "EDIT MAP (not found)");
             }
             break;
         case "GK_PLAYER":
             array_push(_rows, "<  " + (_node.macro_asset_name == "" ? "(no hero)" : _node.macro_asset_name) + "  >");
             var _set = scr_asset_find_by_name(_node.macro_asset_name);
             if (_set != undefined && _set.type == "ANIMSET") {
-                array_push(_rows, "16x" + string(_set.height) + ", " + string(array_length(_set.states.idle.frames)) + "/" + string(array_length(_set.states.run.frames)) + "/" + string(array_length(_set.states.jump.frames)) + "/" + string(array_length(_set.states.fall.frames)) + " frames");
+                array_push(_rows, "EDIT HERO: 16x" + string(_set.height) + ", " + string(array_length(_set.states.idle.frames)) + "/" + string(array_length(_set.states.run.frames)) + "/" + string(array_length(_set.states.jump.frames)) + "/" + string(array_length(_set.states.fall.frames)));
             } else {
-                array_push(_rows, "animation set not found");
+                array_push(_rows, "EDIT HERO (not found)");
             }
             break;
         case "GK_PHYSICS":
@@ -130,7 +135,14 @@ function scr_gk_node_draw(_node, _dx, _dy) {
         // "<  value  >" rows step / cycle: draw them as stepper rows.
         var _stepper = string_copy(_text, 1, 3) == "<  " && string_copy(_text, string_length(_text) - 2, 3) == "  >";
         if (_stepper) _text = string_copy(_text, 4, string_length(_text) - 6);
-        scr_node_row(_dx, _w, _dy + 20 + _i * 20, _text, c_dkgray, c_white, _stepper);
+        var _fill = c_dkgray;
+        if (_i == 1 && (_type == "GK_MAP" || _type == "GK_PLAYER")) {
+            // EDIT button row (opens TILE-EDIT, scr_gk_node_click).
+            var _ry = _dy + 20 + _i * 20;
+            var _hover = point_in_rectangle(mouse_x, mouse_y, _dx, _ry, _dx + _w, _ry + 20) && !scr_amiga_modal_open();
+            _fill = _hover ? make_colour_rgb(35, 125, 130) : make_colour_rgb(25, 95, 100);
+        }
+        scr_node_row(_dx, _w, _dy + 20 + _i * 20, _text, _fill, c_white, _stepper);
         _i += 1;
     }
     if (_info != "") {
