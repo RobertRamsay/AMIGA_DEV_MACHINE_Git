@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_gk_node_ui",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_gk_node_ui",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/Extensions/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

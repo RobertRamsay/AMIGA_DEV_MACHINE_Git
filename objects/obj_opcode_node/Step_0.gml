@@ -180,9 +180,13 @@ if (is_macro) {
     var _is_bob_reference = (macro_type == "GET_BITMAP_BOB" || macro_type == "DRAW_BOB" || macro_type == "REPLACE_BITMAP_BOB" || macro_type == "BOB_BITMAP_TEST");
     var _is_sprite_reference = (macro_type == "SPRITE_DISPLAY" || macro_type == "SPRITE_BITMAP_TEST");
 
-    var _is_audio_or_code = (macro_type == "PLAY_MOD" || macro_type == "STOP_MOD" || macro_type == "PLAY_SFX" || macro_type == "CODE");
+    var _is_game_kit = scr_gk_is_node_type(macro_type);
+    var _is_audio_or_code = (macro_type == "PLAY_MOD" || macro_type == "STOP_MOD" || macro_type == "PLAY_SFX" || macro_type == "CODE" || _is_game_kit);
 
-    if (_is_audio_or_code) {
+    if (_is_game_kit) {
+        _asset_resolved = scr_gk_node_ok(id) && build_error_text == "";
+        if (mouse_check_button_pressed(mb_left) && global.operand_edit_owner_uid == -1) scr_gk_node_click(id, _world_mouse_x, _world_mouse_y);
+    } else if (_is_audio_or_code) {
         _asset_resolved = true;
         if (macro_type == "PLAY_MOD" || macro_type == "PLAY_SFX") {
             var _audio_asset = scr_asset_find_by_name(macro_asset_name);

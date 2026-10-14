@@ -409,7 +409,7 @@ if (_over_palette) {
         global.palette_scroll_y = 0;
     }
 
-    var _mnemonic_count = variable_struct_names_count(global.opcode_map);
+    var _mnemonic_count = variable_struct_names_count(global.opcode_map) + array_length(GK_NODE_TYPES);
     var _columns = palette_columns;
     var _rows_needed = ceil(_mnemonic_count / _columns);
     var _list_height = _rows_needed * global.grid_size;

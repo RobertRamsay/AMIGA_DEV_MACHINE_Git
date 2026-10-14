@@ -17,6 +17,7 @@
   ],
   "ForcedPrefabProjectReferences":[],
   "IncludedFiles":[
+    {"$GMIncludedFile":"","%Name":"gamekit.s","CopyToMask":-1,"filePath":"datafiles/gamekit","name":"gamekit.s","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"ptplayer.readme","CopyToMask":-1,"filePath":"datafiles/audio","name":"ptplayer.readme","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"ptplayer_LICENSE.txt","CopyToMask":-1,"filePath":"datafiles/audio","name":"ptplayer_LICENSE.txt","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"ptplayer.asm","CopyToMask":-1,"filePath":"datafiles/audio","name":"ptplayer.asm","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
@@ -212,6 +213,8 @@
   },
   "name":"AMIGA_DEV_MACHINE",
   "resources":[
+    {"id":{"name":"scr_gk_node_ui","path":"scripts/scr_gk_node_ui/scr_gk_node_ui.yy",},},
+    {"id":{"name":"scr_gamekit_emit","path":"scripts/scr_gamekit_emit/scr_gamekit_emit.yy",},},
     {"id":{"name":"scr_tutorial_builders","path":"scripts/scr_tutorial_builders/scr_tutorial_builders.yy",},},
     {"id":{"name":"scr_tutorials","path":"scripts/scr_tutorials/scr_tutorials.yy",},},
     {"id":{"name":"scr_gamekit_assets","path":"scripts/scr_gamekit_assets/scr_gamekit_assets.yy",},},

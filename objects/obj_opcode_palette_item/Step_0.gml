@@ -55,6 +55,8 @@ if (_over_item && mouse_check_button_pressed(mb_left) && !global.left_click_pick
             }
             _new_node.macro_anim_end = max(0, _frame_count - 1);
             _new_node.macro_anim_loop = true;
+        } else if (scr_gk_is_node_type(palette_mnemonic)) {
+            scr_gk_node_init(_new_node, palette_mnemonic);
         } else if (palette_mnemonic == "PLAY_MOD" || palette_mnemonic == "STOP_MOD" || palette_mnemonic == "PLAY_SFX" || palette_mnemonic == "CODE") {
             scr_macro_node_init(_new_node, palette_mnemonic);
         } else {

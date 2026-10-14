@@ -19,6 +19,9 @@ var _grad_2 = col2;
 if (palette_mnemonic == "PLAY_MOD" || palette_mnemonic == "STOP_MOD" || palette_mnemonic == "PLAY_SFX") {
     _grad_1 = make_colour_rgb(20, 170, 90);
     _grad_2 = make_colour_rgb(10, 80, 45);
+} else if (scr_gk_is_node_type(palette_mnemonic)) {
+    _grad_1 = make_colour_rgb(220, 110, 30);
+    _grad_2 = make_colour_rgb(110, 50, 10);
 } else if (palette_mnemonic == "CODE") {
     _grad_1 = make_colour_rgb(20, 160, 180);
     _grad_2 = make_colour_rgb(10, 70, 90);

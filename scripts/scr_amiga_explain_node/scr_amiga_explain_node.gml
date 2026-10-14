@@ -8,6 +8,8 @@ function scr_amiga_explain_node(_node) {
             return "LAST BUILD FAILED HERE: " + string_replace(_node.build_error_text, "; ERROR: ", "");
         }
 
+        if (scr_gk_is_node_type(_node.macro_type)) return scr_gk_node_help(_node);
+
         if (_node.macro_type == "CODE") {
             return "Your own 68000 assembly, assembled exactly where this block sits in the program. "
                 + "Click EDIT CODE (or double-click the code) for the editor: syntax colours, autocomplete, "

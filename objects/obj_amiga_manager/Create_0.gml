@@ -150,6 +150,14 @@ var _mnemonic_list = variable_struct_get_names(global.opcode_map);
 
 array_sort(_mnemonic_list, true);
 
+// The Game Kit (platformer engine) nodes head the palette, before the opcodes.
+var _game_kit_list = GK_NODE_TYPES;
+var _gk_i = array_length(_game_kit_list) - 1;
+while (_gk_i >= 0) {
+    array_insert(_mnemonic_list, 0, _game_kit_list[_gk_i]);
+    _gk_i -= 1;
+}
+
 var _mnemonic_count = array_length(_mnemonic_list);
 var _i = 0;
 
@@ -174,7 +182,7 @@ while (_i < _mnemonic_count) {
     _palette_instance.palette_mnemonic = _mnemonic_key;
 
     _palette_instance.palette_display_label =
-        scr_opcode_display_label(_mnemonic_key);
+        scr_gk_is_node_type(_mnemonic_key) ? scr_gk_palette_label(_mnemonic_key) : scr_opcode_display_label(_mnemonic_key);
 
     _palette_instance.palette_x = _item_x;
     _palette_instance.base_palette_y = _item_y;

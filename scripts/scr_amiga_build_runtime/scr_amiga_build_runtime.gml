@@ -45,6 +45,7 @@ function scr_amiga_program_scan(_node_array) {
         }
         _i += 1;
     }
+    scr_gk_scan(_node_array, _scan);
     return _scan;
 }
 
@@ -78,14 +79,16 @@ function scr_amiga_ptplayer_equ_names() {
 
 /// Lines emitted right after SECTION code,CODE.
 function scr_amiga_build_header_text(_scan) {
-    if (!_scan.uses_code) return "";
+    var _flags = "";
+    if (_scan.uses_gamekit && _scan.uses_audio) _flags = "GK_AUDIO\tequ\t1\t\t\t; the Game Kit plays sound effects\n";
+    if (!_scan.uses_code) return _flags;
 
     var _equates = scr_asm_hardware_equates_text();
-    if (!_scan.uses_audio) return "; ---- hardware equates for CODE blocks (CUSTOM = $DFF000) ----\n" + _equates + "\n";
+    if (!_scan.uses_audio) return _flags + "; ---- hardware equates for CODE blocks (CUSTOM = $DFF000) ----\n" + _equates + "\n";
 
     var _skip = scr_amiga_ptplayer_equ_names();
     var _lines = string_split(string_replace_all(_equates, "\r", ""), "\n");
-    var _out = "; ---- hardware equates for CODE blocks (CUSTOM = $DFF000; some come from ptplayer) ----\n";
+    var _out = _flags + "; ---- hardware equates for CODE blocks (CUSTOM = $DFF000; some come from ptplayer) ----\n";
     var _i = 0;
     while (_i < array_length(_lines)) {
         var _parts = string_split_ext(string_replace_all(_lines[_i], "\t", " "), [" "], true);
@@ -131,7 +134,18 @@ function scr_amiga_write_audio_assets(_scan, _asset_dir) {
 /// Returns { ok, text, error }.
 function scr_amiga_build_footer_text(_scan, _build_dir) {
     var _result = { ok : true, text : "", error : "" };
-    if (!_scan.uses_audio) return _result;
+    if (_scan.uses_audio) {
+        _result = scr_amiga_build_audio_footer_text(_scan, _build_dir);
+        if (!_result.ok) return _result;
+    }
+    var _gk = scr_gk_footer_text(_scan);
+    if (!_gk.ok) return _gk;
+    _result.text += _gk.text;
+    return _result;
+}
+
+function scr_amiga_build_audio_footer_text(_scan, _build_dir) {
+    var _result = { ok : true, text : "", error : "" };
 
     var _asset_dir = _build_dir + "/assets";
     var _write_error = scr_amiga_write_audio_assets(_scan, _asset_dir);
@@ -233,6 +247,7 @@ function scr_amiga_build_footer_text(_scan, _build_dir) {
         _t += "\tDC.B " + string(_channel) + ",64\n";
         _i += 1;
     }
+    _t += scr_gk_sfx_structs_text(_scan);
     _t += "\tEVEN\n";
 
     _result.text = _t;
