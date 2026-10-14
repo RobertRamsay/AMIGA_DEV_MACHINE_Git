@@ -1,4 +1,7 @@
 var _layout = scr_bitmap_editor_layout(id);
+draw_set_font(UI_FONT);
+draw_set_halign(fa_left);
+draw_set_valign(fa_top);
 
 // Rebuild the native 320x256 preview only after pixels or palette change.
 if (!surface_exists(bitmap_surface)) {
@@ -53,68 +56,53 @@ if (surface_exists(bitmap_surface) && array_length(bitmap_dirty_pixels) > 0) {
     bitmap_dirty_pixels = [];
 }
 
+var _panel_x2 = _layout.panel_x + _layout.panel_width;
+var _panel_y2 = _layout.panel_y + _layout.panel_height;
 draw_set_alpha(0.97);
-draw_set_colour(c_black);
-draw_rectangle(_layout.panel_x, _layout.panel_y, _layout.panel_x + _layout.panel_width, _layout.panel_y + _layout.panel_height, false);
+scr_ui_box_fill(_layout.panel_x, _layout.panel_y, _panel_x2, _panel_y2, make_colour_rgb(16, 20, 28));
 draw_set_alpha(1);
-draw_set_colour(c_white);
-draw_rectangle(_layout.panel_x, _layout.panel_y, _layout.panel_x + _layout.panel_width, _layout.panel_y + _layout.panel_height, true);
 
-draw_set_colour(make_color_rgb(35, 55, 85));
-draw_rectangle(_layout.header_x + 1, _layout.header_y + 1, _layout.header_x + _layout.header_width - 1, _layout.header_y + _layout.header_height, false);
+// Header strip, inset so it stays inside the panel's bevelled corner.
+scr_ui_box_fill(_layout.panel_x + 4, _layout.panel_y + 4, _panel_x2 - 4, _layout.panel_y + _layout.header_height, make_colour_rgb(35, 55, 85));
+scr_ui_box_outline(_layout.panel_x, _layout.panel_y, _panel_x2, _panel_y2, c_white);
 draw_set_colour(c_white);
 var _header_text = "BITMAP EDITOR - 320x256 LOWRES, 5 BITPLANES, 32 COLOURS";
 if (point_in_rectangle(mouse_x, mouse_y, _layout.header_x, _layout.header_y, _layout.header_x + _layout.header_width, _layout.header_y + _layout.header_height) || panel_dragging) {
     _header_text += " - Grab to drag";
 }
-draw_text(_layout.panel_x + 8, _layout.panel_y + 3, _header_text);
+scr_ui_text_mid(_layout.panel_x + 12, _layout.panel_y + 4, _layout.panel_y + _layout.header_height, _header_text);
 
-draw_set_colour(c_red);
-draw_rectangle(_layout.close_x, _layout.close_y, _layout.close_x + 18, _layout.close_y + 18, false);
-draw_set_colour(c_white);
-draw_rectangle(_layout.close_x, _layout.close_y, _layout.close_x + 18, _layout.close_y + 18, true);
-draw_text(_layout.close_x + 5, _layout.close_y, "X");
+scr_bitmap_editor_button(_layout.close_x, _layout.close_y, _layout.close_x + 18, _layout.close_y + 18, "X", make_colour_rgb(170, 30, 30));
 
 // Left tool rail.
-draw_text(_layout.left_x, _layout.left_y, "TOOLS");
-draw_text(_layout.left_x, _layout.left_y + 18, "ZOOM " + string(bitmap_zoom) + "x");
+// One heading line above the zoom grid ("TOOLS" and "ZOOM" used to be two
+// 20 px lines in 34 px, so the second one ran into the buttons).
+draw_set_colour(c_white);
+scr_ui_text_mid(_layout.left_x, _layout.left_y, _layout.zoom_y - 4, "ZOOM " + string(bitmap_zoom) + "x");
 var _zoom_level = 1;
 while (_zoom_level <= 16) {
     var _zoom_x = _layout.zoom_x + ((_zoom_level - 1) mod 4) * (_layout.zoom_button_width + _layout.zoom_button_gap_x);
     var _zoom_y = _layout.zoom_y + ((_zoom_level - 1) div 4) * (_layout.zoom_button_height + _layout.zoom_button_gap_y);
-    draw_set_colour(bitmap_zoom == _zoom_level ? c_olive : c_dkgray);
-    draw_rectangle(_zoom_x, _zoom_y, _zoom_x + _layout.zoom_button_width, _zoom_y + _layout.zoom_button_height, false);
-    draw_set_colour(c_white);
-    draw_rectangle(_zoom_x, _zoom_y, _zoom_x + _layout.zoom_button_width, _zoom_y + _layout.zoom_button_height, true);
-    draw_text(_zoom_x + 4, _zoom_y, string(_zoom_level) + "x");
+    scr_bitmap_editor_button(_zoom_x, _zoom_y, _zoom_x + _layout.zoom_button_width, _zoom_y + _layout.zoom_button_height,
+        string(_zoom_level) + "x", bitmap_zoom == _zoom_level ? c_olive : c_dkgray);
     _zoom_level += 1;
 }
 
-draw_set_colour(c_maroon);
-draw_rectangle(_layout.clear_x, _layout.clear_y, _layout.clear_x + 120, _layout.clear_y + 20, false);
-draw_set_colour(c_white);
-draw_rectangle(_layout.clear_x, _layout.clear_y, _layout.clear_x + 120, _layout.clear_y + 20, true);
-draw_text(_layout.clear_x + 8, _layout.clear_y + 1, "CLEAR (0)");
-
-draw_set_colour(bitmap_grid_size > 0 ? c_olive : c_dkgray);
-draw_rectangle(_layout.grid_toggle_x, _layout.grid_toggle_y, _layout.grid_toggle_x + 120, _layout.grid_toggle_y + 20, false);
-draw_set_colour(c_white);
-draw_rectangle(_layout.grid_toggle_x, _layout.grid_toggle_y, _layout.grid_toggle_x + 120, _layout.grid_toggle_y + 20, true);
-draw_text(_layout.grid_toggle_x + 8, _layout.grid_toggle_y + 1, bitmap_grid_size > 0 ? "GRID: " + string(bitmap_grid_size) + "x" + string(bitmap_grid_size) : "GRID: OFF");
+scr_bitmap_editor_button(_layout.clear_x, _layout.clear_y, _layout.clear_x + 120, _layout.clear_y + 20, "CLEAR (0)", c_maroon);
+scr_bitmap_editor_button(_layout.grid_toggle_x, _layout.grid_toggle_y, _layout.grid_toggle_x + 120, _layout.grid_toggle_y + 20,
+    bitmap_grid_size > 0 ? "GRID: " + string(bitmap_grid_size) + "x" + string(bitmap_grid_size) : "GRID: OFF",
+    bitmap_grid_size > 0 ? c_olive : c_dkgray);
 
 draw_set_colour(c_white);
-draw_text(_layout.brush_label_x, _layout.brush_label_y, "BRUSH");
+scr_ui_text_mid(_layout.brush_label_x, _layout.brush_label_y - 2, _layout.brush_y - 2, "BRUSH");
 var _brush_sizes = [1, 3, 5, 7, 9];
 var _brush_button_index = 0;
 
 while (_brush_button_index < array_length(_brush_sizes)) {
     var _brush_size = _brush_sizes[_brush_button_index];
     var _brush_button_x = _layout.brush_x + _brush_button_index * (_layout.brush_button_width + _layout.brush_button_gap);
-    draw_set_colour(bitmap_brush_size == _brush_size ? c_olive : c_dkgray);
-    draw_rectangle(_brush_button_x, _layout.brush_y, _brush_button_x + _layout.brush_button_width, _layout.brush_y + _layout.brush_button_height, false);
-    draw_set_colour(c_white);
-    draw_rectangle(_brush_button_x, _layout.brush_y, _brush_button_x + _layout.brush_button_width, _layout.brush_y + _layout.brush_button_height, true);
-    draw_text(_brush_button_x + 6, _layout.brush_y + 1, string(_brush_size));
+    scr_bitmap_editor_button(_brush_button_x, _layout.brush_y, _brush_button_x + _layout.brush_button_width, _layout.brush_y + _layout.brush_button_height,
+        string(_brush_size), bitmap_brush_size == _brush_size ? c_olive : c_dkgray);
     _brush_button_index += 1;
 }
 
@@ -124,19 +112,13 @@ var _tool_index = 0;
 while (_tool_index < array_length(_tool_names)) {
     var _tool_x = _layout.tool_x + _tool_index * (_layout.tool_width + _layout.tool_gap);
     var _tool_name = _tool_names[_tool_index];
-    draw_set_colour(bitmap_tool == _tool_name ? c_olive : c_dkgray);
-    draw_rectangle(_tool_x, _layout.tool_y, _tool_x + _layout.tool_width, _layout.tool_y + _layout.tool_height, false);
-    draw_set_colour(c_white);
-    draw_rectangle(_tool_x, _layout.tool_y, _tool_x + _layout.tool_width, _layout.tool_y + _layout.tool_height, true);
-    draw_text(_tool_x + 10, _layout.tool_y + 3, _tool_name);
+    scr_bitmap_editor_button(_tool_x, _layout.tool_y, _tool_x + _layout.tool_width, _layout.tool_y + _layout.tool_height,
+        _tool_name, bitmap_tool == _tool_name ? c_olive : c_dkgray);
     _tool_index += 1;
 }
 
-draw_set_colour(bitmap_tool == "GRADIENT" ? c_olive : c_dkgray);
-draw_rectangle(_layout.gradient_tool_x, _layout.gradient_tool_y, _layout.gradient_tool_x + _layout.gradient_tool_width, _layout.gradient_tool_y + _layout.tool_height, false);
-draw_set_colour(c_white);
-draw_rectangle(_layout.gradient_tool_x, _layout.gradient_tool_y, _layout.gradient_tool_x + _layout.gradient_tool_width, _layout.gradient_tool_y + _layout.tool_height, true);
-draw_text(_layout.gradient_tool_x + 10, _layout.gradient_tool_y + 3, "GRADIENT FILL");
+scr_bitmap_editor_button(_layout.gradient_tool_x, _layout.gradient_tool_y, _layout.gradient_tool_x + _layout.gradient_tool_width, _layout.gradient_tool_y + _layout.tool_height,
+    "GRADIENT FILL", bitmap_tool == "GRADIENT" ? c_olive : c_dkgray);
 
 var _gradient_colour_1_x = _layout.gradient_tool_x;
 var _gradient_colour_2_x = _layout.gradient_tool_x + _layout.gradient_colour_width + _layout.tool_gap;
@@ -144,9 +126,11 @@ var _gradient_colour_1 = make_color_rgb(bitmap_colour_r[bitmap_gradient_colour_1
 var _gradient_colour_2 = make_color_rgb(bitmap_colour_r[bitmap_gradient_colour_2] * 17, bitmap_colour_g[bitmap_gradient_colour_2] * 17, bitmap_colour_b[bitmap_gradient_colour_2] * 17);
 
 draw_set_colour(c_white);
-draw_text(_gradient_colour_1_x, _layout.gradient_colour_label_y, "COL1: " + string(bitmap_gradient_colour_1));
-draw_text(_gradient_colour_2_x, _layout.gradient_colour_label_y, "COL2: " + string(bitmap_gradient_colour_2));
+var _col_label_y1 = _layout.gradient_tool_y + _layout.tool_height + 2;
+scr_ui_text_mid(_gradient_colour_1_x, _col_label_y1, _layout.gradient_colour_y - 2, "COL1: " + string(bitmap_gradient_colour_1));
+scr_ui_text_mid(_gradient_colour_2_x, _col_label_y1, _layout.gradient_colour_y - 2, "COL2: " + string(bitmap_gradient_colour_2));
 
+// COL1 / COL2 are colour swatches (data): plain squares.
 draw_set_colour(_gradient_colour_1);
 draw_rectangle(_gradient_colour_1_x, _layout.gradient_colour_y, _gradient_colour_1_x + _layout.gradient_colour_width, _layout.gradient_colour_y + _layout.tool_height, false);
 draw_set_colour(c_white);
@@ -157,14 +141,11 @@ draw_rectangle(_gradient_colour_2_x, _layout.gradient_colour_y, _gradient_colour
 draw_set_colour(c_white);
 draw_rectangle(_gradient_colour_2_x, _layout.gradient_colour_y, _gradient_colour_2_x + _layout.gradient_colour_width, _layout.gradient_colour_y + _layout.tool_height, true);
 
-draw_set_colour(bitmap_gradient_custom_active ? make_color_rgb(20, 80, 70) : c_dkgray);
-draw_rectangle(_layout.gradient_custom_toggle_x, _layout.gradient_custom_toggle_y,
-    _layout.gradient_custom_toggle_x + _layout.gradient_custom_toggle_width, _layout.gradient_custom_toggle_y + _layout.tool_height, false);
-draw_set_colour(bitmap_gradient_custom_active ? c_aqua : c_white);
-draw_rectangle(_layout.gradient_custom_toggle_x, _layout.gradient_custom_toggle_y,
-    _layout.gradient_custom_toggle_x + _layout.gradient_custom_toggle_width, _layout.gradient_custom_toggle_y + _layout.tool_height, true);
-draw_text(_layout.gradient_custom_toggle_x + 10, _layout.gradient_custom_toggle_y + 3,
-    bitmap_gradient_custom_active ? "CUSTOM GRADIENT: ON" : "CUSTOM GRADIENT: OFF");
+scr_bitmap_editor_button(_layout.gradient_custom_toggle_x, _layout.gradient_custom_toggle_y,
+    _layout.gradient_custom_toggle_x + _layout.gradient_custom_toggle_width, _layout.gradient_custom_toggle_y + _layout.tool_height,
+    bitmap_gradient_custom_active ? "CUSTOM GRADIENT: ON" : "CUSTOM GRADIENT: OFF",
+    bitmap_gradient_custom_active ? make_color_rgb(20, 80, 70) : c_dkgray,
+    bitmap_gradient_custom_active ? c_aqua : c_white);
 
 var _gradient_slot = 0;
 while (_gradient_slot < 12) {
@@ -201,82 +182,38 @@ while (_gradient_slot < 12) {
     _gradient_slot += 1;
 }
 
-draw_set_colour(bitmap_gradient_include_edge ? c_olive : c_dkgray);
-draw_rectangle(_layout.gradient_edge_x, _layout.gradient_edge_y, _layout.gradient_edge_x + _layout.gradient_edge_width, _layout.gradient_edge_y + _layout.tool_height, false);
-draw_set_colour(c_white);
-draw_rectangle(_layout.gradient_edge_x, _layout.gradient_edge_y, _layout.gradient_edge_x + _layout.gradient_edge_width, _layout.gradient_edge_y + _layout.tool_height, true);
-draw_text(_layout.gradient_edge_x + 10, _layout.gradient_edge_y + 3, bitmap_gradient_include_edge ? "EAT EDGE (GROW)" : "KEEP EDGE (STOP)");
+scr_bitmap_editor_button(_layout.gradient_edge_x, _layout.gradient_edge_y, _layout.gradient_edge_x + _layout.gradient_edge_width, _layout.gradient_edge_y + _layout.tool_height,
+    bitmap_gradient_include_edge ? "EAT EDGE (GROW)" : "KEEP EDGE (STOP)", bitmap_gradient_include_edge ? c_olive : c_dkgray);
 
-draw_set_colour(bitmap_use_dither ? c_olive : c_dkgray);
-draw_rectangle(_layout.dither_tool_x, _layout.dither_tool_y, _layout.dither_tool_x + _layout.dither_tool_width, _layout.dither_tool_y + _layout.tool_height, false);
-draw_set_colour(c_white);
-draw_rectangle(_layout.dither_tool_x, _layout.dither_tool_y, _layout.dither_tool_x + _layout.dither_tool_width, _layout.dither_tool_y + _layout.tool_height, true);
-draw_text(_layout.dither_tool_x + 10, _layout.dither_tool_y + 3, bitmap_use_dither ? "USE DITHER: YES" : "USE DITHER: NO");
+scr_bitmap_editor_button(_layout.dither_tool_x, _layout.dither_tool_y, _layout.dither_tool_x + _layout.dither_tool_width, _layout.dither_tool_y + _layout.tool_height,
+    bitmap_use_dither ? "USE DITHER: YES" : "USE DITHER: NO", bitmap_use_dither ? c_olive : c_dkgray);
+scr_bitmap_editor_button(_layout.dither_pair_x, _layout.dither_pair_y, _layout.dither_pair_x + _layout.dither_pair_width, _layout.dither_pair_y + _layout.tool_height,
+    bitmap_dither_use_colour_2 ? "COLOURS: COL1 / COL2" : "COLOURS: COL1 / TRANSP", c_dkgray);
+scr_bitmap_editor_button(_layout.dither_pattern_x, _layout.dither_pattern_y, _layout.dither_pattern_x + _layout.dither_pattern_width, _layout.dither_pattern_y + _layout.tool_height,
+    "DITHER: " + bitmap_dither_pattern, c_dkgray);
+scr_bitmap_editor_button(_layout.dither_invert_x, _layout.dither_invert_y, _layout.dither_invert_x + _layout.dither_invert_width, _layout.dither_invert_y + _layout.tool_height,
+    bitmap_dither_invert ? "INVERT: YES" : "INVERT: NO", c_dkgray);
 
-draw_set_colour(c_dkgray);
-draw_rectangle(_layout.dither_pair_x, _layout.dither_pair_y, _layout.dither_pair_x + _layout.dither_pair_width, _layout.dither_pair_y + _layout.tool_height, false);
-draw_rectangle(_layout.dither_pattern_x, _layout.dither_pattern_y, _layout.dither_pattern_x + _layout.dither_pattern_width, _layout.dither_pattern_y + _layout.tool_height, false);
-draw_rectangle(_layout.dither_invert_x, _layout.dither_invert_y, _layout.dither_invert_x + _layout.dither_invert_width, _layout.dither_invert_y + _layout.tool_height, false);
-draw_set_colour(c_white);
-draw_rectangle(_layout.dither_pair_x, _layout.dither_pair_y, _layout.dither_pair_x + _layout.dither_pair_width, _layout.dither_pair_y + _layout.tool_height, true);
-draw_rectangle(_layout.dither_pattern_x, _layout.dither_pattern_y, _layout.dither_pattern_x + _layout.dither_pattern_width, _layout.dither_pattern_y + _layout.tool_height, true);
-draw_rectangle(_layout.dither_invert_x, _layout.dither_invert_y, _layout.dither_invert_x + _layout.dither_invert_width, _layout.dither_invert_y + _layout.tool_height, true);
-draw_text(_layout.dither_pair_x + 10, _layout.dither_pair_y + 3, bitmap_dither_use_colour_2 ? "COLOURS: COL1 / COL2" : "COLOURS: COL1 / TRANSP");
-draw_text(_layout.dither_pattern_x + 10, _layout.dither_pattern_y + 3, "DITHER: " + bitmap_dither_pattern);
-draw_text(_layout.dither_invert_x + 10, _layout.dither_invert_y + 3, bitmap_dither_invert ? "INVERT: YES" : "INVERT: NO");
+scr_bitmap_editor_button(_layout.transparency_lock_x, _layout.transparency_lock_y, _layout.transparency_lock_x + _layout.transparency_lock_width, _layout.transparency_lock_y + _layout.tool_height,
+    bitmap_transparency_lock ? "TRANSPARENCY LOCK: ON" : "TRANSPARENCY LOCK: OFF", bitmap_transparency_lock ? c_olive : c_dkgray);
 
-draw_set_colour(bitmap_transparency_lock ? c_olive : c_dkgray);
-draw_rectangle(_layout.transparency_lock_x, _layout.transparency_lock_y, _layout.transparency_lock_x + _layout.transparency_lock_width, _layout.transparency_lock_y + _layout.tool_height, false);
-draw_set_colour(c_white);
-draw_rectangle(_layout.transparency_lock_x, _layout.transparency_lock_y, _layout.transparency_lock_x + _layout.transparency_lock_width, _layout.transparency_lock_y + _layout.tool_height, true);
-draw_text(_layout.transparency_lock_x + 10, _layout.transparency_lock_y + 3, bitmap_transparency_lock ? "TRANSPARENCY LOCK: ON" : "TRANSPARENCY LOCK: OFF");
-
-draw_set_colour(make_color_rgb(65, 55, 85));
-draw_rectangle(_layout.flip_x, _layout.flip_y, _layout.flip_x + _layout.flip_width, _layout.flip_y + _layout.tool_height, false);
-draw_set_colour(c_white);
-draw_rectangle(_layout.flip_x, _layout.flip_y, _layout.flip_x + _layout.flip_width, _layout.flip_y + _layout.tool_height, true);
-draw_text(_layout.flip_x + 10, _layout.flip_y + 3, "FLIP X (FULL IMAGE)");
+scr_bitmap_editor_button(_layout.flip_x, _layout.flip_y, _layout.flip_x + _layout.flip_width, _layout.flip_y + _layout.tool_height,
+    "FLIP X (FULL IMAGE)", make_color_rgb(65, 55, 85));
 
 var _utility_x_2 = _layout.left_x + _layout.utility_button_width + _layout.utility_button_gap;
-draw_set_colour(array_length(bitmap_undo_stack) > 0 ? c_olive : c_dkgray);
-draw_rectangle(_layout.left_x, _layout.history_y, _layout.left_x + _layout.utility_button_width, _layout.history_y + _layout.utility_button_height, false);
-draw_set_colour(c_white);
-draw_rectangle(_layout.left_x, _layout.history_y, _layout.left_x + _layout.utility_button_width, _layout.history_y + _layout.utility_button_height, true);
-draw_text(_layout.left_x + 8, _layout.history_y + 3, "UNDO (" + string(array_length(bitmap_undo_stack)) + ")");
+var _utility_w = _layout.utility_button_width;
+var _utility_h = _layout.utility_button_height;
+scr_bitmap_editor_button(_layout.left_x, _layout.history_y, _layout.left_x + _utility_w, _layout.history_y + _utility_h,
+    "UNDO (" + string(array_length(bitmap_undo_stack)) + ")", array_length(bitmap_undo_stack) > 0 ? c_olive : c_dkgray);
+scr_bitmap_editor_button(_utility_x_2, _layout.history_y, _utility_x_2 + _utility_w, _layout.history_y + _utility_h,
+    "REDO (" + string(array_length(bitmap_redo_stack)) + ")", array_length(bitmap_redo_stack) > 0 ? c_olive : c_dkgray);
 
-draw_set_colour(array_length(bitmap_redo_stack) > 0 ? c_olive : c_dkgray);
-draw_rectangle(_utility_x_2, _layout.history_y, _utility_x_2 + _layout.utility_button_width, _layout.history_y + _layout.utility_button_height, false);
-draw_set_colour(c_white);
-draw_rectangle(_utility_x_2, _layout.history_y, _utility_x_2 + _layout.utility_button_width, _layout.history_y + _layout.utility_button_height, true);
-draw_text(_utility_x_2 + 8, _layout.history_y + 3, "REDO (" + string(array_length(bitmap_redo_stack)) + ")");
-
-draw_set_colour(make_color_rgb(35, 70, 95));
-draw_rectangle(_layout.left_x, _layout.file_y, _layout.left_x + _layout.utility_button_width, _layout.file_y + _layout.utility_button_height, false);
-draw_rectangle(_utility_x_2, _layout.file_y, _utility_x_2 + _layout.utility_button_width, _layout.file_y + _layout.utility_button_height, false);
-draw_set_colour(c_white);
-draw_rectangle(_layout.left_x, _layout.file_y, _layout.left_x + _layout.utility_button_width, _layout.file_y + _layout.utility_button_height, true);
-draw_rectangle(_utility_x_2, _layout.file_y, _utility_x_2 + _layout.utility_button_width, _layout.file_y + _layout.utility_button_height, true);
-draw_text(_layout.left_x + 8, _layout.file_y + 3, "LOAD BMP");
-draw_text(_utility_x_2 + 8, _layout.file_y + 3, "SAVE BMP");
-
-draw_set_colour(make_color_rgb(55, 50, 100));
-draw_rectangle(_layout.left_x, _layout.iff_y, _layout.left_x + _layout.utility_button_width, _layout.iff_y + _layout.utility_button_height, false);
-draw_rectangle(_utility_x_2, _layout.iff_y, _utility_x_2 + _layout.utility_button_width, _layout.iff_y + _layout.utility_button_height, false);
-draw_set_colour(c_white);
-draw_rectangle(_layout.left_x, _layout.iff_y, _layout.left_x + _layout.utility_button_width, _layout.iff_y + _layout.utility_button_height, true);
-draw_rectangle(_utility_x_2, _layout.iff_y, _utility_x_2 + _layout.utility_button_width, _layout.iff_y + _layout.utility_button_height, true);
-draw_text(_layout.left_x + 8, _layout.iff_y + 3, "LOAD IFF");
-draw_text(_utility_x_2 + 8, _layout.iff_y + 3, "SAVE IFF");
-
-draw_set_colour(make_color_rgb(55, 85, 55));
-draw_rectangle(_layout.left_x, _layout.output_y, _layout.left_x + _layout.utility_button_width, _layout.output_y + _layout.utility_button_height, false);
-draw_set_colour(make_color_rgb(105, 55, 25));
-draw_rectangle(_utility_x_2, _layout.output_y, _utility_x_2 + _layout.utility_button_width, _layout.output_y + _layout.utility_button_height, false);
-draw_set_colour(c_white);
-draw_rectangle(_layout.left_x, _layout.output_y, _layout.left_x + _layout.utility_button_width, _layout.output_y + _layout.utility_button_height, true);
-draw_rectangle(_utility_x_2, _layout.output_y, _utility_x_2 + _layout.utility_button_width, _layout.output_y + _layout.utility_button_height, true);
-draw_text(_layout.left_x + 8, _layout.output_y + 3, "EXPORT PNG");
-draw_text(_utility_x_2 + 8, _layout.output_y + 3, "TEST BITMAP");
+scr_bitmap_editor_button(_layout.left_x, _layout.file_y, _layout.left_x + _utility_w, _layout.file_y + _utility_h, "LOAD BMP", make_color_rgb(35, 70, 95));
+scr_bitmap_editor_button(_utility_x_2, _layout.file_y, _utility_x_2 + _utility_w, _layout.file_y + _utility_h, "SAVE BMP", make_color_rgb(35, 70, 95));
+scr_bitmap_editor_button(_layout.left_x, _layout.iff_y, _layout.left_x + _utility_w, _layout.iff_y + _utility_h, "LOAD IFF", make_color_rgb(55, 50, 100));
+scr_bitmap_editor_button(_utility_x_2, _layout.iff_y, _utility_x_2 + _utility_w, _layout.iff_y + _utility_h, "SAVE IFF", make_color_rgb(55, 50, 100));
+scr_bitmap_editor_button(_layout.left_x, _layout.output_y, _layout.left_x + _utility_w, _layout.output_y + _utility_h, "EXPORT PNG", make_color_rgb(55, 85, 55));
+scr_bitmap_editor_button(_utility_x_2, _layout.output_y, _utility_x_2 + _utility_w, _layout.output_y + _utility_h, "TEST BITMAP", make_color_rgb(105, 55, 25));
 
 // Canvas contents are GPU-clipped to the viewport. This prevents the final
 // scaled texel or grid line leaking over either edge.
@@ -414,7 +351,9 @@ while (_swatch_index < 32) {
     draw_rectangle(_swatch_x, _swatch_y, _swatch_x + _layout.swatch_width, _swatch_y + _layout.swatch_height, false);
     draw_set_colour(bitmap_paint_index == _swatch_index ? c_yellow : c_white);
     draw_rectangle(_swatch_x, _swatch_y, _swatch_x + _layout.swatch_width, _swatch_y + _layout.swatch_height, true);
-    draw_text(_swatch_x + 3, _swatch_y + 2, string(_swatch_index));
+    // Number in black on light colours so it never vanishes (it did on #FFF).
+    draw_set_colour(scr_bitmap_editor_contrast(make_color_rgb(bitmap_colour_r[_swatch_index] * 17, bitmap_colour_g[_swatch_index] * 17, bitmap_colour_b[_swatch_index] * 17)));
+    scr_ui_text_mid(_swatch_x + 5, _swatch_y, _swatch_y + _layout.swatch_height, string(_swatch_index));
     _swatch_index += 1;
 }
 
@@ -424,7 +363,7 @@ var _hex_text = string_char_at(_hex_digits, bitmap_colour_r[_edit_index] + 1)
     + string_char_at(_hex_digits, bitmap_colour_g[_edit_index] + 1)
     + string_char_at(_hex_digits, bitmap_colour_b[_edit_index] + 1);
 draw_set_colour(c_white);
-draw_text(_layout.right_x, _layout.slider_r_y - 24, "COLOR" + string(_edit_index) + "  #" + _hex_text);
+scr_ui_text_mid(_layout.right_x, _layout.preview_y, _layout.preview_y + _layout.preview_height, "COLOR" + string(_edit_index) + "  #" + _hex_text);
 draw_set_colour(make_color_rgb(bitmap_colour_r[_edit_index] * 17, bitmap_colour_g[_edit_index] * 17, bitmap_colour_b[_edit_index] * 17));
 draw_rectangle(_layout.preview_x, _layout.preview_y, _layout.preview_x + _layout.preview_width, _layout.preview_y + _layout.preview_height, false);
 draw_set_colour(c_white);
@@ -438,7 +377,7 @@ while (_channel < 3) {
     if (_channel == 1) { _slider_y = _layout.slider_g_y; _selected = bitmap_colour_g[_edit_index]; _label = "G"; }
     if (_channel == 2) { _slider_y = _layout.slider_b_y; _selected = bitmap_colour_b[_edit_index]; _label = "B"; }
     draw_set_colour(c_white);
-    draw_text(_layout.slider_x - 18, _slider_y, _label);
+    scr_ui_text_mid(_layout.slider_x - 18, _slider_y, _slider_y + _layout.slider_height, _label);
     var _step = 0;
     while (_step < 16) {
         var _segment_x = _layout.slider_x + _step * _layout.slider_step_width;
@@ -452,11 +391,11 @@ while (_channel < 3) {
         _step += 1;
     }
     draw_set_colour(c_white);
-    draw_text(_layout.slider_x + _layout.slider_width + 4, _slider_y, string_char_at(_hex_digits, _selected + 1));
+    scr_ui_text_mid(_layout.slider_x + _layout.slider_width + 4, _slider_y, _slider_y + _layout.slider_height, string_char_at(_hex_digits, _selected + 1));
     _channel += 1;
 }
 
-draw_text_ext(_layout.right_x, _layout.slider_b_y + 38, "32 colours = five hardware bitplanes. TEST BITMAP builds a bootable OFS disk and loads the 51,200-byte display through AmigaDOS.", 18, 225);
+draw_text_ext(_layout.right_x, _layout.slider_b_y + 38, "32 colours = five hardware bitplanes. TEST BITMAP builds a bootable OFS disk and loads the 51,200-byte display through AmigaDOS.", -1, 225);
 
 draw_set_colour(c_white);
 draw_text(_layout.panel_x + 12, _layout.help_line_1_y, "LEFT: tool     RIGHT: COLOR00     ALT+CANVAS: pick     ALT+GRAD SLOT: edit colour     ALT+L/R SWATCH: COL1/COL2     CTRL+C/V: copy/paste     SPACE: pan");
@@ -465,7 +404,8 @@ draw_set_colour(c_white);
 
 // Floating native-resolution overview, drawn last so it behaves like a real
 // window above every editor control. Nearest-neighbour sampling is explicit,
-// although this draw is already a true 1:1 surface copy.
+// although this draw is already a true 1:1 surface copy. The frame stays
+// square: the 320x256 image fills it to the corners, so a bevel would cut it.
 draw_set_alpha(0.96);
 draw_set_colour(c_black);
 draw_rectangle(bitmap_preview_window_x, bitmap_preview_window_y,
@@ -490,7 +430,7 @@ if (point_in_rectangle(mouse_x, mouse_y,
 || bitmap_preview_dragging) {
     _bitmap_preview_header_text += " - Grab to drag";
 }
-draw_text(bitmap_preview_window_x + 6, bitmap_preview_window_y + 2, _bitmap_preview_header_text);
+scr_ui_text_mid(bitmap_preview_window_x + 8, bitmap_preview_window_y, bitmap_preview_window_y + bitmap_preview_header_height, _bitmap_preview_header_text);
 
 if (surface_exists(bitmap_surface)) {
     gpu_set_texfilter(false);
