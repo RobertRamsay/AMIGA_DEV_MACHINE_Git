@@ -26,8 +26,10 @@ function scr_amiga_selftest_init() {
     }
 
     if (global.selftest_active) {
-        // A recovered autosave would replace the test graph mid-run.
+        // A recovered autosave would replace the test graph mid-run, and the
+        // test must never overwrite the user's own recovery file.
         global.autosave_recovery_pending = false;
+        global.autosave_workspace_path = global.current_project_path + "/selftest_autosave_workspace.json";
     }
 }
 
