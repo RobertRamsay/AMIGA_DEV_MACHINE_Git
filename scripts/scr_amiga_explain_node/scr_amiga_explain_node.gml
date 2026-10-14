@@ -17,7 +17,8 @@ function scr_amiga_explain_node(_node) {
         }
 
         if (_node.macro_type == "PLAY_MOD") {
-            return "Starts the ProTracker module '" + _node.macro_asset_name + "' from song position " + string(_node.macro_music_pos)
+            var _mod_text = _node.macro_asset_name == "" ? "(none chosen yet)" : "'" + _node.macro_asset_name + "'";
+            return "Starts the ProTracker module " + _mod_text + " from song position " + string(_node.macro_music_pos)
                 + " using ptplayer on CIA-B interrupts, so it keeps playing while your program runs. "
                 + "Click < > to pick the music, the middle of the name to preview it here. Import MODs in SND-EDIT.";
         }
