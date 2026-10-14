@@ -42,8 +42,9 @@ function scr_gk_node_click(_node, _wx, _wy) {
         if (_node.macro_asset_name == "") scr_set_status_message("No animation sets yet - make one in TILE-EDIT (Animations).", c_orange);
         return true;
     }
-    // The second row of DRAW MAP / PLAYER is their EDIT button (TILE-EDIT).
-    if ((_type == "GK_MAP" || _type == "GK_PLAYER") && _row == 1) {
+    // EDIT buttons (TILE-EDIT): the second row of DRAW MAP / PLAYER, the only
+    // row of GAME SCREEN / ENEMIES / ANIMATE.
+    if (_row == scr_gk_edit_row(_type)) {
         scr_node_edit_open(_node);
         return true;
     }
@@ -63,6 +64,19 @@ function scr_gk_node_click(_node, _wx, _wy) {
         return true;
     }
     return false;
+}
+
+/// The row (0 = first under the header) holding a Game Kit node's EDIT
+/// button, or -1 (see scr_node_edit).
+function scr_gk_edit_row(_type) {
+    switch (_type) {
+        case "GK_MAP":
+        case "GK_PLAYER": return 1;
+        case "GK_SCREEN":
+        case "GK_ENEMIES":
+        case "GK_ANIMATE": return 0;
+    }
+    return -1;
 }
 
 /// True when a Game Kit node's settings resolve (for the validity dots).
@@ -91,18 +105,18 @@ function scr_gk_node_draw(_node, _dx, _dy) {
     var _info = "";
 
     switch (_type) {
-        case "GK_SCREEN": _info = "320x256, 16 colours"; break;
+        case "GK_SCREEN": array_push(_rows, "EDIT TILES (16 col.)"); break;
         case "GK_WAIT": _info = "sync to 50 Hz display"; break;
         case "GK_INPUT": _info = "stick + fire, port 2"; break;
-        case "GK_ENEMIES": _info = "walk, turn, hurt hero"; break;
-        case "GK_ANIMATE": _info = "idle/run/jump/fall"; break;
+        case "GK_ENEMIES": array_push(_rows, "EDIT ENEMIES"); break;
+        case "GK_ANIMATE": array_push(_rows, "EDIT ANIMATIONS"); break;
         case "GK_DRAW": _info = "draws hero + enemies"; break;
         case "GK_MAP":
             array_push(_rows, "<  " + (_node.macro_asset_name == "" ? "(no map)" : _node.macro_asset_name) + "  >");
             var _map = scr_asset_find_by_name(_node.macro_asset_name);
             var _tileset = _map != undefined && _map.type == "TILEMAP" ? scr_asset_find_by_name(_map.tileset) : undefined;
             if (_tileset != undefined && _tileset.type == "TILESET") {
-                array_push(_rows, "EDIT MAP: " + string(_tileset.tile_size) + "px, " + string(_map.rooms_x) + "x" + string(_map.rooms_y) + " rooms");
+                array_push(_rows, "EDIT MAP (" + string(_tileset.tile_size) + "px " + string(_map.rooms_x) + "x" + string(_map.rooms_y) + ")");
             } else {
                 array_push(_rows, "EDIT MAP (not found)");
             }
@@ -111,7 +125,7 @@ function scr_gk_node_draw(_node, _dx, _dy) {
             array_push(_rows, "<  " + (_node.macro_asset_name == "" ? "(no hero)" : _node.macro_asset_name) + "  >");
             var _set = scr_asset_find_by_name(_node.macro_asset_name);
             if (_set != undefined && _set.type == "ANIMSET") {
-                array_push(_rows, "EDIT HERO: 16x" + string(_set.height) + ", " + string(array_length(_set.states.idle.frames)) + "/" + string(array_length(_set.states.run.frames)) + "/" + string(array_length(_set.states.jump.frames)) + "/" + string(array_length(_set.states.fall.frames)));
+                array_push(_rows, "EDIT HERO (16x" + string(_set.height) + ")");
             } else {
                 array_push(_rows, "EDIT HERO (not found)");
             }
@@ -136,7 +150,7 @@ function scr_gk_node_draw(_node, _dx, _dy) {
         var _stepper = string_copy(_text, 1, 3) == "<  " && string_copy(_text, string_length(_text) - 2, 3) == "  >";
         if (_stepper) _text = string_copy(_text, 4, string_length(_text) - 6);
         var _fill = c_dkgray;
-        if (_i == 1 && (_type == "GK_MAP" || _type == "GK_PLAYER")) {
+        if (_i == scr_gk_edit_row(_type)) {
             // EDIT button row (opens TILE-EDIT, scr_gk_node_click).
             var _ry = _dy + 20 + _i * 20;
             var _hover = point_in_rectangle(mouse_x, mouse_y, _dx, _ry, _dx + _w, _ry + 20) && !scr_amiga_modal_open();

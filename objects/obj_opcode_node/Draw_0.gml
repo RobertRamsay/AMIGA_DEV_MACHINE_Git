@@ -299,10 +299,14 @@ if (is_macro) {
     }
 
     if (macro_type == "COPPER_BAR") {
-        _asset_field_text = "Click to edit colours";
+        // The colour editor button (Step opens obj_cprbar_editor from this row).
+        var _cpr_x1 = _asset_field_dx + NODE_ROW_INSET_L;
+        var _cpr_x2 = _asset_field_dx + node_width - NODE_ROW_INSET_R;
+        var _cpr_hover = point_in_rectangle(mouse_x, mouse_y, _cpr_x1, _asset_field_dy + 2, _cpr_x2, _asset_field_dy + 18) && !scr_amiga_modal_open();
+        scr_ui_button(_cpr_x1, _asset_field_dy + 2, _cpr_x2, _asset_field_dy + 18, "EDIT COLOURS", make_colour_rgb(25, 95, 100), _cpr_hover);
+    } else {
+        scr_node_row(_asset_field_dx, node_width, _asset_field_dy, _asset_field_text, _asset_field_colour, c_white, false);
     }
-
-    scr_node_row(_asset_field_dx, node_width, _asset_field_dy, _asset_field_text, _asset_field_colour, c_white, false);
 
     var _info_text = "asset not found";
 

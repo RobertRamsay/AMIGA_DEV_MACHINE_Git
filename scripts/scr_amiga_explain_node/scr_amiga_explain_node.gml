@@ -14,6 +14,9 @@ function scr_amiga_explain_node(_node) {
         case "bob_anim": return _text + " Frames count every BOB in order (the BOB editor's < >); EDIT opens the START frame in the BOB editor.";
         case "map": return _text + " Click the EDIT MAP row to paint it in TILE-EDIT.";
         case "hero": return _text + " Click the EDIT HERO row to change its frames in TILE-EDIT's Animations tab.";
+        case "tiles": return _text + " EDIT TILES opens the map's tileset (its 16 colours are the screen's palette) in TILE-EDIT.";
+        case "enemies": return _text + " EDIT ENEMIES opens the map in TILE-EDIT, where enemies are placed (ENEMY tool).";
+        case "anims": return _text + " EDIT ANIMATIONS opens the hero's animation set in TILE-EDIT.";
     }
     return _text;
 }

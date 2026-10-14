@@ -176,7 +176,7 @@ function scr_tour_categories() {
             { title : "SETBKG", show : "main", rect : function() { return scr_tour_node_rect(scr_tour_find_node("SETBKG")); },
               text : "SETBKG sets the background colour (COLOR00). Click its RGB row to pick a colour with the colour picker." },
             { title : "Copper bar", show : "main", rect : function() { return scr_tour_node_rect(scr_tour_find_node("COPPER_BAR")); },
-              text : "CPRBAR makes the Copper change a colour on chosen screen lines - gradients and bars for free. 'Click to edit colours' opens its editor; the line below summarises the bands." },
+              text : "CPRBAR makes the Copper change a colour on chosen screen lines - gradients and bars for free. EDIT COLOURS opens its editor; the line below summarises the bands." },
             { title : "CODE block", show : "main", rect : function() { return scr_tour_node_rect(scr_tour_find_node("CODE")); },
               text : "A CODE block holds your own assembly. EDIT CODE (or a double-click on the code) opens the code editor; the first lines are shown on the node. Assembler errors outline the node in red." },
             { title : "PLAY SFX", show : "main", rect : function() { return scr_tour_node_rect(scr_tour_find_node("PLAY_SFX")); },

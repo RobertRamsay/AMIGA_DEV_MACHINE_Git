@@ -10,6 +10,8 @@
 ///   ANIM_SPR / ANIM_BOB                    -> SPR-EDIT / BOB editor on the START frame
 ///   GK_MAP                                 -> TILE-EDIT, Map tab, the node's map
 ///   GK_PLAYER                              -> TILE-EDIT, Animations tab, the node's set
+///   GK_SCREEN / GK_ENEMIES / GK_ANIMATE    -> TILE-EDIT Tiles / Map / Animations for
+///                                             the program's DRAW MAP / PLAYER
 
 /// "" when the node has no graphic to edit, else what the button opens.
 function scr_node_edit_kind(_node) {
@@ -26,6 +28,9 @@ function scr_node_edit_kind(_node) {
         case "ANIM_BOB": return "bob_anim";
         case "GK_MAP": return "map";
         case "GK_PLAYER": return "hero";
+        case "GK_SCREEN": return "tiles";
+        case "GK_ENEMIES": return "enemies";
+        case "GK_ANIMATE": return "anims";
     }
     return "";
 }
@@ -40,6 +45,9 @@ function scr_node_edit_label(_node) {
         case "bob_anim": return "EDIT FRAMES";
         case "map": return "EDIT MAP";
         case "hero": return "EDIT HERO";
+        case "tiles": return "EDIT TILES";
+        case "enemies": return "EDIT ENEMIES";
+        case "anims": return "EDIT ANIMATIONS";
     }
     return "";
 }
@@ -91,7 +99,34 @@ function scr_node_edit_open(_node) {
         case "hero":
             scr_tile_editor_open_on("ANIMATIONS", _node.macro_asset_name);
             break;
+        case "tiles":
+            // GAME SCREEN takes its 16 colours from the tileset of the first DRAW MAP's map.
+            var _map = scr_te_find("TILEMAP", scr_node_edit_program_asset("GK_MAP"));
+            scr_tile_editor_open_on("TILES", _map != undefined ? _map.tileset : "");
+            break;
+        case "enemies":
+            // Enemies are placed in the map (E markers).
+            scr_tile_editor_open_on("MAP", scr_node_edit_program_asset("GK_MAP"));
+            break;
+        case "anims":
+            scr_tile_editor_open_on("ANIMATIONS", scr_node_edit_program_asset("GK_PLAYER"));
+            break;
     }
+}
+
+/// macro_asset_name of the first node of _type in program order ("" when none).
+function scr_node_edit_program_asset(_type) {
+    var _program = scr_amiga_collect_program_nodes();
+    var _i = 0;
+    while (_i < array_length(_program)) {
+        if (_program[_i].is_macro && _program[_i].macro_type == _type) return _program[_i].macro_asset_name;
+        _i += 1;
+    }
+    var _found = "";
+    with (obj_opcode_node) {
+        if (_found == "" && is_macro && macro_type == _type) _found = macro_asset_name;
+    }
+    return _found;
 }
 
 /// Name of frame _index of the ANIM nodes' frame list (every asset of _type
@@ -184,6 +219,10 @@ function scr_tile_editor_open_on(_tab, _name) {
             // Paint with the map's own tileset.
             var _map = scr_te_find("TILEMAP", _name);
             if (_map != undefined && array_contains(ts_names, _map.tileset)) ts_name = _map.tileset;
+        }
+        if (_tab == "TILES" && array_contains(ts_names, _name) && ts_name != _name) {
+            ts_name = _name;
+            tile_sel = 1;
         }
         if (_tab == "ANIMATIONS" && array_contains(anim_names, _name)) {
             anim_name = _name;

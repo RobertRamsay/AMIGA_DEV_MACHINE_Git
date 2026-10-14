@@ -44,7 +44,7 @@ function scr_tutorial_defs() {
             features : ["CPRBAR macro", "Copper lists", "colour picker"],
             steps : [
                 { title : "The Copper", text : "The Copper is a tiny co-processor that waits for a raster line and then writes a register. CPRBAR builds its list for you." },
-                { title : "Edit the bands", text : "Click 'Click to edit colours' on the CPRBAR node to set how many bands, which colour register and the colour of each band." },
+                { title : "Edit the bands", text : "Click EDIT COLOURS on the COPPER BAR node to set how many bands, which colour register and the colour of each band." },
                 { title : "Run it", text : "F5: a smooth gradient fills the screen while the CPU only runs the idle loop." }
             ]
         },
@@ -130,7 +130,7 @@ function scr_tutorial_defs() {
             features : ["macro vs opcode", "program preview", "node rows + EDIT buttons", "ORG column", "labels", "hover help"],
             steps : [
                 { title : "One node, many instructions", text : "SETBKG and COPPER BAR are macros: each node writes many lines of 68000 code for you. The program preview on the right lists every line - click a macro's title line there to fold or unfold it, and any line to jump to its node." },
-                { title : "Rows are settings", text : "Each row under a node's title is one setting. A row with < and > steps: click its left half to go down, its right half to go up. Coloured rows are buttons - COPPER BAR's row opens its colour editor, and EDIT buttons open the picture, sprite, BOB, map or song a node uses." },
+                { title : "Rows are settings", text : "Each row under a node's title is one setting. A row with < and > steps: click its left half to go down, its right half to go up. Teal rows are buttons: EDIT COLOURS on COPPER BAR opens its colour editor, and the EDIT buttons of other nodes open the picture, sprite, BOB, map, code or song they use. SETBKG's RGB row opens a colour picker." },
                 { title : "Order and columns", text : "Nodes run from top to bottom. An ORG block carries the program on in a new column: it continues the column to its left, and the glowing flow line shows the way. The box on a node's left is its label - BRA forever jumps back to the NOP labelled forever." },
                 { title : "Checks and help", text : "The dots beside a node turn red when a setting is wrong, and a failed build outlines the node in red with the reason. Hover any node to read what it does. Ctrl+Z undoes any change." },
                 { title : "Run it", text : "F5: SETBKG sets the background, the Copper paints six colour bands down the screen, and the CPU waits in the forever loop." }
