@@ -18,7 +18,9 @@ function scr_shape_circle_pixels(_cx, _cy, _r, _filled, _width, _height) {
     if (_filled) {
         var _dy = -_r;
         while (_dy <= _r) {
-            var _half = floor(sqrt(_r * _r - _dy * _dy) + 0.5);
+            // x*x + y*y <= r*r + r: the same rounding as the midpoint outline,
+            // so a disc fills its circle exactly (no one-pixel nubs at the poles).
+            var _half = floor(sqrt(_r * _r + _r - _dy * _dy));
             var _y = _cy + _dy;
             if (_y >= 0 && _y < _height) {
                 var _x = max(0, _cx - _half);
