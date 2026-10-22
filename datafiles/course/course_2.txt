@@ -1,0 +1,1002 @@
+=== UNIT 3: Logic and bits
+
+=== LESSON 21: AND, OR and EOR
+@summary Working on bits: keeping, setting and flipping them with masks.
+@text
+The Amiga is full of values where each bit means something: DMA switches, interrupt flags, pixels. Three instructions work on bits, comparing the two operands bit by bit:
+
+	and.w	#$000F,d0	; keep only the bits that are 1 in the mask
+	or.b	#$81,d1		; set the bits that are 1 in the mask
+	eor.b	#$FF,d2		; flip the bits that are 1 in the mask
+
+The constant is called a mask. AND clears every bit where the mask has a 0, so it keeps a part of a value: and.w #$000F,d0 keeps the low four bits. OR sets every bit where the mask has a 1. EOR ("exclusive or") flips every bit where the mask has a 1; doing it twice gives back the original.
+
+They set N and Z from the result and clear V and C, so a TST after them is not needed.
+@task
+Keep only the low 4 bits of D0 (all others cleared). Set bits 7 and 0 of D1, leaving the rest. Flip all the bits of D2's low byte, leaving the rest.
+@start
+	; D0: low 4 bits only, D1: set bits 7 and 0, D2: flip the low byte
+
+@solution
+	and.l	#$0000000F,d0
+	or.b	#$81,d1
+	eor.b	#$FF,d2
+@hint
+and.l #$F,d0 clears every bit except the low four. or.b #$81,d1 sets bits 7 and 0. eor.b #$FF,d2 flips the low byte.
+@test Three masks
+setup: d0=1234ABCD d1=0 d2=12345678
+expect: d0=D d1=81 d2=12345687
+@test Other values
+setup: d0=FFFFFFF0 d1=FFFFFF00 d2=FF
+expect: d0=0 d1=FFFFFF81 d2=0
+@quiz
+? D0 = $F0. What is D0 after eor.b #$FF,d0?
+- $FF
++ $0F
+- $F0
+! EOR with all ones flips every bit.
+
+=== LESSON 22: Flags in memory: ORI, ANDI, EORI and NOT
+@summary Setting, clearing and toggling bits of a memory byte; NOT.
+@text
+The immediate forms ORI, ANDI and EORI work straight on memory, which is how status bytes are updated:
+
+	ori.b	#%00000100,(a0)		; set bit 2
+	andi.b	#%11011111,(a0)		; clear bit 5
+	eori.b	#%00000001,(a0)		; toggle bit 0
+
+To clear a bit with AND you need the inverse mask: all ones except the bit to clear. The assembler can work it out for you with ~ (not): andi.b #~(1<<5),(a0) is the same as andi.b #%11011111,(a0).
+
+NOT flips every bit of its operand - it is the same as EOR with all ones:
+
+	not.w	d3
+@task
+The byte at (A0) holds flags. Set bit 2, clear bit 5 and toggle bit 0, each without changing the other bits. Then flip every bit of the low word of D3 with NOT.
+@start
+	; (a0): set bit 2, clear bit 5, toggle bit 0 - then NOT the word in D3
+
+@solution
+	ori.b	#%00000100,(a0)
+	andi.b	#%11011111,(a0)
+	eori.b	#%00000001,(a0)
+	not.w	d3
+@hint
+One ORI, one ANDI (with every bit set except bit 5: %11011111) and one EORI on (a0), then not.w d3.
+@test Flags $21
+setup: a0=2000 m2000.b=21 m2001.b=77 d3=FFFF
+expect: m2000.b=4 m2001.b=77 d3=0
+@test Flags $FF
+setup: a0=2000 m2000.b=FF d3=12340F0F
+expect: m2000.b=DE d3=1234F0F0
+@test Flags $00
+setup: a0=3001 m3001.b=0 d3=0
+expect: m3001.b=5 d3=FFFF
+@quiz
+? Which mask clears bit 3 of a byte with AND?
+- %00001000
++ %11110111
+- %11111111
+! AND keeps the bits that are 1 in the mask, so the bit to clear must be 0.
+
+=== LESSON 23: Single bits: BTST, BSET, BCLR, BCHG
+@summary Testing and changing one bit at a time.
+@text
+For a single bit there are four instructions. The bit number is an immediate or a data register:
+
+	btst	#7,(a0)		; test bit 7: Z set if it is 0
+	bset	#3,d1		; set bit 3
+	bclr	#7,(a0)		; clear bit 7
+	bchg	d2,d0		; toggle the bit numbered in D2
+
+All four first test the bit, setting Z if it was 0, and then change it. So BCLR both tells you whether the bit was set and clears it, in one instruction - handy for "was the button pressed? then acknowledge it".
+
+On a data register the bit number goes from 0 to 31. On memory only a byte is used, so it goes from 0 to 7.
+@task
+If bit 7 of the byte at (A0) is set, clear it and set D0 to 1. If it is clear, set D0 to 0. Use BCLR to test and clear in one go.
+@start
+	; D0 = old bit 7 of (a0), and clear it
+
+@solution
+	moveq	#0,d0
+	bclr	#7,(a0)
+	beq	done
+	moveq	#1,d0
+done:
+@hint
+BCLR sets Z from the old value of the bit. moveq #0,d0 first, then bclr #7,(a0) and beq past moveq #1,d0.
+@test Bit 7 set
+setup: a0=2000 m2000.b=80 d0=55
+expect: m2000.b=0 d0=1 uses=bclr
+@test Bit 7 clear
+setup: a0=2000 m2000.b=7F d0=55
+expect: m2000.b=7F d0=0
+@test Other bits stay
+setup: a0=2001 m2001.b=C1 d0=0
+expect: m2001.b=41 d0=1
+@quiz
+? D0 = 0. What is D0 after bset #31,d0?
+- $00000080
++ $80000000
+- $00008000
+? On a memory byte, BSET #10,(a0) sets which bit?
+- Bit 10 of the word at A0
++ Bit 2 (10 mod 8)
+- None: it is an error
+! On memory the bit number is taken modulo 8.
+
+=== LESSON 24: Shifting: LSL and LSR
+@summary Shifts multiply and divide by powers of two - fast.
+@text
+LSL ("logical shift left") moves every bit left, filling with zeros at the right. One place left doubles a number; three places multiply by 8. LSR shifts right, halving (unsigned) and dropping the remainder.
+
+	lsl.l	#3,d0		; D0 = D0 * 8
+	lsr.w	#1,d1		; D1.w = D1.w / 2 (unsigned)
+
+The count is 1 to 8 as an immediate, or up to 63 in a data register. The last bit shifted out goes into C (and X).
+
+Multiplying by numbers that are not powers of two can often be split up. The Amiga screen is 320 pixels wide, and 320 = 256 + 64, so
+
+	move.l	d0,d1
+	lsl.l	#8,d0		; d0 * 256
+	lsl.l	#6,d1		; d0 * 64
+	add.l	d1,d0		; d0 * 320
+
+takes about 50 cycles where MULU takes up to 70 - and works on all 32 bits.
+@task
+Multiply D0 by 8, divide D1 by 4 (unsigned), and multiply D2 by 320, all as longs and without MULU or MULS. You may use D3 as scratch.
+@start
+	; D0 = D0 * 8, D1 = D1 / 4, D2 = D2 * 320 - no MULU
+
+@solution
+	lsl.l	#3,d0
+	lsr.l	#2,d1
+	move.l	d2,d3
+	lsl.l	#8,d2
+	lsl.l	#6,d3
+	add.l	d3,d2
+@hint
+lsl.l #3 multiplies by 8, lsr.l #2 divides by 4. For 320: copy D2 to D3, shift one left by 8 and the other by 6, add them.
+@test Small values
+setup: d0=5 d1=64 d2=3
+expect: d0=28 d1=19 d2=3C0 avoid=mulu+muls
+@test Larger values
+setup: d0=10000 d1=FFFFFFFF d2=100
+expect: d0=80000 d1=3FFFFFFF d2=14000 avoid=mulu+muls
+@quiz
+? D0 = 7. What is D0 after lsr.l #1,d0?
+- 4
++ 3
+- 14
+! LSR halves and drops the remainder; the bit shifted out goes into C.
+
+=== LESSON 25: Signed shifts: ASL and ASR
+@summary Arithmetic shifts keep the sign: dividing negative numbers.
+@text
+LSR fills from the left with zeros, which is wrong for negative numbers: -16 ($FFFFFFF0) shifted right once becomes a big positive number. ASR ("arithmetic shift right") copies the sign bit into the gap instead, so -16 becomes -8:
+
+	asr.l	#4,d0		; signed D0 / 16
+
+ASR rounds towards minus infinity, not towards zero: -1 shifted right stays -1, and -7 / 2 gives -4. DIVS would give -3. For screen maths and fixed point that is usually exactly what you want.
+
+ASL is the same as LSL except that it sets V if the sign bit changed - an overflow.
+@task
+Divide D0 by 16 as a signed long, and multiply D1 by 4 as a signed long, with shifts.
+@start
+	; D0 = D0 / 16 (signed), D1 = D1 * 4
+
+@solution
+	asr.l	#4,d0
+	asl.l	#2,d1
+@hint
+asr.l #4,d0 and asl.l #2,d1.
+@test -256 / 16 and -3 * 4
+setup: d0=FFFFFF00 d1=FFFFFFFD
+expect: d0=FFFFFFF0 d1=FFFFFFF4
+@test 256 / 16 and 5 * 4
+setup: d0=100 d1=5
+expect: d0=10 d1=14
+@test Rounding down
+setup: d0=FFFFFFFF d1=0
+expect: d0=FFFFFFFF d1=0
+@quiz
+? D0 = $FFFFFFF9 (-7). What is D0 after asr.l #1,d0?
+- -3
++ -4
+- 3
+! ASR rounds towards minus infinity: -3.5 becomes -4.
+
+=== LESSON 26: Rotating: ROL and ROR
+@summary Rotations: bits that fall off one end come back at the other.
+@text
+ROL and ROR are shifts where the bit shifted out re-enters at the other end, so nothing is lost. Rotating a byte by 4 swaps its two halves (nibbles); rotating a word by 8 swaps its two bytes:
+
+	rol.b	#4,d0		; $78 -> $87
+	ror.w	#8,d1		; $ABCD -> $CDAB
+
+Rotations are used to turn values round, to step through bits one at a time and to scroll patterns. The size counts: rol.b only rotates the low byte and leaves the rest of the register alone.
+
+ROXL and ROXR rotate through the X flag as a 33rd (or 9th, 17th) bit, used for shifting numbers longer than 32 bits.
+@task
+Swap the two nibbles of the low byte of D0, and the two bytes of the low word of D1. Leave the rest of both registers alone.
+@start
+	; D0: swap nibbles of the low byte, D1: swap bytes of the low word
+
+@solution
+	rol.b	#4,d0
+	rol.w	#8,d1
+@hint
+Rotate the byte by 4 and the word by 8 - in either direction.
+@test Nibbles and bytes
+setup: d0=12345678 d1=ABCD
+expect: d0=12345687 d1=CDAB
+@test Other values
+setup: d0=FFFFFF0F d1=12340080
+expect: d0=FFFFFFF0 d1=12348000
+@quiz
+? D0 = $00000081. What is D0 after rol.b #1,d0?
+- $00000102
++ $00000003
+- $00000080
+! Bit 7 comes back in at bit 0: %10000001 becomes %00000011.
+
+=== LESSON 27: Packing an Amiga colour
+@summary Building a $0RGB colour word from red, green and blue.
+@text
+The Amiga's colour registers (COLOR00 to COLOR31) hold 12-bit colours: four bits each of red, green and blue, packed into a word as $0RGB. $0F00 is bright red, $00F0 green, $000F blue, $0FFF white, $0000 black: 4096 colours in all.
+
+To build one from three separate values, shift and combine:
+
+	move.w	d0,d3		; red
+	lsl.w	#4,d3		; make room
+	or.w	d1,d3		; green in the low nibble
+	lsl.w	#4,d3
+	or.w	d2,d3		; blue
+
+OR works here because the bits being combined do not overlap. Use it to merge fields; ADD would also work, but OR says what you mean.
+@task
+D0, D1 and D2 hold red, green and blue (each 0 to 15). Build the colour word $0RGB in D3, with D3's upper word cleared.
+@start
+	; D3 = $0RGB from D0 (red), D1 (green), D2 (blue)
+
+@solution
+	moveq	#0,d3
+	move.w	d0,d3
+	lsl.w	#4,d3
+	or.w	d1,d3
+	lsl.w	#4,d3
+	or.w	d2,d3
+@hint
+Clear D3 with moveq #0,d3 first (the tests fill it with junk), then shift in red, green and blue.
+@test Orange: R=15 G=8 B=0
+setup: d0=F d1=8 d2=0 d3=FFFFFFFF
+expect: d3=F80
+@test R=1 G=2 B=3
+setup: d0=1 d1=2 d2=3 d3=12345678
+expect: d3=123
+@test White
+setup: d0=F d1=F d2=F d3=0
+expect: d3=FFF
+@quiz
+? Which colour is $00F0?
+- Red
++ Green
+- Blue
+- White
+
+=== LESSON 28: Fading a colour
+@summary Unpacking colour components and halving them all at once.
+@text
+To darken a $0RGB colour to half brightness, each of the three components must be halved. You could unpack them, halve each and pack them again - or do all three at once.
+
+Shifting the whole word right by one halves every component, but each component's lowest bit falls into the top bit of the component to its right: $0FFF becomes $07FF, where the green nibble got red's lost bit. AND with $0777 throws those stray bits away, leaving each component halved:
+
+	lsr.w	#1,d0
+	and.w	#$0777,d0
+
+Doing several small calculations at once in one register is called SIMD within a register, and the 68000 demo coders loved it.
+@task
+D0 holds a colour $0RGB (the upper word is 0). Halve the brightness of all three components (rounding down).
+@start
+	; halve R, G and B of the colour in D0
+
+@solution
+	lsr.w	#1,d0
+	and.w	#$0777,d0
+@hint
+lsr.w #1,d0 then and.w #$0777,d0.
+@test White becomes grey
+setup: d0=FFF
+expect: d0=777
+@test Orange
+setup: d0=F80
+expect: d0=740
+@test Dark colours
+setup: d0=123
+expect: d0=11
+@quiz
+? What is the mask $0777 for?
++ Removing the bits that shifted from one component into the next
+- Making the colour brighter
+- Clearing the blue component
+! After LSR each component's low bit lands in the top of the next one.
+
+=== LESSON 29: Big numbers: ADDX and SUBX
+@summary Adding and subtracting numbers longer than 32 bits with the X flag.
+@text
+For numbers bigger than 32 bits - scores, 64-bit counters, fixed-point positions - split them into longs and add the low parts first. ADD puts any carry into X; ADDX then adds the high parts plus X:
+
+	add.l	d3,d1		; low longs
+	addx.l	d2,d0		; high longs plus the carry
+
+SUBX does the same for subtraction, with X as the borrow. ADDX and SUBX only take two data registers or two -(An) memory operands.
+
+One more detail: ADDX and SUBX only ever clear Z, never set it. Set Z before a chain of them (or start with ADD/SUB, which sets it normally) and at the end Z tells you whether the whole long number is zero.
+@task
+D0:D1 is a 64-bit number (D0 the high long, D1 the low long), and so is D2:D3. Add D2:D3 to D0:D1.
+@start
+	; D0:D1 = D0:D1 + D2:D3
+
+@solution
+	add.l	d3,d1
+	addx.l	d2,d0
+@hint
+add.l d3,d1 for the low halves, then addx.l d2,d0 for the high halves.
+@test The carry crosses over
+setup: d0=0 d1=FFFFFFFF d2=0 d3=1
+expect: d0=1 d1=0 uses=addx
+@test Both halves carry
+setup: d0=1 d1=80000000 d2=2 d3=80000000
+expect: d0=4 d1=0
+@test Wrapping round to zero
+setup: d0=FFFFFFFF d1=FFFFFFFF d2=0 d3=1
+expect: d0=0 d1=0 ccr=X?Z?C
+@quiz
+? Why add the low longs first?
++ So that their carry can go into the high longs through X
+- Because ADDX only works on low longs
+- It does not matter
+! The carry flows upwards, from the low part to the high part.
+
+=== LESSON 30: Counting bits
+@summary A bit-by-bit loop: shifting into the carry and adding it up.
+@text
+How many bits of a value are set? Shift the value right one bit at a time; each time the bit falling out goes into C and X. Then add X to a counter with ADDX, using a register that holds 0:
+
+	moveq	#0,d1		; the count
+	moveq	#0,d2		; zero, for ADDX
+	moveq	#31,d3		; 32 bits
+loop:
+	lsr.l	#1,d0		; bit 0 -> X
+	addx.l	d2,d1		; d1 = d1 + 0 + X
+	dbra	d3,loop
+
+No branch is needed to decide whether to count - the X flag does the work. Tricks like this were what made 68000 code fast.
+
+There is also a faster way: stop as soon as the value has no more set bits, because LSR sets Z when the result is zero.
+@task
+Count the set bits of D0 and put the count in D1. D0 may be destroyed.
+@start
+	; D1 = number of 1 bits in D0
+
+@solution
+	moveq	#0,d1
+	moveq	#0,d2
+	moveq	#31,d3
+loop:
+	lsr.l	#1,d0
+	addx.l	d2,d1
+	dbra	d3,loop
+@hint
+Shift D0 right 32 times and add the carry (X) to D1 each time with addx.l d2,d1, where D2 is zero.
+@test No bits
+setup: d0=0 d1=FF
+expect: d1=0
+@test All bits
+setup: d0=FFFFFFFF d1=0
+expect: d1=20
+@test Top and bottom
+setup: d0=80000001 d1=0
+expect: d1=2
+@test $12345678
+setup: d0=12345678 d1=0
+expect: d1=D
+@quiz
+? After lsr.l #1,d0, where is the bit that was bit 0?
+- Lost
++ In C and X
+- In bit 31
+! LSR shifts the outgoing bit into the carry and extend flags.
+
+=== UNIT 4: Addressing in depth
+
+=== LESSON 31: Indexed addressing: d8(An,Dn)
+@summary Looking things up in tables with a base register and an index.
+@text
+Indexed addressing adds two registers and a small displacement to make the address:
+
+	move.b	0(a0,d0.w),d1	; the byte at A0 + D0.w + 0
+
+A0 is the base - the start of a table - and D0 is the index: which entry. The displacement is a signed byte, -128 to 127. The index can be a data or an address register, used as a word (.w, sign-extended) or as a long (.l).
+
+Tables replace calculations everywhere on the Amiga: sine waves, multiplication by screen width, colour fades, sprite frames. One indexed read is often faster than the sum it replaces.
+@task
+A0 points at a table of bytes, and D0 (a word) is an index into it. Put the byte at that index into D1 (as a byte; leave the rest of D1).
+@start
+	; D1.b = table[D0] where the table starts at A0
+
+@solution
+	move.b	0(a0,d0.w),d1
+@hint
+move.b 0(a0,d0.w),d1.
+@test Index 2
+setup: a0=2000 m2000.l=11223344 d0=2 d1=0
+expect: d1=33
+@test Index 0
+setup: a0=2000 m2000.l=11223344 d0=0 d1=FFFFFF00
+expect: d1=FFFFFF11
+@test Another table
+setup: a0=4100 m4104.b=AB d0=4 d1=0 a1=0
+expect: d1=AB
+@quiz
+? A0 = $1000, D0 = $FFFFFFFE. Which address does 4(a0,d0.w) use?
++ $1002
+- $1004
+- $1006
+! D0.w = -2, so $1000 - 2 + 4.
+
+=== LESSON 32: Tables of words
+@summary Scaling the index: entries bigger than a byte.
+@text
+In a table of words each entry is two bytes, so entry number n starts at 2 x n. The 68000 does not scale the index for you (the 68020 does, lesson 92), so double it first. Adding a register to itself is the quickest way:
+
+	add.w	d0,d0			; index * 2
+	move.w	0(a0,d0.w),d1		; the word entry
+
+For longs, double it twice (or LSL by 2). Remember that this changes D0; copy it first if you still need the entry number.
+@task
+A0 points at a table of words; D0 (a word) is an entry number. Put that entry into the low word of D1.
+@start
+	; D1.w = word table at A0, entry D0
+
+@solution
+	add.w	d0,d0
+	move.w	0(a0,d0.w),d1
+@hint
+Double D0 (add.w d0,d0) before using it as the index.
+@test Entry 2
+setup: a0=2000 m2000.w=AAAA m2002.w=BBBB m2004.w=CCCC d0=2 d1=0
+expect: d1=CCCC
+@test Entry 0
+setup: a0=2000 m2000.w=1234 m2002.w=5678 d0=0 d1=0
+expect: d1=1234
+@test Entry 5
+setup: a0=3000 m300A.w=600D d0=5 d1=FFFF0000
+expect: d1=FFFF600D
+@quiz
+? A table holds longs. Entry D0 is at offset...
+- D0
+- D0 * 2
++ D0 * 4
+- D0 + 4
+
+=== LESSON 33: PC-relative addressing
+@summary Data inside your program: reaching labels relative to the program counter.
+@text
+Your program will be loaded wherever the system has free memory, so it cannot know the absolute address of its own data. PC-relative addressing measures from the instruction itself, which always works:
+
+	lea	squares(pc),a0		; A0 = address of the label
+	move.w	squares(pc),d0		; the first word there
+
+There is an indexed form too: move.w squares(pc,d0.w),d1. Data in the program is written with DC ("define constant"):
+
+	squares:	dc.w	0,1,4,9,16,25
+
+On the 68000 PC-relative operands can only be read, not written. This lesson's table is given to you - it sits after your code under the label squares: ten words, the squares of 0 to 9.
+@task
+Put the square of D0 (0 to 9) into D1, using the squares table and PC-relative addressing.
+@start
+	; D1.w = squares[D0] - the table is at the label squares
+
+@solution
+	add.w	d0,d0
+	move.w	squares(pc,d0.w),d1
+@data
+squares:
+	dc.w	0,1,4,9,16,25,36,49,64,81
+@hint
+Double D0 for a word table, then move.w squares(pc,d0.w),d1.
+@test 3 squared
+setup: d0=3 d1=0
+expect: d1=9
+@test 9 squared
+setup: d0=9 d1=0
+expect: d1=51
+@test 0 squared
+setup: d0=0 d1=FFFF
+expect: d1=0
+@quiz
+? Why is PC-relative addressing used for data in a program?
++ The program can be loaded at any address and it still works
+- It is the only way to read a word
+- It makes the data writable
+! The distance from the instruction to its data never changes, wherever the program is loaded.
+
+=== LESSON 34: LEA: computing addresses
+@summary Load Effective Address: the address of an operand, not its value.
+@text
+LEA works out the address an operand would use and puts it into an address register - without reading memory:
+
+	lea	8(a0),a1		; A1 = A0 + 8
+	lea	0(a0,d0.l),a1		; A1 = A0 + D0
+
+It is the fastest way to add to an address register and to calculate addresses for later. A classic use is finding a pixel on a screen: a bitplane 320 pixels wide is 40 bytes per row, so the byte holding pixel column c of row r is at
+
+	screen + r * 40 + c / 8
+
+and the multiplication by 40 can be done by MULU, by shifts (32 + 8) or with a table.
+@task
+A0 points at a bitplane 40 bytes wide. D0 is a row number and D1 a byte column (both words, upper words clear). Put the address of that byte into A1, and write $FF there.
+@start
+	; A1 = A0 + D0 * 40 + D1, then $FF into that byte
+
+@solution
+	mulu.w	#40,d0
+	add.l	d1,d0
+	lea	0(a0,d0.l),a1
+	move.b	#$FF,(a1)
+@hint
+D0 * 40 with MULU (it gives a long), add D1, then lea 0(a0,d0.l),a1.
+@test Row 2, byte 3
+setup: a0=10000 d0=2 d1=3
+expect: a1=10053 m10053.b=FF
+@test Row 0, byte 0
+setup: a0=10000 d0=0 d1=0 m10000.b=0
+expect: a1=10000 m10000.b=FF
+@test Row 100, byte 39
+setup: a0=20000 d0=64 d1=27
+expect: a1=20FC7 m20FC7.b=FF
+@quiz
+? A0 = $2000. What does lea 4(a0),a0 do?
++ Adds 4 to A0
+- Reads the long at $2004 into A0
+- Nothing: it is not allowed
+! LEA never reads memory; it only computes the address.
+
+=== LESSON 35: Strings and their length
+@summary Null-terminated text: walking along it to find the end.
+@text
+Text is stored as one byte per character in ASCII: "A" is $41, "a" is $61, a space is $20. A string usually ends with a zero byte, the terminator, so code can walk along it until it finds the end.
+
+	string:	dc.b	"HELLO",0
+
+The length (5 here) is the number of characters before the terminator. TST.B sets Z on the zero byte, so a counting loop is short:
+
+	moveq	#-1,d0
+loop:
+	addq.l	#1,d0
+	tst.b	(a0)+
+	bne	loop
+
+D0 starts at -1 because the loop counts the terminator too.
+@task
+A0 points at a null-terminated string. Put its length into D0.
+@start
+	; D0 = length of the string at A0
+
+@solution
+	moveq	#-1,d0
+loop:
+	addq.l	#1,d0
+	tst.b	(a0)+
+	bne	loop
+@hint
+Count bytes until the zero: start at -1, add one each time round, stop when tst.b (a0)+ sees zero.
+@test HELLO
+setup: a0=2000 str2000=HELLO d0=55
+expect: d0=5
+@test The empty string
+setup: a0=2000 m2000.b=0 d0=55
+expect: d0=0
+@test A longer one
+setup: a0=3000 str3000=AMIGA_DEV_MACHINE d0=0
+expect: d0=11
+@quiz
+? What is the ASCII code of "A"?
+- $61
++ $41
+- $30
+- $20
+
+=== LESSON 36: Copying a string
+@summary Copying up to and including the terminator.
+@text
+Copying a string is the length loop with a write added. MOVE sets Z from the value it moved, so the loop can test the byte it has just copied:
+
+loop:
+	move.b	(a0)+,(a1)+
+	bne	loop
+
+The terminator is copied too, before the loop stops - which is exactly right, because the copy needs it. Three instructions; on the 68000 this is about as small as a string copy gets.
+@task
+Copy the null-terminated string at A0 to A1, terminator included. Nothing after the terminator may be touched.
+@start
+	; copy the string at A0 to A1
+
+@solution
+loop:
+	move.b	(a0)+,(a1)+
+	bne	loop
+@hint
+move.b (a0)+,(a1)+ and branch back while the byte moved was not zero.
+@test HELLO
+setup: a0=2000 str2000=HELLO a1=3000 m3000.l=FFFFFFFF m3004.l=FFFFFFFF
+expect: str3000=HELLO m3005.b=0 m3006.b=FF
+@test The empty string
+setup: a0=2000 m2000.b=0 a1=3000 m3000.w=FFFF
+expect: m3000.b=0 m3001.b=FF
+@test Another string
+setup: a0=4000 str4000=GURU_MEDITATION a1=5001 m5011.b=AA
+expect: str5001=GURU_MEDITATION m5010.b=0 m5011.b=AA
+@quiz
+? Why does the loop not need a TST?
++ MOVE sets the Z flag from the byte it copied
+- BNE tests memory directly
+- (a1)+ sets the flags
+! MOVE sets N and Z from the value moved.
+
+=== LESSON 37: Upper case
+@summary Changing characters in place, with unsigned range checks.
+@text
+Lower-case letters "a" to "z" are $61 to $7A; upper case "A" to "Z" are $41 to $5A. The difference is $20, so subtracting $20 turns a lower-case letter into upper case. Anything else - digits, spaces, punctuation - must be left alone, so check the range first:
+
+	cmp.b	#'a',d0
+	blo	notletter	; below "a"
+	cmp.b	#'z',d0
+	bhi	notletter	; above "z"
+
+'a' in single quotes is the character's code. Use the unsigned branches BLO and BHI for characters: they are codes, not signed numbers.
+
+You can change a byte in memory directly with SUB.B #$20,(a0), or with BCLR #5 - bit 5 is exactly the $20.
+@task
+A0 points at a null-terminated string. Change every lower-case letter to upper case, in place. Leave everything else unchanged.
+@start
+	; upper-case the string at A0, in place
+
+@solution
+loop:
+	move.b	(a0),d0
+	beq	done
+	cmp.b	#'a',d0
+	blo	next
+	cmp.b	#'z',d0
+	bhi	next
+	sub.b	#$20,(a0)
+next:
+	addq.l	#1,a0
+	bra	loop
+done:
+@hint
+Loop: read the byte, stop at zero, skip it unless it is between 'a' and 'z', otherwise subtract $20 from it in memory. Step A0 on by one each time.
+@test Hello World!
+setup: a0=2000 str2000=Hello_World!
+expect: str2000=HELLO_WORLD!
+@test The letters next to a and z stay
+setup: a0=2000 str2000=`az{AZ@
+expect: str2000=`AZ{AZ@
+@test Already upper case
+setup: a0=3000 str3000=AMIGA_1200
+expect: str3000=AMIGA_1200
+@quiz
+? Which branch is right after cmp.b #'z',d0 to skip characters above "z"?
+- BGT
++ BHI
+- BLT
+! Characters are unsigned codes: use BHI and BLO.
+
+=== LESSON 38: Comparing memory: CMPM
+@summary Comparing two blocks of memory byte by byte.
+@text
+CMPM compares two memory operands, both with postincrement - it exists for exactly this job:
+
+	cmpm.b	(a0)+,(a1)+	; compare the bytes, step both pointers
+
+As with CMP, only the flags change. A loop of CMPM with a counter checks whether two blocks are the same. When a difference turns up there is no point going on, so leave the loop early.
+
+Programs use this to check passwords, file headers ("is this an IFF file?") and save games.
+@task
+Set D0 to 1 if the 8 bytes at A0 are the same as the 8 bytes at A1, otherwise to 0. Use CMPM.
+@start
+	; D0 = 1 if the 8 bytes at A0 and A1 match, else 0
+
+@solution
+	moveq	#0,d0
+	moveq	#7,d1
+loop:
+	cmpm.b	(a0)+,(a1)+
+	bne	done
+	dbra	d1,loop
+	moveq	#1,d0
+done:
+@hint
+moveq #0,d0, then a DBRA loop of 8 CMPM.B, branching out to the end on the first difference. If the loop finishes, moveq #1,d0.
+@test Identical blocks
+setup: a0=2000 a1=3000 m2000.l=11223344 m2004.l=55667788 m3000.l=11223344 m3004.l=55667788 d0=55
+expect: d0=1 uses=cmpm
+@test The last byte differs
+setup: a0=2000 a1=3000 m2000.l=11223344 m2004.l=55667788 m3000.l=11223344 m3004.l=55667789 d0=55
+expect: d0=0
+@test The first byte differs
+setup: a0=2000 a1=3000 m2000.l=1 m3000.l=01000001 d0=55
+expect: d0=0
+@test Only 8 bytes count
+setup: a0=2000 a1=3000 m2000.l=0 m2004.l=0 m2008.l=FFFF m3008.l=0 d0=55
+expect: d0=1
+@quiz
+? Which operands does CMPM take?
+- Any two
++ Two memory operands, both (An)+
+- A register and memory
+! cmpm.b (a0)+,(a1)+ - postincrement on both.
+
+=== LESSON 39: Arrays of records
+@summary Walking through a list of structures and adding up one field.
+@text
+Games keep their objects in arrays of records: every enemy, bullet or particle has the same layout, one after another. To visit each, point at the first record, use displacements for the fields and step the pointer on by the record size:
+
+	ENEMY_HP	equ	4
+	ENEMY_SIZE	equ	6
+loop:
+	add.w	ENEMY_HP(a0),d1
+	lea	ENEMY_SIZE(a0),a0
+	dbra	d0,loop
+
+LEA with a displacement is the fastest way to step an address register on by more than 8 (ADDQ's limit).
+@task
+A0 points at an array of records, 6 bytes each: x (word), y (word), hp (word). D0 holds the number of records (1 or more). Put the total of all the hp fields into the low word of D1.
+@start
+	; D1.w = sum of the hp words (offset 4) of D0 records of 6 bytes
+
+@solution
+	moveq	#0,d1
+	subq.w	#1,d0
+loop:
+	add.w	4(a0),d1
+	lea	6(a0),a0
+	dbra	d0,loop
+@hint
+Clear D1. DBRA needs the count minus one. Add 4(a0) and step A0 on by 6 each time.
+@test Three records
+setup: a0=2000 d0=3 d1=FFFF m2004.w=A m200A.w=14 m2010.w=1E m2016.w=63
+expect: d1=3C
+@test One record
+setup: a0=3000 d0=1 d1=0 m3004.w=1234 m300A.w=1111
+expect: d1=1234
+@test Five records
+setup: a0=2000 d0=5 d1=0 m2004.w=1 m200A.w=2 m2010.w=3 m2016.w=4 m201C.w=5 m2022.w=64
+expect: d1=F
+@quiz
+? Why LEA 6(a0),a0 rather than ADDQ.L #6,a0?
++ Both work: LEA can step by more than 8, and both leave the flags alone
+- ADDQ cannot add to address registers
+- LEA is the only way that keeps the flags
+! ADDQ adds 1 to 8 and does not change the flags on An either; LEA handles any 16-bit step.
+
+=== LESSON 40: MOVEP: every other byte
+@summary The 8-bit chips: moving a word or long to alternate bytes.
+@text
+The 68000 has a 16-bit data bus, but some chips only have 8 data lines. The Amiga's two CIA chips (the 8520s that handle the keyboard, joystick buttons, timers and the disk) each sit on one half of the bus, so their registers appear at every other byte: $BFE001, $BFE101, $BFE201...
+
+MOVEP ("move peripheral") moves a word or long to or from alternate bytes:
+
+	movep.w	d0,0(a0)	; high byte to (a0), low byte to 2(a0)
+	movep.l	0(a1),d1	; bytes at 0, 2, 4, 6 of A1 into D1
+
+It only takes a displacement mode. It is rare in practice - most code just writes the CIA bytes one at a time - but it shows how the hardware is wired.
+@task
+Write the word in D0 to the bytes at 0(A0) and 2(A0), high byte first, with MOVEP. Then read the four bytes at 0, 2, 4 and 6 from A1 into D1 as a long, with MOVEP.
+@start
+	; MOVEP the word D0 to (a0), and a long from (a1) into D1
+
+@solution
+	movep.w	d0,0(a0)
+	movep.l	0(a1),d1
+@hint
+movep.w d0,0(a0) and movep.l 0(a1),d1.
+@test Write and read
+setup: d0=1234 a0=2000 m2000.l=0 a1=3000 m3000.l=11223344 m3004.l=55667788 d1=0
+expect: m2000.l=12003400 d1=11335577 uses=movep
+@test Bytes in between stay
+setup: d0=FFFF a0=2000 m2000.l=AAAAAAAA a1=3000 m3000.l=1 m3004.l=0 d1=0
+expect: m2000.l=FFAAFFAA d1=0
+@quiz
+? Why are the CIA registers at every other address?
++ Each CIA is wired to one 8-bit half of the 16-bit data bus
+- To save memory
+- Because the 68000 cannot read odd addresses
+! CIA-A is on the low byte (odd addresses), CIA-B on the high byte (even addresses).
+
+=== EXAM 2: Logic, bits and addressing
+@summary Lessons 21-40: AND / OR / EOR, bit instructions, shifts and rotates, colours, big numbers, indexed and PC-relative addressing, LEA, strings and records. 40 questions, pass mark 80%.
+@pass 80
+@quiz
+? D0 = $1234. What is D0 after and.w #$00F0,d0?
+- $1234
++ $0030
+- $0004
+- $1200
+? D0 = $0001. What is D0 after or.w #$8000,d0?
++ $8001
+- $8000
+- $0001
+? What does EOR with all ones do?
+- Clears every bit
+- Sets every bit
++ Flips every bit
+? Which is the same as NOT.B D0?
+- and.b #$FF,d0
++ eor.b #$FF,d0
+- or.b #$FF,d0
+? To clear bit 6 of a byte with ANDI, the mask is...
+- %01000000
++ %10111111
+- %11111111
+? What does BTST change?
+- The tested bit
++ Only the Z flag
+- The tested bit and the Z flag
+? After bclr #3,(a0), Z is set when...
++ bit 3 was 0 before the BCLR
+- bit 3 is now 0
+- the whole byte is now 0
+? On a data register, bset #33,d0 sets bit...
+- 33: it is an error
++ 1 (33 mod 32)
+- 3
+? D0 = 3. What is D0 after lsl.l #4,d0?
+- 7
+- 12
++ 48
+- 34
+? What does LSR put in bit 31 of a long?
++ 0
+- The old bit 31
+- The old bit 0
+? What does ASR put in bit 31 of a long?
+- 0
++ The old bit 31 (the sign)
+- The old bit 0
+? D0 = -8 ($FFFFFFF8). What is D0 after asr.l #2,d0?
++ -2
+- 1073741822
+- -32
+? Why might a shift be used instead of MULU?
++ It is faster and works on all 32 bits
+- MULU cannot multiply by 8
+- Shifts are more accurate
+? D0 = 5. How do these lines multiply D0 by 10?
+> 	move.l	d0,d1
+> 	lsl.l	#3,d0
+> 	add.l	d1,d1
+> 	add.l	d1,d0
++ d0 * 8 + d0 * 2
+- d0 * 3 + 7
+- they do not: the result is 40
+? D0 = $0000ABCD. What is D0 after rol.w #4,d0?
+- $000BCDA0
++ $0000BCDA
+- $0000DABC
+? What does ROXL rotate through?
+- The C flag only
++ The X flag
+- The V flag
+? Which colour is $0F0F?
+- Yellow
++ Magenta
+- Cyan
+- Grey
+! Red $F and blue $F: magenta.
+? How many colours can a 12-bit OCS colour register show?
+- 256
++ 4096
+- 32
+- 65536
+? What does this do to the colour $0ACE in D0?
+> 	lsr.w	#1,d0
+> 	and.w	#$0777,d0
++ Halves each component: $0567
+- Shifts the colour to blue
+- Clears red: $00CE
+? Which instructions add the parts of a 64-bit number, low long first?
+- ADD then ADD
++ ADD then ADDX
+- ADDX then ADD
+? After a chain of ADDX, Z is set if...
++ the whole multi-long result is zero (given Z was set at the start)
+- the last long is zero
+- there was no carry
+? D0 = $10, D1 = $10. What is D1 after this?
+> 	moveq	#0,d2
+> 	lsr.l	#1,d0
+> 	addx.l	d2,d1
+- $11
++ $10
+- $08
+! Bit 0 of $10 is 0, so X is 0 and nothing is added.
+? A0 = $2000, D0 = $00010004. Which address does 2(a0,d0.w) read?
++ $2006
+- $12006
+- $2004
+! .w uses only the low word, 4.
+? What range can the displacement in d8(An,Dn) take?
+- 0 to 255
++ -128 to 127
+- -32768 to 32767
+? To read entry D0 of a word table on a 68000 you first...
++ double D0
+- halve D0
+- swap D0
+? What does lea table(pc),a0 put in A0?
++ The address of table
+- The first long of table
+- The value of the PC
+? Which of these is not allowed on the 68000?
+- move.w data(pc),d0
++ move.w d0,data(pc)
+- lea data(pc),a1
+! PC-relative operands can be read but not written.
+? A0 = $3000. What is A0 after lea 10(a0),a0?
+- The long at $300A
++ $300A
+- $3000
+? How many bytes per row does a 320-pixel bitplane have?
+- 320
++ 40
+- 80
+- 32
+? A string is stored as dc.b "AMIGA",0. How many bytes does it take?
+- 5
++ 6
+- 7
+? Which loop copies a null-terminated string, terminator included?
++ loop: move.b (a0)+,(a1)+ / bne loop
+- loop: tst.b (a0)+ / bne loop
+- loop: move.b (a0)+,(a1)+ / beq loop
+? What is the ASCII code of a space?
+- $00
++ $20
+- $41
+? Which single change turns "q" into "Q"?
+- add.b #$20
++ sub.b #$20 (or clearing bit 5)
+- eor.b #$FF
+? What does CMPM.B (a0)+,(a1)+ change?
++ The flags, A0 and A1
+- The bytes at A0 and A1
+- Only the flags
+? Which of these cannot step A0 on by 12?
++ addq.l #12,a0
+- lea 12(a0),a0
+- adda.w #12,a0
+! ADDQ only adds 1 to 8.
+? Which addressing modes does MOVEP take?
+- Any
++ Only d16(An) for the memory operand
+- (An)+ only
+? CIA-A's registers are on...
++ the odd bytes ($BFE001, $BFE101 ...)
+- the even bytes ($BFD000 ...)
+- every byte
+? Which instruction has no flags effect at all?
+- or.b d0,d1
++ lea 4(a0),a1
+- btst #0,d0
+? D0 = $81. What are D0's low byte and the C flag after lsr.b #1,d0?
++ $40, C set
+- $40, C clear
+- $C0, C set
+! Bit 0 (a 1) falls out into C; a 0 comes in at the top.
+? What is the result of eor.w d0,d0?
++ Always 0
+- Always $FFFF
+- D0 unchanged
+! Anything EOR itself is zero.

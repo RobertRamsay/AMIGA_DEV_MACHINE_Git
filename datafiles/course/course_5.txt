@@ -1,0 +1,1225 @@
+=== UNIT 9: Blitter, sprites, sound and input
+
+=== LESSON 81: The blitter: copying a block
+@summary Agnus's blitter: channels A to D, a minterm, and BLTSIZE to start it.
+@text
+The blitter is a DMA engine in Agnus that moves and combines rectangles of memory while the CPU does something else. It reads up to three sources, A, B and C, combines them with a logic function (the minterm) and writes the result to D.
+
+To copy a block, use A as the source and D as the destination, and the minterm $F0, which means "D = A":
+
+	BLTCON0	$09F0	USEA ($0800) + USED ($0100) + minterm $F0
+	BLTCON1	$0000
+	BLTAFWM / BLTALWM	$FFFF	first / last word masks: keep everything
+	BLTAPT, BLTDPT		source and destination addresses
+	BLTAMOD, BLTDMOD	bytes to skip after each row
+	BLTSIZE	height << 6 | width in words: writing it starts the blit
+
+The modulo lets you copy a rectangle out of a wider screen: a block 2 words wide on a 40-byte-wide screen skips 40 - 4 = 36 bytes after each row.
+
+Before touching the blitter's registers, wait until it has finished its last job: test BBUSY (bit 14 of DMACONR, bit 6 of its high byte). On real hardware, read DMACONR once before the loop (an Agnus quirk):
+
+	tst.b	DMACONR(a6)
+waitblit:
+	btst	#6,DMACONR(a6)
+	bne	waitblit
+@task
+Copy a block 2 words wide and 4 rows high from the screen at A0 to the screen at A1. Both screens are 40 bytes wide. Wait for the blitter first.
+@start
+	lea	CUSTOM,a6
+	; wait for the blitter, set it up, start it with BLTSIZE
+
+@solution
+	lea	CUSTOM,a6
+	tst.b	DMACONR(a6)
+waitblit:
+	btst	#6,DMACONR(a6)
+	bne	waitblit
+	move.w	#$09F0,BLTCON0(a6)
+	move.w	#0,BLTCON1(a6)
+	move.w	#$FFFF,BLTAFWM(a6)
+	move.w	#$FFFF,BLTALWM(a6)
+	move.l	a0,BLTAPT(a6)
+	move.l	a1,BLTDPT(a6)
+	move.w	#36,BLTAMOD(a6)
+	move.w	#36,BLTDMOD(a6)
+	move.w	#(4<<6)+2,BLTSIZE(a6)
+@hint
+BLTCON0 = $09F0, both masks $FFFF, the two pointers as longs, both modulos 36, BLTSIZE = (4 << 6) + 2 - written last.
+@test A 32 x 4 block
+setup: a0=20000 a1=30000 m20000.l=11112222 m20028.l=33334444 m20050.l=55556666 m20078.l=77778888 m30004.l=FFFFFFFF m300A0.l=FFFFFFFF
+expect: m30000.l=11112222 m30028.l=33334444 m30050.l=55556666 m30078.l=77778888 m30004.l=FFFFFFFF m300A0.l=FFFFFFFF uses=btst
+@quiz
+? Which register starts the blit?
+- BLTCON0
++ BLTSIZE
+- BLTDPT
+? What does the minterm $F0 mean?
++ D = A
+- D = B
+- D = 0
+? A blit is 3 words wide on a 40-byte-wide screen. What is the modulo?
+- 3
+- 6
++ 34
+
+=== LESSON 82: Blitter shifts and masks
+@summary Moving graphics to any pixel position: the A shift and the last word mask.
+@text
+Graphics rarely sit on a 16-pixel boundary. The blitter shifts channel A right by 0 to 15 pixels as it copies: the shift goes in the top four bits of BLTCON0 (ASH). Bits pushed out of one word move into the next, so a shifted image needs one extra word of width.
+
+That extra word reads one word too many from the source, so the last word mask clears it: BLTALWM = $0000. Only the bits shifted in from the previous word land in the extra word. To make the source pointer come back to the next row properly, its modulo is -2: it read one word too far.
+
+	BLTCON0	$49F0	ASH = 4, A and D, D = A
+	BLTALWM	$0000
+	BLTAMOD	-2
+	BLTSIZE	rows << 6 | 2
+
+BOBs (blitter objects) are drawn exactly like this, plus a mask and the background (lesson 85).
+@task
+A0 points at an image 1 word wide and 3 rows high (2 bytes per row). Copy it 4 pixels to the right into the screen at A1 (40 bytes wide): the destination is 2 words wide. Wait for the blitter first.
+@start
+	lea	CUSTOM,a6
+	; shift the 16 x 3 image at A0 right by 4 into the screen at A1
+
+@solution
+	lea	CUSTOM,a6
+	tst.b	DMACONR(a6)
+waitblit:
+	btst	#6,DMACONR(a6)
+	bne	waitblit
+	move.w	#$49F0,BLTCON0(a6)
+	move.w	#0,BLTCON1(a6)
+	move.w	#$FFFF,BLTAFWM(a6)
+	move.w	#$0000,BLTALWM(a6)
+	move.l	a0,BLTAPT(a6)
+	move.l	a1,BLTDPT(a6)
+	move.w	#-2,BLTAMOD(a6)
+	move.w	#36,BLTDMOD(a6)
+	move.w	#(3<<6)+2,BLTSIZE(a6)
+@hint
+ASH = 4 gives BLTCON0 $49F0. The blit is 2 words wide: BLTALWM $0000, BLTAMOD -2, BLTDMOD 36.
+@test Three rows shifted by 4
+setup: a0=20000 m20000.w=FFFF m20002.w=8001 m20004.w=F00F a1=30000
+expect: m30000.l=0FFFF000 m30028.l=08001000 m30050.l=0F00F000
+@quiz
+? Where does the A shift go?
++ The top 4 bits of BLTCON0
+- BLTCON1 bits 0-3
+- BLTAMOD
+? Why is the destination one word wider than the image?
++ Bits shifted out of the last word need somewhere to go
+- The blitter always adds a word
+- For the mask
+
+=== LESSON 83: Clearing with the blitter
+@summary Using only channel D: clearing a whole bitplane while the CPU runs on.
+@text
+With only channel D enabled and the minterm $00, the blitter writes zeros: the fastest way to clear a screen, and the CPU is free while it happens.
+
+	BLTCON0	$0100	USED, minterm 0
+	BLTSIZE	256 << 6 | 20	256 rows of 20 words
+
+BLTSIZE's height field is 10 bits: a value of 0 means 1024 rows, and the width field 0 means 64 words. A whole 320 x 256 plane fits in one blit. (ECS chips add BLTSIZV and BLTSIZH for bigger blits.)
+
+Because the blitter runs by itself, the CPU must not change the blitter's registers - or use the memory it is writing - until BBUSY clears. Waiting before each blit, rather than after, lets the CPU do other work in between.
+@task
+Clear the whole 320 x 256 bitplane at A0 (40 bytes x 256 rows) with the blitter, waiting for it first.
+@start
+	lea	CUSTOM,a6
+	; clear 40 x 256 bytes at A0 with channel D
+
+@solution
+	lea	CUSTOM,a6
+	tst.b	DMACONR(a6)
+waitblit:
+	btst	#6,DMACONR(a6)
+	bne	waitblit
+	move.w	#$0100,BLTCON0(a6)
+	move.w	#0,BLTCON1(a6)
+	move.l	a0,BLTDPT(a6)
+	move.w	#0,BLTDMOD(a6)
+	move.w	#(256<<6)+20,BLTSIZE(a6)
+@hint
+BLTCON0 $0100, BLTDPT = A0, BLTDMOD 0, BLTSIZE (256 << 6) + 20.
+@test A full bitplane
+setup: a0=20000 m20000.l=FFFFFFFF m21400.l=FFFFFFFF m227FC.l=FFFFFFFF m22800.l=FFFFFFFF
+expect: m20000.l=0 m21400.l=0 m227FC.l=0 m22800.l=FFFFFFFF uses=btst
+@quiz
+? What does a height of 0 in BLTSIZE mean?
+- No blit
++ 1024 rows
+- 256 rows
+? Which BLTCON0 clears memory?
++ $0100
+- $09F0
+- $0FCA
+
+=== LESSON 84: Filling shapes
+@summary The blitter's area fill: outlines in, solid shapes out.
+@text
+The blitter can fill between edges as it writes. On each row it works from right to left; every set bit it meets switches the filling on or off. So a shape drawn as a pair of edge pixels on each row comes out solid - this is how Amiga vector graphics draw filled polygons so quickly.
+
+	BLTCON1	$000A	IFE (inclusive fill, bit 3) + DESC (bit 1)
+	BLTCON1	$0012	EFE (exclusive fill, bit 4) + DESC: the left edge pixel is dropped
+
+Fill mode only works in descending mode, where the blitter runs backwards through memory: point A and D at the last word of the area. Filling can be done in place, with A and D the same.
+@task
+A0 points at an area 2 words wide (4 bytes per row, no gap between rows) and 3 rows high holding outlines. Fill it in place with an inclusive fill. Wait for the blitter first.
+@start
+	lea	CUSTOM,a6
+	; inclusive fill of the 2 x 3 word area at A0, in place
+
+@solution
+	lea	CUSTOM,a6
+	tst.b	DMACONR(a6)
+waitblit:
+	btst	#6,DMACONR(a6)
+	bne	waitblit
+	lea	10(a0),a1
+	move.w	#$09F0,BLTCON0(a6)
+	move.w	#$000A,BLTCON1(a6)
+	move.w	#$FFFF,BLTAFWM(a6)
+	move.w	#$FFFF,BLTALWM(a6)
+	move.l	a1,BLTAPT(a6)
+	move.l	a1,BLTDPT(a6)
+	move.w	#0,BLTAMOD(a6)
+	move.w	#0,BLTDMOD(a6)
+	move.w	#(3<<6)+2,BLTSIZE(a6)
+@hint
+The last word is at A0 + 10. BLTCON0 $09F0 (A to D), BLTCON1 $000A, modulos 0, BLTSIZE (3 << 6) + 2.
+@test Three rows of outlines
+setup: a0=20000 m20000.l=08000010 m20004.l=0 m20008.l=80000001
+expect: m20000.l=0FFFFFF0 m20004.l=0 m20008.l=FFFFFFFF
+@quiz
+? Which direction does the fill work along a row?
++ Right to left
+- Left to right
+- Top to bottom
+? Why must a fill blit be descending?
++ The fill runs from the end of each row, and only descending mode goes that way
+- To save memory
+- Ascending mode has no masks
+
+=== LESSON 85: Cookie-cut BOBs
+@summary The minterm $CA: drawing a shape over the background through its mask.
+@text
+A BOB (blitter object) is drawn over a background without wiping out the pixels around it. Three sources do it:
+
+	A	the mask: 1 where the BOB has a pixel
+	B	the BOB's image
+	C	the background (the screen)
+	D	the screen again
+
+D = (A AND B) OR (NOT A AND C): where the mask is set take the image, elsewhere keep the background. That function is minterm $CA, and with all four channels BLTCON0 is $0FCA. Because the mask is shifted along with the image (A and B use the same shift on the 68000's blitter, via ASH and BSH), it works at any x position.
+
+This "cookie cut" is how the Amiga draws game characters in software: save the background, cut the BOB in, restore the background next frame.
+@task
+A0 points at a mask, A1 at an image (each 1 word wide, 2 rows, 2 bytes per row). A2 points at the screen (40 bytes wide). Cookie-cut the image into the screen at A2 with minterm $CA. Wait for the blitter first.
+@start
+	lea	CUSTOM,a6
+	; D = (A AND B) OR (NOT A AND C) into the screen at A2
+
+@solution
+	lea	CUSTOM,a6
+	tst.b	DMACONR(a6)
+waitblit:
+	btst	#6,DMACONR(a6)
+	bne	waitblit
+	move.w	#$0FCA,BLTCON0(a6)
+	move.w	#0,BLTCON1(a6)
+	move.w	#$FFFF,BLTAFWM(a6)
+	move.w	#$FFFF,BLTALWM(a6)
+	move.l	a0,BLTAPT(a6)
+	move.l	a1,BLTBPT(a6)
+	move.l	a2,BLTCPT(a6)
+	move.l	a2,BLTDPT(a6)
+	move.w	#0,BLTAMOD(a6)
+	move.w	#0,BLTBMOD(a6)
+	move.w	#38,BLTCMOD(a6)
+	move.w	#38,BLTDMOD(a6)
+	move.w	#(2<<6)+1,BLTSIZE(a6)
+@hint
+BLTCON0 $0FCA; A = A0, B = A1, C and D = A2. Modulos 0 for A and B, 38 for C and D. BLTSIZE (2 << 6) + 1.
+@test Two rows
+setup: a0=20000 m20000.w=FF00 m20002.w=FF0 a1=21000 m21000.w=AAFF m21002.w=FFFF a2=30000 m30000.w=1234 m30028.w=0
+expect: m30000.w=AA34 m30028.w=FF0
+@quiz
+? Which minterm draws a BOB through its mask?
+- $F0
++ $CA
+- $0A
+? In a cookie cut, channel C reads...
++ the background
+- the mask
+- the image
+
+=== LESSON 86: Hardware sprites
+@summary The sprite control words: where a sprite is and how tall.
+@text
+The Amiga has 8 hardware sprites, 16 pixels wide and any height, drawn by the hardware on top of the playfield. Each sprite's data starts with two control words:
+
+	POS	= VSTART bits 7-0 << 8  |  HSTART bits 8-1
+	CTL	= VSTOP bits 7-0 << 8  |  VSTART bit 8 << 2  |  VSTOP bit 8 << 1  |  HSTART bit 0
+
+then two words per line (the two bit planes of its 3 colours) and two zero words to end it.
+
+For the standard screen, a sprite at screen position (x, y) has VSTART = y + $2C, HSTART = x + 128, and VSTOP = VSTART + height. The 9th bits matter: from line 212 of the screen VSTART is above 255, and the 9th bit goes in CTL.
+
+To move a sprite you only rewrite its two control words - no drawing at all.
+@task
+Write the two control words for a sprite at x = D0, y = D1, D2 lines high (all words) to (A0) and 2(A0). D3 to D7 may be used as scratch.
+@start
+	; POS to (a0), CTL to 2(a0) for x = D0, y = D1, height D2
+
+@solution
+	move.w	d1,d3
+	add.w	#$2C,d3
+	move.w	d3,d4
+	add.w	d2,d4
+	move.w	d0,d5
+	add.w	#128,d5
+	move.w	d3,d6
+	lsl.w	#8,d6
+	move.w	d5,d7
+	lsr.w	#1,d7
+	move.b	d7,d6
+	move.w	d6,(a0)
+	move.w	d4,d6
+	lsl.w	#8,d6
+	btst	#8,d3
+	beq	nov8
+	bset	#2,d6
+nov8:
+	btst	#8,d4
+	beq	nostop8
+	bset	#1,d6
+nostop8:
+	btst	#0,d5
+	beq	noh0
+	bset	#0,d6
+noh0:
+	move.w	d6,2(a0)
+@hint
+VSTART in D3, VSTOP in D4, HSTART in D5. POS = (VSTART << 8) with HSTART >> 1 in the low byte. CTL = VSTOP << 8, then set bits 2, 1 and 0 from VSTART bit 8, VSTOP bit 8 and HSTART bit 0.
+@test Top left, 16 high
+setup: a0=3000 d0=0 d1=0 d2=10
+expect: m3000.l=2C403C00
+@test x = 161, y = 100, 8 high (odd HSTART)
+setup: a0=3000 d0=A1 d1=64 d2=8
+expect: m3000.l=90909801
+@test Low on the screen: the 9th bits
+setup: a0=3000 d0=32 d1=DC d2=14
+expect: m3000.l=08591C06
+@quiz
+? How wide is an Amiga hardware sprite?
++ 16 pixels
+- 32 pixels
+- 8 pixels
+? How many colours does a single sprite have, plus transparent?
++ 3
+- 15
+- 1
+
+=== LESSON 87: Sprite pointers and DMA
+@summary SPRxPT, a null sprite for the unused channels, and SPREN.
+@text
+Each sprite channel has a pointer, SPR0PT to SPR7PT, at $120 to $13C. Like the bitplane pointers they are used up as the sprite is drawn, so they must be rewritten every frame - normally by the copper.
+
+Once sprite DMA is on (SPREN, bit 5 of DMACON), all eight channels fetch data. A channel nobody set up would show rubbish, so point every unused channel at a null sprite: two zero words, which end it at once.
+
+	null:	dc.l	0
+@task
+Point sprite 0 at the sprite data at A0, point sprites 1 to 7 at the null sprite at A1, and switch on sprite DMA together with the master switch.
+@start
+	; SPR0PT = A0, SPR1PT-SPR7PT = A1, DMA on
+
+@solution
+	lea	CUSTOM+SPR0PT,a2
+	move.l	a0,(a2)+
+	moveq	#6,d0
+loop:
+	move.l	a1,(a2)+
+	dbra	d0,loop
+	move.w	#$8220,CUSTOM+DMACON
+@hint
+The pointers are consecutive longs from CUSTOM+SPR0PT. DMACON $8220 sets DMAEN and SPREN.
+@test Eight pointers and DMA
+setup: a0=3000 a1=3100
+expect: hwlong120=3000 hwlong124=3100 hwlong13C=3100 hwcount140=0 dmacon=220
+@quiz
+? Why point unused sprite channels at a null sprite?
++ Otherwise they fetch whatever their pointer happens to point at
+- To save power
+- The copper needs it
+? Which DMACON bit is sprite DMA?
++ Bit 5 (SPREN)
+- Bit 8 (BPLEN)
+- Bit 6 (BLTEN)
+
+=== LESSON 88: Paula: playing a sound
+@summary Audio DMA: a sample's address, length, period and volume.
+@text
+Paula plays four channels of 8-bit samples by DMA. Each channel has:
+
+	AUDxLC	the sample's address (chip RAM, even)
+	AUDxLEN	its length in words
+	AUDxPER	the period: clock cycles per sample (PAL: 3546895 / rate)
+	AUDxVOL	volume 0 to 64
+
+then DMACON bit 0 to 3 (AUD0EN to AUD3EN) with DMAEN starts it. A period of 428 plays at about 8287 samples a second - the note C-3 in a tracker. The sample loops: when it ends, Paula reloads AUDxLC and AUDxLEN and goes round again, so to play a sound once you set a short silent loop after it starts (ptplayer does this for you in ADM's PLAY SFX).
+
+Channels 0 and 3 are the left speaker, 1 and 2 the right.
+@task
+Play the sample at A0, D0 bytes long (even), on channel 0: period 428, full volume, then switch on its DMA.
+@start
+	lea	CUSTOM,a6
+	; AUD0LC, AUD0LEN (words), AUD0PER, AUD0VOL, then DMA
+
+@solution
+	lea	CUSTOM,a6
+	move.l	a0,AUD0LC(a6)
+	lsr.w	#1,d0
+	move.w	d0,AUD0LEN(a6)
+	move.w	#428,AUD0PER(a6)
+	move.w	#64,AUD0VOL(a6)
+	move.w	#$8201,DMACON(a6)
+@hint
+The length register counts words: halve the byte count. DMACON $8201 sets DMAEN and AUD0EN.
+@test An 8 KB sample
+setup: a0=30000 d0=2000
+expect: hwlong0A0=30000 hw0A4=1000 hw0A6=1AC hw0A8=40 dmacon=201
+@test A short sample
+setup: a0=12346 d0=100
+expect: hwlong0A0=12346 hw0A4=80 dmacon=201
+@quiz
+? What does AUDxLEN count?
+- Bytes
++ Words
+- Samples per second
+? Which channels play on the left?
++ 0 and 3
+- 0 and 1
+- 2 and 3
+
+=== LESSON 89: Reading the joystick
+@summary JOY1DAT's odd encoding and the fire button on CIA-A.
+@text
+A joystick in port 2 is read from JOY1DAT. Left and right are bits 9 and 1; up and down are coded with an exclusive or:
+
+	right	= bit 1
+	left	= bit 9
+	down	= bit 1 EOR bit 0
+	up	= bit 9 EOR bit 8
+
+Shift the value right by one and EOR it with itself: bit 0 of the result is then "down" and bit 8 is "up". The fire button is bit 7 of CIA-A's port A ($BFE001) - and it reads 0 when pressed.
+
+	btst	#7,CIAA+CIAPRA	; Z set = fire pressed
+@task
+Read the joystick in port 2. Set D0 to the x direction (-1 left, 1 right, 0 neither), D1 to the y direction (-1 up, 1 down, 0 neither) and D2 to 1 if fire is pressed, else 0. D3 and D4 may be used as scratch.
+@start
+	; D0 = x direction, D1 = y direction, D2 = fire
+
+@solution
+	move.w	CUSTOM+JOY1DAT,d3
+	moveq	#0,d0
+	moveq	#0,d1
+	btst	#1,d3
+	beq	notright
+	moveq	#1,d0
+notright:
+	btst	#9,d3
+	beq	notleft
+	moveq	#-1,d0
+notleft:
+	move.w	d3,d4
+	lsr.w	#1,d4
+	eor.w	d3,d4
+	btst	#0,d4
+	beq	notdown
+	moveq	#1,d1
+notdown:
+	btst	#8,d4
+	beq	notup
+	moveq	#-1,d1
+notup:
+	moveq	#0,d2
+	btst	#7,CIAA+CIAPRA
+	bne	nofire
+	moveq	#1,d2
+nofire:
+@hint
+Right and left are plain bits. For up and down, copy JOY1DAT, shift the copy right by 1 and EOR the original into it: bit 0 = down, bit 8 = up. Fire: btst #7,CIAA+CIAPRA - pressed when Z is set.
+@test Right and fire
+setup: joy=right+fire d0=55 d1=55 d2=55
+expect: d0=1 d1=0 d2=1
+@test Left and up
+setup: joy=left+up
+expect: d0=FFFFFFFF d1=FFFFFFFF d2=0
+@test Down
+setup: joy=down
+expect: d0=0 d1=1 d2=0
+@test Right and down
+setup: joy=right+down
+expect: d0=1 d1=1 d2=0
+@test Nothing pressed
+setup: d0=55 d1=55 d2=55
+expect: d0=0 d1=0 d2=0
+@quiz
+? What does bit 7 of $BFE001 read when the fire button is pressed?
+- 1
++ 0
+? Which bits of JOY1DAT give "up"?
++ Bit 9 EOR bit 8
+- Bit 8 only
+- Bit 0
+
+=== LESSON 90: CIA timers
+@summary Programming CIA-A's timer A: a countdown in E-clock ticks.
+@text
+Each CIA has two 16-bit timers that count down at the E clock, 709,379 Hz on a PAL Amiga (one tenth of the CPU clock). A timer is loaded from a latch written in two halves and controlled by a control register:
+
+	TALO	$BFE401	timer A low byte
+	TAHI	$BFE501	timer A high byte
+	CRA	$BFEE01	control: bit 0 START, bit 3 one-shot, bit 4 force LOAD
+
+For a tick 50 times a second, load 709379 / 50 = 14187 ($376B). When it reaches zero it can raise an interrupt (through the CIA's ICR, Paula level 2 for CIA-A) and reloads itself unless it is in one-shot mode. ptplayer uses CIA-B's timers to play music at the right tempo whatever the screen rate.
+
+The CIA registers are bytes, one every $100: CIAA+CIATALO, CIAA+CIATAHI, CIAA+CIACRA.
+@task
+Load CIA-A timer A with 14187 ($376B): the low byte, then the high byte. Then start it continuous with a forced load: write $11 to CRA.
+@start
+	; TALO = $6B, TAHI = $37, CRA = $11
+
+@solution
+	move.b	#$6B,CIAA+CIATALO
+	move.b	#$37,CIAA+CIATAHI
+	move.b	#$11,CIAA+CIACRA
+@hint
+Three byte writes: CIAA+CIATALO, CIAA+CIATAHI, CIAA+CIACRA.
+@test Timer A for 50 Hz
+setup: d0=0
+expect: ciaa4=6B ciaa5=37 ciaa14=11
+@quiz
+? How fast does a PAL CIA timer count?
++ 709,379 Hz (the E clock)
+- 7.09 MHz
+- 50 Hz
+? Which bit of CRA starts the timer?
++ Bit 0
+- Bit 4
+- Bit 7
+
+=== UNIT 10: The 68020, AGA and the final project
+
+=== LESSON 91: The 68020: EXTB.L
+@summary What the A1200's 68020 adds, starting with a one-step byte to long.
+@text
+The A1200 has a 68020: 32-bit throughout, a small instruction cache, faster at almost everything, and with new instructions and addressing modes. Code for the 68000 runs unchanged; the new instructions only work on a 68020 or later. This lesson and the next five are assembled and run as 68020 code.
+
+EXTB.L sign-extends a byte straight to a long, where the 68000 needs EXT.W then EXT.L:
+
+	extb.l	d0		; $123456F0 -> $FFFFFFF0
+
+Other gifts of the 68020: branches with 32-bit displacements (Bcc.L), 32-bit multiply and divide, scaled indexes, bit fields, and words and longs at odd addresses (allowed, though slower). An A1200 game that needs those must check for a 68020 first, or crash on an A500.
+@cpu 68020
+@task
+D0's and D1's low bytes are signed numbers. Turn each into a signed long, one instruction each.
+@start
+	; D0 and D1: signed byte -> long
+
+@solution
+	extb.l	d0
+	extb.l	d1
+@hint
+extb.l d0 and extb.l d1.
+@test Negative and positive
+setup: d0=123456F0 d1=ABCDEF05
+expect: d0=FFFFFFF0 d1=5 uses=extb
+@test Extremes
+setup: d0=80 d1=7F
+expect: d0=FFFFFF80 d1=7F
+@quiz
+? What does EXTB.L do on a 68000?
+- The same as on a 68020
++ It is an illegal instruction
+- It extends a word
+? Which CPU is in an A1200?
++ 68020
+- 68000
+- 68030
+
+=== LESSON 92: Scaled indexes
+@summary (d8,An,Dn*4): the 68020 multiplies the index for you.
+@text
+On the 68000, a table of words or longs needs the index doubled or quadrupled first (lesson 32). The 68020 scales it in the addressing mode:
+
+	move.l	0(a0,d0.w*4),d1		; long entry D0
+	move.w	0(a0,d0.w*2),d1		; word entry D0
+
+The scale can be 1, 2, 4 or 8. The index register is not changed, so it is still the entry number afterwards. The 68020 also has full-format modes with 32-bit displacements and memory indirection (([bd,An],Xn,od)), used by compilers; scaling is the part hand-written code uses most.
+@cpu 68020
+@task
+A0 points at a table of longs; D0 (a word) is an entry number. Put that entry into D1 with a single instruction, leaving D0 unchanged.
+@start
+	; D1 = long entry D0 of the table at A0, one instruction
+
+@solution
+	move.l	0(a0,d0.w*4),d1
+@hint
+move.l 0(a0,d0.w*4),d1.
+@test Entry 2
+setup: a0=2000 d0=2 m2008.l=CAFEBABE
+expect: d1=CAFEBABE keep=d0 maxsize=4
+@test Entry 0
+setup: a0=3000 d0=0 m3000.l=12345678
+expect: d1=12345678 keep=d0
+@quiz
+? Which scales does a 68020 index take?
++ 1, 2, 4 and 8
+- Any power of two
+- 2 and 4 only
+
+=== LESSON 93: 32-bit multiply and divide
+@summary MULU.L and DIVUL.L: no more 16-bit limits.
+@text
+The 68000's MULU and DIVU work on words. The 68020 adds long forms:
+
+	mulu.l	d1,d0		; D0 = D0 * D1 (low 32 bits; V if it overflowed)
+	mulu.l	d1,d2:d0	; D2:D0 = the full 64-bit product
+	divu.l	d1,d0		; D0 = D0 / D1 (quotient only)
+	divul.l	d1,d4:d0	; D0 = D0 / D1, D4 = remainder
+	divu.l	d1,d2:d0	; 64-bit dividend D2:D0
+
+The signed versions are MULS.L, DIVS.L and DIVSL.L. They are also faster than doing it by hand: a 32 x 32 multiply on a 68000 takes several MULUs and adds.
+@cpu 68020
+@task
+Set D2 to D0 x D1 (the low 32 bits, unsigned), and D3 to D0 / D1 with the remainder in D4 (unsigned longs). D0 and D1 must be unchanged.
+@start
+	; D2 = D0 * D1, D3 = D0 / D1, D4 = remainder
+
+@solution
+	move.l	d0,d2
+	mulu.l	d1,d2
+	move.l	d0,d3
+	divul.l	d1,d4:d3
+@hint
+Copy D0 to D2 and mulu.l d1,d2. Copy D0 to D3 and divul.l d1,d4:d3.
+@test 100000 and 3
+setup: d0=186A0 d1=3
+expect: d2=493E0 d3=8235 d4=1 keep=d0+d1 uses=mulu+divul
+@test Big numbers
+setup: d0=FFFFFFFF d1=10000
+expect: d2=FFFF0000 d3=FFFF d4=FFFF keep=d0+d1
+@quiz
+? Where does divul.l d1,d4:d0 put the remainder?
++ D4
+- D0
+- D1
+
+=== LESSON 94: Bit fields
+@summary BFEXTU and BFINS: reading and writing fields of any width at any position.
+@text
+The 68020's bit field instructions work on a run of 1 to 32 bits at any offset, in a register or in memory:
+
+	bfextu	d0{22:5},d1	; D1 = 5 bits of D0 starting at offset 22
+	bfins	d2,d0{27:5}	; put the low 5 bits of D2 there
+
+The offset counts from the most significant bit: in a register, offset 0 is bit 31, so bit n is at offset 31 - n. A field at bits 9 to 5 starts at offset 31 - 9 = 22. In memory, offset 0 is the top bit of the byte at the address, and fields can cross bytes.
+
+Packed graphics data - colour components, tile numbers, sprite flags - becomes much easier. A 15-bit colour has red in bits 14-10, green in 9-5 and blue in 4-0.
+@cpu 68020
+@task
+D0 holds a 15-bit colour (red bits 14-10, green 9-5, blue 4-0). Put the green value into D1 with BFEXTU, then replace the blue value with the low 5 bits of D2 using BFINS.
+@start
+	; D1 = green of D0, then blue of D0 = D2
+
+@solution
+	bfextu	d0{22:5},d1
+	bfins	d2,d0{27:5}
+@hint
+Green is bits 9-5: offset 22, width 5. Blue is bits 4-0: offset 27, width 5.
+@test $1234
+setup: d0=1234 d2=3 d1=0
+expect: d1=11 d0=1223 uses=bfextu+bfins
+@test Full green
+setup: d0=3E0 d2=1F d1=55
+expect: d1=1F d0=3FF
+@quiz
+? In a data register, which bit is at bit field offset 0?
++ Bit 31
+- Bit 0
+- Bit 7
+
+=== LESSON 95: Finding the first set bit: BFFFO
+@summary BFFFO: the position of the highest 1 bit, in one instruction.
+@text
+BFFFO ("find first one") returns the offset of the first set bit in a field, scanning from the most significant end. If the field is all zeros, it returns the offset plus the width, and sets Z.
+
+	bfffo	d0{0:32},d1	; D1 = number of leading zeros of D0
+
+For a whole register the number of the highest set bit is then 31 - D1. That answers "which is the most important flag set?", gives a quick log2 for scaling numbers and finds free entries in allocation bitmaps - all in one instruction where the 68000 needs a loop.
+@cpu 68020
+@task
+Set D1 to the number (0 to 31) of the highest set bit in D0, or to -1 if D0 is zero.
+@start
+	; D1 = number of the highest set bit of D0, or -1
+
+@solution
+	bfffo	d0{0:32},d1
+	beq	zero
+	neg.l	d1
+	add.l	#31,d1
+	bra	done
+zero:
+	moveq	#-1,d1
+done:
+@hint
+After bfffo d0{0:32},d1, Z is set if D0 was zero. Otherwise the bit number is 31 - D1.
+@test Bit 0
+setup: d0=1
+expect: d1=0 uses=bfffo
+@test Bit 31
+setup: d0=80000000
+expect: d1=1F
+@test $12345
+setup: d0=12345
+expect: d1=10
+@test Zero
+setup: d0=0 d1=5
+expect: d1=FFFFFFFF
+@quiz
+? What does BFFFO return for an all-zero field?
++ The offset plus the width, with Z set
+- -1
+- 0
+
+=== LESSON 96: AGA colours
+@summary 24-bit colours on the A1200: high and low nibbles through BPLCON3.
+@text
+AGA, the A1200's chipset, has 256 colour registers of 24 bits each - but the registers are still the old 12-bit COLORxx words. BPLCON3 chooses what a write means:
+
+	bits 15-13	BANK: which 32 of the 256 colours COLOR00-COLOR31 reach
+	bit 9		LOCT: 0 = write the high nibbles, 1 = the low nibbles
+
+For the colour $RrGgBb, write $0RGB (the high nibbles) with LOCT = 0, then $0rgb (the low nibbles) with LOCT = 1. Writing the high nibbles also copies them into the low ones, so on an older chipset - or if you skip the second write - you still get the nearest 12-bit colour. Always write high first.
+@task
+Set COLOR00 to the 24-bit colour $123456: BPLCON3 = 0 and the high nibbles, then BPLCON3 with LOCT set and the low nibbles.
+@start
+	lea	CUSTOM,a6
+	; COLOR00 = $123456 on AGA
+
+@solution
+	lea	CUSTOM,a6
+	move.w	#$0000,BPLCON3(a6)
+	move.w	#$0135,COLOR00(a6)
+	move.w	#$0200,BPLCON3(a6)
+	move.w	#$0246,COLOR00(a6)
+@hint
+$123456 has high nibbles 1, 3, 5 ($0135) and low nibbles 2, 4, 6 ($0246). LOCT is bit 9: $0200.
+@test COLOR00 = $123456
+setup: d0=0
+expect: hw106=200 hw180=246 hwcount180=2 hwcount106=2
+@quiz
+? How many colour registers does AGA have?
+- 32
+- 64
++ 256
+? Which BPLCON3 bit selects the low nibbles?
++ Bit 9 (LOCT)
+- Bit 15
+- Bit 0
+
+=== LESSON 97: AGA bitplanes and FMODE
+@summary Eight bitplanes and the faster fetch modes.
+@text
+AGA displays up to 8 bitplanes - 256 colours. BPLCON0's plane count is 3 bits (BPU2-BPU0, bits 14-12) plus a fourth, BPU3, in bit 4; 8 planes is BPU = 0 with BPU3 set:
+
+	1-7 planes	BPLCON0 = planes << 12 | $0200
+	8 planes	BPLCON0 = $0210
+
+FMODE ($DFF1FC) sets how many bits Agnus fetches at once: 0 is the old 16, 1 and 2 are 32, 3 is 64. Wider fetches leave more chip bus time for the CPU and blitter, and are needed for 8 planes at high resolutions - but bitplane data and widths must then be aligned to 64 bits. ECS registers ignore all of this, which is why an AGA screen shows rubbish on an A500.
+@task
+Write BPLCON0 for D0 bitplanes (1 to 8), the AGA way, then set FMODE to 3.
+@start
+	; BPLCON0 for D0 planes (8 = $0210), FMODE = 3
+
+@solution
+	cmp.w	#8,d0
+	bne	notall
+	move.w	#$0210,CUSTOM+BPLCON0
+	bra	fetch
+notall:
+	move.w	d0,d1
+	moveq	#12,d2
+	lsl.w	d2,d1
+	or.w	#$0200,d1
+	move.w	d1,CUSTOM+BPLCON0
+fetch:
+	move.w	#3,CUSTOM+FMODE
+@hint
+Special-case 8 ($0210); otherwise the old formula. Then move.w #3,CUSTOM+FMODE.
+@test 8 planes
+setup: d0=8
+expect: hw100=210 hw1FC=3
+@test 6 planes
+setup: d0=6
+expect: hw100=6200 hw1FC=3
+@quiz
+? Which BPLCON0 value gives 8 bitplanes with colour?
++ $0210
+- $8200
+- $0800
+? What does FMODE 3 do?
++ Fetches 64 bits at a time
+- Enables 3 planes
+- Turns sprites off
+
+=== LESSON 98: Making it fast
+@summary A whole-loop optimisation: replacing MULU with shifts and adds.
+@text
+Speed on the 68000 comes from a few habits: keep values in registers, avoid MULU and DIVU in inner loops, use (An)+ to step through data, unroll, and pick the cheap form of each instruction (MOVEQ, ADDQ, LEA). Measure every change - the simulator's cycle count is there for that.
+
+Multiplying by a constant is the commonest win. x * 10 = x * 8 + x * 2:
+
+	add.w	d0,d0		; x2
+	move.w	d0,d1
+	add.w	d0,d0		; x4
+	add.w	d0,d0		; x8
+	add.w	d1,d0		; x8 + x2
+
+ADD.W Dn,Dn takes 4 cycles; MULU.W #10 takes about 46.
+@task
+Multiply each of the 32 words at A0 by 10, in place (the results fit in a word). The code in the editor works but takes about 2300 cycles; the limit is 1800. D0, D1 and D2 may be used.
+@start
+	moveq	#31,d2
+loop:
+	move.w	(a0),d0
+	mulu.w	#10,d0
+	move.w	d0,(a0)+
+	dbra	d2,loop
+@solution
+	moveq	#31,d2
+loop:
+	move.w	(a0),d0
+	add.w	d0,d0
+	move.w	d0,d1
+	add.w	d0,d0
+	add.w	d0,d0
+	add.w	d1,d0
+	move.w	d0,(a0)+
+	dbra	d2,loop
+@hint
+Replace the MULU with the shift-and-add sequence from the text.
+@test 32 words, fast
+setup: a0=2000 m2000.w=1 m2002.w=7 m203C.w=64 m203E.w=FF m2040.w=1234
+expect: m2000.w=A m2002.w=46 m203C.w=3E8 m203E.w=9F6 m2040.w=1234 maxcyc=1800
+@quiz
+? Why avoid MULU in an inner loop on a 68000?
++ It takes 38 to 70 cycles, where shifts and adds take a few
+- It gives wrong answers
+- It only works on words
+
+=== LESSON 99: Final project, part 1: moving the player
+@summary Joystick to movement: a player that moves 2 pixels a frame and stays on the screen.
+@text
+Time to put the pieces together. A game frame reads the input, moves things, and draws. This part is the movement.
+
+The player is a record at A0: x (word) then y (word), in screen pixels. Each frame, read the joystick as in lesson 89 and move 2 pixels in that direction. Keep the player on the screen: x from 0 to 304 and y from 0 to 240 (a 16 x 16 sprite on a 320 x 256 screen).
+
+Clamping after adding is simplest: if the new x is negative, make it 0; if above 304, make it 304. A signed compare is needed - x can go below zero for a moment.
+@task
+Move the player at A0 (x word, y word) by 2 pixels in the joystick's direction, then clamp x to 0..304 and y to 0..240. D0 to D4 may be used.
+@start
+	; read JOY1DAT, move x,y at (a0) by 2 per direction, clamp
+
+@solution
+	move.w	CUSTOM+JOY1DAT,d3
+	moveq	#0,d0
+	moveq	#0,d1
+	btst	#1,d3
+	beq	nr
+	moveq	#2,d0
+nr:
+	btst	#9,d3
+	beq	nl
+	moveq	#-2,d0
+nl:
+	move.w	d3,d4
+	lsr.w	#1,d4
+	eor.w	d3,d4
+	btst	#0,d4
+	beq	nd
+	moveq	#2,d1
+nd:
+	btst	#8,d4
+	beq	nu
+	moveq	#-2,d1
+nu:
+	move.w	(a0),d2
+	add.w	d0,d2
+	bpl	xpos
+	moveq	#0,d2
+xpos:
+	cmp.w	#304,d2
+	ble	xok
+	move.w	#304,d2
+xok:
+	move.w	d2,(a0)
+	move.w	2(a0),d2
+	add.w	d1,d2
+	bpl	ypos
+	moveq	#0,d2
+ypos:
+	cmp.w	#240,d2
+	ble	yok
+	move.w	#240,d2
+yok:
+	move.w	d2,2(a0)
+@hint
+Decode the joystick into dx and dy of -2, 0 or 2. Add each to its coordinate; if the result is negative (BPL fails) use 0, and if it is above the limit (signed BGT) use the limit.
+@test Right
+setup: a0=2000 m2000.w=A m2002.w=64 joy=right
+expect: m2000.w=C m2002.w=64
+@test Left at the edge
+setup: a0=2000 m2000.w=0 m2002.w=64 joy=left
+expect: m2000.w=0 m2002.w=64
+@test Down at the bottom
+setup: a0=2000 m2000.w=A m2002.w=EF joy=down
+expect: m2000.w=A m2002.w=F0
+@test Up and left
+setup: a0=2000 m2000.w=64 m2002.w=64 joy=up+left
+expect: m2000.w=62 m2002.w=62
+@test Right at the right edge
+setup: a0=2000 m2000.w=12F m2002.w=0 joy=right+up
+expect: m2000.w=130 m2002.w=0
+@quiz
+? Why must the clamp use signed comparisons?
++ x can go just below 0, which unsigned would see as a huge number
+- Because 304 is negative
+- Unsigned branches do not exist
+
+=== LESSON 100: Final project, part 2: one game frame
+@summary Wait for the frame, move the player, place its sprite and react to fire - the heart of a game loop.
+@text
+A whole game frame, built from the course:
+
+	1	wait for the vertical blank (line 300)          lesson 69
+	2	read the joystick and move the player           lessons 89, 99
+	3	write the player's sprite control words         lesson 86
+	4	react to the fire button: COLOR00 red while it is held, else black
+
+Wrap that in a loop with BRA and it is a game: the copper shows the sprite (lessons 76-78, 87), and every frame the player follows the joystick. Structure it with subroutines if you like - BSR to each part keeps it readable.
+
+When this passes, you have written a complete frame of an Amiga game in assembler. After it comes the final exam.
+@task
+A0 points at the player (x word, y word); A1 at the player's sprite data. Wait for line 300, move the player as in lesson 99, write the sprite's POS and CTL words (16 lines high) to (A1) as in lesson 86, and set COLOR00 to $0F00 if fire is pressed, else $0000. Use any registers except A0, A1 and A7.
+@start
+	lea	CUSTOM,a6
+	; 1. wait for line 300
+	; 2. move the player at (a0)
+	; 3. POS and CTL to (a1)
+	; 4. COLOR00 from the fire button
+
+@solution
+	lea	CUSTOM,a6
+wait:
+	move.l	VPOSR(a6),d0
+	and.l	#$1FF00,d0
+	cmp.l	#$12C00,d0
+	bne	wait
+	move.w	JOY1DAT(a6),d3
+	moveq	#0,d0
+	moveq	#0,d1
+	btst	#1,d3
+	beq	nr
+	moveq	#2,d0
+nr:
+	btst	#9,d3
+	beq	nl
+	moveq	#-2,d0
+nl:
+	move.w	d3,d4
+	lsr.w	#1,d4
+	eor.w	d3,d4
+	btst	#0,d4
+	beq	nd
+	moveq	#2,d1
+nd:
+	btst	#8,d4
+	beq	nu
+	moveq	#-2,d1
+nu:
+	move.w	(a0),d2
+	add.w	d0,d2
+	bpl	xpos
+	moveq	#0,d2
+xpos:
+	cmp.w	#304,d2
+	ble	xok
+	move.w	#304,d2
+xok:
+	move.w	d2,(a0)
+	move.w	2(a0),d2
+	add.w	d1,d2
+	bpl	ypos
+	moveq	#0,d2
+ypos:
+	cmp.w	#240,d2
+	ble	yok
+	move.w	#240,d2
+yok:
+	move.w	d2,2(a0)
+	move.w	(a0),d0
+	move.w	2(a0),d1
+	move.w	d1,d3
+	add.w	#$2C,d3
+	move.w	d3,d4
+	add.w	#16,d4
+	move.w	d0,d5
+	add.w	#128,d5
+	move.w	d3,d6
+	lsl.w	#8,d6
+	move.w	d5,d7
+	lsr.w	#1,d7
+	move.b	d7,d6
+	move.w	d6,(a1)
+	move.w	d4,d6
+	lsl.w	#8,d6
+	btst	#8,d3
+	beq	nov8
+	bset	#2,d6
+nov8:
+	btst	#8,d4
+	beq	nostop8
+	bset	#1,d6
+nostop8:
+	btst	#0,d5
+	beq	noh0
+	bset	#0,d6
+noh0:
+	move.w	d6,2(a1)
+	move.w	#$0000,d0
+	btst	#7,CIAA+CIAPRA
+	bne	nofire
+	move.w	#$0F00,d0
+nofire:
+	move.w	d0,COLOR00(a6)
+@hint
+Paste together your answers to lessons 69, 99 and 86 (with the height fixed at 16 and x, y read back from the player), then the fire test from lesson 89 choosing $0F00 or $0000 for COLOR00.
+@test Right and fire
+setup: a0=2000 m2000.w=64 m2002.w=32 a1=3000 joy=right+fire
+expect: m2000.w=66 m2002.w=32 m3000.l=5E736E00 hw180=F00
+@test Down and left at the edges
+setup: a0=2000 m2000.w=0 m2002.w=E6 a1=3000 joy=down+left
+expect: m2000.w=0 m2002.w=E8 m3000.l=14402406 hw180=0
+@quiz
+? In which order does a typical game frame do its work?
++ Wait for the frame, read input, move, draw
+- Draw, wait, read input, move
+- Read input, draw, move, wait
+! Doing the drawing just after the vertical blank keeps it out of the beam's way.
+
+=== EXAM 5: The final exam
+@summary The whole course, lessons 1-100: the 68000, its instructions and addressing, algorithms, exceptions and interrupts, the custom chips, the copper, blitter, sprites, sound, input, the 68020 and AGA. 50 questions, pass mark 80%.
+@pass 80
+@quiz
+? D0 = $12345678. What is D0 after move.w #0,d0?
++ $12340000
+- $00000000
+- $00005678
+? What does A1 hold after move.w #$8000,a1?
++ $FFFF8000
+- $00008000
+- $80000000
+? Which access is an address error on a 68000?
++ move.l $1001,d0
+- move.b $1001,d0
+- move.w $1000,d0
+? A0 = $4000. After move.l (a0)+,d0, A0 is...
+- $4001
+- $4002
++ $4004
+? Which addressing mode reads data inside the program wherever it is loaded?
++ PC-relative, such as table(pc)
+- Absolute long
+- Predecrement
+? After cmp.l d1,d0 with D0 = 3 and D1 = 8 (signed), which branch is taken?
++ BLT
+- BGT
+- BEQ
+? Which branch should test an unsigned comparison?
++ BHI
+- BGT
+- BGE
+? How many times does a DBRA loop run with the counter starting at 4?
+- 4
++ 5
+- 3
+? D0 = $00000005. After lsl.l #3,d0?
++ $28
+- $0F
+- $15
+? Which shift keeps the sign of a negative number?
++ ASR
+- LSR
+- ROR
+? Which instruction flips every bit of a byte?
++ eor.b #$FF,d0
+- and.b #$FF,d0
+- or.b #$FF,d0
+? After bclr #4,(a0), Z is set if...
++ bit 4 was 0 before
+- the byte is now 0
+- bit 4 is now 0
+? Which pair adds two 64-bit numbers held in D0:D1 and D2:D3?
++ add.l d3,d1 / addx.l d2,d0
+- add.l d2,d0 / addx.l d3,d1
+- addx.l d3,d1 / add.l d2,d0
+? Which colour word is pure blue on OCS?
++ $000F
+- $0F00
+- $00F0
+? MULU.W multiplies...
++ two unsigned words into a long
+- two longs into a long
+- a long by a word
+? Where does DIVU put the remainder?
++ In the high word of the destination
+- In the low word
+- In D1
+? BSR pushes...
++ the return address
+- all registers
+- the status register
+? Which instruction saves several registers on the stack at once?
++ MOVEM
+- MOVEP
+- PEA
+? In the Amiga convention, which registers may a routine change?
++ D0, D1, A0, A1
+- D2-D7
+- A2-A6
+? Inside a subroutine called after pushing one long, where is that long?
+- (a7)
++ 4(a7)
+- -4(a7)
+? What does LINK A6,#-16 reserve?
++ 16 bytes of locals below A6
+- 16 bytes of chip RAM
+- 16 registers
+? Which instruction sets a byte to $FF or $00 from a condition?
++ Scc
+- TST
+- CMP
+? Why store a jump table as distances from the table?
++ So the code is position-independent
+- To make it smaller
+- JMP needs it
+? Which is the fastest way to clear memory with the CPU on a 68000?
++ MOVEM of zeroed registers
+- CLR.L (An)+
+- A loop of BCLR
+? A binary search needs...
++ a sorted table
+- a table of bytes
+- a power-of-two size
+? Which byte is the BCD number 52?
++ $52
+- $34
+- $25
+? In 16.16 fixed point, $00008000 is...
++ 0.5
+- 8.0
+- 32768.0
+? Which exception does dividing by zero raise?
++ Vector 5
+- Vector 3
+- Vector 4
+? What does an exception push on a 68000?
++ PC and SR
+- Only the PC
+- Every register
+? Which instruction returns from an exception?
++ RTE
+- RTS
+- RTR
+? Where is the level 3 interrupt vector?
++ $6C
+- $78
+- $64
+? What must a VERTB handler write before RTE?
++ $0020 to INTREQ, to acknowledge it
+- $8020 to INTENA
+- Nothing
+? Where are the custom chip registers?
++ $DFF000
+- $BFE001
+- $F80000
+? Which memory can the custom chips use?
++ Chip RAM only
+- Fast RAM only
+- Any memory
+? Writing $0100 to DMACON...
++ switches bitplane DMA off
+- switches bitplane DMA on
+- switches everything else off
+? A PAL frame has how many lines?
++ 313
+- 256
+- 525
+? How many colours do 5 bitplanes give on OCS?
++ 32
+- 5
+- 64
+? What does the copper instruction $0180,$000F do?
++ Sets COLOR00 to blue
+- Waits for line $01
+- Ends the copper list
+? Which word ends a copper list?
++ $FFFF,$FFFE
+- $0000,$0000
+- $FFFE,$FFFF
+? Which register starts a blit?
++ BLTSIZE
+- BLTCON0
+- BLTAPT
+? Which minterm copies A to D?
++ $F0
+- $CA
+- $00
+? Which minterm cuts a BOB through its mask over the background?
++ $CA
+- $F0
+- $0F
+? What does BLTCON1 = $000A do?
++ Inclusive fill, descending
+- Line mode
+- A shift of 10
+? How do you know the blitter has finished?
++ BBUSY (bit 14 of DMACONR) is clear
+- BLTSIZE reads 0
+- INTREQ bit 5 is set
+? A sprite at screen y = 0 has VSTART...
++ $2C
+- $00
+- $80
+? What is AUDxPER?
++ The period: clock ticks per sample
+- The volume
+- The length in words
+? The fire button of a joystick in port 2 is...
++ bit 7 of $BFE001, 0 when pressed
+- bit 0 of JOY1DAT
+- bit 7 of $BFE001, 1 when pressed
+? Which 68020 instruction sign-extends a byte to a long in one go?
++ EXTB.L
+- EXT.L
+- SWAP
+? On AGA, how do you write the low nibbles of a 24-bit colour?
++ Set LOCT (bit 9) in BPLCON3, then write the colour register
+- Write the colour register twice quickly
+- Use COLOR32 to COLOR63
+? Which BPLCON0 gives 8 bitplanes on AGA?
++ $0210
+- $8200
+- $0800

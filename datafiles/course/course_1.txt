@@ -134,15 +134,962 @@ expect: d0=12345678 d1=5678 d2=78
 - $1234AAAA
 ! A word move only replaces the low 16 bits of a data register.
 
+
+=== LESSON 4: Address registers
+@summary A0-A7 hold addresses: MOVEA, ADDA and sign extension.
+@text
+Address registers A0 to A7 hold memory addresses: they point at things. You load them with MOVE too (strictly MOVEA, but the assembler picks the right form for you):
+
+	move.l	#$2000,a0	; A0 points at address $2000
+	move.l	a0,a1		; A1 points at the same place
+	adda.w	#$100,a1	; A1 now points $100 bytes further on
+
+Address registers behave differently from data registers in two ways.
+
+First, an operation on an address register always changes all 32 bits. If you move a word into one, the word is sign-extended: its top bit is copied into the upper 16 bits. So move.w #$9000,a2 gives A2 = $FFFF9000, because $9000 has its top bit set (as a signed word it is negative). move.w #$1234,a2 gives $00001234.
+
+Second, moving or adding to an address register never changes the flags (you will meet the flags in lesson 13). Addresses are not results to test - they are places.
+
+A7 is special: it is the stack pointer, used by the CPU itself (lesson 8). Leave it alone for now.
+@task
+Point A0 at $2000. Make A1 point $100 bytes after A0. Then load A2 using a MOVE.W of $9000, and see what sign extension does to it.
+@start
+	; A0 = $2000, A1 = A0 + $100, A2 from move.w #$9000
+
+@solution
+	move.l	#$2000,a0
+	move.l	a0,a1
+	adda.w	#$100,a1
+	move.w	#$9000,a2
+@hint
+move.l #$2000,a0 sets A0. Copy it to A1 with move.l a0,a1 and add $100 with ADDA. For A2 write exactly move.w #$9000,a2.
+@test A0, A1 and A2
+setup: a0=0 a1=0 a2=0
+expect: a0=2000 a1=2100 a2=FFFF9000
+@test From junk values
+setup: a0=12345678 a1=FFFFFFFF a2=55555555
+expect: a0=2000 a1=2100 a2=FFFF9000
+@quiz
+? What does A3 hold after move.w #$8001,a3?
+- $00008001
++ $FFFF8001
+- $80010000
+! Words moved into an address register are sign-extended to 32 bits.
+
+=== LESSON 5: Memory and big-endian
+@summary Reading and writing memory at an absolute address; the byte order of words and longs.
+@text
+Memory is a long row of bytes, each with an address. The Amiga's chip RAM starts at address 0. A number without a # in front is an address, so
+
+	move.w	#$CAFE,$2000	; store the word $CAFE at address $2000
+	move.w	$2000,d0	; load the word at $2000 into D0
+
+The 68000 is big-endian: the most significant byte comes first, at the lower address. After storing $CAFE at $2000, the byte at $2000 is $CA and the byte at $2001 is $FE. A long is two words in a row, high word first: a long at $2000 is made of the words at $2000 and $2002.
+
+Words and longs must start at an even address. Reading a word from an odd address makes the 68000 stop with an address error - one of the most common crashes on the Amiga. Bytes can be anywhere.
+@task
+Store $CAFE at $2000 and $BABE at $2002 (two word writes). Then read the long at $2000 into D0, and the byte at $2000 into D1.
+@start
+	; two words to $2000 and $2002, then read them back
+
+@solution
+	move.w	#$CAFE,$2000
+	move.w	#$BABE,$2002
+	move.l	$2000,d0
+	move.b	$2000,d1
+@hint
+move.l $2000,d0 reads four bytes starting at $2000. move.b $2000,d1 reads only the first one - the high byte of $CAFE.
+@test The long and the byte
+setup: d0=0 d1=0 m2000.l=0
+expect: m2000.l=CAFEBABE d0=CAFEBABE d1=CA
+@test D1 keeps its upper bytes
+setup: d0=0 d1=FFFFFFFF m2000.l=12345678
+expect: d0=CAFEBABE d1=FFFFFFCA
+@quiz
+? A long $11223344 is stored at $3000. Which byte is at $3001?
+- $11
++ $22
+- $33
+- $44
+! Big-endian: $11 at $3000, $22 at $3001, $33 at $3002, $44 at $3003.
+? What happens on a 68000 after move.w $2001,d0?
+- D0 gets the word at $2000
+- D0 gets the byte at $2001
++ An address error: words must be at even addresses
+! Words and longs need even addresses on the 68000.
+
+=== LESSON 6: Pointers: (An)
+@summary Address register indirect: using the address in A0 to reach memory.
+@text
+Writing addresses into every instruction gets old fast. Instead, put the address in an address register and use it as a pointer. Brackets mean "the memory A0 points at":
+
+	move.w	(a0),d0		; the word at the address in A0
+	move.w	#$1234,(a0)	; store a word there
+
+This is address register indirect. The same code works on any data: change A0 and it works somewhere else. Lessons from here on give you pointers in address registers, and the tests move the data around to make sure your code follows the pointer.
+
+Any of A0 to A6 can be a pointer. (A7 can too, but it is the stack pointer.)
+@task
+A0 points at a word. Copy that word into D0, then overwrite it in memory with $1234.
+@start
+	; read the word A0 points at, then write $1234 there
+
+@solution
+	move.w	(a0),d0
+	move.w	#$1234,(a0)
+@hint
+move.w (a0),d0 first - once the word is overwritten, the old value is gone.
+@test A0 = $2000
+setup: d0=0 a0=2000 m2000.w=ABCD
+expect: d0=ABCD m2000.w=1234 a0=2000
+@test A0 = $3000
+setup: d0=0 a0=3000 m3000.w=42
+expect: d0=42 m3000.w=1234 a0=3000
+@quiz
+? What is the difference between "move.w a0,d0" and "move.w (a0),d0"?
++ The first copies the address itself, the second the word stored at that address
+- There is none
+- The first is a byte move
+! (a0) means "the memory A0 points at".
+
+=== LESSON 7: Walking through memory: (An)+
+@summary Postincrement: reading and writing lists of values.
+@text
+After (An)+ is used, the 68000 adds the size of the access to An: 1 for a byte, 2 for a word, 4 for a long. So the pointer steps on to the next item by itself:
+
+	move.w	(a0)+,d0	; word at A0, then A0 = A0 + 2
+	move.w	(a0)+,d1	; the next word
+
+This is postincrement, and it is how lists of data are processed. With two pointers you can copy:
+
+	move.l	(a0)+,(a1)+	; copy a long from A0 to A1, both step on 4
+
+One exception: A7, the stack pointer, always steps by at least 2, even for a byte, so the stack stays word aligned.
+@task
+Copy three words from the list at A0 to the list at A1, using (An)+ on both. Both pointers end just after their lists.
+@start
+	; copy 3 words from (a0) to (a1)
+
+@solution
+	move.w	(a0)+,(a1)+
+	move.w	(a0)+,(a1)+
+	move.w	(a0)+,(a1)+
+@hint
+move.w (a0)+,(a1)+ copies one word and moves both pointers on. Do it three times.
+@test Three words, $2000 to $3000
+setup: a0=2000 a1=3000 m2000.w=1111 m2002.w=2222 m2004.w=3333 m3006.w=5555
+expect: m3000.w=1111 m3002.w=2222 m3004.w=3333 m3006.w=5555 a0=2006 a1=3006
+@test Other addresses
+setup: a0=4000 a1=2100 m4000.w=ABCD m4002.w=0 m4004.w=FFFF
+expect: m2100.w=ABCD m2102.w=0 m2104.w=FFFF a0=4006 a1=2106
+@quiz
+? A0 = $2000. What is A0 after move.l (a0)+,d0?
+- $2001
+- $2002
++ $2004
+! A long is 4 bytes, so postincrement adds 4.
+
+=== LESSON 8: The stack: -(An)
+@summary Predecrement and A7: pushing and popping values on the stack.
+@text
+-(An) is the mirror of (An)+: the 68000 first subtracts the size from An, then uses the new address. Together they make a stack, a pile of values where the last one put on is the first taken off.
+
+A7 is the stack pointer. The stack grows downwards in memory:
+
+	move.l	d0,-(a7)	; push D0: A7 = A7 - 4, then store D0 there
+	move.l	(a7)+,d0	; pop it back: read, then A7 = A7 + 4
+
+The CPU uses the same stack for subroutine calls and exceptions, so every push must be matched by a pop. If your code returns with the stack moved, the program crashes - here, your code is called as a subroutine and has to leave A7 as it found it.
+
+Because the last value pushed comes off first, pushing two values and popping them in the same order swaps them.
+@task
+Swap D0 and D1 using the stack: push both, then pop them back the other way round. Do not use EXG.
+@start
+	; push D0 and D1, pop them swapped
+
+@solution
+	move.l	d0,-(a7)
+	move.l	d1,-(a7)
+	move.l	(a7)+,d0
+	move.l	(a7)+,d1
+@hint
+Push D0, push D1. The first pop gives back D1's value - put it in D0.
+@test Swap two values (A7 must come back where it was)
+setup: d0=11111111 d1=22222222
+expect: d0=22222222 d1=11111111 a7=80000 avoid=exg
+@test Swap two others
+setup: d0=0 d1=FFFFFFFF
+expect: d0=FFFFFFFF d1=0 a7=80000 avoid=exg
+@quiz
+? A7 = $1000. Where is D0 stored by move.w d0,-(a7)?
+- $1000
++ $0FFE
+- $1002
+! Predecrement first subtracts 2 (a word), then stores at the new address.
+
+=== LESSON 9: Records: d16(An)
+@summary Displacement addressing: reaching the fields of a structure.
+@text
+Data usually comes in records: an object in a game might have an x position, a y position and more, side by side in memory. If A0 points at the record, a displacement reaches each field:
+
+	move.w	0(a0),d0	; x: the word at A0 + 0  (same as (a0))
+	move.w	2(a0),d1	; y: the word at A0 + 2
+	move.w	d2,4(a0)	; store at A0 + 4
+
+The number in front of the brackets is added to A0 to make the address, but A0 itself does not change. The displacement is a signed 16-bit number, -32768 to 32767, so negative offsets work too.
+
+Assembler programmers usually give the offsets names with EQU, so the code reads well:
+
+	OBJ_X	equ	0
+	OBJ_Y	equ	2
+	move.w	OBJ_Y(a0),d1
+@task
+A0 points at a record: x (word) at offset 0, y at 2, old x at 4 and old y at 6. Save x and y into old x and old y, then set x to the word in D0 and y to the word in D1. A0 must not change.
+@start
+	; save x,y into old x,y - then x = D0, y = D1
+
+@solution
+	move.w	0(a0),4(a0)
+	move.w	2(a0),6(a0)
+	move.w	d0,0(a0)
+	move.w	d1,2(a0)
+@hint
+move.w 0(a0),4(a0) copies the x field into the old x field. Do the saving before overwriting x and y.
+@test Record at $2000
+setup: a0=2000 m2000.w=10 m2002.w=20 m2004.l=0 d0=11 d1=22
+expect: m2000.w=11 m2002.w=22 m2004.w=10 m2006.w=20 a0=2000
+@test Record at $5008
+setup: a0=5008 m5008.w=FFFF m500A.w=8000 m500C.l=0 d0=1234 d1=4321
+expect: m5008.w=1234 m500A.w=4321 m500C.w=FFFF m500E.w=8000 a0=5008
+@quiz
+? A0 = $2000. Which address does move.w -4(a0),d0 read?
++ $1FFC
+- $2004
+- $2000, and then A0 becomes $1FFC
+! The displacement is added for the access only; A0 is unchanged.
+
+=== LESSON 10: CLR, EXG and SWAP
+@summary Three handy register instructions: clearing, exchanging and swapping halves.
+@text
+A few instructions do common jobs in one go.
+
+CLR sets a register or memory location to zero, in the size you give:
+
+	clr.l	d0		; all of D0
+	clr.w	(a0)		; the word A0 points at
+
+EXG exchanges two registers, all 32 bits, data or address:
+
+	exg	d1,d2
+
+SWAP exchanges the two halves of a data register: $12345678 becomes $56781234. It is often used to reach the upper word, for example when a 32-bit result holds two 16-bit numbers.
+
+	swap	d3
+@task
+Clear D0 completely, exchange D1 and D2, and swap the two halves of D3.
+@start
+	; clear D0, exchange D1/D2, swap D3's halves
+
+@solution
+	clr.l	d0
+	exg	d1,d2
+	swap	d3
+@hint
+clr.l d0, exg d1,d2 and swap d3 - one instruction each.
+@test All three
+setup: d0=FFFFFFFF d1=1 d2=2 d3=12345678
+expect: d0=0 d1=2 d2=1 d3=56781234
+@test Other values
+setup: d0=8000 d1=AAAAAAAA d2=0 d3=FFFF0000
+expect: d0=0 d1=0 d2=AAAAAAAA d3=FFFF
+@quiz
+? D3 = $0000ABCD. What is D3 after swap d3?
+- $ABCD0000 and the flags are untouched
++ $ABCD0000
+- $0000CDAB
+! SWAP exchanges the upper and lower words.
+
+=== UNIT 2: Arithmetic and flags
+
+=== LESSON 11: ADD and SUB
+@summary Adding and subtracting registers and memory.
+@text
+ADD adds the source to the destination; SUB subtracts the source from the destination. One operand must be a data register (or both, or an immediate value for the source):
+
+	add.l	d1,d0		; D0 = D0 + D1
+	sub.w	#10,d2		; D2 = D2 - 10 (low word)
+	add.w	d0,(a0)		; the word at A0 = that word + D0
+
+The size works as with MOVE: .W only changes the low word. Numbers wrap around: adding 1 to $FFFFFFFF gives 0. That is not an error, and the same bits work for signed numbers: -1 + 3 = 2.
+
+To compute D0 = D1 + D2 without changing D1, copy first, then add:
+
+	move.l	d1,d0
+	add.l	d2,d0
+@task
+Set D0 = D1 + D2 - D3 (all longs). D1, D2 and D3 must keep their values.
+@start
+	; D0 = D1 + D2 - D3
+
+@solution
+	move.l	d1,d0
+	add.l	d2,d0
+	sub.l	d3,d0
+@hint
+Copy D1 to D0 first, then add D2 to D0 and subtract D3 from D0.
+@test 10 + 20 - 5 = 25
+setup: d0=0 d1=A d2=14 d3=5
+expect: d0=19 keep=d1+d2+d3
+@test -1 + 3 - 1 = 1
+setup: d0=55 d1=FFFFFFFF d2=3 d3=1
+expect: d0=1 keep=d1+d2+d3
+@test Large numbers
+setup: d0=0 d1=10000000 d2=20000000 d3=1
+expect: d0=2FFFFFFF keep=d1+d2+d3
+@quiz
+? D0 = $0000FFFF. What is D0 after add.w #1,d0?
++ $00000000
+- $00010000
+- $0001FFFF
+! A word add only changes the low word: $FFFF + 1 wraps round to $0000.
+
+=== LESSON 12: Quick and immediate: ADDQ, SUBQ, ADDI, SUBI
+@summary Short forms for small constants, and arithmetic straight on memory.
+@text
+Adding a small constant is so common that there are short forms. ADDQ and SUBQ ("quick") add or subtract 1 to 8:
+
+	addq.w	#1,d0		; D0 = D0 + 1 (low word)
+	subq.l	#4,a0		; A0 = A0 - 4
+
+They are short (one word) and fast. ADDI and SUBI take any immediate value:
+
+	addi.l	#100000,d1
+	subi.w	#300,(a0)
+
+All of them work directly on memory, without loading the value into a register first:
+
+	addq.w	#1,$2000	; the word counter at $2000 goes up by 1
+
+The assembler often turns ADD #n into ADDQ or ADDI for you, but it is good to know they exist.
+@task
+Add 1 to the word counter at $2000. Subtract 300 from the long at $2004. Add 8 to A0.
+@start
+	; counter +1, long at $2004 - 300, A0 + 8
+
+@solution
+	addq.w	#1,$2000
+	subi.l	#300,$2004
+	addq.l	#8,a0
+@hint
+addq.w #1,$2000 works straight on memory. 300 is too big for SUBQ: use SUBI.
+@test Counter, long and pointer
+setup: m2000.w=9 m2004.l=1000 a0=3000
+expect: m2000.w=A m2004.l=ED4 a0=3008
+@test The counter wraps round
+setup: m2000.w=FFFF m2004.l=12C a0=0
+expect: m2000.w=0 m2004.l=0 a0=8
+@quiz
+? Which values can ADDQ add?
+- 0 to 7
++ 1 to 8
+- -128 to 127
+! ADDQ and SUBQ take 1 to 8 (the 3-bit field 0 stands for 8).
+
+=== LESSON 13: Testing for zero: TST, BEQ and BNE
+@summary The Z and N flags, and your first decisions with branches.
+@text
+Most instructions leave a note about their result in the condition code register (CCR), five flag bits:
+
+	N	negative: the result's top bit was set
+	Z	zero: the result was zero
+	V	overflow (signed)
+	C	carry (unsigned)
+	X	extend (a copy of carry for multi-word maths)
+
+MOVE, ADD, SUB, CLR and most others set N and Z. TST does nothing but set them, from any operand:
+
+	tst.w	(a0)		; is the word at A0 zero? negative?
+
+A branch then jumps to a label, or not, depending on the flags. BEQ ("branch if equal", really "if zero") jumps if Z is set; BNE jumps if it is clear; BMI jumps if negative, BPL if not; BRA always jumps.
+
+	moveq	#2,d0
+	tst.w	(a0)
+	bne	notzero		; skip the next line unless the word was 0
+	moveq	#1,d0
+notzero:
+
+A label sits in the first column and names a place in the program. The branch jumps there.
+@task
+Set D0 to 1 if the word at (A0) is zero, otherwise to 2.
+@start
+	; D0 = 1 if the word at (a0) is 0, else 2
+
+@solution
+	moveq	#2,d0
+	tst.w	(a0)
+	bne	done
+	moveq	#1,d0
+done:
+@hint
+Put 2 in D0 first, TST the word, BNE past a moveq #1,d0.
+@test The word is zero
+setup: d0=0 a0=2000 m2000.w=0
+expect: d0=1
+@test The word is 5
+setup: d0=0 a0=2000 m2000.w=5
+expect: d0=2
+@test The word is negative ($8000)
+setup: d0=FFFFFFFF a0=3000 m3000.w=8000
+expect: d0=2
+@test Only the word counts
+setup: d0=0 a0=2000 m2000.l=FFFF
+expect: d0=1
+@quiz
+? Which flag tells BEQ whether to branch?
+- N
++ Z
+- C
+- X
+! BEQ branches when Z is set: the last result was zero.
+
+=== LESSON 14: Comparing: CMP and Bcc
+@summary CMP and the comparison branches BLT, BGE, BGT and BLE.
+@text
+CMP subtracts the source from the destination, sets the flags, and throws the result away. Nothing changes but the flags, which are ready for a branch:
+
+	cmp.l	d1,d0		; compare D0 with D1 (works out D0 - D1)
+	bge	bigger		; branch if D0 >= D1
+
+Read "cmp.l d1,d0" then "bge" as "if D0 >= D1". The destination is on the left of the comparison, which feels backwards at first.
+
+For signed numbers the branches are:
+
+	BEQ	equal		BNE	not equal
+	BGT	greater		BGE	greater or equal
+	BLT	less		BLE	less or equal
+
+The usual pattern for picking one of two values: assume one answer, test, and replace it if you were wrong.
+@task
+Set D2 to the larger of D0 and D1 (signed longs).
+@start
+	; D2 = max(D0, D1)
+
+@solution
+	move.l	d0,d2
+	cmp.l	d1,d0
+	bge	done
+	move.l	d1,d2
+done:
+@hint
+Copy D0 to D2. Compare D0 with D1; if D0 >= D1 you are done, otherwise copy D1 to D2.
+@test 5 and 9
+setup: d0=5 d1=9 d2=0
+expect: d2=9
+@test 9 and 5
+setup: d0=9 d1=5 d2=0
+expect: d2=9
+@test -3 and 2
+setup: d0=FFFFFFFD d1=2 d2=0
+expect: d2=2
+@test -10 and -20
+setup: d0=FFFFFFF6 d1=FFFFFFEC d2=0
+expect: d2=FFFFFFF6
+@test Equal values
+setup: d0=7 d1=7 d2=0
+expect: d2=7
+@quiz
+? After cmp.w #10,d0, which branch jumps when D0's word is less than 10 (signed)?
++ BLT
+- BGT
+- BGE
+! cmp.w #10,d0 compares D0 with 10; BLT branches if D0 < 10.
+
+=== LESSON 15: Carry and overflow
+@summary The C and V flags: when a sum does not fit.
+@text
+When an addition does not fit in the size used, two different things can go wrong, and the 68000 notes both.
+
+C, the carry flag, is set when an unsigned result is too big: $FFFFFFFF + 1 gives 0 with C set. For subtraction (and CMP) C means a borrow: the destination was smaller, unsigned.
+
+V, the overflow flag, is set when a signed result is wrong: $7FFFFFFF + 1 gives $80000000, which as a signed number is negative even though you added two positives. C stays clear, because as unsigned numbers the sum fits.
+
+Branches test them: BCS ("carry set") and BCC ("carry clear"), BVS and BVC. The X flag gets the same value as C after ADD and SUB; it is used for maths on numbers bigger than 32 bits (lesson 29).
+
+Careful: MOVEQ, MOVE and many other instructions change the flags too. Test them straight after the instruction that set them.
+@task
+Add D1 to D0 (longs). Then set D2 to 1 if the addition carried, or to 0 if it did not.
+@start
+	; D0 = D0 + D1, D2 = 1 if it carried, else 0
+
+@solution
+	moveq	#0,d2
+	add.l	d1,d0
+	bcc	done
+	moveq	#1,d2
+done:
+@hint
+Set D2 to 0 before the ADD (MOVEQ changes the flags, so it must come first). After the ADD, BCC skips the moveq #1,d2.
+@test $FFFFFFFF + 1 carries
+setup: d0=FFFFFFFF d1=1 d2=55
+expect: d0=0 d2=1
+@test 5 + 6 does not
+setup: d0=5 d1=6 d2=55
+expect: d0=B d2=0
+@test $7FFFFFFF + 1: overflow, but no carry
+setup: d0=7FFFFFFF d1=1 d2=55
+expect: d0=80000000 d2=0
+@test $80000000 + $80000000 carries
+setup: d0=80000000 d1=80000000 d2=0
+expect: d0=0 d2=1
+@quiz
+? After adding $7FFF + $0001 as words, which flags are set?
+- C only
++ N and V
+- Z and C
+! $8000 is negative as a signed word (N), and two positives made a negative (V). It fits as unsigned, so no carry.
+
+=== LESSON 16: Loops
+@summary Repeating code with a counter and a backwards branch.
+@text
+A loop is code that branches back to its own start. A counter decides when to stop:
+
+	moveq	#10,d0		; 10 times
+loop:
+	; ... the work ...
+	subq.l	#1,d0
+	bne	loop		; until the counter reaches 0
+
+SUBQ sets Z when the counter reaches zero, so no TST or CMP is needed - the last arithmetic instruction already set the flags. Counting down to zero is the usual way on the 68000 for that reason.
+
+Make sure the loop always ends: a branch back that is always taken locks the machine up. In this course an endless loop shows up as a timeout.
+@task
+D0 holds a number N (at least 1). Put the sum 1 + 2 + ... + N into D1, using a loop.
+@start
+	; D1 = 1 + 2 + ... + D0
+
+@solution
+	moveq	#0,d1
+loop:
+	add.l	d0,d1
+	subq.l	#1,d0
+	bne	loop
+@hint
+Clear D1, then loop: add D0 to D1, subtract 1 from D0, branch back while D0 is not zero.
+@test N = 4
+setup: d0=4 d1=FFFF
+expect: d1=A
+@test N = 1
+setup: d0=1 d1=0
+expect: d1=1
+@test N = 100
+setup: d0=64 d1=0
+expect: d1=13BA
+@test N = 1000
+setup: d0=3E8 d1=12345678
+expect: d1=7A314
+@quiz
+? Why does a loop counting down with SUBQ not need a TST before BNE?
++ SUBQ already sets the Z flag from its result
+- BNE tests the register itself
+- TST is not allowed in loops
+! Arithmetic instructions set the flags, so the branch can use them directly.
+
+=== LESSON 17: DBRA loops
+@summary The 68000's own loop instruction: decrement and branch.
+@text
+Counted loops are so common that the 68000 has an instruction for them. DBRA Dn,label subtracts 1 from the low word of Dn and branches to the label unless the counter has just gone past zero to -1:
+
+	moveq	#15,d1		; 16 times: 15, 14, ... 0
+loop:
+	move.w	d0,(a0)+
+	dbra	d1,loop
+
+Because it stops at -1, not 0, start the counter at the count minus one. DBRA is fast and short, and every Amiga program is full of it. It only uses the low word of the register, so it counts up to 65536 times.
+
+(DBRA is DBF, "decrement and branch unless false": there are DBcc forms that also stop early on a condition, such as DBEQ.)
+@task
+Fill 16 words starting at (A0) with the word in D0, using DBRA.
+@start
+	; 16 words at (a0) = D0
+
+@solution
+	moveq	#15,d1
+loop:
+	move.w	d0,(a0)+
+	dbra	d1,loop
+@hint
+moveq #15,d1 before the loop; inside it move.w d0,(a0)+; end with dbra d1,loop.
+@test 16 words at $2000 (and not one more)
+setup: a0=2000 d0=ABCD m2020.w=5555 m1FFE.w=1111
+expect: m2000.w=ABCD m200E.w=ABCD m201E.w=ABCD m2020.w=5555 m1FFE.w=1111 uses=dbra
+@test 16 words at $3000
+setup: a0=3000 d0=1234 m3020.w=0
+expect: m3000.w=1234 m301E.w=1234 m3020.w=0 uses=dbra
+@quiz
+? D1 = 3 before a DBRA loop. How many times does the loop body run?
+- 3
++ 4
+- 2
+! 3, 2, 1, 0: DBRA stops when the counter goes from 0 to -1.
+
+=== LESSON 18: Signed and unsigned
+@summary The same bits, two meanings: BHI and BCS against BGT and BLT.
+@text
+Is $FFFFFFF0 bigger than 5? As an unsigned number it is 4,294,967,280; as a signed number it is -16. The bits are the same; only your branch decides which you meant.
+
+After a CMP, the signed branches are BGT, BGE, BLT, BLE (they look at N and V). The unsigned ones are:
+
+	BHI	higher		(unsigned >)
+	BHS	higher or same	(unsigned >=, also called BCC)
+	BLO	lower		(unsigned <, also called BCS)
+	BLS	lower or same	(unsigned <=)
+
+Use unsigned branches for addresses, sizes and counts; signed ones for positions, speeds and anything that can go below zero. Mixing them up is a classic bug: a sprite at x = -2 seems to be at x = 4 billion and vanishes.
+@task
+D0 is a signed long. Clamp it to the range -100 to 100: if it is below -100 make it -100, if above 100 make it 100, otherwise leave it.
+@start
+	; clamp D0 (signed) to -100..100
+
+@solution
+	cmp.l	#-100,d0
+	bge	notlow
+	moveq	#-100,d0
+	bra	done
+notlow:
+	cmp.l	#100,d0
+	ble	done
+	moveq	#100,d0
+done:
+@hint
+Two comparisons with signed branches: cmp.l #-100,d0 / bge, and cmp.l #100,d0 / ble.
+@test 5 stays 5
+setup: d0=5
+expect: d0=5
+@test -256 becomes -100
+setup: d0=FFFFFF00
+expect: d0=FFFFFF9C
+@test 200 becomes 100
+setup: d0=C8
+expect: d0=64
+@test The most negative number
+setup: d0=80000000
+expect: d0=FFFFFF9C
+@test The edges stay
+setup: d0=FFFFFF9C
+expect: d0=FFFFFF9C
+@quiz
+? Which branch treats the comparison as unsigned?
+- BGT
+- BLT
++ BHI
+- BGE
+! BHI, BHS (BCC), BLO (BCS) and BLS are the unsigned branches.
+
+=== LESSON 19: NEG, EXT and absolute values
+@summary Negating numbers and widening a signed byte or word.
+@text
+NEG negates: it subtracts the operand from zero, so 5 becomes -5 and -5 becomes 5.
+
+	neg.l	d0
+
+EXT sign-extends: EXT.W copies bit 7 of a byte into the rest of the low word, EXT.L copies bit 15 of a word into the upper word. Use it before working in a bigger size, or a negative word would turn into a large positive long:
+
+	ext.l	d0		; $1234FFFE -> $FFFFFFFE (-2)
+	ext.l	d1		; $00000005 -> $00000005
+
+Together they make an absolute value: extend, and if the result is negative, negate it. EXT sets the N flag, so BPL can test it straight away.
+@task
+The low word of D0 is a signed number; the upper word is junk. Put its absolute value into D0 as a long.
+@start
+	; D0 = |signed word in D0| as a long
+
+@solution
+	ext.l	d0
+	bpl	done
+	neg.l	d0
+done:
+@hint
+ext.l d0 first (it sets N), then bpl past neg.l d0.
+@test -2 becomes 2
+setup: d0=1234FFFE
+expect: d0=2
+@test 5 stays 5
+setup: d0=FFFF0005
+expect: d0=5
+@test -32768 becomes 32768
+setup: d0=AAAA8000
+expect: d0=8000
+@test Zero
+setup: d0=FFFF0000
+expect: d0=0
+@quiz
+? D0 = $000000F0. What is D0 after ext.w d0?
+- $000000F0
++ $0000FFF0
+- $FFFFFFF0
+! EXT.W copies bit 7 ($F0 has it set) through the low word only.
+
+=== LESSON 20: Multiply and divide
+@summary MULU, MULS, DIVU and DIVS: 16-bit multiply, 32-by-16 divide.
+@text
+MULU multiplies two unsigned words and gives a 32-bit result; MULS does the same for signed words:
+
+	mulu.w	d1,d0		; D0 (long) = D0.w * D1.w
+
+Only the low words are read, and the whole of the destination is replaced.
+
+DIVU divides a 32-bit destination by a 16-bit source. The result is packed into the destination: the quotient in the low word and the remainder in the high word.
+
+	divu.w	#10,d0		; D0 = 123 -> quotient 12, remainder 3: D0 = $0003000C
+
+If the quotient does not fit in 16 bits, V is set and the destination is left alone; dividing by zero stops the program with an exception. DIVS is the signed version.
+
+They are slow - up to 70 cycles to multiply and 140 or more to divide - so games use shifts and tables where they can (lesson 24).
+@task
+D0 and D1 hold a width and a height (unsigned words). Put the area, D0 * D1, into D2 as a long. Then put the area divided by 10 into D3 exactly as DIVU leaves it (remainder in the high word, quotient in the low word).
+@start
+	; D2 = D0 * D1, D3 = D2 / 10 (as DIVU gives it)
+
+@solution
+	move.w	d0,d2
+	mulu.w	d1,d2
+	move.l	d2,d3
+	divu.w	#10,d3
+@hint
+MULU uses the destination's low word as one of the numbers: copy D0 into D2 first. Then copy D2 to D3 and divu.w #10,d3.
+@test 300 x 200
+setup: d0=12C d1=C8 d2=0 d3=0
+expect: d2=EA60 d3=1770
+@test 7 x 3 = 21: 2 remainder 1
+setup: d0=7 d1=3 d2=FFFFFFFF d3=0
+expect: d2=15 d3=10002
+@test Upper words are ignored
+setup: d0=5555FFFF d1=AAAA0002 d2=0 d3=0
+expect: d2=1FFFE d3=3333
+@quiz
+? D0 = 17. What is D0 after divu.w #5,d0?
+- $00000003
++ $00020003
+- $00030002
+! Quotient 3 in the low word, remainder 2 in the high word.
+
 === EXAM 1: Foundations, arithmetic and flags
-@summary Lessons 1-20: registers, sizes, memory and addressing, arithmetic, the flags, branches and loops.
+@summary Lessons 1-20: registers, numbers, sizes, memory, addressing, arithmetic, flags, branches and loops. 40 questions, pass mark 80%.
 @pass 80
 @quiz
-? How many address registers does the 68000 have?
+? How many data registers does the 68000 have?
 - 4
 + 8
 - 16
-? What is $10 in decimal?
+- 32
+? Which register is the stack pointer?
+- A0
+- D7
++ A7
+- A6
+? What is $3F in decimal?
+- 36
++ 63
+- 48
+- 77
+? What is %1001 in hex?
++ $9
+- $11
+- $1001
+- $A
+? How is -2 stored in a 32-bit register?
+- $80000002
+- $00000002
++ $FFFFFFFE
+- $FFFFFFFD
+? Which number cannot be loaded with MOVEQ?
+- -128
+- 127
++ 200
+- 0
+! MOVEQ takes -128 to 127.
+? D0 = $FFFFFFFF. What is D0 after this?
+> 	moveq	#5,d0
++ $00000005
+- $FFFFFF05
+- $FFFF0005
+! MOVEQ always fills all 32 bits.
+? D1 = $11111111. What is D1 after this?
+> 	move.b	#$22,d1
+- $00000022
++ $11111122
+- $22111111
+? What does A0 hold after this?
+> 	move.w	#$FFFE,a0
+- $0000FFFE
++ $FFFFFFFE
+- $FFFE0000
+! Word moves into address registers are sign-extended.
+? The long $AABBCCDD is stored at $1000. Which byte is at $1000?
++ $AA
+- $DD
+- $BB
+- $CC
+? Which instruction causes an address error on a 68000?
+- move.b $2001,d0
++ move.w $2001,d0
+- move.l $2000,d0
+- move.w $2000,d0
+? A0 = $2000. What is A0 after this?
+> 	move.w	(a0)+,d0
+- $2000
+- $2001
++ $2002
+- $2004
+? A0 = $2000. What is A0 after this?
+> 	move.l	d0,-(a0)
+- $1FFE
++ $1FFC
+- $2004
+- $2000
+? A7 = $8000. What is A7 after this?
+> 	move.b	d0,-(a7)
+- $7FFF
++ $7FFE
+- $8000
+! The stack pointer always moves by at least 2 to stay word aligned.
+? A0 = $3000. Which address does move.w 6(a0),d0 read, and what is A0 afterwards?
++ $3006, and A0 stays $3000
+- $3006, and A0 becomes $3006
+- $3000, and A0 becomes $3006
+? What does SWAP do?
+- Exchanges two registers
++ Exchanges the upper and lower words of a data register
+- Reverses the bytes of a long
+? D0 = $0000FFFF. What is D0 after this?
+> 	addq.w	#1,d0
+- $00010000
++ $00000000
+- $0000FFFF
+? Which values can SUBQ subtract?
+- 0 to 7
++ 1 to 8
+- 1 to 16
+- -8 to 8
+? Which instruction sets N and Z without changing its operand?
+- CLR
++ TST
+- NEG
+- SWAP
+? D0 = 3, D1 = 5. Which branch jumps after this?
+> 	cmp.l	d1,d0
+- BGT
+- BGE
++ BLT
+- BEQ
+! cmp.l d1,d0 compares D0 with D1: 3 < 5.
+? Which flag means an unsigned result did not fit?
+- V
+- N
++ C
+- Z
+? What does $7FFF + 1 (word) set?
+- C
++ N and V
+- Z and C
+- nothing
+? Which branch is unsigned?
+- BGT
++ BHI
+- BLT
+- BLE
+? What is wrong here, if D0 is used as a signed position?
+> 	cmp.l	#320,d0
+> 	bhi	offscreen
++ BHI is unsigned: a negative position would count as huge
+- CMP cannot take a long immediate
+- Nothing is wrong
+! For signed values use BGT.
+? How many times does the loop body run?
+> 	moveq	#9,d1
+> loop:	addq.l	#1,d0
+> 	dbra	d1,loop
+- 9
++ 10
+- 8
+- 11
+? Which part of the register does DBRA count with?
+- All 32 bits
++ The low word
+- The low byte
+? D0 = 5. What is in D1 after this loop?
+> 	moveq	#0,d1
+> loop:	add.l	d0,d1
+> 	subq.l	#1,d0
+> 	bne	loop
+- 5
++ 15
 - 10
-+ 16
-- 20
+- 0
+? After moveq #0,d0, which flags are set?
++ Z
+- N and Z
+- C
+- None
+? D0 = $0000FF80. What is D0 after ext.l d0?
+- $0000FF80
++ $FFFFFF80
+- $00000080
+- $FFFF0080
+! $FF80 is negative as a word, so EXT.L fills the upper word with ones.
+? D0 = $00000007. What is D0 after neg.l d0?
+- $80000007
++ $FFFFFFF9
+- $FFFFFFF8
+? D0 = $00000064 (100). What is D0 after this?
+> 	divu.w	#7,d0
++ $0002000E
+- $000E0002
+- $0000000E
+! 100 / 7 = 14 ($E) remainder 2.
+? MULU.W multiplies...
++ two unsigned words, giving a long
+- two longs, giving a long
+- two signed words, giving a word
+? What happens on DIVU when the quotient does not fit in 16 bits?
+- The register is set to $FFFF
++ V is set and the destination is left unchanged
+- The program stops with an exception
+? What happens when DIVU divides by zero?
+- V is set
+- The result is 0
++ The 68000 takes a divide-by-zero exception
+? Which instruction does nothing but compare?
+- SUB
++ CMP
+- TST.L #0
+- NEG
+? Which is the fastest way to set D3 to 0?
++ moveq #0,d3
+- move.l #0,d3
+- clr.l d3
+! MOVEQ: 4 cycles and one word. CLR.L Dn takes 6 cycles, MOVE.L #0 takes 12 and three words.
+? What is X (the extend flag) used for?
+- Branching on signed results
++ Carrying between the parts of numbers bigger than 32 bits
+- Marking supervisor mode
+? Which addressing mode is (a0)+ ?
+- Predecrement
++ Postincrement
+- Displacement
+- Absolute
+? D2 = $12345678. What is D2 after clr.w d2?
+- $00000000
++ $12340000
+- $00005678
+? The program does move.l d0,-(a7) but no matching pop, then returns. What happens?
+- Nothing, the stack fixes itself
++ It returns to a wrong address and crashes
+- D0 is lost but nothing else
+! RTS takes its return address from the stack, which is now 4 bytes off.
+? Which line does NOT change the flags?
+- add.l d1,d0
+- move.w d1,d0
++ adda.l d1,a0
+- tst.b d0
+! Operations on address registers leave the flags alone.
