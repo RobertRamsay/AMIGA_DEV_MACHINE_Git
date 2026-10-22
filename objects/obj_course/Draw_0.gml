@@ -137,8 +137,23 @@ if (view == "lesson" && current >= 0) {
                     draw_set_colour(col_code_bg);
                     draw_rectangle(col_x1 + 16, _y, col_x2 - 16, _y + _row.h - 1, false);
                     draw_set_font(_code_font);
-                    draw_set_colour(make_colour_rgb(150, 210, 255));
+                    draw_set_colour(_row.colour == col_bad ? make_colour_rgb(255, 140, 140) : make_colour_rgb(150, 210, 255));
                     draw_text(col_x1 + 26, _y + 1, _row.text);
+                    break;
+                case "step_done":
+                    scr_tutorial_ui_draw_tick(col_x1 + 22, _y + 3, 14, col_ok);
+                    draw_set_font(UI_FONT_GUIDE);
+                    draw_set_colour(_row.colour);
+                    draw_text(col_x1 + 44, _y + 2, _row.text);
+                    break;
+                case "typeit":
+                    draw_set_font(UI_FONT_SMALL);
+                    var _tx2 = col_x1 + 22 + 260;
+                    var _th_hover = _mx >= col_x1 + 22 && _mx < _tx2 && _my >= _y && _my < _y + _row.h && _my >= content_y1 && _my < content_y2;
+                    scr_ui_button(col_x1 + 22, _y, _tx2, _y + _row.h, _row.text, make_colour_rgb(40, 80, 150), _th_hover);
+                    draw_set_font(UI_FONT_GUIDE);
+                    draw_set_colour(col_dim);
+                    scr_ui_text_mid(_tx2 + 16, _y, _y + _row.h, "or type the lines yourself - the best way to learn");
                     break;
                 case "option":
                     var _qq = _item.quiz[_row.q];
@@ -180,7 +195,8 @@ if (view == "lesson" && current >= 0) {
     draw_set_font(UI_FONT);
     draw_set_colour(lesson_message_colour);
     var _msg = lesson_message;
-    if (_msg == "") _msg = array_length(_item.tests) > 0 ? "Write your code on the left, then press RUN TESTS (F5)." : "Answer the questions above to pass this lesson.";
+    if (_msg == "") _msg = array_length(_item.steps) > 0 && lesson_step_current() >= 0 ? "Follow the steps above, then press RUN TESTS (F5)."
+        : (array_length(_item.tests) > 0 ? "Write your code on the left, then press RUN TESTS (F5)." : "Answer the questions above to pass this lesson.");
     scr_ui_text_mid(col_x1 + 22, results_y1 + 4, results_y1 + 30, scr_ui_fit_label(_msg, col_x2 - col_x1 - 50));
     var _rows_vis = max(1, floor((results_y2 - results_y1 - 34 - 70) / 22));
     draw_set_font(UI_FONT_GUIDE);

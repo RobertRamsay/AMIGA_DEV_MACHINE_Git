@@ -56,6 +56,12 @@ show_hint = false;
 show_solution = false;
 lesson_message = "";
 lesson_message_colour = c_white;
+// type-along steps
+steps_done = [];            // per step: ticked (stays ticked)
+steps_key = "";             // editor revision + caret line last checked
+steps_count_all = true;     // next check counts the caret's line too (open, RUN TESTS)
+steps_scroll = false;       // scroll the content to the current step after layout
+steps_cur_row = -1;         // content row of the current step's heading
 // exam
 exam_order = [];            // question indices in the order asked
 exam_option_order = [];     // per asked question: option indices in the order shown
@@ -108,6 +114,10 @@ open_item = function(_index, _force = false) {
     quiz_choice = array_create(array_length(_item.quiz), -1);
     quiz_tried = [];
     for (var _q = 0; _q < array_length(_item.quiz); _q += 1) array_push(quiz_tried, {});
+    steps_done = array_create(array_length(_item.steps), scr_course_is_done(_item));
+    steps_key = "";
+    steps_count_all = true;
+    steps_scroll = false;
     content_dirty = true;
     var _title = scr_course_item_label(_item) + ": " + string_upper(_item.title);
     editor = scr_code_editor_open_course(scr_course_load_code(_item), _title, editor_x2);
@@ -152,6 +162,8 @@ lesson_run_tests = function() {
     if (job != undefined && (job.state == "assembling" || job.state == "testing")) return;
     var _code = scr_course_load_code(items[current]);
     if (instance_exists(editor)) _code = editor.ed_text();
+    steps_count_all = true;     // the line under the caret counts once the code is run
+    steps_key = "";
     job = scr_course_assemble(items[current], _code);
     results_scroll = 0;
     result_selected = -1;
@@ -182,6 +194,64 @@ lesson_check_pass = function() {
 
 lesson_next = function() {
     if (current + 1 < array_length(items) && scr_course_is_done(items[current])) open_item(current + 1);
+};
+
+/// The first step not ticked yet (-1 when all are).
+lesson_step_current = function() {
+    for (var _s = 0; _s < array_length(steps_done); _s += 1) if (!steps_done[_s]) return _s;
+    return -1;
+};
+
+/// Ticks the steps whose lines are in the editor. A line counts once the
+/// caret has left it (Enter), so there is time to add a comment to it first.
+lesson_steps_update = function() {
+    if (current < 0 || !instance_exists(editor)) return;
+    var _item = items[current];
+    if (array_length(_item.steps) == 0) return;
+    var _caret = steps_count_all ? -1 : editor.caret_line;
+    var _key = string(editor.text_revision) + "|" + string(_caret);
+    if (_key == steps_key) return;
+    steps_key = _key;
+    steps_count_all = false;
+    var _all = scr_course_keys_of(editor.lines);
+    var _counted = _caret < 0 ? _all : scr_course_keys_of(editor.lines, _caret);
+    var _ticked = false;
+    for (var _s = 0; _s < array_length(_item.steps); _s += 1) {
+        if (!steps_done[_s] && scr_course_step_done(_item.steps[_s], _counted, _all)) {
+            steps_done[_s] = true;
+            _ticked = true;
+        }
+    }
+    if (_ticked) {
+        content_dirty = true;
+        steps_scroll = true;
+        if (lesson_step_current() < 0 && job == undefined) {
+            lesson_message = "Every step done - press RUN TESTS (F5) to check your program.";
+            lesson_message_colour = col_ok;
+        }
+    }
+};
+
+/// TYPE IT FOR ME: types step _s into the editor (one undo step) and puts the
+/// caret on an empty line under it, so its lines count at once.
+lesson_type_step = function(_s) {
+    if (current < 0 || !instance_exists(editor)) return;
+    var _step = items[current].steps[_s];
+    with (editor) {
+        ed_undo_push("edit");
+        var _r = scr_course_step_apply(lines, _step);
+        var _new = _r.lines;
+        for (var _i = 0; _i < array_length(_new); _i += 1) _new[_i] = ed_expand_tabs(_new[_i], 0);
+        var _last = _r.last;
+        if (_last + 1 >= array_length(_new) || string_trim(_new[_last + 1]) != "") array_insert(_new, _last + 1, "");
+        lines = _new;
+        ed_set_caret(_last + 1, 0, false);
+        ed_modified();
+        ed_note("Typed step " + string(_s + 1) + " for you", make_colour_rgb(120, 220, 255));
+    }
+    steps_count_all = true;
+    steps_key = "";
+    lesson_steps_update();
 };
 
 /// One wrapped paragraph as text rows.
@@ -238,6 +308,49 @@ lesson_layout_content = function() {
         array_push(content_rows, { kind : "head", text : "YOUR TASK", h : _th + 4, colour : make_colour_rgb(120, 220, 255), q : -1, o : -1 });
         content_add_block(_item.task, _w, _th, _ch);
     }
+    // the steps: ticked ones in one line, the current one in full, later ones by title
+    steps_cur_row = -1;
+    var _ns = array_length(_item.steps);
+    if (_ns > 0) {
+        var _ndone = 0;
+        for (var _d = 0; _d < _ns; _d += 1) if (steps_done[_d]) _ndone += 1;
+        array_push(content_rows, { kind : "head", text : "STEP BY STEP  (" + string(_ndone) + " OF " + string(_ns) + " DONE)", h : _th + 4, colour : make_colour_rgb(120, 220, 255), q : -1, o : -1 });
+        if (_ndone == 0) content_add_text("Type each step's lines into the editor on the left. A line ticks off when you press Enter after it, so there's time to add your own comment after a ; first.", col_dim, _w, _th);
+        var _cur = lesson_step_current();
+        for (var _s = 0; _s < _ns; _s += 1) {
+            var _st = _item.steps[_s];
+            var _label = "STEP " + string(_s + 1) + ": " + string_upper(_st.title);
+            if (steps_done[_s]) {
+                array_push(content_rows, { kind : "step_done", text : _label, h : _th + 4, colour : col_ok, q : _s, o : -1 });
+            } else if (_s == _cur) {
+                array_push(content_rows, { kind : "gap", text : "", h : 4, colour : 0, q : -1, o : -1 });
+                steps_cur_row = array_length(content_rows);
+                array_push(content_rows, { kind : "head", text : "STEP " + string(_s + 1) + " OF " + string(_ns) + ": " + string_upper(_st.title), h : _th + 4, colour : c_yellow, q : -1, o : -1 });
+                content_add_block(_st.text, _w, _th, _ch);
+                if (array_length(_st.remove) > 0) {
+                    content_add_text("Take out:", col_bad, _w, _th);
+                    for (var _r = 0; _r < array_length(_st.remove); _r += 1) {
+                        array_push(content_rows, { kind : "code", text : string_replace_all(_st.remove[_r], "\t", "    "), h : _ch, colour : col_bad, q : -1, o : -1 });
+                    }
+                    array_push(content_rows, { kind : "gap", text : "", h : 6, colour : 0, q : -1, o : -1 });
+                    content_add_text("and type in its place:", col_text, _w, _th);
+                }
+                for (var _a = 0; _a < array_length(_st.add); _a += 1) {
+                    array_push(content_rows, { kind : "code", text : string_replace_all(_st.add[_a], "\t", "    "), h : _ch, colour : col_text, q : -1, o : -1 });
+                }
+                array_push(content_rows, { kind : "gap", text : "", h : 8, colour : 0, q : -1, o : -1 });
+                array_push(content_rows, { kind : "typeit", text : "TYPE IT FOR ME", h : 40, colour : 0, q : _s, o : -1 });
+                array_push(content_rows, { kind : "gap", text : "", h : 8, colour : 0, q : -1, o : -1 });
+            } else {
+                array_push(content_rows, { kind : "text", text : _label, h : _th + 4, colour : make_colour_rgb(90, 98, 125), q : -1, o : -1 });
+            }
+        }
+        if (_cur < 0) {
+            array_push(content_rows, { kind : "gap", text : "", h : 4, colour : 0, q : -1, o : -1 });
+            content_add_text("Every step done: press RUN TESTS (F5) to check your program.", col_ok, _w, _th);
+        }
+        array_push(content_rows, { kind : "gap", text : "", h : 8, colour : 0, q : -1, o : -1 });
+    }
     if (array_length(_item.tests) > 0) {
         array_push(content_rows, { kind : "head", text : "TESTS", h : _th + 4, colour : make_colour_rgb(120, 220, 255), q : -1, o : -1 });
         for (var _t = 0; _t < array_length(_item.tests); _t += 1) content_add_text("- " + _item.tests[_t].name, col_dim, _w, _th);
@@ -272,7 +385,11 @@ lesson_layout_content = function() {
         }
     }
     content_h = 0;
-    for (var _r = 0; _r < array_length(content_rows); _r += 1) content_h += content_rows[_r].h;
+    for (var _r = 0; _r < array_length(content_rows); _r += 1) {
+        if (_r == steps_cur_row && steps_scroll) content_scroll = max(0, content_h - 8);
+        content_h += content_rows[_r].h;
+    }
+    steps_scroll = false;
     draw_set_font(UI_FONT);
 };
 

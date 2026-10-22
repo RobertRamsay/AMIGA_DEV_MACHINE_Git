@@ -48,6 +48,7 @@ if (view == "lesson" && !instance_exists(editor)) {
 if (view == "map") map_layout();
 if (view == "exam") exam_layout();
 if (view == "lesson") {
+    lesson_steps_update();
     if (content_dirty) lesson_layout_content();
     lesson_layout_buttons();
     lesson_layout_results();
@@ -134,6 +135,10 @@ if (view == "lesson") {
         var _y = content_y1 + 8 - content_scroll;
         for (var _c = 0; _c < array_length(content_rows); _c += 1) {
             var _row_c = content_rows[_c];
+            if (_row_c.kind == "typeit" && _my >= _y && _my < _y + _row_c.h) {
+                if (_mx >= col_x1 + 22 && _mx < col_x1 + 22 + 260) lesson_type_step(_row_c.q);
+                break;
+            }
             if (_row_c.kind == "option" && _my >= _y && _my < _y + _row_c.h) {
                 var _item = items[current];
                 var _qq = _item.quiz[_row_c.q];

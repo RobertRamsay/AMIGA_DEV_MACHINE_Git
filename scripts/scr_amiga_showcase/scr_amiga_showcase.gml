@@ -50,6 +50,7 @@ function scr_amiga_showcase_shots() {
         { name : "20_tile_editor_animations", setup : function() { scr_tour_show("tile:ANIMATIONS"); } },
         { name : "20b_course_map", setup : function() { scr_tour_show("course:map"); } },
         { name : "20c_course_lesson", setup : function() { scr_tour_show("course:lesson"); } },
+        { name : "20c2_course_steps", setup : function() { scr_tour_show("course:steps"); } },
         { name : "20d_course_exam", setup : function() { scr_tour_show("course:exam"); } },
         { name : "21_editor_tour_categories", setup : function() {
             scr_tour_show("main");
