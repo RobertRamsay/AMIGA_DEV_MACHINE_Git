@@ -40,6 +40,7 @@ function scr_tutorial_build(_number) {
         case 14: scr_tutorial_build_14(_chain); break;
         case 15: scr_tutorial_build_15(_chain); break;
         case 16: scr_tutorial_build_16(_chain); break;
+        case 17: scr_tutorial_build_17(_chain); break;
         default: return false;
     }
     return true;
@@ -438,6 +439,19 @@ function scr_tb_sample(_name, _length, _kind) {
             case "pickup":
                 _phase += 1 / (_t < 0.4 ? 9 : 6);
                 _v = (frac(_phase) < 0.5 ? 70 : -70) * (1 - _t * 0.8);
+                break;
+            case "laser":
+                // A quick falling zap.
+                _phase += 1 / (6 + 30 * _t);
+                _v = (frac(_phase) < 0.5 ? 70 : -70) * (1 - _t);
+                break;
+            case "boom":
+                // Noise that gets lower and quieter.
+                if (_i mod (2 + _i div 120) == 0) {
+                    _seed = (_seed * 1103515245 + 12345) mod 2147483648;
+                    _held = ((_seed div 65536) mod 256) - 128;
+                }
+                _v = _held * (1 - _t) * (1 - _t);
                 break;
             case "hurt":
                 if (_i mod (1 + _i div 300) == 0) {

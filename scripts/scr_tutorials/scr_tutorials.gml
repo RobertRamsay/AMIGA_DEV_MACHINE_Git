@@ -12,7 +12,7 @@
 /// TRACKER, which builds the song to that stage (scr_tutorial_song_show).
 
 /// Number of tutorials (the length of scr_tutorial_defs(); -admtutorials builds them all).
-#macro TUTORIAL_COUNT 16
+#macro TUTORIAL_COUNT 17
 
 function scr_tutorial_defs() {
     if (is_array(global.tutorial_defs_cache)) return global.tutorial_defs_cache;
@@ -212,6 +212,22 @@ function scr_tutorial_defs() {
                 { title : "Intro and order list", song_stage : 9, hint : "The whole song: 00 01 02 03 04 05 02 06, looping to the hook. Shift+Enter!",
                   text : "Pattern 00 builds up: stabs over hats, long bass notes, then kicks and a roll. 01 is the full groove with a pick-up into the hook, 06 the last hook over the stabs. The order list is 00 01 02 03 04 05 02 06, and the song loops back to the hook. Shift+Enter plays it all - that is Pixel Hearts." },
                 { title : "Run it", text : "Esc saves MySong. PLAY on the PLAY MOD node previews it, F5 plays it on the Amiga. Then make it yours: change a note, a chord, the tempo or an instrument." }
+            ]
+        },
+        {
+            id : 17, title : "Shoot 'em up in assembly", level : "Advanced",
+            summary : "STAR BLASTER: a vertical shooter in CODE blocks - parallax stars, a ship, shots, enemies and explosions with your own sprites.",
+            features : ["CODE blocks", "SPR-EDIT sprites in code (spr_Name)", "Copper list", "sprite multiplexing", "nodes as subroutines", "joystick + attract mode"],
+            steps : [
+                { title : "Run it first", text : "Press F5. Leave the joystick alone and the ship flies itself after 3 seconds (attract mode); move it with the arrow keys and fire with right Ctrl. Then come back and see how it is made." },
+                { title : "Your sprites, in code", text : "Open SPR-EDIT: Ship, Shot, Enemy and Boom are ordinary sprites. Any CODE block can use a sprite by name: spr_Ship is its data in chip RAM (control words, rows, end marker), spr_Ship_h its height and spr_Ship_colours its three colours. Redraw the ship and press F5 - the game uses the new one." },
+                { title : "Screen setup", text : "The CODE block Screen setup takes over the display: OS interrupts off (the music keeps its CIA-B interrupt), two bitplanes of random stars, the sprite colours and a Copper list. The Copper reloads the bitplane and sprite pointers every frame and fades the background." },
+                { title : "One frame", text : "Wait frame waits for line 303, below the picture. The blocks under it run once a frame in order - Stars, Ship, Shots, Enemies, Collisions, Draw sprites - and BRA frame goes round again 50 times a second. Each block has a label, so its .local labels stay its own." },
+                { title : "Stars and ship", text : "Stars scrolls two planes at different speeds (parallax) just by moving their pointers in the Copper list. Ship reads JOY1DAT and the fire button on CIA-A; with no input for 150 frames it aims at the first enemy and fires by itself." },
+                { title : "Shots and enemies", text : "Shots are a ring of four records (active, x, y). Enemies are six records of E_SIZE bytes (the EQUs at the top of Screen setup) falling on a sine wave from the table in Data. A random column comes from the xorshift routine random." },
+                { title : "Eight sprites, more objects", text : "Draw sprites writes each sprite's two control words (set_sprite works out VSTART, VSTOP and HSTART). Channel 1 shows all four shots: one sprite channel can show several sprites one after another down the screen, as long as they do not overlap." },
+                { title : "Nodes as subroutines", text : "In the ORG column, sfx_shoot and sfx_boom are PLAY SFX nodes with a label and an RTS after them, so code can call them with BSR. The main loop ends with BRA, so the program never falls into that column. Subroutines and Data hold the helpers, tables and chip-RAM buffers (SECTION ... BSS_C)." },
+                { title : "Make it yours", text : "Open a block (EDIT CODE) and change something: the 40 in Enemies (how often they come), the 8 in Shots (fire rate), the fade colours in Data. Type a new line and watch the MODE list offer the addressing forms. F5 after each change." }
             ]
         }
     ];
