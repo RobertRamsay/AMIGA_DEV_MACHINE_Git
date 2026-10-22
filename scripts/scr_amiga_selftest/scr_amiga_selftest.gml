@@ -26,6 +26,8 @@ function scr_amiga_selftest_init() {
     // -admshowcase: clean screenshots of every screen into <data>/showcase/.
     global.selftest_showcase = false;
     global.selftest_showcase_index = 0;
+    // -admvideo: the scripted showreel for screen recording (obj_video_director).
+    global.selftest_video = false;
 
     var _p = 0;
     while (_p < parameter_count()) {
@@ -37,6 +39,10 @@ function scr_amiga_selftest_init() {
         if (parameter_string(_p) == "-admshowcase") {
             global.selftest_active = true;
             global.selftest_showcase = true;
+        }
+        if (parameter_string(_p) == "-admvideo") {
+            global.selftest_active = true;
+            global.selftest_video = true;
         }
         if (parameter_string(_p) == "-admtour") {
             global.selftest_active = true;
@@ -104,6 +110,10 @@ function scr_amiga_selftest_step() {
     }
     if (global.selftest_showcase) {
         scr_amiga_selftest_showcase_step();
+        return;
+    }
+    if (global.selftest_video) {
+        if (!instance_exists(obj_video_director)) instance_create_depth(0, 0, -1000000, obj_video_director);
         return;
     }
 
