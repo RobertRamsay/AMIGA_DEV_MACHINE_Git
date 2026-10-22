@@ -28,6 +28,8 @@ function scr_amiga_selftest_init() {
     global.selftest_showcase_index = 0;
     // -admvideo: the scripted showreel for screen recording (obj_video_director).
     global.selftest_video = false;
+    // -admsimtest: only the 68000 simulator self test (scr_m68k_selftest).
+    global.selftest_sim = false;
 
     var _p = 0;
     while (_p < parameter_count()) {
@@ -43,6 +45,10 @@ function scr_amiga_selftest_init() {
         if (parameter_string(_p) == "-admvideo") {
             global.selftest_active = true;
             global.selftest_video = true;
+        }
+        if (parameter_string(_p) == "-admsimtest") {
+            global.selftest_active = true;
+            global.selftest_sim = true;
         }
         if (parameter_string(_p) == "-admtour") {
             global.selftest_active = true;
@@ -112,6 +118,14 @@ function scr_amiga_selftest_step() {
         scr_amiga_selftest_showcase_step();
         return;
     }
+    if (global.selftest_sim) {
+        var _t0 = get_timer();
+        var _fails = scr_m68k_selftest();
+        scr_amiga_selftest_note("scr_m68k_selftest: " + string(array_length(scr_m68k_selftest_cases())) + " cases, " + string(array_length(_fails)) + " failures, " + string(round((get_timer() - _t0) / 1000)) + " ms");
+        for (var _f = 0; _f < array_length(_fails); _f += 1) scr_amiga_selftest_note("  " + _fails[_f]);
+        scr_amiga_selftest_finish(array_length(_fails) == 0);
+        return;
+    }
     if (global.selftest_video) {
         if (!instance_exists(obj_video_director)) instance_create_depth(0, 0, -1000000, obj_video_director);
         return;
@@ -136,7 +150,9 @@ function scr_amiga_selftest_step() {
             scr_amiga_selftest_note("scr_code_editor_selftest failures: " + string(array_length(_ced_failures)) + (array_length(_ced_failures) > 0 ? " " + json_stringify(_ced_failures) : ""));
             var _trk_failures = scr_tracker_selftest();
             scr_amiga_selftest_note("scr_tracker_selftest failures: " + string(array_length(_trk_failures)) + (array_length(_trk_failures) > 0 ? " " + json_stringify(_trk_failures) : ""));
-            if (array_length(_asm_failures) + array_length(_audio_failures) + array_length(_tile_failures) + array_length(_ced_failures) + array_length(_trk_failures) > 0) {
+            var _sim_failures = scr_m68k_selftest();
+            scr_amiga_selftest_note("scr_m68k_selftest failures: " + string(array_length(_sim_failures)) + (array_length(_sim_failures) > 0 ? " " + json_stringify(_sim_failures) : ""));
+            if (array_length(_asm_failures) + array_length(_audio_failures) + array_length(_tile_failures) + array_length(_ced_failures) + array_length(_trk_failures) + array_length(_sim_failures) > 0) {
                 scr_amiga_selftest_finish(false);
                 exit;
             }
