@@ -146,7 +146,12 @@ function scr_tour_show(_view) {
             if (!instance_exists(obj_course)) scr_course_open();
             with (obj_course) {
                 if (_sub == "map" && view != "map") back_to_map();
-                if (_sub == "lesson" && view != "lesson") open_item(0, true);
+                if ((_sub == "lesson" || _sub == "steps") && view != "lesson") open_item(0, true);
+                if (_sub == "steps") {
+                    // scroll the lesson column to its steps
+                    content_dirty = true;
+                    steps_scroll = true;
+                }
                 if (_sub == "exam" && view != "exam") {
                     for (var _ci = 0; _ci < array_length(items); _ci += 1) {
                         if (items[_ci].kind == "exam") {
@@ -626,6 +631,8 @@ function scr_tour_editor_categories() {
                   text : "100 lessons in five rows of 20, from the first MOVE to the blitter, sprites, sound and the 68020. Each row ends with an exam. Only the next one is open: pass a lesson to unlock the one after it. Opened from 68K COURSE on the toolbar or the opening page." },
                 { title : "A lesson", show : "course:lesson", rect : function() { return scr_tour_course_rect("column"); },
                   text : "Each lesson explains one idea with examples, then sets a task. Some add questions: click an answer - a wrong one turns red, the right one green with the reason." },
+                { title : "Step by step", show : "course:steps", rect : function() { return scr_tour_course_rect("column"); },
+                  text : "Under the task, the lesson walks you through the code: type each step's lines into the editor and the step ticks off when you press Enter after them - so there's time to add your own comment first. TYPE IT FOR ME types a step for you." },
                 { title : "Write the code", show : "course:lesson", rect : function() { return scr_tour_course_rect("editor"); },
                   text : "The CODE editor, with autocomplete, addressing forms and hover help. Your code is saved for each lesson." },
                 { title : "Run the tests", show : "course:lesson", rect : function() { return scr_tour_course_rect("results"); },

@@ -16,6 +16,10 @@
 ///   @hint      shown after the first failed run
 ///   @data      assembly appended after the user's code (tables to work on)
 ///   @cpu 68020 assemble and simulate as a 68020
+///   @step      a type-along step: its title after @step, then the explanation;
+///              "> line" = a line to type, "< line" = a line to take out,
+///              "^ line" = TYPE IT FOR ME puts the lines after this one
+///              (default: at the end of the code, or where the "<" line was)
 ///   @test Name of the test
 ///   setup: ... / expect: ... / call: label   (scr_m68k_spec strings)
 ///   @quiz      questions: "? question", "> code line" (under the question),
@@ -23,6 +27,10 @@
 ///   === EXAM 1: Foundations             an exam: @summary, @pass 80, @quiz
 /// A lesson passes when every test passes and every quiz question has been
 /// answered correctly; an exam when the score reaches its pass mark.
+///
+/// Steps tick off as their lines appear in the learner's code: a line counts
+/// once the caret has left it (Enter), so there is time to add a comment.
+/// Lines are compared by scr_course_line_keys (no comments, spaces or case).
 ///
 /// The program: hardware equates, ORG $1000, __adm_code:, the user's code,
 /// __adm_end: RTS, @data. A test starts at __adm_code (or its call: label)
@@ -73,7 +81,7 @@ function scr_course_new_item(_kind, _number, _title, _unit) {
         kind : _kind, number : _number, title : _title, unit : _unit,
         id : (_kind == "exam" ? "E" : "L") + string(_number), index : -1,
         summary : "", text : "", task : "", start : "", solution : "", hint : "", data : "",
-        cpu : 0, pass : COURSE_EXAM_PASS, tests : [], quiz : []
+        cpu : 0, pass : COURSE_EXAM_PASS, tests : [], quiz : [], steps : []
     };
 }
 
@@ -85,6 +93,7 @@ function scr_course_parse(_text, _items) {
     var _section = "";
     var _test = undefined;
     var _q = undefined;
+    var _step = undefined;
     for (var _i = 0; _i < array_length(_lines); _i += 1) {
         var _line = string_replace_all(_lines[_i], "\r", "");
         if (string_copy(_line, 1, 4) == "=== ") {
@@ -116,12 +125,28 @@ function scr_course_parse(_text, _items) {
                     _test = { name : _rest, setup : "", expect : "", call : "" };
                     array_push(_item.tests, _test);
                     break;
+                case "step":
+                    _step = { title : _rest, text : "", add : [], remove : [], after : "", need : {}, most : {} };
+                    array_push(_item.steps, _step);
+                    break;
             }
             continue;
         }
         switch (_section) {
             case "text": case "task": case "start": case "solution": case "hint": case "data":
                 _item[$ _section] += (_item[$ _section] == "" ? "" : "\n") + _line;
+                break;
+            case "step":
+                var _sm = string_char_at(_line, 1);
+                if (_sm == ">" || _sm == "<" || _sm == "^") {
+                    var _sl = string_delete(_line, 1, 1);
+                    if (string_char_at(_sl, 1) == " ") _sl = string_delete(_sl, 1, 1);
+                    if (_sm == ">") array_push(_step.add, _sl);
+                    else if (_sm == "<") array_push(_step.remove, _sl);
+                    else _step.after = _sl;
+                } else {
+                    _step.text += (_step.text == "" ? "" : "\n") + _line;
+                }
                 break;
             case "test":
                 var _t = string_trim(_line);
@@ -160,7 +185,123 @@ function scr_course_parse(_text, _items) {
         _it.solution = scr_course_trim_block(_it.solution);
         _it.hint = scr_course_trim_block(_it.hint);
         _it.data = scr_course_trim_block(_it.data);
+        for (var _s = 0; _s < array_length(_it.steps); _s += 1) _it.steps[_s].text = scr_course_trim_block(_it.steps[_s].text);
+        scr_course_steps_prepare(_it);
     }
+}
+
+// ---------------------------------------------------------------- type-along steps
+
+/// What a source line says, for comparing typed lines with a step's: up to
+/// two keys, "label:name" and the instruction (lower case, no spaces or
+/// comment). A label on its own line and on the instruction's line match.
+function scr_course_line_keys(_line) {
+    var _out = [];
+    var _tk = scr_asm_tokenize_line(string_replace_all(_line, "\r", ""));
+    var _op = "";
+    for (var _i = 0; _i < array_length(_tk); _i += 1) {
+        var _t = _tk[_i];
+        if (_t.kind == "whitespace" || _t.kind == "comment" || _t.field == "comment") continue;
+        if (_t.field == "label") {
+            var _name = string_lower(string_replace_all(string_trim(_t.text), ":", ""));
+            if (_name != "") array_push(_out, "label:" + _name);
+        } else {
+            _op += string_lower(string_replace_all(_t.text, " ", ""));
+        }
+    }
+    if (_op != "") array_push(_out, _op);
+    return _out;
+}
+
+/// How many times each key occurs in an array of lines (struct), skipping line _skip.
+function scr_course_keys_of(_lines, _skip = -1) {
+    var _set = {};
+    for (var _i = 0; _i < array_length(_lines); _i += 1) {
+        if (_i == _skip) continue;
+        var _k = scr_course_line_keys(_lines[_i]);
+        for (var _j = 0; _j < array_length(_k); _j += 1) _set[$ _k[_j]] = (_set[$ _k[_j]] ?? 0) + 1;
+    }
+    return _set;
+}
+
+/// Works out what each step needs (scr_course_parse calls it): step.need =
+/// key -> count every added key must reach, step.most = key -> count every
+/// taken-out key must drop to, both as in @start with the steps up to this
+/// one typed in. So a step that types a second "add.w d0,d0" needs two.
+function scr_course_steps_prepare(_item) {
+    var _lines = string_split(_item.start, "\n");
+    for (var _s = 0; _s < array_length(_item.steps); _s += 1) {
+        var _st = _item.steps[_s];
+        _lines = scr_course_step_apply(_lines, _st).lines;
+        var _counts = scr_course_keys_of(_lines);
+        _st.need = {};
+        _st.most = {};
+        for (var _i = 0; _i < array_length(_st.add); _i += 1) {
+            var _k = scr_course_line_keys(_st.add[_i]);
+            for (var _j = 0; _j < array_length(_k); _j += 1) _st.need[$ _k[_j]] = _counts[$ _k[_j]] ?? 1;
+        }
+        for (var _r = 0; _r < array_length(_st.remove); _r += 1) {
+            var _rk = scr_course_line_keys(_st.remove[_r]);
+            // the instruction key decides (a label may stay on its own line)
+            if (array_length(_rk) > 0) _st.most[$ _rk[array_length(_rk) - 1]] = _counts[$ _rk[array_length(_rk) - 1]] ?? 0;
+        }
+    }
+}
+
+/// A step is done when every line it adds is in _counted often enough and
+/// every line it takes out is rare enough in _all (key counts of the whole text).
+function scr_course_step_done(_step, _counted, _all) {
+    var _need = struct_get_names(_step.need);
+    for (var _i = 0; _i < array_length(_need); _i += 1) if ((_counted[$ _need[_i]] ?? 0) < _step.need[$ _need[_i]]) return false;
+    var _most = struct_get_names(_step.most);
+    for (var _r = 0; _r < array_length(_most); _r += 1) if ((_all[$ _most[_r]] ?? 0) > _step.most[$ _most[_r]]) return false;
+    return true;
+}
+
+/// The first line of _lines whose keys hold every key of _want (-1: none).
+function scr_course_find_line(_lines, _want) {
+    var _wk = scr_course_line_keys(_want);
+    if (array_length(_wk) == 0) return -1;
+    for (var _i = 0; _i < array_length(_lines); _i += 1) {
+        var _k = scr_course_line_keys(_lines[_i]);
+        var _all = true;
+        for (var _j = 0; _j < array_length(_wk); _j += 1) if (!array_contains(_k, _wk[_j])) _all = false;
+        if (_all) return _i;
+    }
+    return -1;
+}
+
+/// TYPE IT FOR ME: _lines with the step applied. Returns { lines, last }
+/// (last = index of the last line put in). The "<" lines come out and the
+/// new ones go where the first of them was; otherwise after the "^" line,
+/// else after the last line that is not blank.
+function scr_course_step_apply(_lines, _step) {
+    var _out = [];
+    array_copy(_out, 0, _lines, 0, array_length(_lines));
+    var _at = -1;
+    for (var _r = 0; _r < array_length(_step.remove); _r += 1) {
+        var _f = scr_course_find_line(_out, _step.remove[_r]);
+        if (_f < 0) continue;
+        array_delete(_out, _f, 1);
+        if (_at < 0 || _f < _at) _at = _f;
+    }
+    if (_at < 0 && _step.after != "") {
+        var _a = scr_course_find_line(_out, _step.after);
+        if (_a >= 0) _at = _a + 1;
+    }
+    if (_at < 0) {
+        _at = array_length(_out);
+        while (_at > 0 && string_trim(_out[_at - 1]) == "") _at -= 1;
+    }
+    for (var _i = 0; _i < array_length(_step.add); _i += 1) array_insert(_out, _at + _i, _step.add[_i]);
+    return { lines : _out, last : _at + array_length(_step.add) - 1 };
+}
+
+/// The @start code with every step typed in (what TYPE IT FOR ME gives).
+function scr_course_steps_code(_item) {
+    var _lines = string_split(_item.start, "\n");
+    for (var _s = 0; _s < array_length(_item.steps); _s += 1) _lines = scr_course_step_apply(_lines, _item.steps[_s]).lines;
+    return string_join_ext("\n", _lines);
 }
 
 /// Drops leading and trailing blank lines (keeps indentation).
@@ -510,6 +651,27 @@ function scr_course_selftest_begin() {
             if (array_length(_it.tests) > 0 && _it.solution == "") array_push(_fail, _name + ": tests but no @solution");
             if (_it.text == "" || _it.summary == "" || _it.unit == "") array_push(_fail, _name + ": missing text, summary or unit");
             if (_lessons mod 20 == 0 && (_i + 1 >= array_length(_items) || _items[_i + 1].kind != "exam")) array_push(_fail, _name + ": an exam should follow");
+            if (array_length(_it.tests) > 0 && array_length(_it.steps) == 0) array_push(_fail, _name + ": tests but no @step");
+            // Each step must be something to do, not done yet in @start, and
+            // done once TYPE IT FOR ME has typed it.
+            var _code = string_split(_it.start, "\n");
+            var _start_keys = scr_course_keys_of(_code);
+            for (var _s = 0; _s < array_length(_it.steps); _s += 1) {
+                var _st = _it.steps[_s];
+                var _sname = _name + " step " + string(_s + 1);
+                var _has = array_length(_st.remove) > 0;
+                for (var _a = 0; _a < array_length(_st.add); _a += 1) if (array_length(scr_course_line_keys(_st.add[_a])) > 0) _has = true;
+                if (!_has) array_push(_fail, _sname + ": no line to type");
+                if (_st.title == "" || _st.text == "") array_push(_fail, _sname + ": needs a title and an explanation");
+                if (_has && scr_course_step_done(_st, _start_keys, _start_keys)) array_push(_fail, _sname + ": already done in @start");
+                if (_st.after != "" && scr_course_find_line(_code, _st.after) < 0) array_push(_fail, _sname + ": its ^ line is not in the code yet");
+                for (var _r = 0; _r < array_length(_st.remove); _r += 1) {
+                    if (scr_course_find_line(_code, _st.remove[_r]) < 0) array_push(_fail, _sname + ": its < line is not in the code");
+                }
+                _code = scr_course_step_apply(_code, _st).lines;
+                var _keys = scr_course_keys_of(_code);
+                if (_has && !scr_course_step_done(_st, _keys, _keys)) array_push(_fail, _sname + ": not done after TYPE IT FOR ME");
+            }
         } else {
             _exams += 1;
             if (_it.number != _exams) array_push(_fail, _name + ": expected exam " + string(_exams));
@@ -520,6 +682,14 @@ function scr_course_selftest_begin() {
             var _qq = _it.quiz[_q];
             if (_qq.answer < 0 || array_length(_qq.options) < 2) array_push(_fail, _name + " question " + string(_q + 1) + ": needs options and a + answer");
         }
+    }
+    // A typed line waits for Enter: lesson 1's first step with its line under
+    // the caret (and a comment of the learner's own) is not done until the caret leaves.
+    if (array_length(_items) > 0 && array_length(_items[0].steps) > 0) {
+        var _typed = [_items[0].start, "    moveq   #42,D0   ; my own note"];
+        var _all = scr_course_keys_of(_typed);
+        if (scr_course_step_done(_items[0].steps[0], scr_course_keys_of(_typed, 1), _all)) array_push(_fail, "a step ticks before Enter leaves its line");
+        if (!scr_course_step_done(_items[0].steps[0], _all, _all)) array_push(_fail, "a typed step (with a comment, upper case) does not tick after Enter");
     }
     if (_lessons != 100) array_push(_fail, string(_lessons) + " lessons (100 wanted)");
     if (_exams != 5) array_push(_fail, string(_exams) + " exams (5 wanted)");
@@ -534,7 +704,8 @@ function scr_course_selftest_step() {
     if (_st.index >= array_length(_items)) return true;
     var _it = _items[_st.index];
     if (_st.job == undefined) {
-        _st.job = scr_course_assemble(_it, _st.phase == 0 ? _it.solution : _it.start, global.course_dir + "/selftest");
+        var _src = _st.phase == 0 ? _it.solution : (_st.phase == 1 ? _it.start : scr_course_steps_code(_it));
+        _st.job = scr_course_assemble(_it, _src, global.course_dir + "/selftest");
         return false;
     }
     var _job = _st.job;
@@ -544,19 +715,23 @@ function scr_course_selftest_step() {
     var _finished = _job.state == "tested" || _job.state == "asm_failed" || _job.state == "error";
     if (!_finished) return false;
     var _name = scr_course_item_label(_it);
-    if (_st.phase == 0) {
+    if (_st.phase == 0 || _st.phase == 2) {
+        var _what = _st.phase == 0 ? " solution" : " with every step typed in";
         if (_job.state != "tested") {
             var _e = array_length(_job.errors) > 0 ? _job.errors[0] : { line : -1, message : _job.message };
-            array_push(_st.fail, _name + " solution does not assemble: line " + string(_e.line + 1) + ": " + _e.message);
+            array_push(_st.fail, _name + _what + " does not assemble: line " + string(_e.line + 1) + ": " + _e.message);
         } else if (!_job.passed) {
             for (var _r = 0; _r < array_length(_job.results); _r += 1) {
-                if (!_job.results[_r].ok) array_push(_st.fail, _name + " solution fails \"" + _job.results[_r].name + "\": " + string_join_ext("; ", _job.results[_r].problems));
+                if (!_job.results[_r].ok) array_push(_st.fail, _name + _what + " fails \"" + _job.results[_r].name + "\": " + string_join_ext("; ", _job.results[_r].problems));
             }
         }
-        _st.checked += 1;
-        _st.phase = 1;
+        if (_st.phase == 0) _st.checked += 1;
     } else {
         if (_job.state == "tested" && _job.passed) array_push(_st.fail, _name + ": the @start code already passes every test");
+    }
+    _st.phase += 1;
+    if (_st.phase == 2 && array_length(_it.steps) == 0) _st.phase = 3;
+    if (_st.phase >= 3) {
         _st.phase = 0;
         _st.index += 1;
     }

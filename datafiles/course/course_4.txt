@@ -15,6 +15,19 @@ In supervisor mode every instruction is allowed. In user mode, instructions that
 MOVE SR,Dn reads the whole register (on a 68000 even in user mode). The interrupt mask is bits 8 to 10: shift right by 8 and keep three bits.
 @task
 Put the interrupt mask (0 to 7) from SR into D0 as a long, and set D1 to 1 in supervisor mode or 0 in user mode.
+@step Read the status register
+MOVE SR,Dn copies the whole 16-bit status register into D0: the condition codes in the low byte, and the S bit and interrupt mask in the high byte.
+>	move.w	sr,d0		; D0.w = SR
+@step Test the supervisor bit
+Start D1 at 0 for user mode. BTST #13 tests the S bit: if it is 0, BEQ jumps over the line that sets D1 to 1.
+>	moveq	#0,d1		; assume user mode
+>	btst	#13,d0		; S bit set?
+>	beq	user		; no: keep D1 = 0
+>	moveq	#1,d1		; yes: supervisor
+@step Pick out the mask
+The interrupt mask is bits 8 to 10. LSR.W #8 moves them down to bits 0 to 2, and AND.L #7 keeps just those three bits and clears the rest of the long.
+>user:	lsr.w	#8,d0		; mask down to bits 0-2
+>	and.l	#7,d0		; keep only the mask
 @start
 	; D0 = interrupt mask, D1 = 1 if supervisor else 0
 
@@ -67,6 +80,20 @@ On an exception the CPU switches to supervisor mode, pushes the PC and SR on the
 For an illegal instruction the stacked PC points at the bad instruction itself, so a handler that wants to carry on must step it past - the instruction ILLEGAL is two bytes long. In this course, an exception whose vector is still 0 stops your program with a message, much like a Guru Meditation.
 @task
 Install a handler for illegal instructions (vector 4, at address $10). The handler sets D7 to $DEAD (as a long), steps the stacked PC past the ILLEGAL instruction, and returns with RTE. The main program then runs ILLEGAL and carries on.
+@step Install the handler
+LEA with (pc) finds the handler's address wherever the program was loaded, and MOVE.L puts it into vector 4 at $10, the illegal instruction vector. This goes before the ILLEGAL that will use it.
+<	illegal
+>	lea	handler(pc),a0	; the handler's address
+>	move.l	a0,$10.w		; into vector 4
+>	illegal			; now it can be caught
+@step Mark that it ran
+Inside the handler, put $DEAD into D7 so the main program can see that the exception was taken.
+^handler:
+>	move.l	#$DEAD,d7	; the handler ran
+@step Step past the ILLEGAL
+The CPU pushed the SR at (a7) and the PC at 2(a7), pointing at the ILLEGAL itself. Adding 2 to that stacked PC makes RTE return to the instruction after it.
+^	move.l	#$DEAD,d7
+>	addq.l	#2,2(a7)	; skip the 2-byte ILLEGAL
 @start
 	; install the handler in vector 4 ($10) here
 	illegal
@@ -115,6 +142,22 @@ User-mode code cannot change SR or touch protected things. TRAP #n is the way in
 Inside the handler the CPU is in supervisor mode with A7 the supervisor stack - even if the program was in user mode. RTE returns to the instruction after the TRAP, back in the mode the program was in, with its SR restored.
 @task
 Install a handler at the TRAP #0 vector ($80) that doubles D0, copies SR into D1 and returns. Then call TRAP #0 twice from the main program.
+@step Install the TRAP handler
+TRAP #0 uses vector 32, at $80. Put the handler's address there with LEA and MOVE.L, before the RTS that ends the main program.
+<	rts
+>	lea	doubler(pc),a0	; the handler's address
+>	move.l	a0,$80.w		; into the TRAP #0 vector
+>	rts
+@step Call it twice
+Each TRAP #0 switches to supervisor mode, runs the handler and comes back to the next instruction, so D0 is doubled twice.
+^	move.l	a0,$80.w
+>	trap	#0		; D0 * 2
+>	trap	#0		; and again
+@step Write the handler
+ADD.L D0,D0 doubles D0. MOVE SR,D1 shows the SR inside the handler: the S bit is set there, even when the program called from user mode.
+^doubler:
+>	add.l	d0,d0		; D0 = D0 * 2
+>	move.w	sr,d1		; D1 = SR in the handler
 @start
 	; install the handler, then call trap #0 twice
 	rts
@@ -162,6 +205,14 @@ The bug usually comes from a data structure where something has shifted by a byt
 (The 68020 and later allow unaligned accesses, at a cost in speed - another reason old Amiga code sometimes only crashes on an A500.)
 @task
 The code in the editor crashes with an address error. It should read the big-endian word stored at A0+1 and A0+2 into the low word of D0. Fix it.
+@step Read the high byte
+Replace the word read with byte reads, which work at any address. The byte at 1(a0) is the high byte: read it into D0, then LSL.W #8 moves it up to bits 8-15.
+<	move.w	1(a0),d0
+>	move.b	1(a0),d0	; the high byte
+>	lsl.w	#8,d0		; move it up
+@step Read the low byte
+MOVE.B into D0 only changes its low byte, so the byte at 2(a0) slots in below the high byte, and the upper word of D0 is left alone.
+>	move.b	2(a0),d0	; the low byte
 @start
 	move.w	1(a0),d0
 @solution
@@ -199,6 +250,18 @@ A related instruction is CHK, which raises exception 6 if a register is below 0 
 Remember also that DIVU's result packs the remainder into the high word; to use the quotient as a plain long, clear the high word with AND.L #$FFFF.
 @task
 Divide D0 (unsigned long) by the word in D1. If D1 is zero, set D0 to $FFFFFFFF instead. Otherwise leave just the quotient in D0, with the upper word cleared.
+@step Test the divisor first
+TST.W D1 sets the Z flag if the divisor word is zero. If it is not, BNE goes to the divide; otherwise D0 becomes $FFFFFFFF (MOVEQ #-1) and BRA skips the divide.
+<	divu.w	d1,d0
+>	tst.w	d1		; divisor zero?
+>	bne	ok		; no: divide
+>	moveq	#-1,d0		; yes: D0 = $FFFFFFFF
+>	bra	done
+@step Divide and keep the quotient
+DIVU.W leaves the quotient in the low word of D0 and the remainder in the high word. AND.L #$0000FFFF clears the remainder, leaving the quotient as a plain long.
+>ok:	divu.w	d1,d0		; D0 = remainder:quotient
+>	and.l	#$0000FFFF,d0	; just the quotient
+>done:
 @start
 	divu.w	d1,d0
 @solution
@@ -250,6 +313,14 @@ The 68000 sees 16 MB of addresses. On the Amiga they are laid out like this:
 Everything the custom chips use - screens, sprites, sound samples, copper lists - must be in chip RAM. The ADM disks load your whole program into chip RAM, so that is always true here.
 @task
 Point A0 at the start of chip RAM, A1 at the custom chips, A2 at CIA-A's first register and A3 at CIA-B's.
+@step Point at chip RAM
+Chip RAM starts at address 0. SUB.L A0,A0 subtracts A0 from itself, the quickest way to make an address register zero.
+>	sub.l	a0,a0		; A0 = 0, chip RAM
+@step Point at the chips
+LEA loads each address: the custom chips at $DFF000, CIA-A's first register at $BFE001 (odd bytes) and CIA-B's at $BFD000 (even bytes).
+>	lea	$DFF000,a1	; the custom chips
+>	lea	$BFE001,a2	; CIA-A
+>	lea	$BFD000,a3	; CIA-B
 @start
 	; A0 = chip RAM, A1 = custom chips, A2 = CIA-A, A3 = CIA-B
 
@@ -289,6 +360,13 @@ or, much better when there are several, keep CUSTOM in an address register and u
 Each displacement access is shorter and faster than an absolute address. Most registers are write-only: reading them gives rubbish. A few are read-only and have their own names, such as DMACONR and VPOSR.
 @task
 Set the background colour COLOR00 to red ($0F00) and COLOR01 to green ($00F0), using CUSTOM in an address register.
+@step Keep CUSTOM in A6
+LEA CUSTOM,A6 puts $DFF000 into A6, so each register can be reached as a short displacement from it.
+>	lea	CUSTOM,a6	; A6 = $DFF000
+@step Set the two colours
+COLOR00 (offset $180) is the background, COLOR01 ($182) the next colour. Write $0RGB values: $0F00 is red, $00F0 green.
+>	move.w	#$0F00,COLOR00(a6)	; background red
+>	move.w	#$00F0,COLOR01(a6)	; colour 1 green
 @start
 	; COLOR00 = $0F00, COLOR01 = $00F0
 
@@ -329,6 +407,16 @@ Bits that are 0 in the value are left alone either way. The current state is rea
 	bits 3-0	AUD3EN-AUD0EN	audio
 @task
 With one write, switch on DMAEN, BPLEN and COPEN. With a second write, switch off SPREN. Then read DMACONR and put its low 10 bits (AND $03FF) into the low word of D0.
+@step Switch channels on
+$8380 has bit 15 set, so its 1 bits are switched on: DMAEN (9), BPLEN (8) and COPEN (7). The other channels stay as they were.
+>	move.w	#$8380,DMACON(a6)	; SET DMAEN, BPLEN, COPEN
+@step Switch sprites off
+$0020 has bit 15 clear, so its 1 bit, SPREN (5), is cleared. Nothing else changes.
+>	move.w	#$0020,DMACON(a6)	; CLEAR SPREN
+@step Read the result
+DMACON is write-only; DMACONR reads the current state. AND.W #$03FF keeps the low 10 bits, the channel switches.
+>	move.w	DMACONR(a6),d0	; the current DMA state
+>	and.w	#$03FF,d0	; low 10 bits
 @start
 	lea	CUSTOM,a6
 	; set DMAEN+BPLEN+COPEN, clear SPREN, then D0 = DMACONR & $3FF
@@ -373,6 +461,14 @@ wait:
 A PAL frame has 313 lines; the picture of a normal screen ends at line 300 ($12C), a good moment to start the next frame's work. In the simulator the beam moves with the cycle count, as on a real 68000.
 @task
 Wait until the beam reaches line 300 ($12C), by reading VPOSR in a loop.
+@step Read the beam position
+Reading a long from VPOSR gets VPOSR and VHPOSR together. AND.L #$1FF00 keeps the 9-bit line number in bits 16-8 and drops the horizontal position.
+>wait:	move.l	VPOSR(a6),d0	; VPOSR and VHPOSR
+>	and.l	#$1FF00,d0	; just the line
+@step Loop until line 300
+Line 300 is $12C, which sits in bits 16-8 as $12C00. Until the beam gets there, BNE goes back and reads it again.
+>	cmp.l	#$12C00,d0	; line 300 yet?
+>	bne	wait		; no: read again
 @start
 	lea	CUSTOM,a6
 	; wait for line 300
@@ -420,6 +516,31 @@ handler:
 Interrupts can arrive between any two instructions, so a handler must save every register it changes (here it only uses D7, which the main program reads).
 @task
 Install a level 3 handler at $6C that adds 1 to the word in D7 and acknowledges VERTB. Enable the VERTB interrupt, lower the mask, wait until D7 reaches 3, then raise the mask to 7, switch the interrupt off again and return.
+@step Install the handler
+The level 3 interrupt vector is at $6C. Put the handler's address there before any interrupt is enabled.
+^	moveq	#0,d7
+>	lea	handler(pc),a0	; the handler's address
+>	move.l	a0,$6C.w		; level 3 vector
+@step Enable VERTB
+$C020 sets INTEN (14), the master switch, and VERTB (5) in INTENA. Writing $2000 to SR keeps supervisor mode and lowers the mask to 0, so level 3 can come in.
+^	move.l	a0,$6C.w
+>	move.w	#$C020,INTENA(a6)	; SET INTEN + VERTB
+>	move.w	#$2000,sr		; mask 0
+@step Wait for three frames
+The handler counts frames in D7 while this loop spins. CMP.W #3 and BNE keep it waiting until three vertical blanks have come in.
+^	move.w	#$2000,sr
+>wait:	cmp.w	#3,d7		; three frames yet?
+>	bne	wait
+@step Switch it off again
+SR $2700 raises the mask to 7 so no more level 3 interrupts are taken, then $0020 (bit 15 clear) clears VERTB in INTENA.
+^	bne	wait
+>	move.w	#$2700,sr		; mask 7
+>	move.w	#$0020,INTENA(a6)	; CLEAR VERTB
+@step Count and acknowledge
+The handler adds 1 to D7, then writes $0020 to INTREQ to clear the VERTB request, or it would be taken again straight after RTE.
+^handler:
+>	addq.w	#1,d7		; one more frame
+>	move.w	#$0020,INTREQ(a6)	; acknowledge VERTB
 @start
 	lea	CUSTOM,a6
 	moveq	#0,d7
@@ -482,6 +603,22 @@ A game or demo that drives the hardware itself must stop the operating system ge
 Setting bit 15 turns the saved values into SET writes. The full version also stops multitasking with exec's Forbid, saves the system copper list from graphics.library and waits for the blitter, but this is the hardware heart of it. (The TAKE SYSTEM button in the CODE editor inserts a complete version.)
 @task
 Save INTENAR in D6 and DMACONR in D7, switch off all interrupts and all DMA, then switch back on exactly the ones that were on.
+@step Save the system's settings
+INTENAR and DMACONR read back which interrupts and DMA channels are on. Keep them in D6 and D7 to restore at the end.
+>	move.w	INTENAR(a6),d6	; enabled interrupts
+>	move.w	DMACONR(a6),d7	; DMA channels
+@step Switch everything off
+$7FFF has bit 15 clear and every other bit set, so it clears every interrupt enable in INTENA and every channel in DMACON.
+>	move.w	#$7FFF,INTENA(a6)	; all interrupts off
+>	move.w	#$7FFF,DMACON(a6)	; all DMA off
+@step Turn the saved values into SET writes
+OR.W #$8000 sets bit 15 in each saved value, so writing it back switches on exactly the bits that were on.
+>	or.w	#$8000,d6	; SET + saved interrupts
+>	or.w	#$8000,d7	; SET + saved DMA
+@step Give them back
+Write the DMA channels to DMACON and the interrupts to INTENA, and the machine is as the system left it.
+>	move.w	d7,DMACON(a6)	; DMA back on
+>	move.w	d6,INTENA(a6)	; interrupts back on
 @start
 	lea	CUSTOM,a6
 	; save, switch everything off, restore
@@ -522,6 +659,14 @@ The OCS and ECS Amiga have 32 colour registers, COLOR00 to COLOR31, at $DFF180 t
 They sit one after another, so a palette is loaded with a simple copy loop into CUSTOM+COLOR00. Changing a colour register changes every pixel of that colour at once, which is how colour cycling and fades work without touching the pixels.
 @task
 A0 points at a table of 16 colour words. Copy them into COLOR00 to COLOR15.
+@step Set up the copy
+A1 points at COLOR00 ($DFF180); the next 15 colour registers follow it a word apart. D0 = 15 counts 16 words with DBRA.
+>	lea	CUSTOM+COLOR00,a1	; first colour register
+>	moveq	#15,d0		; 16 colours
+@step Copy the colours
+Each pass copies one colour word from the table into the next colour register, moving both pointers on by 2. DBRA loops until D0 runs out.
+>loop:	move.w	(a0)+,(a1)+	; one colour
+>	dbra	d0,loop
 @start
 	; 16 colours from (a0) into COLOR00-COLOR15
 
@@ -560,6 +705,20 @@ To set pixel (x, y) in a plane:
 7 - (x AND 7) is the same as (NOT x) AND 7, and BSET on memory only uses the low three bits of the bit number, so NOT on its own is enough. Planar graphics make some things fast (scrolling, fewer colours means less memory) and others awkward (plotting single pixels) - the blitter helps with the rest.
 @task
 A0 points at a 320 x 256 bitplane. Set the pixel at x = D0, y = D1 (words), leaving the other pixels alone. D2 and D3 may be used as scratch.
+@step Find the row
+Each row of a 320-pixel plane is 40 bytes, so the row starts y * 40 bytes in. MULU.W #40 gives that as a long in D2.
+>	move.w	d1,d2		; D2 = y
+>	mulu.w	#40,d2		; row offset
+@step Add the byte column
+Eight pixels share a byte, so x / 8 (LSR.W #3) is the byte within the row. Add it to get the byte's offset.
+>	move.w	d0,d3		; D3 = x
+>	lsr.w	#3,d3		; x / 8
+>	add.w	d3,d2		; byte offset
+@step Set the bit
+Bit 7 is the leftmost pixel, so the bit number is 7 - (x AND 7). NOT x gives that, since BSET on memory only uses the low three bits. BSET then sets just that pixel.
+>	move.w	d0,d3		; D3 = x again
+>	not.w	d3		; bit = 7 - (x AND 7)
+>	bset	d3,0(a0,d2.l)	; set the pixel
 @start
 	; set pixel (D0, D1) in the bitplane at A0
 
@@ -607,6 +766,22 @@ Five registers describe a normal screen:
 That gives the standard 320 x 256 PAL low-res screen, which every ADM display macro uses. BPLCON1 holds the fine scroll (lesson 80) and BPLCON2 the sprite and playfield priorities. With BPLCON0's plane count you choose 2 to 32 colours.
 @task
 Write the four window registers for a 320 x 256 PAL screen, BPLCON0 for D0 bitplanes (1 to 5) with the colour bit on, and 0 into BPLCON1.
+@step Set the display window
+DIWSTRT $2C81 and DIWSTOP $2CC1 frame the 320 x 256 PAL picture; DDFSTRT $0038 and DDFSTOP $00D0 fetch 20 words of data per line.
+>	move.w	#$2C81,DIWSTRT(a6)	; window start
+>	move.w	#$2CC1,DIWSTOP(a6)	; window stop
+>	move.w	#$0038,DDFSTRT(a6)	; fetch start
+>	move.w	#$00D0,DDFSTOP(a6)	; fetch stop
+@step Put the plane count in place
+BPLCON0 wants the number of bitplanes in bits 14-12. Shift a copy of D0 left by 12; LSL only takes up to 8 as an immediate, so the count goes in D2.
+>	move.w	d0,d1		; plane count
+>	moveq	#12,d2
+>	lsl.w	d2,d1		; into bits 14-12
+@step Write BPLCON0 and BPLCON1
+OR in $0200, the colour bit (9), and write BPLCON0. BPLCON1 = 0 means no fine scroll.
+>	or.w	#$0200,d1	; colour on
+>	move.w	d1,BPLCON0(a6)
+>	move.w	#0,BPLCON1(a6)	; no scroll
 @start
 	lea	CUSTOM,a6
 	; DIWSTRT, DIWSTOP, DDFSTRT, DDFSTOP, BPLCON0 for D0 planes, BPLCON1
@@ -653,6 +828,19 @@ The hardware moves the pointers on as it fetches each line, so they must be writ
 Here the planes are stored one after another, 10240 bytes each. (Interleaved screens, with the lines of each plane alternating, use a modulo of 40 x (planes - 1) instead.)
 @task
 A0 points at a screen of D0 bitplanes (1 to 5), each 10240 bytes, one after another. Write each plane's address into BPL1PT, BPL2PT, ..., and set both modulos to 0.
+@step Set up the loop
+A1 points at BPL1PT, the first plane pointer; the others follow it a long apart. SUBQ #1 makes D0 the DBRA count for D0 planes.
+>	lea	CUSTOM+BPL1PT,a1	; first plane pointer
+>	subq.w	#1,d0		; DBRA count
+@step Write each plane's address
+Each pass writes A0 into the next BPLxPT as a long, then moves A0 on by 10240 bytes to the next plane.
+>loop:	move.l	a0,(a1)+		; BPLxPT = this plane
+>	add.l	#10240,a0	; next plane
+>	dbra	d0,loop
+@step Clear the modulos
+BPL1MOD (odd planes) and BPL2MOD (even planes) are the bytes skipped after each line; a plain 320-pixel screen skips none.
+>	move.w	#0,CUSTOM+BPL1MOD	; odd planes
+>	move.w	#0,CUSTOM+BPL2MOD	; even planes
 @start
 	; BPLxPT for D0 planes from A0, BPL1MOD = BPL2MOD = 0
 
@@ -702,6 +890,14 @@ The list ends with a WAIT that can never happen: $FFFF,$FFFE. So this copper lis
 It runs every frame, all by itself, with no work for the 68000. Most Amiga screens are set up by a copper list, which reloads the bitplane pointers and colours at the top of every frame.
 @task
 Write this copper list at A0, in chip RAM: COLOR00 = $0F00, wait for line $80, COLOR00 = $000F, end.
+@step Turn the background red
+A copper MOVE is the register offset then the value: COLOR00 is $0180, so $01800F00 sets it to red. Then a WAIT for line $80: $8001 with $FFFE.
+>	move.l	#$01800F00,(a0)+	; MOVE COLOR00 = red
+>	move.l	#$8001FFFE,(a0)+	; WAIT line $80
+@step Turn it blue and end
+Another MOVE sets COLOR00 to $000F, blue. $FFFFFFFE is a WAIT for a position that never comes, which ends the list.
+>	move.l	#$0180000F,(a0)+	; MOVE COLOR00 = blue
+>	move.l	#$FFFFFFFE,(a0)+	; end of list
 @start
 	; build the copper list at A0
 
@@ -741,6 +937,25 @@ Copper lists are often generated by code rather than typed in: a gradient with a
 Adding $0800 to the first word of the WAIT moves it 8 lines down. With 16 bands and the blue level going up by one each time, the screen fades from black to blue - with no pixels drawn at all.
 @task
 At A0, build a copper list of 16 bands: for n = 0 to 15, WAIT for line $40 + 8n, then set COLOR00 to n (blue levels 0 to 15). End it with $FFFF,$FFFE.
+@step Set up the counters
+D0 is the colour, starting at 0 (black). D1 is the WAIT's first word, $4001 for line $40. D2 = 15 counts 16 bands with DBRA.
+>	moveq	#0,d0		; colour
+>	move.w	#$4001,d1	; WAIT line $40
+>	moveq	#15,d2		; 16 bands
+@step Write one band
+Each band is a WAIT (D1, $FFFE) and a MOVE (COLOR00, the colour): four words, written one after another.
+>loop:	move.w	d1,(a0)+		; WAIT line
+>	move.w	#$FFFE,(a0)+
+>	move.w	#COLOR00,(a0)+	; MOVE COLOR00
+>	move.w	d0,(a0)+		; = colour
+@step Move on to the next band
+One more blue level, and adding $0800 to the WAIT word moves it 8 lines down. DBRA repeats for all 16 bands.
+>	addq.w	#1,d0		; next blue
+>	add.w	#$0800,d1	; 8 lines down
+>	dbra	d2,loop
+@step End the list
+$FFFF,$FFFE waits for a position that never comes, so the copper stops there until the next frame.
+>	move.l	#$FFFFFFFE,(a0)	; end of list
 @start
 	; 16 x (WAIT line $40 + 8n, COLOR00 = n), then the end
 
@@ -783,6 +998,13 @@ The Copper restarts from COP1LC at the top of every frame, so the list runs agai
 The copper list must be in chip RAM; a list the system was using should be saved before and restored after (graphics.library keeps it).
 @task
 Start the copper list at A0: set COP1LC, strobe COPJMP1, and switch on DMAEN and COPEN.
+@step Point the copper at the list
+COP1LC holds the list's address; the copper restarts from it every frame. Any write to COPJMP1 makes it jump there straight away.
+>	move.l	a0,COP1LC(a6)	; the list's address
+>	move.w	#0,COPJMP1(a6)	; jump now
+@step Switch on copper DMA
+$8280 sets DMAEN (9), the master switch, and COPEN (7) in DMACON, so the copper starts running.
+>	move.w	#$8280,DMACON(a6)	; SET DMAEN + COPEN
 @start
 	lea	CUSTOM,a6
 	; COP1LC = A0, strobe COPJMP1, enable copper DMA
@@ -823,6 +1045,19 @@ A horizontal line is the easiest thing to draw in a bitplane: on one row, every 
 Lines that start or end in the middle of a byte need masks for the first and last bytes - the same idea as the blitter's first and last word masks (lesson 82). Here, the ends are whole bytes.
 @task
 A0 points at a 320 x 256 bitplane. On row D1, set every byte from byte column D0 to byte column D2 (inclusive) to $FF. All three are words; D3 and A1 may be used as scratch.
+@step Find the first byte
+The row starts y * 40 bytes into the plane. LEA adds that to A0, and ADDA adds the first byte column D0.
+>	mulu.w	#40,d1		; row offset
+>	lea	0(a0,d1.l),a1	; row start
+>	adda.w	d0,a1		; first byte
+@step Count the bytes
+There are D2 - D0 + 1 bytes to fill; DBRA runs once more than its count, so D3 = D2 - D0.
+>	move.w	d2,d3
+>	sub.w	d0,d3		; DBRA count
+@step Fill them
+Write $FF, eight set pixels, into each byte of the span, moving A1 along the row.
+>loop:	move.b	#$FF,(a1)+	; 8 pixels on
+>	dbra	d3,loop
 @start
 	; row D1, bytes D0 to D2 = $FF
 
@@ -866,6 +1101,25 @@ For a scroll position x:
 15 - (x AND 15) is (NOT x) AND 15. The data fetch also starts one word earlier (DDFSTRT $0030) so there is a word to scroll in from. Hardware scrolling costs the CPU nothing per pixel - one of the Amiga's great tricks.
 @task
 The bitplane starts at A0; D0 is a scroll position, 0 to 319. Write BPL1PT (as a long) and BPLCON1 (the delay in both nibbles) for that position. D1 and A1 may be used as scratch.
+@step Work out the word offset
+The pointer moves in whole 16-pixel words: x / 16 (LSR.W #4) words, doubled to get bytes.
+>	move.w	d0,d1
+>	lsr.w	#4,d1		; x / 16 words
+>	add.w	d1,d1		; * 2 bytes
+@step Write the bitplane pointer
+LEA adds the offset to the plane's start in A1, and one MOVE.L writes it to BPL1PT.
+>	lea	0(a0,d1.w),a1	; scrolled start
+>	move.l	a1,CUSTOM+BPL1PT
+@step Work out the delay
+The delay is 15 - (x AND 15), which is (NOT x) AND 15: NOT D0 then AND.W #15.
+>	not.w	d0
+>	and.w	#15,d0		; delay 0-15
+@step Write BPLCON1
+BPLCON1 wants the delay in both nibbles: bits 3-0 for odd planes, 7-4 for even ones. Copy it, shift the copy up 4 bits, OR them together and write it.
+>	move.w	d0,d1
+>	lsl.w	#4,d1		; even planes' nibble
+>	or.w	d1,d0		; both nibbles
+>	move.w	d0,CUSTOM+BPLCON1
 @start
 	; BPL1PT = A0 + (D0 / 16) * 2, BPLCON1 = (15 - (D0 AND 15)) * $11
 

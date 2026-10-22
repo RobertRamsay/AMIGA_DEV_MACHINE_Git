@@ -14,6 +14,15 @@ The constant is called a mask. AND clears every bit where the mask has a 0, so i
 They set N and Z from the result and clear V and C, so a TST after them is not needed.
 @task
 Keep only the low 4 bits of D0 (all others cleared). Set bits 7 and 0 of D1, leaving the rest. Flip all the bits of D2's low byte, leaving the rest.
+@step Keep the low four bits
+AND clears every bit where the mask has a 0. The mask $0000000F has ones only in the low four bits, so as a long it clears all the other 28 bits of D0.
+>	and.l	#$0000000F,d0	; keep bits 0-3 of D0
+@step Set bits 7 and 0
+OR sets every bit where the mask has a 1. $81 is %10000001, so bits 7 and 0 of D1 are set and the rest are left as they were.
+>	or.b	#$81,d1		; set bits 7 and 0 of D1
+@step Flip the low byte
+EOR flips every bit where the mask has a 1. With $FF as a byte, all eight bits of D2's low byte are flipped; the .b size leaves the upper three bytes alone.
+>	eor.b	#$FF,d2		; flip D2's low byte
 @start
 	; D0: low 4 bits only, D1: set bits 7 and 0, D2: flip the low byte
 
@@ -52,6 +61,16 @@ NOT flips every bit of its operand - it is the same as EOR with all ones:
 	not.w	d3
 @task
 The byte at (A0) holds flags. Set bit 2, clear bit 5 and toggle bit 0, each without changing the other bits. Then flip every bit of the low word of D3 with NOT.
+@step Set bit 2
+ORI works straight on the byte in memory at (A0). The mask %00000100 has a 1 only in bit 2, so that bit is set and the others stay.
+>	ori.b	#%00000100,(a0)	; set bit 2
+@step Clear bit 5, toggle bit 0
+To clear a bit with ANDI the mask is all ones except that bit: %11011111 keeps everything but bit 5. EORI with %00000001 then flips bit 0.
+>	andi.b	#%11011111,(a0)	; clear bit 5
+>	eori.b	#%00000001,(a0)	; toggle bit 0
+@step Flip D3's low word
+NOT flips every bit of its operand - the same as EOR with all ones. As a word it changes only the low 16 bits of D3.
+>	not.w	d3		; flip every bit of D3.w
 @start
 	; (a0): set bit 2, clear bit 5, toggle bit 0 - then NOT the word in D3
 
@@ -93,6 +112,17 @@ All four first test the bit, setting Z if it was 0, and then change it. So BCLR 
 On a data register the bit number goes from 0 to 31. On memory only a byte is used, so it goes from 0 to 7.
 @task
 If bit 7 of the byte at (A0) is set, clear it and set D0 to 1. If it is clear, set D0 to 0. Use BCLR to test and clear in one go.
+@step Assume the bit was clear
+Start D0 at 0, the answer for "bit 7 was not set". MOVEQ clears the whole register, whatever the tests left in it.
+>	moveq	#0,d0		; D0 = 0 for now
+@step Test and clear bit 7
+BCLR sets Z from the old value of bit 7 and then clears it, all in one go. If the bit was 0, Z is set and BEQ jumps past the rest to done.
+>	bclr	#7,(a0)		; Z = old bit 7 was 0, then clear it
+>	beq	done		; it was clear: D0 stays 0
+@step Report that it was set
+Only reached when bit 7 was 1, so D0 becomes 1. The label done marks the end, where BEQ lands.
+>	moveq	#1,d0		; bit 7 was set
+>done:
 @start
 	; D0 = old bit 7 of (a0), and clear it
 
@@ -144,6 +174,18 @@ Multiplying by numbers that are not powers of two can often be split up. The Ami
 takes about 50 cycles where MULU takes up to 70 - and works on all 32 bits.
 @task
 Multiply D0 by 8, divide D1 by 4 (unsigned), and multiply D2 by 320, all as longs and without MULU or MULS. You may use D3 as scratch.
+@step Multiply D0 by 8
+Each place shifted left doubles the number, so three places multiply by 8 (2 x 2 x 2). LSL.L shifts all 32 bits.
+>	lsl.l	#3,d0		; D0 = D0 * 8
+@step Divide D1 by 4
+LSR shifts right, halving an unsigned number each place and dropping the remainder. Two places divide by 4.
+>	lsr.l	#2,d1		; D1 = D1 / 4
+@step Multiply D2 by 320
+320 is 256 + 64, so copy D2 into D3, shift one by 8 (times 256) and the other by 6 (times 64), then add the two parts together.
+>	move.l	d2,d3		; copy D2 for the second part
+>	lsl.l	#8,d2		; D2 * 256
+>	lsl.l	#6,d3		; D2 * 64
+>	add.l	d3,d2		; D2 * 320
 @start
 	; D0 = D0 * 8, D1 = D1 / 4, D2 = D2 * 320 - no MULU
 
@@ -181,6 +223,12 @@ ASR rounds towards minus infinity, not towards zero: -1 shifted right stays -1, 
 ASL is the same as LSL except that it sets V if the sign bit changed - an overflow.
 @task
 Divide D0 by 16 as a signed long, and multiply D1 by 4 as a signed long, with shifts.
+@step Divide D0 by 16, signed
+ASR shifts right but copies the sign bit into the gap, so a negative number stays negative. Four places divide by 16, rounding towards minus infinity.
+>	asr.l	#4,d0		; D0 = D0 / 16 (signed)
+@step Multiply D1 by 4
+ASL shifts left like LSL, so two places multiply by 4; the only difference is that it sets V if the sign changed.
+>	asl.l	#2,d1		; D1 = D1 * 4
 @start
 	; D0 = D0 / 16 (signed), D1 = D1 * 4
 
@@ -218,6 +266,12 @@ Rotations are used to turn values round, to step through bits one at a time and 
 ROXL and ROXR rotate through the X flag as a 33rd (or 9th, 17th) bit, used for shifting numbers longer than 32 bits.
 @task
 Swap the two nibbles of the low byte of D0, and the two bytes of the low word of D1. Leave the rest of both registers alone.
+@step Swap the nibbles
+Rotating a byte by 4 brings the top four bits round to the bottom, so $78 becomes $87. The .b size touches only D0's low byte.
+>	rol.b	#4,d0		; swap the two nibbles of D0.b
+@step Swap the bytes
+Rotating a word by 8 swaps its two bytes: $ABCD becomes $CDAB. As a word, D1's upper half is left alone.
+>	rol.w	#8,d1		; swap the two bytes of D1.w
 @start
 	; D0: swap nibbles of the low byte, D1: swap bytes of the low word
 
@@ -255,6 +309,18 @@ To build one from three separate values, shift and combine:
 OR works here because the bits being combined do not overlap. Use it to merge fields; ADD would also work, but OR says what you mean.
 @task
 D0, D1 and D2 hold red, green and blue (each 0 to 15). Build the colour word $0RGB in D3, with D3's upper word cleared.
+@step Start with red
+MOVEQ #0 clears all of D3 first, because the tests fill it with junk. Then the red value is copied into its low word.
+>	moveq	#0,d3		; clear D3, upper word included
+>	move.w	d0,d3		; red
+@step Add green
+Shifting D3 left by 4 moves red up one nibble and leaves a gap of zeros; OR drops green into that gap.
+>	lsl.w	#4,d3		; make room
+>	or.w	d1,d3		; green in the low nibble
+@step Add blue
+The same again: red and green move up one more nibble and blue goes in at the bottom, giving $0RGB.
+>	lsl.w	#4,d3		; make room again
+>	or.w	d2,d3		; blue in the low nibble
 @start
 	; D3 = $0RGB from D0 (red), D1 (green), D2 (blue)
 
@@ -296,6 +362,12 @@ Shifting the whole word right by one halves every component, but each component'
 Doing several small calculations at once in one register is called SIMD within a register, and the 68000 demo coders loved it.
 @task
 D0 holds a colour $0RGB (the upper word is 0). Halve the brightness of all three components (rounding down).
+@step Shift the whole colour
+LSR by one halves all three components at once - but each component's lowest bit falls into the top bit of the one to its right.
+>	lsr.w	#1,d0		; halve R, G and B together
+@step Throw away the stray bits
+AND with $0777 clears the top bit of every nibble, which is where those stray bits landed, leaving each component properly halved.
+>	and.w	#$0777,d0	; remove the bits that crossed over
 @start
 	; halve R, G and B of the colour in D0
 
@@ -333,6 +405,12 @@ SUBX does the same for subtraction, with X as the borrow. ADDX and SUBX only tak
 One more detail: ADDX and SUBX only ever clear Z, never set it. Set Z before a chain of them (or start with ADD/SUB, which sets it normally) and at the end Z tells you whether the whole long number is zero.
 @task
 D0:D1 is a 64-bit number (D0 the high long, D1 the low long), and so is D2:D3. Add D2:D3 to D0:D1.
+@step Add the low longs
+ADD adds D3 to D1, the low halves. If the sum is too big for 32 bits the carry goes into X, ready for the high halves.
+>	add.l	d3,d1		; low longs, carry into X
+@step Add the high longs
+ADDX adds D2 to D0 plus the X flag, so the carry from the low halves is not lost.
+>	addx.l	d2,d0		; high longs plus the carry
 @start
 	; D0:D1 = D0:D1 + D2:D3
 
@@ -375,6 +453,17 @@ No branch is needed to decide whether to count - the X flag does the work. Trick
 There is also a faster way: stop as soon as the value has no more set bits, because LSR sets Z when the result is zero.
 @task
 Count the set bits of D0 and put the count in D1. D0 may be destroyed.
+@step Set up the registers
+D1 is the count and starts at 0. D2 holds 0 so ADDX can add just the X flag. D3 is 31, because DBRA runs 32 times, once per bit.
+>	moveq	#0,d1		; the count
+>	moveq	#0,d2		; zero, for ADDX
+>	moveq	#31,d3		; 32 bits
+@step Shift and count each bit
+LSR moves bit 0 of D0 out into X; ADDX then adds 0 + X to D1, so a 1 bit counts and a 0 bit does not. DBRA counts D3 down and goes round again.
+>loop:
+>	lsr.l	#1,d0		; bit 0 -> X
+>	addx.l	d2,d1		; D1 = D1 + 0 + X
+>	dbra	d3,loop		; 32 times
 @start
 	; D1 = number of 1 bits in D0
 
@@ -421,6 +510,9 @@ A0 is the base - the start of a table - and D0 is the index: which entry. The di
 Tables replace calculations everywhere on the Amiga: sine waves, multiplication by screen width, colour fades, sprite frames. One indexed read is often faster than the sum it replaces.
 @task
 A0 points at a table of bytes, and D0 (a word) is an index into it. Put the byte at that index into D1 (as a byte; leave the rest of D1).
+@step Read the table entry
+The address is A0 (the start of the table) plus D0.w (the index) plus 0. The byte found there goes into D1's low byte; the rest of D1 stays.
+>	move.b	0(a0,d0.w),d1	; D1.b = table[D0]
 @start
 	; D1.b = table[D0] where the table starts at A0
 
@@ -455,6 +547,12 @@ In a table of words each entry is two bytes, so entry number n starts at 2 x n. 
 For longs, double it twice (or LSL by 2). Remember that this changes D0; copy it first if you still need the entry number.
 @task
 A0 points at a table of words; D0 (a word) is an entry number. Put that entry into the low word of D1.
+@step Double the index
+Each word entry is two bytes long, so entry n starts at 2 x n. Adding D0 to itself is the quickest way to double it.
+>	add.w	d0,d0		; index * 2
+@step Read the word
+Now D0 is a byte offset, so indexed addressing finds the entry at A0 + D0 and copies the word into D1's low word.
+>	move.w	0(a0,d0.w),d1	; D1.w = the word entry
 @start
 	; D1.w = word table at A0, entry D0
 
@@ -494,6 +592,12 @@ There is an indexed form too: move.w squares(pc,d0.w),d1. Data in the program is
 On the 68000 PC-relative operands can only be read, not written. This lesson's table is given to you - it sits after your code under the label squares: ten words, the squares of 0 to 9.
 @task
 Put the square of D0 (0 to 9) into D1, using the squares table and PC-relative addressing.
+@step Double the index
+The squares table holds words, two bytes each, so double D0 to turn the entry number into a byte offset.
+>	add.w	d0,d0		; index * 2
+@step Read from the table
+squares(pc,d0.w) measures from this instruction to the label squares and adds D0, so it works wherever the program is loaded.
+>	move.w	squares(pc,d0.w),d1	; D1.w = squares[D0]
 @start
 	; D1.w = squares[D0] - the table is at the label squares
 
@@ -536,6 +640,16 @@ It is the fastest way to add to an address register and to calculate addresses f
 and the multiplication by 40 can be done by MULU, by shifts (32 + 8) or with a table.
 @task
 A0 points at a bitplane 40 bytes wide. D0 is a row number and D1 a byte column (both words, upper words clear). Put the address of that byte into A1, and write $FF there.
+@step Work out the offset
+MULU multiplies the row number by 40, the bytes per row, and gives a long. Adding the byte column D1 makes the offset from the start of the bitplane.
+>	mulu.w	#40,d0		; row * 40
+>	add.l	d1,d0		; + byte column
+@step Compute the address
+LEA adds A0 and D0 and puts the address into A1 - it does not read memory, it only works out where the byte is.
+>	lea	0(a0,d0.l),a1	; A1 = A0 + offset
+@step Write the byte
+Now A1 points at the byte, so MOVE writes $FF there: all eight pixels set.
+>	move.b	#$FF,(a1)	; set that byte
 @start
 	; A1 = A0 + D0 * 40 + D1, then $FF into that byte
 
@@ -580,6 +694,15 @@ loop:
 D0 starts at -1 because the loop counts the terminator too.
 @task
 A0 points at a null-terminated string. Put its length into D0.
+@step Start the count at -1
+The loop counts the terminator as well as the characters, so starting at -1 makes D0 come out as the real length.
+>	moveq	#-1,d0		; the count
+@step Count until the zero
+Each time round add one to D0, then TST.B checks the byte at A0 and steps A0 on. BNE goes round again until it finds the zero byte.
+>loop:
+>	addq.l	#1,d0		; one more byte
+>	tst.b	(a0)+		; is it the terminator?
+>	bne	loop		; no: keep going
 @start
 	; D0 = length of the string at A0
 
@@ -619,6 +742,13 @@ loop:
 The terminator is copied too, before the loop stops - which is exactly right, because the copy needs it. Three instructions; on the 68000 this is about as small as a string copy gets.
 @task
 Copy the null-terminated string at A0 to A1, terminator included. Nothing after the terminator may be touched.
+@step Copy a byte
+MOVE copies the byte at A0 to A1 and steps both pointers on by one. It also sets Z if the byte it copied was zero.
+>loop:
+>	move.b	(a0)+,(a1)+	; copy one byte
+@step Loop until the terminator
+BNE goes back while the byte just copied was not zero. The terminator itself is copied before the loop stops, which is what the copy needs.
+>	bne	loop		; until the zero is copied
 @start
 	; copy the string at A0 to A1
 
@@ -659,6 +789,26 @@ Lower-case letters "a" to "z" are $61 to $7A; upper case "A" to "Z" are $41 to $
 You can change a byte in memory directly with SUB.B #$20,(a0), or with BCLR #5 - bit 5 is exactly the $20.
 @task
 A0 points at a null-terminated string. Change every lower-case letter to upper case, in place. Leave everything else unchanged.
+@step Read a character
+Read the byte at A0 into D0 without moving A0, so it can still be changed in memory. A zero byte is the end of the string, so BEQ leaves the loop.
+>loop:
+>	move.b	(a0),d0		; the character
+>	beq	done		; terminator: finished
+@step Skip anything that is not a-z
+Compare with `'a'` and `'z'` and use the unsigned branches: BLO skips codes below "a", BHI skips codes above "z".
+>	cmp.b	#'a',d0
+>	blo	next		; below "a"
+>	cmp.b	#'z',d0
+>	bhi	next		; above "z"
+@step Make it upper case
+Only lower-case letters get here. Subtracting $20 from the byte in memory turns "a" ($61) into "A" ($41).
+>	sub.b	#$20,(a0)	; lower case -> upper case
+@step Move on to the next byte
+ADDQ steps A0 on by one and BRA goes back for the next character. The label done is where BEQ lands at the end.
+>next:
+>	addq.l	#1,a0		; next character
+>	bra	loop
+>done:
 @start
 	; upper-case the string at A0, in place
 
@@ -705,6 +855,20 @@ As with CMP, only the flags change. A loop of CMPM with a counter checks whether
 Programs use this to check passwords, file headers ("is this an IFF file?") and save games.
 @task
 Set D0 to 1 if the 8 bytes at A0 are the same as the 8 bytes at A1, otherwise to 0. Use CMPM.
+@step Set up
+D0 starts at 0, the answer for "different". D1 is 7 because DBRA runs eight times, once per byte.
+>	moveq	#0,d0		; assume they differ
+>	moveq	#7,d1		; 8 bytes
+@step Compare byte by byte
+CMPM.B compares the bytes at A0 and A1 and steps both pointers on. On the first difference BNE leaves the loop early; otherwise DBRA goes round again.
+>loop:
+>	cmpm.b	(a0)+,(a1)+	; compare, step both
+>	bne	done		; different: stop
+>	dbra	d1,loop		; next byte
+@step Report a match
+The loop only finishes normally if all eight bytes matched, so D0 becomes 1. done is where BNE jumps on a difference.
+>	moveq	#1,d0		; all the same
+>done:
 @start
 	; D0 = 1 if the 8 bytes at A0 and A1 match, else 0
 
@@ -753,6 +917,16 @@ loop:
 LEA with a displacement is the fastest way to step an address register on by more than 8 (ADDQ's limit).
 @task
 A0 points at an array of records, 6 bytes each: x (word), y (word), hp (word). D0 holds the number of records (1 or more). Put the total of all the hp fields into the low word of D1.
+@step Prepare the total and the count
+Clear D1 for the total. DBRA runs once more than its counter, so take one off the number of records first.
+>	moveq	#0,d1		; the total
+>	subq.w	#1,d0		; count - 1 for DBRA
+@step Add up the hp fields
+4(a0) is the hp field of the current record. LEA 6(a0),a0 steps A0 on to the next record, and DBRA goes round for each one.
+>loop:
+>	add.w	4(a0),d1	; add this record's hp
+>	lea	6(a0),a0	; next record
+>	dbra	d0,loop
 @start
 	; D1.w = sum of the hp words (offset 4) of D0 records of 6 bytes
 
@@ -794,6 +968,12 @@ MOVEP ("move peripheral") moves a word or long to or from alternate bytes:
 It only takes a displacement mode. It is rare in practice - most code just writes the CIA bytes one at a time - but it shows how the hardware is wired.
 @task
 Write the word in D0 to the bytes at 0(A0) and 2(A0), high byte first, with MOVEP. Then read the four bytes at 0, 2, 4 and 6 from A1 into D1 as a long, with MOVEP.
+@step Write a word to alternate bytes
+MOVEP.W puts D0's high byte at 0(A0) and its low byte at 2(A0), skipping the byte in between - the way the CIA registers are laid out.
+>	movep.w	d0,0(a0)	; high byte to 0(a0), low to 2(a0)
+@step Read a long from alternate bytes
+MOVEP.L reads the bytes at 0, 2, 4 and 6 from A1 and packs them together into D1, first byte at the top.
+>	movep.l	0(a1),d1	; bytes 0, 2, 4, 6 into D1
 @start
 	; MOVEP the word D0 to (a0), and a long from (a1) into D1
 
