@@ -2,11 +2,11 @@
 /// (scr_m68k_selftest) and the 68K course lessons (scr_course).
 ///
 /// Setup: "d0=7FFF a0=2000 sr=2000 ccr=X-Z-C ssp=4000 usp=3000 m2000.w=1234
-///   str2100=HELLO_WORLD joy=left+fire max=1000"
+///   str2100=HELLO_WORLD joy=left+fire max=1000 intena=602C dmacon=3F0"
 ///   (hex; a7 = the active stack; _ in a string is a space)
 /// Expected: "d0=8000 ccr=-N-V- m2000.l=1 a7=3000 sr=2700 pc=1000
 ///   status=exception vector=3 hw180=0F00 hwlong080=20000 hwcount180=2
-///   ciaa2=3 vpos=12C cyc=22 maxcyc=40 maxsize=12 str2100=HI uses=dbra
+///   ciaa2=3 intena=602C dmacon=3F0 vpos=12C cyc=22 maxcyc=40 maxsize=12 str2100=HI uses=dbra
 ///   avoid=mulu+muls keep=d2+d3+a6"
 ///   (hex except vector, cyc, maxcyc, maxsize, hwcount; ccr letters XNZVC,
 ///   - = clear, ? = don't care; uses / avoid look at the source text, keep
@@ -22,6 +22,8 @@ function scr_m68k_spec_setup(_cpu, _setup, _pc, _stop_pc = -1, _max = 300000) {
     var _ssp = -1;
     var _later = [];
     var _a7 = -1;
+    var _intena = -1;
+    var _dmacon = -1;
     var _tokens = string_split(_setup, " ", true);
     for (var _i = 0; _i < array_length(_tokens); _i += 1) {
         var _kv = string_split(_tokens[_i], "=");
@@ -34,6 +36,8 @@ function scr_m68k_spec_setup(_cpu, _setup, _pc, _stop_pc = -1, _max = 300000) {
             case "ssp": _ssp = scr_m68k_parse_hex(_val); break;
             case "a7": _a7 = scr_m68k_parse_hex(_val); break;
             case "max": _max = real(_val); break;
+            case "intena": _intena = scr_m68k_parse_hex(_val) & $7FFF; break;
+            case "dmacon": _dmacon = scr_m68k_parse_hex(_val) & $07FF; break;
             case "joy":
                 scr_m68k_set_joystick(_cpu, string_pos("up", _val) > 0, string_pos("down", _val) > 0,
                     string_pos("left", _val) > 0, string_pos("right", _val) > 0, string_pos("fire", _val) > 0);
@@ -48,6 +52,8 @@ function scr_m68k_spec_setup(_cpu, _setup, _pc, _stop_pc = -1, _max = 300000) {
         else _usp = _a7;
     }
     scr_m68k_start(_cpu, _pc, _sr, _usp, _ssp, _stop_pc < 0);
+    if (_intena >= 0) _cpu.intena = _intena;
+    if (_dmacon >= 0) _cpu.dmacon = _dmacon;
     if (_stop_pc >= 0) _cpu.stop_pc = _stop_pc;
     for (var _j = 0; _j < array_length(_later); _j += 1) {
         var _k = string_lower(_later[_j][0]);
@@ -125,6 +131,11 @@ function scr_m68k_spec_check(_cpu, _expect, _ctx = undefined) {
             case "vector":
                 var _vec = is_struct(_cpu.fault) ? string(_cpu.fault.vector) : "none";
                 if (_vec != _want) array_push(_out, "Expected exception vector " + _want + ", got " + _vec);
+                continue;
+            case "intena":
+            case "dmacon":
+                var _hv = _key == "intena" ? _cpu.intena : _cpu.dmacon;
+                if (_hv != scr_m68k_parse_hex(_want)) array_push(_out, string_upper(_key) + " is $" + scr_m68k_hex(_hv, 4) + ", expected $" + string_upper(_want));
                 continue;
             case "cyc":
                 if (string(_cpu.cycles) != _want) array_push(_out, "Took " + string(_cpu.cycles) + " cycles, expected " + _want);

@@ -230,7 +230,8 @@ function scr_m68k_rb(_c, _a) {
 
 function scr_m68k_rw(_c, _a, _fetch = false) {
     _a = _a & _c.addr_mask;
-    if ((_a & 1) != 0 && _c.model < 2) throw { m68k_vector : 3, address : _a, write : false, fetch : _fetch };
+    // The 68020 allows odd data addresses, but never an odd PC.
+    if ((_a & 1) != 0 && (_c.model < 2 || _fetch)) throw { m68k_vector : 3, address : _a, write : false, fetch : _fetch };
     if (_a + 1 < _c.mem_size) {
         var _v = buffer_peek(_c.mem, _a, buffer_u16);
         return ((_v & $FF) << 8) | (_v >> 8);
@@ -985,6 +986,14 @@ function scr_m68k_op_4(_c, _op) {
         _c.cycles += 4;
         return;
     }
+    if ((_op & $FFC0) == $4C00 && _c.model >= 2) {  // MULU.L / MULS.L
+        scr_m68k_op_mull(_c, _op);
+        return;
+    }
+    if ((_op & $FFC0) == $4C40 && _c.model >= 2) {  // DIVU.L / DIVS.L
+        scr_m68k_op_divl(_c, _op);
+        return;
+    }
     if ((_op & $FB80) == $4880 && _mode >= 2) {
         scr_m68k_op_movem(_c, _op);
         return;
@@ -1522,7 +1531,11 @@ function scr_m68k_op_e(_c, _op) {
     var _r;
     if (_szf == 3) {
         // memory: one word, by one bit (bit 11 set = 68020 bit fields)
-        if ((_op & $0800) != 0) scr_m68k_illegal(_c);
+        if ((_op & $0800) != 0) {
+            if (_c.model < 2) scr_m68k_illegal(_c);
+            scr_m68k_op_bitfield(_c, _op);
+            return;
+        }
         scr_m68k_ea(_c, (_op >> 3) & 7, _op & 7, 2);
         _r = scr_m68k_shift(_c, (_op >> 9) & 3, _left, scr_m68k_ea_read(_c, 2), 1, 2);
         scr_m68k_ea_write(_c, 2, _r);
@@ -1578,6 +1591,189 @@ function scr_m68k_shift(_c, _type, _left, _v, _n, _size) {
     if (_v == 0) _sr |= M68K_Z;
     _c.sr = _sr & $FFFF;
     return _v;
+}
+
+// ---------------------------------------------------------------- 68020: long multiply, divide, bit fields
+
+/// Unsigned 32 x 32 -> 64: returns [high long, low long] (exact, in 16-bit pieces).
+function scr_m68k_mul64(_a, _b) {
+    var _a0 = _a & $FFFF, _a1 = (_a >> 16) & $FFFF;
+    var _b0 = _b & $FFFF, _b1 = (_b >> 16) & $FFFF;
+    var _mid = _a1 * _b0 + _a0 * _b1;
+    var _lo = _a0 * _b0 + ((_mid & $FFFF) << 16);
+    var _hi = _a1 * _b1 + (_mid >> 16) + (_lo >> 32);
+    return [_hi & $FFFFFFFF, _lo & $FFFFFFFF];
+}
+
+/// Two's complement of a 64-bit [high, low].
+function scr_m68k_neg64(_v) {
+    var _lo = (~_v[1] + 1) & $FFFFFFFF;
+    var _hi = (~_v[0] + (_lo == 0 ? 1 : 0)) & $FFFFFFFF;
+    return [_hi, _lo];
+}
+
+/// MULU.L / MULS.L <ea>,Dl or <ea>,Dh:Dl.
+function scr_m68k_op_mull(_c, _op) {
+    var _ext = scr_m68k_fetch16(_c);
+    var _signed = (_ext & $0800) != 0;
+    var _wide = (_ext & $0400) != 0;
+    var _dl = (_ext >> 12) & 7;
+    var _dh = _ext & 7;
+    scr_m68k_ea(_c, (_op >> 3) & 7, _op & 7, 4);
+    var _s = scr_m68k_ea_read(_c, 4);
+    var _d = _c.d[_dl];
+    var _neg = _signed && (((_s ^ _d) & $80000000) != 0) && _s != 0 && _d != 0;
+    if (_signed) {
+        _s = abs(scr_m68k_sx32(_s));
+        _d = abs(scr_m68k_sx32(_d));
+    }
+    var _p = scr_m68k_mul64(_s, _d);
+    if (_neg) _p = scr_m68k_neg64(_p);
+    var _sr = _c.sr & ~$0F;
+    if (_wide) {
+        _c.d[_dh] = _p[0];
+        _c.d[_dl] = _p[1];
+        if ((_p[0] & $80000000) != 0) _sr |= M68K_N;
+        if (_p[0] == 0 && _p[1] == 0) _sr |= M68K_Z;
+    } else {
+        _c.d[_dl] = _p[1];
+        if ((_p[1] & $80000000) != 0) _sr |= M68K_N;
+        if (_p[1] == 0) _sr |= M68K_Z;
+        var _fits = _signed ? (_p[0] == (((_p[1] & $80000000) != 0) ? $FFFFFFFF : 0)) : (_p[0] == 0);
+        if (!_fits) _sr |= M68K_V;
+    }
+    _c.sr = _sr;
+    _c.cycles += 44;
+}
+
+/// DIVU.L / DIVS.L <ea>,Dq (32-bit), <ea>,Dr:Dq (DIVxL: remainder in Dr) or
+/// the 64-bit dividend Dr:Dq.
+function scr_m68k_op_divl(_c, _op) {
+    var _ext = scr_m68k_fetch16(_c);
+    var _signed = (_ext & $0800) != 0;
+    var _wide = (_ext & $0400) != 0;
+    var _dq = (_ext >> 12) & 7;
+    var _dr = _ext & 7;
+    scr_m68k_ea(_c, (_op >> 3) & 7, _op & 7, 4);
+    var _s = scr_m68k_ea_read(_c, 4);
+    if (_s == 0) {
+        _c.sr &= ~M68K_C;
+        scr_m68k_throw(5);
+    }
+    var _hi = _wide ? _c.d[_dr] : 0;
+    var _lo = _c.d[_dq];
+    var _neg_dividend = false;
+    var _neg_divisor = false;
+    if (_signed) {
+        if (_wide) {
+            _neg_dividend = (_hi & $80000000) != 0;
+        } else {
+            _neg_dividend = (_lo & $80000000) != 0;
+            if (_neg_dividend) _hi = $FFFFFFFF;
+        }
+        if (_neg_dividend) {
+            var _n = scr_m68k_neg64([_hi, _lo]);
+            _hi = _n[0];
+            _lo = _n[1];
+        }
+        _neg_divisor = (_s & $80000000) != 0;
+        if (_neg_divisor) _s = (-scr_m68k_sx32(_s)) & $FFFFFFFF;
+    }
+    // shift-and-subtract over the 64-bit dividend
+    var _rem = 0;
+    var _qhi = 0;
+    var _qlo = 0;
+    for (var _i = 63; _i >= 0; _i -= 1) {
+        var _bit = _i >= 32 ? (_hi >> (_i - 32)) & 1 : (_lo >> _i) & 1;
+        _rem = (_rem << 1) | _bit;
+        if (_rem >= _s) {
+            _rem -= _s;
+            if (_i >= 32) _qhi |= 1 << (_i - 32);
+            else _qlo |= 1 << _i;
+        }
+    }
+    _qlo = _qlo & $FFFFFFFF;
+    var _overflow = _qhi != 0;
+    var _q = _qlo;
+    if (_signed && !_overflow) {
+        var _qneg = _neg_dividend != _neg_divisor;
+        if (_qneg) _overflow = _qlo > $80000000;
+        else _overflow = _qlo > $7FFFFFFF;
+        if (_qneg) _q = (-_qlo) & $FFFFFFFF;
+        if (_neg_dividend) _rem = (-_rem) & $FFFFFFFF;
+    }
+    _c.cycles += 90;
+    if (_overflow) {
+        _c.sr = (_c.sr & ~M68K_C) | M68K_V;
+        return;
+    }
+    if (_dr != _dq) _c.d[_dr] = _rem & $FFFFFFFF;
+    _c.d[_dq] = _q;
+    scr_m68k_logic_flags(_c, _q, 4);
+}
+
+function scr_m68k_rol32(_v, _n) {
+    _n = _n & 31;
+    _v = _v & $FFFFFFFF;
+    if (_n == 0) return _v;
+    return ((_v << _n) | (_v >> (32 - _n))) & $FFFFFFFF;
+}
+
+/// BFTST BFEXTU BFCHG BFEXTS BFCLR BFFFO BFSET BFINS <ea>{offset:width}.
+function scr_m68k_op_bitfield(_c, _op) {
+    var _kind = (_op >> 8) & 7;     // 0 TST, 1 EXTU, 2 CHG, 3 EXTS, 4 CLR, 5 FFO, 6 SET, 7 INS
+    var _ext = scr_m68k_fetch16(_c);
+    var _reg = (_ext >> 12) & 7;
+    var _off = (_ext & $0800) != 0 ? scr_m68k_sx32(_c.d[(_ext >> 6) & 7]) : (_ext >> 6) & 31;
+    var _w = (_ext & $0020) != 0 ? _c.d[_ext & 7] & 31 : _ext & 31;
+    if (_w == 0) _w = 32;
+    var _mode = (_op >> 3) & 7;
+    var _wmask = _w == 32 ? $FFFFFFFF : (1 << _w) - 1;
+    var _field, _addr = 0, _span = 0, _bitoff = 0, _raw = 0;
+    if (_mode == 0) {
+        _field = (scr_m68k_rol32(_c.d[_op & 7], _off) >> (32 - _w)) & _wmask;
+    } else {
+        _addr = scr_m68k_ea_control(_c, _mode, _op & 7);
+        _addr = (_addr + floor(_off / 8)) & $FFFFFFFF;
+        _bitoff = _off - floor(_off / 8) * 8;
+        _span = ceil((_bitoff + _w) / 8);
+        for (var _b = 0; _b < 5; _b += 1) _raw = (_raw << 8) | (_b < _span ? scr_m68k_rb(_c, _addr + _b) : 0);
+        _field = (_raw >> (40 - _bitoff - _w)) & _wmask;
+    }
+    var _flag_v = _kind == 7 ? (_c.d[_reg] & _wmask) : _field;
+    var _sr = _c.sr & ~$0F;
+    if (((_flag_v >> (_w - 1)) & 1) != 0) _sr |= M68K_N;
+    if (_flag_v == 0) _sr |= M68K_Z;
+    _c.sr = _sr;
+    _c.cycles += 12;
+    var _new = -1;
+    switch (_kind) {
+        case 0: return;
+        case 1: _c.d[_reg] = _field; return;
+        case 3:
+            _c.d[_reg] = (((_field >> (_w - 1)) & 1) != 0 ? (_field | ~_wmask) : _field) & $FFFFFFFF;
+            return;
+        case 5:
+            var _pos = 0;
+            while (_pos < _w && ((_field >> (_w - 1 - _pos)) & 1) == 0) _pos += 1;
+            _c.d[_reg] = (_off + _pos) & $FFFFFFFF;
+            return;
+        case 2: _new = (~_field) & _wmask; break;
+        case 4: _new = 0; break;
+        case 6: _new = _wmask; break;
+        case 7: _new = _c.d[_reg] & _wmask; break;
+    }
+    if (_mode == 0) {
+        var _r = _op & 7;
+        var _top = (_new << (32 - _w)) & $FFFFFFFF;
+        var _mtop = (_wmask << (32 - _w)) & $FFFFFFFF;
+        var _rot = (32 - (_off & 31)) & 31;
+        _c.d[_r] = ((_c.d[_r] & ~scr_m68k_rol32(_mtop, _rot)) | scr_m68k_rol32(_top, _rot)) & $FFFFFFFF;
+    } else {
+        var _shift = 40 - _bitoff - _w;
+        _raw = (_raw & ~(_wmask << _shift)) | (_new << _shift);
+        for (var _k = _span - 1; _k >= 0; _k -= 1) scr_m68k_wb(_c, _addr + _k, (_raw >> (8 * (4 - _k))) & $FF);
+    }
 }
 
 // ---------------------------------------------------------------- debugging

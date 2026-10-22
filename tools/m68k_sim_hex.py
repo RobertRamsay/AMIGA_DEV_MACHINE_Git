@@ -2,7 +2,8 @@
 
 Every case in scripts/scr_m68k_selftest/scr_m68k_selftest.gml is one line:
     ["name", "source | lines", "HEX", "setup", "expected"],
-This assembles each source with the bundled vasm (-Fbin -no-opt, ORG $1000)
+This assembles each source with the bundled vasm (-Fbin -no-opt, ORG $1000;
+a source starting "020|" is assembled with -m68020 and run on a 68020)
 and writes the bytes into the third field. Run it after editing a case:
     python tools/m68k_sim_hex.py
 """
@@ -20,6 +21,10 @@ LABEL = re.compile(r'^([A-Za-z_.][\w.]*):\s*(.*)$')
 
 
 def assemble(source, workdir):
+    cpu = "-m68000"
+    if source.startswith("020|"):
+        cpu = "-m68020"
+        source = source[4:]
     lines = ["\torg $1000"]
     for part in source.split("|"):
         part = part.strip()
@@ -35,7 +40,7 @@ def assemble(source, workdir):
         f.write("\n".join(lines) + "\n")
     if os.path.exists(out):
         os.remove(out)
-    r = subprocess.run([VASM, "-Fbin", "-m68000", "-no-opt", "-quiet", "-o", out, src],
+    r = subprocess.run([VASM, "-Fbin", cpu, "-no-opt", "-quiet", "-o", out, src],
                        capture_output=True, text=True)
     if r.returncode != 0 or not os.path.exists(out):
         raise RuntimeError(r.stdout + r.stderr)

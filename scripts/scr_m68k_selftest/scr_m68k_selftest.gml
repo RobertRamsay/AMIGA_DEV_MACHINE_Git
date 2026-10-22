@@ -4,7 +4,8 @@
 ///
 /// Each case: [ name, source, machine code, setup, expected ] (setup and
 /// expected strings: see scr_m68k_spec)
-///   source   assembly lines separated by "|" ("label: instr" allowed)
+///   source   assembly lines separated by "|" ("label: instr" allowed);
+///            "020|" in front = assembled for and run on a 68020
 ///   code     hex bytes assembled at $1000 by vasm -no-opt; filled in by
 ///            tools/m68k_sim_hex.py (run it after editing a source)
 ///   setup    registers, memory and flags before the run
@@ -207,6 +208,32 @@ function scr_m68k_selftest_cases() {
         ["Blitter shift", "move.w #$19F0,$DFF040|move.w #0,$DFF042|move.w #$FFFF,$DFF044|move.w #$FFFF,$DFF046|move.l #$2000,$DFF050|move.l #$3000,$DFF054|move.w #(1<<6)+2,$DFF058", "33FC19F000DFF04033FC000000DFF04233FCFFFF00DFF04433FCFFFF00DFF04623FC0000200000DFF05023FC0000300000DFF05433FC004200DFF058", "m2000.l=18000", "m3000.l=C000"],
         ["Blitter inclusive fill", "move.w #$09F0,$DFF040|move.w #$000A,$DFF042|move.w #$FFFF,$DFF044|move.w #$FFFF,$DFF046|move.l #$2000,$DFF050|move.l #$3000,$DFF054|move.w #(1<<6)+1,$DFF058", "33FC09F000DFF04033FC000A00DFF04233FCFFFF00DFF04433FCFFFF00DFF04623FC0000200000DFF05023FC0000300000DFF05433FC004100DFF058", "m2000.w=0810", "m3000.w=FF0"],
         ["Blitter exclusive fill", "move.w #$09F0,$DFF040|move.w #$0012,$DFF042|move.w #$FFFF,$DFF044|move.w #$FFFF,$DFF046|move.l #$2000,$DFF050|move.l #$3000,$DFF054|move.w #(1<<6)+1,$DFF058", "33FC09F000DFF04033FC001200DFF04233FCFFFF00DFF04433FCFFFF00DFF04623FC0000200000DFF05023FC0000300000DFF05433FC004100DFF058", "m2000.w=0810", "m3000.w=7F0"],
+        // --- 68020
+        ["020 EXTB.L", "020|extb.l d0", "49C0", "d0=12345680", "d0=FFFFFF80 ccr=-N---"],
+        ["020 scaled index", "020|move.l 0(a0,d0.w*4),d1", "22300400", "a0=2000 d0=2 m2008.l=CAFEBABE", "d1=CAFEBABE"],
+        ["020 odd word read is allowed", "020|move.w (a0),d0", "3010", "a0=2001 m2000.l=00ABCD00", "d0=ABCD status=done"],
+        ["020 MULU.L 32-bit", "020|mulu.l d1,d0", "4C010000", "d0=12345 d1=1000", "d0=12345000 ccr=-----"],
+        ["020 MULU.L 64-bit", "020|mulu.l d1,d2:d0", "4C010402", "d0=FFFFFFFF d1=FFFFFFFF", "d2=FFFFFFFE d0=1 ccr=-N---"],
+        ["020 MULS.L 64-bit negative", "020|muls.l d1,d2:d0", "4C010C02", "d0=FFFFFFFF d1=2", "d2=FFFFFFFF d0=FFFFFFFE ccr=-N---"],
+        ["020 MULS.L overflow", "020|muls.l d1,d0", "4C010800", "d0=10000 d1=8000", "ccr=-??V-"],
+        ["020 DIVU.L", "020|divu.l d1,d0", "4C410000", "d0=64 d1=7", "d0=E ccr=-----"],
+        ["020 DIVUL.L remainder", "020|divul.l d1,d2:d0", "4C410002", "d0=64 d1=7 d2=55", "d0=E d2=2"],
+        ["020 DIVS.L 64-bit", "020|divs.l d1,d2:d0", "4C410C02", "d2=FFFFFFFF d0=FFFFFF9C d1=7", "d0=FFFFFFF2 d2=FFFFFFFE ccr=-N---"],
+        ["020 DIVU.L 64-bit", "020|divu.l d1,d2:d0", "4C410402", "d2=1 d0=0 d1=2", "d0=80000000 d2=0"],
+        ["020 DIVU.L overflow", "020|divu.l d1,d2:d0", "4C410402", "d2=2 d0=0 d1=2", "d0=0 d2=2 ccr=---V-"],
+        ["020 DIVS.L by zero", "020|divs.l d1,d0", "4C410800", "d0=5 d1=0", "status=exception vector=5"],
+        ["020 BFEXTU", "020|bfextu d0{24:8},d1", "E9C01608", "d0=12345678", "d1=78"],
+        ["020 BFEXTS", "020|bfexts d0{16:8},d1", "EBC01408", "d0=8000", "d1=FFFFFF80 ccr=-N---"],
+        ["020 BFINS", "020|bfins d1,d0{0:4}", "EFC01004", "d0=12345678 d1=F", "d0=F2345678 ccr=-N---"],
+        ["020 BFFFO", "020|bfffo d0{0:32},d1", "EDC01000", "d0=10000", "d1=F"],
+        ["020 BFFFO of zero", "020|bfffo d0{0:32},d1", "EDC01000", "d0=0", "d1=20 ccr=--Z--"],
+        ["020 BFSET memory", "020|bfset (a0){4:8}", "EED00108", "a0=2000 m2000.l=0", "m2000.l=0FF00000 ccr=--Z--"],
+        ["020 BFEXTU negative offset", "020|moveq #-4,d2|bfextu (a0){d2:8},d1", "74FCE9D01888", "a0=2001 m2000.w=1234", "d1=23"],
+        ["020 BFCHG wraps", "020|bfchg d0{30:4}", "EAC00784", "d0=0", "d0=C0000003"],
+        ["020 BFCLR", "020|bfclr d0{8:8}", "ECC00208", "d0=FFFFFFFF", "d0=FF00FFFF ccr=-N---"],
+        ["020 BFTST", "020|bftst d0{0:1}", "E8C00001", "d0=80000000", "ccr=-N--- d0=80000000"],
+        ["EXTB on a 68000 is illegal", "dc.w $49C0", "49C0", "", "status=exception vector=4"],
+
         ["Blitter clear and BZERO", "move.w #$0100,$DFF040|move.w #0,$DFF042|move.l #$3000,$DFF054|move.w #(1<<6)+2,$DFF058|move.w $DFF002,d0", "33FC010000DFF04033FC000000DFF04223FC0000300000DFF05433FC004200DFF058303900DFF002", "m3000.l=FFFFFFFF", "m3000.l=0 d0=2000"],
     ];
 }
@@ -214,9 +241,11 @@ function scr_m68k_selftest_cases() {
 function scr_m68k_selftest() {
     var _fail = [];
     var _cases = scr_m68k_selftest_cases();
-    var _cpu = scr_m68k_new($80000, 0);
+    var _cpu000 = scr_m68k_new($80000, 0);
+    var _cpu020 = scr_m68k_new($80000, 2);
     for (var _i = 0; _i < array_length(_cases); _i += 1) {
         var _t = _cases[_i];
+        var _cpu = string_copy(_t[1], 1, 4) == "020|" ? _cpu020 : _cpu000;
         var _name = _t[0];
         if (_t[2] == "") {
             array_push(_fail, _name + ": no machine code (run tools/m68k_sim_hex.py)");
@@ -229,6 +258,7 @@ function scr_m68k_selftest() {
         var _problems = scr_m68k_spec_check(_cpu, _t[4]);
         if (array_length(_problems) > 0) array_push(_fail, _name + ": " + string_join_ext("; ", _problems) + " [" + _cpu.status + " " + _cpu.message + "]");
     }
-    scr_m68k_free(_cpu);
+    scr_m68k_free(_cpu000);
+    scr_m68k_free(_cpu020);
     return _fail;
 }
