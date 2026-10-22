@@ -24,6 +24,31 @@ waitblit:
 	bne	waitblit
 @task
 Copy a block 2 words wide and 4 rows high from the screen at A0 to the screen at A1. Both screens are 40 bytes wide. Wait for the blitter first.
+@step Wait for the blitter
+The blitter may still be busy with an earlier job, so first read DMACONR once (the Agnus quirk), then loop while BBUSY, bit 6 of DMACONR's high byte, is set.
+>	tst.b	DMACONR(a6)		; one read first (Agnus quirk)
+>waitblit:
+>	btst	#6,DMACONR(a6)	; BBUSY set?
+>	bne	waitblit		; yes: keep waiting
+@step Choose channels and minterm
+BLTCON0 = $09F0 switches on channels A ($0800) and D ($0100) with the minterm $F0, D = A: a plain copy. BLTCON1 = 0 means no fill, no line mode, ascending.
+>	move.w	#$09F0,BLTCON0(a6)	; use A and D, D = A
+>	move.w	#0,BLTCON1(a6)		; normal ascending copy
+@step Keep every bit
+The first and last word masks trim channel A at the edges of each row. $FFFF in both BLTAFWM and BLTALWM keeps everything.
+>	move.w	#$FFFF,BLTAFWM(a6)	; first word: all bits
+>	move.w	#$FFFF,BLTALWM(a6)	; last word: all bits
+@step Point at source and destination
+BLTAPT is where channel A reads from and BLTDPT where D writes to. Both are long pointers, so write A0 and A1 with MOVE.L.
+>	move.l	a0,BLTAPT(a6)		; source = A0
+>	move.l	a1,BLTDPT(a6)		; destination = A1
+@step Set the modulos
+After each 2-word (4-byte) row the blitter must skip the rest of the 40-byte screen line: 40 - 4 = 36 bytes, for both the source and the destination.
+>	move.w	#36,BLTAMOD(a6)	; skip 36 bytes per source row
+>	move.w	#36,BLTDMOD(a6)	; skip 36 bytes per destination row
+@step Start the blit
+BLTSIZE holds the height in its top 10 bits and the width in words in the low 6. Writing it starts the blit, so it always goes last: 4 rows of 2 words.
+>	move.w	#(4<<6)+2,BLTSIZE(a6)	; 4 rows x 2 words: go!
 @start
 	lea	CUSTOM,a6
 	; wait for the blitter, set it up, start it with BLTSIZE
@@ -77,6 +102,31 @@ That extra word reads one word too many from the source, so the last word mask c
 BOBs (blitter objects) are drawn exactly like this, plus a mask and the background (lesson 85).
 @task
 A0 points at an image 1 word wide and 3 rows high (2 bytes per row). Copy it 4 pixels to the right into the screen at A1 (40 bytes wide): the destination is 2 words wide. Wait for the blitter first.
+@step Wait for the blitter
+As before: one read of DMACONR, then loop while BBUSY (bit 6 of its high byte) says the blitter is still working.
+>	tst.b	DMACONR(a6)		; one read first (Agnus quirk)
+>waitblit:
+>	btst	#6,DMACONR(a6)	; BBUSY set?
+>	bne	waitblit		; yes: keep waiting
+@step Shift channel A by 4
+The top four bits of BLTCON0 are ASH, the A shift. $49F0 is the copy setting $09F0 with ASH = 4, so every word moves 4 pixels to the right.
+>	move.w	#$49F0,BLTCON0(a6)	; ASH = 4, A and D, D = A
+>	move.w	#0,BLTCON1(a6)		; normal ascending blit
+@step Mask off the extra word
+The blit is one word wider than the image, so the last word of each source row is junk. BLTALWM = $0000 clears it; only the bits shifted in from the first word reach the extra word.
+>	move.w	#$FFFF,BLTAFWM(a6)	; first word: all bits
+>	move.w	#$0000,BLTALWM(a6)	; last word: nothing of its own
+@step Point at image and screen
+Channel A reads the image at A0 and channel D writes to the screen at A1.
+>	move.l	a0,BLTAPT(a6)		; source image
+>	move.l	a1,BLTDPT(a6)		; destination on the screen
+@step Set the modulos
+Channel A read one word too far on each row, so its modulo of -2 steps back. The screen is 40 bytes wide and the blit 4 bytes, so D skips 36.
+>	move.w	#-2,BLTAMOD(a6)	; step back over the extra word
+>	move.w	#36,BLTDMOD(a6)	; rest of the 40-byte line
+@step Start the blit
+Three rows, two words wide (the image's word plus the extra one). Writing BLTSIZE starts it.
+>	move.w	#(3<<6)+2,BLTSIZE(a6)	; 3 rows x 2 words: go!
 @start
 	lea	CUSTOM,a6
 	; shift the 16 x 3 image at A0 right by 4 into the screen at A1
@@ -124,6 +174,23 @@ BLTSIZE's height field is 10 bits: a value of 0 means 1024 rows, and the width f
 Because the blitter runs by itself, the CPU must not change the blitter's registers - or use the memory it is writing - until BBUSY clears. Waiting before each blit, rather than after, lets the CPU do other work in between.
 @task
 Clear the whole 320 x 256 bitplane at A0 (40 bytes x 256 rows) with the blitter, waiting for it first.
+@step Wait for the blitter
+Never touch the blitter's registers while it is busy: read DMACONR once, then loop until BBUSY clears.
+>	tst.b	DMACONR(a6)		; one read first (Agnus quirk)
+>waitblit:
+>	btst	#6,DMACONR(a6)	; BBUSY set?
+>	bne	waitblit		; yes: keep waiting
+@step Use channel D only
+BLTCON0 = $0100 enables only USED with the minterm 0, so every word written is zero. BLTCON1 = 0 for a normal blit.
+>	move.w	#$0100,BLTCON0(a6)	; D only, minterm 0: write zeros
+>	move.w	#0,BLTCON1(a6)		; normal ascending blit
+@step Point at the bitplane
+BLTDPT is where the zeros go: the start of the plane at A0. The blit covers whole 40-byte lines, so the modulo is 0.
+>	move.l	a0,BLTDPT(a6)		; destination = the bitplane
+>	move.w	#0,BLTDMOD(a6)		; rows are back to back
+@step Start the clear
+256 rows of 20 words is the whole 320 x 256 plane in one blit. Writing BLTSIZE sets it going while the CPU carries on.
+>	move.w	#(256<<6)+20,BLTSIZE(a6)	; 256 rows x 20 words: go!
 @start
 	lea	CUSTOM,a6
 	; clear 40 x 256 bytes at A0 with channel D
@@ -165,6 +232,32 @@ The blitter can fill between edges as it writes. On each row it works from right
 Fill mode only works in descending mode, where the blitter runs backwards through memory: point A and D at the last word of the area. Filling can be done in place, with A and D the same.
 @task
 A0 points at an area 2 words wide (4 bytes per row, no gap between rows) and 3 rows high holding outlines. Fill it in place with an inclusive fill. Wait for the blitter first.
+@step Wait for the blitter
+Read DMACONR once, then wait while BBUSY is set, as before every blit.
+>	tst.b	DMACONR(a6)		; one read first (Agnus quirk)
+>waitblit:
+>	btst	#6,DMACONR(a6)	; BBUSY set?
+>	bne	waitblit		; yes: keep waiting
+@step Find the last word
+A descending blit starts at the end of the area. 3 rows of 4 bytes is 12 bytes, so the last word is at A0 + 10: LEA puts that address in A1.
+>	lea	10(a0),a1		; A1 = last word of the area
+@step Copy with an inclusive fill
+BLTCON0 = $09F0 copies A to D. BLTCON1 = $000A sets IFE (inclusive fill, bit 3) and DESC (bit 1), the descending mode the fill needs.
+>	move.w	#$09F0,BLTCON0(a6)	; A and D, D = A
+>	move.w	#$000A,BLTCON1(a6)	; inclusive fill + descending
+@step Keep every bit
+Both word masks at $FFFF, so nothing of the outlines is trimmed.
+>	move.w	#$FFFF,BLTAFWM(a6)	; first word: all bits
+>	move.w	#$FFFF,BLTALWM(a6)	; last word: all bits
+@step Fill in place
+A and D both point at the last word, so the area is read and written back filled. There is no gap between rows, so both modulos are 0.
+>	move.l	a1,BLTAPT(a6)		; read from the last word
+>	move.l	a1,BLTDPT(a6)		; write back to the same place
+>	move.w	#0,BLTAMOD(a6)		; no gap between rows
+>	move.w	#0,BLTDMOD(a6)	
+@step Start the fill
+Three rows of two words; writing BLTSIZE starts the blitter working backwards through them.
+>	move.w	#(3<<6)+2,BLTSIZE(a6)	; 3 rows x 2 words: go!
 @start
 	lea	CUSTOM,a6
 	; inclusive fill of the 2 x 3 word area at A0, in place
@@ -215,6 +308,35 @@ D = (A AND B) OR (NOT A AND C): where the mask is set take the image, elsewhere 
 This "cookie cut" is how the Amiga draws game characters in software: save the background, cut the BOB in, restore the background next frame.
 @task
 A0 points at a mask, A1 at an image (each 1 word wide, 2 rows, 2 bytes per row). A2 points at the screen (40 bytes wide). Cookie-cut the image into the screen at A2 with minterm $CA. Wait for the blitter first.
+@step Wait for the blitter
+Read DMACONR once, then wait while BBUSY is set.
+>	tst.b	DMACONR(a6)		; one read first (Agnus quirk)
+>waitblit:
+>	btst	#6,DMACONR(a6)	; BBUSY set?
+>	bne	waitblit		; yes: keep waiting
+@step All four channels, minterm $CA
+BLTCON0 = $0FCA switches on A, B, C and D ($0F00) with the minterm $CA: the image where the mask is set, the background elsewhere.
+>	move.w	#$0FCA,BLTCON0(a6)	; A, B, C, D: cookie cut
+>	move.w	#0,BLTCON1(a6)		; normal ascending blit
+@step Keep every bit
+No shift here, so both masks of channel A stay at $FFFF.
+>	move.w	#$FFFF,BLTAFWM(a6)	; first word: all bits
+>	move.w	#$FFFF,BLTALWM(a6)	; last word: all bits
+@step Point the four channels
+A reads the mask, B the image, and C the background from the screen at A2. D writes the result back to the same place on the screen.
+>	move.l	a0,BLTAPT(a6)		; A = mask
+>	move.l	a1,BLTBPT(a6)		; B = image
+>	move.l	a2,BLTCPT(a6)		; C = background
+>	move.l	a2,BLTDPT(a6)		; D = screen
+@step Set the modulos
+The mask and image are 2 bytes a row with no gap: modulo 0. On the 40-byte screen, C and D skip 40 - 2 = 38 bytes after each row.
+>	move.w	#0,BLTAMOD(a6)		; mask rows back to back
+>	move.w	#0,BLTBMOD(a6)		; image rows back to back
+>	move.w	#38,BLTCMOD(a6)	; rest of the screen line
+>	move.w	#38,BLTDMOD(a6)	
+@step Start the blit
+Two rows of one word: writing BLTSIZE cuts the BOB in.
+>	move.w	#(2<<6)+1,BLTSIZE(a6)	; 2 rows x 1 word: go!
 @start
 	lea	CUSTOM,a6
 	; D = (A AND B) OR (NOT A AND C) into the screen at A2
@@ -268,6 +390,45 @@ For the standard screen, a sprite at screen position (x, y) has VSTART = y + $2C
 To move a sprite you only rewrite its two control words - no drawing at all.
 @task
 Write the two control words for a sprite at x = D0, y = D1, D2 lines high (all words) to (A0) and 2(A0). D3 to D7 may be used as scratch.
+@step Work out VSTART and VSTOP
+VSTART is the screen y plus $2C, the first visible line. VSTOP is the line after the sprite's last: VSTART plus the height in D2.
+>	move.w	d1,d3		; y
+>	add.w	#$2C,d3		; D3 = VSTART
+>	move.w	d3,d4
+>	add.w	d2,d4		; D4 = VSTOP
+@step Work out HSTART
+The left edge of the screen is horizontal position 128, so HSTART is x plus 128.
+>	move.w	d0,d5		; x
+>	add.w	#128,d5		; D5 = HSTART
+@step Build and write POS
+POS has VSTART's low 8 bits in its high byte and HSTART bits 8-1 in its low byte: shift VSTART up by 8, HSTART down by 1, and MOVE.B drops the HSTART byte into place.
+>	move.w	d3,d6
+>	lsl.w	#8,d6		; VSTART low byte to the top
+>	move.w	d5,d7
+>	lsr.w	#1,d7		; HSTART bits 8-1
+>	move.b	d7,d6		; into the low byte
+>	move.w	d6,(a0)		; POS
+@step Start CTL with VSTOP
+CTL's high byte is VSTOP's low 8 bits. If VSTART is above 255, its 9th bit goes in CTL bit 2.
+>	move.w	d4,d6
+>	lsl.w	#8,d6		; VSTOP low byte to the top
+>	btst	#8,d3		; VSTART bit 8?
+>	beq	nov8
+>	bset	#2,d6		; yes: CTL bit 2
+>nov8:
+@step Add VSTOP's 9th bit
+VSTOP can pass 255 too: its bit 8 goes in CTL bit 1.
+>	btst	#8,d4		; VSTOP bit 8?
+>	beq	nostop8
+>	bset	#1,d6		; yes: CTL bit 1
+>nostop8:
+@step Add HSTART bit 0 and write CTL
+POS only had room for HSTART bits 8-1; the lowest bit, for odd positions, is CTL bit 0. Then CTL goes in the second word, 2(A0).
+>	btst	#0,d5		; HSTART odd?
+>	beq	noh0
+>	bset	#0,d6		; yes: CTL bit 0
+>noh0:
+>	move.w	d6,2(a0)		; CTL
 @start
 	; POS to (a0), CTL to 2(a0) for x = D0, y = D1, height D2
 
@@ -330,6 +491,19 @@ Once sprite DMA is on (SPREN, bit 5 of DMACON), all eight channels fetch data. A
 	null:	dc.l	0
 @task
 Point sprite 0 at the sprite data at A0, point sprites 1 to 7 at the null sprite at A1, and switch on sprite DMA together with the master switch.
+@step Point sprite 0 at its data
+LEA puts the address of SPR0PT in A2. The sprite pointers are consecutive longs, so MOVE.L with (A2)+ writes SPR0PT and moves on to SPR1PT.
+>	lea	CUSTOM+SPR0PT,a2	; A2 = SPR0PT
+>	move.l	a0,(a2)+		; SPR0PT = sprite data
+@step Point the rest at the null sprite
+Sprites 1 to 7 are seven channels: DBRA with D0 starting at 6 runs the loop seven times, each pass writing A1 to the next pointer.
+>	moveq	#6,d0		; 7 more channels
+>loop:
+>	move.l	a1,(a2)+		; SPRxPT = null sprite
+>	dbra	d0,loop
+@step Switch on sprite DMA
+DMACON $8220: bit 15 says "set", bit 9 is DMAEN, the master switch, and bit 5 is SPREN.
+>	move.w	#$8220,CUSTOM+DMACON	; DMAEN + SPREN on
 @start
 	; SPR0PT = A0, SPR1PT-SPR7PT = A1, DMA on
 
@@ -371,6 +545,20 @@ then DMACON bit 0 to 3 (AUD0EN to AUD3EN) with DMAEN starts it. A period of 428 
 Channels 0 and 3 are the left speaker, 1 and 2 the right.
 @task
 Play the sample at A0, D0 bytes long (even), on channel 0: period 428, full volume, then switch on its DMA.
+@step Point at the sample
+AUD0LC is the long address of channel 0's sample in chip RAM.
+>	move.l	a0,AUD0LC(a6)		; sample address
+@step Set the length in words
+AUD0LEN counts words, not bytes, so halve D0 with a shift right by one first.
+>	lsr.w	#1,d0		; bytes / 2 = words
+>	move.w	d0,AUD0LEN(a6)	; sample length
+@step Set the pitch and volume
+AUD0PER = 428 plays about 8287 samples a second, the note C-3. AUD0VOL = 64 is full volume.
+>	move.w	#428,AUD0PER(a6)	; period: C-3
+>	move.w	#64,AUD0VOL(a6)	; full volume
+@step Start the channel
+DMACON $8201 sets DMAEN and AUD0EN (bit 0): Paula starts fetching the sample and playing it.
+>	move.w	#$8201,DMACON(a6)	; DMAEN + AUD0EN on
 @start
 	lea	CUSTOM,a6
 	; AUD0LC, AUD0LEN (words), AUD0PER, AUD0VOL, then DMA
@@ -416,6 +604,45 @@ Shift the value right by one and EOR it with itself: bit 0 of the result is then
 	btst	#7,CIAA+CIAPRA	; Z set = fire pressed
 @task
 Read the joystick in port 2. Set D0 to the x direction (-1 left, 1 right, 0 neither), D1 to the y direction (-1 up, 1 down, 0 neither) and D2 to 1 if fire is pressed, else 0. D3 and D4 may be used as scratch.
+@step Read the port and clear the answers
+Copy JOY1DAT into D3 to test its bits, and start D0 and D1 at 0: no direction until a bit says otherwise.
+>	move.w	CUSTOM+JOY1DAT,d3	; joystick in port 2
+>	moveq	#0,d0		; x = 0
+>	moveq	#0,d1		; y = 0
+@step Test right
+Right is simply bit 1 of JOY1DAT. If it is set, D0 becomes 1.
+>	btst	#1,d3		; right?
+>	beq	notright
+>	moveq	#1,d0		; x = 1
+>notright:
+@step Test left
+Left is bit 9. If it is set, D0 becomes -1.
+>	btst	#9,d3		; left?
+>	beq	notleft
+>	moveq	#-1,d0		; x = -1
+>notleft:
+@step Decode and test down
+Shift a copy right by one and EOR the original into it: bit 0 becomes bit 1 EOR bit 0, which is "down", and bit 8 becomes "up".
+>	move.w	d3,d4
+>	lsr.w	#1,d4
+>	eor.w	d3,d4		; bit 0 = down, bit 8 = up
+>	btst	#0,d4		; down?
+>	beq	notdown
+>	moveq	#1,d1		; y = 1
+>notdown:
+@step Test up
+Bit 8 of the decoded value is "up": D1 becomes -1.
+>	btst	#8,d4		; up?
+>	beq	notup
+>	moveq	#-1,d1		; y = -1
+>notup:
+@step Read the fire button
+Fire is bit 7 of CIA-A's port A, and it reads 0 when pressed: BNE skips the MOVEQ when the bit is 1, not pressed.
+>	moveq	#0,d2		; fire = 0
+>	btst	#7,CIAA+CIAPRA	; 0 = pressed
+>	bne	nofire
+>	moveq	#1,d2		; fire = 1
+>nofire:
 @start
 	; D0 = x direction, D1 = y direction, D2 = fire
 
@@ -487,6 +714,13 @@ For a tick 50 times a second, load 709379 / 50 = 14187 ($376B). When it reaches 
 The CIA registers are bytes, one every $100: CIAA+CIATALO, CIAA+CIATAHI, CIAA+CIACRA.
 @task
 Load CIA-A timer A with 14187 ($376B): the low byte, then the high byte. Then start it continuous with a forced load: write $11 to CRA.
+@step Load the timer latch
+The timer's start value 14187 ($376B) goes into the latch in two byte writes: the low byte to TALO, then the high byte to TAHI.
+>	move.b	#$6B,CIAA+CIATALO	; low byte
+>	move.b	#$37,CIAA+CIATAHI	; high byte
+@step Start the timer
+$11 in CRA sets START (bit 0) and LOAD (bit 4), which copies the latch into the counter at once. Bit 3 stays clear, so the timer runs continuously.
+>	move.b	#$11,CIAA+CIACRA	; force load + start
 @start
 	; TALO = $6B, TAHI = $37, CRA = $11
 
@@ -524,6 +758,12 @@ Other gifts of the 68020: branches with 32-bit displacements (Bcc.L), 32-bit mul
 @cpu 68020
 @task
 D0's and D1's low bytes are signed numbers. Turn each into a signed long, one instruction each.
+@step Extend D0
+EXTB.L copies bit 7 of the low byte into bits 8-31, turning a signed byte into the same signed long in one go.
+>	extb.l	d0		; byte -> long
+@step Extend D1
+The same for D1: a positive byte gets zeros above it, a negative one ones.
+>	extb.l	d1		; byte -> long
 @start
 	; D0 and D1: signed byte -> long
 
@@ -560,6 +800,9 @@ The scale can be 1, 2, 4 or 8. The index register is not changed, so it is still
 @cpu 68020
 @task
 A0 points at a table of longs; D0 (a word) is an entry number. Put that entry into D1 with a single instruction, leaving D0 unchanged.
+@step Read the scaled entry
+The index D0.W times 4 gives the byte offset of long entry D0. The 68020 does the multiply inside the addressing mode, so D0 itself is untouched.
+>	move.l	0(a0,d0.w*4),d1	; D1 = entry D0
 @start
 	; D1 = long entry D0 of the table at A0, one instruction
 
@@ -594,6 +837,14 @@ The signed versions are MULS.L, DIVS.L and DIVSL.L. They are also faster than do
 @cpu 68020
 @task
 Set D2 to D0 x D1 (the low 32 bits, unsigned), and D3 to D0 / D1 with the remainder in D4 (unsigned longs). D0 and D1 must be unchanged.
+@step Multiply
+Copy D0 into D2 so D0 stays as it was, then MULU.L multiplies D2 by D1, keeping the low 32 bits of the product.
+>	move.l	d0,d2
+>	mulu.l	d1,d2		; D2 = D0 * D1
+@step Divide with a remainder
+Copy D0 into D3, then DIVUL.L divides D3 by D1: the quotient replaces D3 and the remainder lands in D4.
+>	move.l	d0,d3
+>	divul.l	d1,d4:d3		; D3 = D0 / D1, D4 = remainder
 @start
 	; D2 = D0 * D1, D3 = D0 / D1, D4 = remainder
 
@@ -630,6 +881,12 @@ Packed graphics data - colour components, tile numbers, sprite flags - becomes m
 @cpu 68020
 @task
 D0 holds a 15-bit colour (red bits 14-10, green 9-5, blue 4-0). Put the green value into D1 with BFEXTU, then replace the blue value with the low 5 bits of D2 using BFINS.
+@step Extract the green
+Green is bits 9-5. Offset 0 is bit 31, so bit 9 is at offset 22, and the field is 5 bits wide. BFEXTU puts it in D1, zero-extended.
+>	bfextu	d0{22:5},d1	; D1 = green
+@step Insert the blue
+Blue is bits 4-0: offset 27, width 5. BFINS writes D2's low 5 bits there and leaves the rest of D0 alone.
+>	bfins	d2,d0{27:5}	; blue = D2
 @start
 	; D1 = green of D0, then blue of D0 = D2
 
@@ -661,6 +918,20 @@ For a whole register the number of the highest set bit is then 31 - D1. That ans
 @cpu 68020
 @task
 Set D1 to the number (0 to 31) of the highest set bit in D0, or to -1 if D0 is zero.
+@step Count the leading zeros
+BFFFO over the whole register, offset 0 width 32, puts the offset of the first 1 bit in D1. If D0 is zero Z is set, so BEQ goes to the special case.
+>	bfffo	d0{0:32},d1	; D1 = leading zeros
+>	beq	zero		; D0 was 0
+@step Turn it into a bit number
+The highest set bit is 31 minus the leading zeros: negate D1 and add 31. Then BRA skips the zero case.
+>	neg.l	d1
+>	add.l	#31,d1		; D1 = 31 - zeros
+>	bra	done
+@step Handle zero
+With no bit set at all, the answer is -1.
+>zero:
+>	moveq	#-1,d1		; no bit set
+>done:
 @start
 	; D1 = number of the highest set bit of D0, or -1
 
@@ -704,6 +975,14 @@ AGA, the A1200's chipset, has 256 colour registers of 24 bits each - but the reg
 For the colour $RrGgBb, write $0RGB (the high nibbles) with LOCT = 0, then $0rgb (the low nibbles) with LOCT = 1. Writing the high nibbles also copies them into the low ones, so on an older chipset - or if you skip the second write - you still get the nearest 12-bit colour. Always write high first.
 @task
 Set COLOR00 to the 24-bit colour $123456: BPLCON3 = 0 and the high nibbles, then BPLCON3 with LOCT set and the low nibbles.
+@step Write the high nibbles
+BPLCON3 = 0 clears LOCT and selects bank 0, so a write to COLOR00 sets the high nibbles: $0135 from $123456 (and copies them into the low ones).
+>	move.w	#$0000,BPLCON3(a6)	; LOCT = 0: high nibbles
+>	move.w	#$0135,COLOR00(a6)	; R, G, B high = 1, 3, 5
+@step Write the low nibbles
+BPLCON3 = $0200 sets LOCT, bit 9, so the next COLOR00 write fills in the low nibbles: $0246.
+>	move.w	#$0200,BPLCON3(a6)	; LOCT = 1: low nibbles
+>	move.w	#$0246,COLOR00(a6)	; R, G, B low = 2, 4, 6
 @start
 	lea	CUSTOM,a6
 	; COLOR00 = $123456 on AGA
@@ -740,6 +1019,26 @@ AGA displays up to 8 bitplanes - 256 colours. BPLCON0's plane count is 3 bits (B
 FMODE ($DFF1FC) sets how many bits Agnus fetches at once: 0 is the old 16, 1 and 2 are 32, 3 is 64. Wider fetches leave more chip bus time for the CPU and blitter, and are needed for 8 planes at high resolutions - but bitplane data and widths must then be aligned to 64 bits. ECS registers ignore all of this, which is why an AGA screen shows rubbish on an A500.
 @task
 Write BPLCON0 for D0 bitplanes (1 to 8), the AGA way, then set FMODE to 3.
+@step Handle 8 planes
+Eight planes do not fit in BPU2-BPU0, so they get their own value: $0210, colour on plus BPU3 (bit 4). Then BRA skips the general case.
+>	cmp.w	#8,d0		; 8 planes?
+>	bne	notall
+>	move.w	#$0210,CUSTOM+BPLCON0	; BPU3 + colour
+>	bra	fetch
+@step Shift the plane count up
+For 1 to 7 planes the count goes in bits 14-12: shift a copy left by 12. A shift that large needs the count in a register.
+>notall:
+>	move.w	d0,d1
+>	moveq	#12,d2
+>	lsl.w	d2,d1		; planes << 12
+@step Add colour and write BPLCON0
+OR in $0200, the COLOR bit, and write the result to BPLCON0.
+>	or.w	#$0200,d1		; colour on
+>	move.w	d1,CUSTOM+BPLCON0
+@step Set the fetch mode
+FMODE = 3 makes Agnus fetch 64 bits at a time, leaving more of the chip bus free.
+>fetch:
+>	move.w	#3,CUSTOM+FMODE	; 64-bit fetches
 @start
 	; BPLCON0 for D0 planes (8 = $0210), FMODE = 3
 
@@ -790,6 +1089,17 @@ Multiplying by a constant is the commonest win. x * 10 = x * 8 + x * 2:
 ADD.W Dn,Dn takes 4 cycles; MULU.W #10 takes about 46.
 @task
 Multiply each of the 32 words at A0 by 10, in place (the results fit in a word). The code in the editor works but takes about 2300 cycles; the limit is 1800. D0, D1 and D2 may be used.
+@step Double the value
+Take out the slow MULU. Adding D0 to itself doubles it, and a copy of that x2 goes in D1 for later.
+<	mulu.w	#10,d0
+>	add.w	d0,d0		; x2
+>	move.w	d0,d1		; keep x2
+@step Make x8 and add x2
+Two more doublings make x8, then adding the saved x2 gives x10, about 16 cycles instead of MULU's 46.
+^	move.w	d0,d1
+>	add.w	d0,d0		; x4
+>	add.w	d0,d0		; x8
+>	add.w	d1,d0		; x8 + x2 = x10
 @start
 	moveq	#31,d2
 loop:
@@ -829,6 +1139,66 @@ The player is a record at A0: x (word) then y (word), in screen pixels. Each fra
 Clamping after adding is simplest: if the new x is negative, make it 0; if above 304, make it 304. A signed compare is needed - x can go below zero for a moment.
 @task
 Move the player at A0 (x word, y word) by 2 pixels in the joystick's direction, then clamp x to 0..304 and y to 0..240. D0 to D4 may be used.
+@step Read the port and clear the moves
+Copy JOY1DAT into D3, and start dx (D0) and dy (D1) at 0.
+>	move.w	CUSTOM+JOY1DAT,d3	; joystick in port 2
+>	moveq	#0,d0		; dx = 0
+>	moveq	#0,d1		; dy = 0
+@step Right
+Bit 1 is right: move 2 pixels, so dx = 2.
+>	btst	#1,d3		; right?
+>	beq	nr
+>	moveq	#2,d0		; dx = 2
+>nr:
+@step Left
+Bit 9 is left: dx = -2.
+>	btst	#9,d3		; left?
+>	beq	nl
+>	moveq	#-2,d0		; dx = -2
+>nl:
+@step Decode and test down
+Shift a copy right by one and EOR the original in: bit 0 is then down and bit 8 up. Down means dy = 2.
+>	move.w	d3,d4
+>	lsr.w	#1,d4
+>	eor.w	d3,d4		; bit 0 = down, bit 8 = up
+>	btst	#0,d4		; down?
+>	beq	nd
+>	moveq	#2,d1		; dy = 2
+>nd:
+@step Up
+Bit 8 of the decoded value is up: dy = -2.
+>	btst	#8,d4		; up?
+>	beq	nu
+>	moveq	#-2,d1		; dy = -2
+>nu:
+@step Move x, stop at the left
+Add dx to x. If the result is negative, BPL does not branch and x becomes 0.
+>	move.w	(a0),d2		; x
+>	add.w	d0,d2		; x + dx
+>	bpl	xpos		; not negative: fine
+>	moveq	#0,d2		; clamp to 0
+>xpos:
+@step Stop at the right, store x
+A signed compare with 304: BLE keeps x if it is 304 or less, otherwise it becomes 304. Then write x back to the record.
+>	cmp.w	#304,d2
+>	ble	xok
+>	move.w	#304,d2		; clamp to 304
+>xok:
+>	move.w	d2,(a0)		; store x
+@step Move y, stop at the top
+The same for y, the word at 2(A0): add dy and clamp a negative result to 0.
+>	move.w	2(a0),d2		; y
+>	add.w	d1,d2		; y + dy
+>	bpl	ypos
+>	moveq	#0,d2		; clamp to 0
+>ypos:
+@step Stop at the bottom, store y
+y may go up to 240, so a 16-line sprite stays on the 256-line screen. Then write y back.
+>	cmp.w	#240,d2
+>	ble	yok
+>	move.w	#240,d2		; clamp to 240
+>yok:
+>	move.w	d2,2(a0)		; store y
 @start
 	; read JOY1DAT, move x,y at (a0) by 2 per direction, clamp
 
@@ -913,6 +1283,114 @@ Wrap that in a loop with BRA and it is a game: the copper shows the sprite (less
 When this passes, you have written a complete frame of an Amiga game in assembler. After it comes the final exam.
 @task
 A0 points at the player (x word, y word); A1 at the player's sprite data. Wait for line 300, move the player as in lesson 99, write the sprite's POS and CTL words (16 lines high) to (A1) as in lesson 86, and set COLOR00 to $0F00 if fire is pressed, else $0000. Use any registers except A0, A1 and A7.
+@step Wait for line 300
+VPOSR and VHPOSR read as one long give the beam's line in bits 16-8. Mask them out and loop until the line is 300 ($12C).
+>wait:
+>	move.l	VPOSR(a6),d0	; beam position
+>	and.l	#$1FF00,d0		; keep the line number
+>	cmp.l	#$12C00,d0		; line 300?
+>	bne	wait
+@step Read the joystick, test right
+JOY1DAT into D3, dx and dy start at 0, and bit 1 (right) makes dx = 2.
+>	move.w	JOY1DAT(a6),d3	; joystick in port 2
+>	moveq	#0,d0		; dx = 0
+>	moveq	#0,d1		; dy = 0
+>	btst	#1,d3		; right?
+>	beq	nr
+>	moveq	#2,d0		; dx = 2
+>nr:
+@step Test left, decode up and down
+Bit 9 (left) makes dx = -2. Then a copy shifted right by one and EORed with the original gives down in bit 0 and up in bit 8.
+>	btst	#9,d3		; left?
+>	beq	nl
+>	moveq	#-2,d0		; dx = -2
+>nl:
+>	move.w	d3,d4
+>	lsr.w	#1,d4
+>	eor.w	d3,d4		; bit 0 = down, bit 8 = up
+@step Test down and up
+Down makes dy = 2, up makes dy = -2.
+>	btst	#0,d4		; down?
+>	beq	nd
+>	moveq	#2,d1		; dy = 2
+>nd:
+>	btst	#8,d4		; up?
+>	beq	nu
+>	moveq	#-2,d1		; dy = -2
+>nu:
+@step Move x, stop at the left
+Add dx to x; if the result is negative BPL falls through and x becomes 0.
+>	move.w	(a0),d2		; x
+>	add.w	d0,d2		; x + dx
+>	bpl	xpos
+>	moveq	#0,d2		; clamp to 0
+>xpos:
+@step Stop at the right, store x
+A signed compare keeps x at 304 or less, then it goes back into the record.
+>	cmp.w	#304,d2
+>	ble	xok
+>	move.w	#304,d2		; clamp to 304
+>xok:
+>	move.w	d2,(a0)		; store x
+@step Move y, stop at the top
+The same for y at 2(A0): add dy, and a negative result becomes 0.
+>	move.w	2(a0),d2		; y
+>	add.w	d1,d2		; y + dy
+>	bpl	ypos
+>	moveq	#0,d2		; clamp to 0
+>ypos:
+@step Stop at the bottom, store y
+y stays at 240 or less, so the 16-line sprite stays on the screen. Store it back.
+>	cmp.w	#240,d2
+>	ble	yok
+>	move.w	#240,d2		; clamp to 240
+>yok:
+>	move.w	d2,2(a0)		; store y
+@step Sprite start and stop positions
+Read the new x and y back. VSTART = y + $2C, VSTOP = VSTART + 16 (the sprite's height) and HSTART = x + 128, as in lesson 86.
+>	move.w	(a0),d0		; x
+>	move.w	2(a0),d1		; y
+>	move.w	d1,d3
+>	add.w	#$2C,d3		; D3 = VSTART
+>	move.w	d3,d4
+>	add.w	#16,d4		; D4 = VSTOP
+>	move.w	d0,d5
+>	add.w	#128,d5		; D5 = HSTART
+@step Build and write POS
+POS is VSTART's low byte on top and HSTART bits 8-1 below: shift one up by 8, the other down by 1, and MOVE.B joins them.
+>	move.w	d3,d6
+>	lsl.w	#8,d6		; VSTART low byte to the top
+>	move.w	d5,d7
+>	lsr.w	#1,d7		; HSTART bits 8-1
+>	move.b	d7,d6
+>	move.w	d6,(a1)		; POS
+@step Start CTL with VSTOP
+CTL's high byte is VSTOP's low 8 bits, and VSTART's 9th bit goes in CTL bit 2.
+>	move.w	d4,d6
+>	lsl.w	#8,d6		; VSTOP low byte to the top
+>	btst	#8,d3		; VSTART bit 8?
+>	beq	nov8
+>	bset	#2,d6		; CTL bit 2
+>nov8:
+@step Finish and write CTL
+VSTOP's 9th bit goes in CTL bit 1 and HSTART's lowest bit in CTL bit 0. Then CTL goes in the second word, 2(A1).
+>	btst	#8,d4		; VSTOP bit 8?
+>	beq	nostop8
+>	bset	#1,d6		; CTL bit 1
+>nostop8:
+>	btst	#0,d5		; HSTART odd?
+>	beq	noh0
+>	bset	#0,d6		; CTL bit 0
+>noh0:
+>	move.w	d6,2(a1)		; CTL
+@step Colour from the fire button
+Start with black in D0. Fire is bit 7 of CIA-A's port A and reads 0 when pressed, so BNE skips the red. Then D0 goes to COLOR00.
+>	move.w	#$0000,d0		; black
+>	btst	#7,CIAA+CIAPRA	; 0 = pressed
+>	bne	nofire
+>	move.w	#$0F00,d0		; red
+>nofire:
+>	move.w	d0,COLOR00(a6)	; background colour
 @start
 	lea	CUSTOM,a6
 	; 1. wait for line 300

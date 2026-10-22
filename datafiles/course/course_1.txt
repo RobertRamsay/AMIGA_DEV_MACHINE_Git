@@ -21,6 +21,12 @@ Write your code in the editor on the left. Instructions are indented (the editor
 When you press RUN TESTS (F5), ADM assembles your code with vasm, the same assembler the Amiga builds use, and runs it in its own 68000 simulator. Your program starts at the top and ends when it runs off the end. Then each test looks at the registers. The tests run your code several times, starting with different values in the registers, so your code must not depend on what happens to be there.
 @task
 Put 42 into D0 and 7 into D1.
+@step Put 42 into D0
+MOVEQ copies a small number into a whole data register. The # says that 42 is the number itself, not an address. Instructions are indented: start the line with a Tab.
+>	moveq	#42,d0		; D0 = 42
+@step Put 7 into D1
+The same again for the second register. Each instruction goes on its own line, indented, with the source first and the destination after the comma.
+>	moveq	#7,d1		; D1 = 7
 @start
 	; write your code here
 
@@ -69,6 +75,15 @@ So after
 D0 holds $FFFFFFFF. The same bits mean 4,294,967,295 if you treat them as unsigned: whether a value is negative is up to the instructions you use on it, as you will see in later lessons.
 @task
 Put $40 (hex) into D0, %1100 (binary) into D1 and -2 into D2.
+@step Load a hex number
+The $ in front says 40 is hexadecimal, so D0 gets 64 in decimal. Each hex digit is four bits: $40 is 0100 0000.
+>	moveq	#$40,d0		; D0 = $40 (64)
+@step Load a binary number
+The % in front says the digits are bits. %1100 is 8 + 4, so D1 gets 12.
+>	moveq	#%1100,d1	; D1 = %1100 (12)
+@step Load a negative number
+MOVEQ fills all 32 bits, so -2 is stored in two's complement as $FFFFFFFE: all ones except the lowest bit.
+>	moveq	#-2,d2		; D2 = -2 ($FFFFFFFE)
 @start
 	; D0 = $40, D1 = %1100, D2 = -2
 
@@ -111,6 +126,12 @@ The size matters a great deal. A .W or .B move only touches the low part of a da
 MOVE can copy from register to register, from an immediate value to a register, and - as you will see soon - to and from memory. The two operands can be almost anything, which makes MOVE the most used instruction on the 68000.
 @task
 Load $12345678 into D0 with MOVE.L. Then copy only the low word of D0 into D1, and only the low byte of D0 into D2, leaving the rest of D1 and D2 as they were.
+@step Copy the low word
+MOVE.W copies only the low 16 bits of D0, $5678, into D1. The upper word of D1 keeps whatever it held before.
+>	move.w	d0,d1		; low word of D0 into D1
+@step Copy the low byte
+MOVE.B copies just the lowest 8 bits, $78, into D2 and leaves its other three bytes alone.
+>	move.b	d0,d2		; low byte of D0 into D2
 @start
 	move.l	#$12345678,d0
 	; now the word into D1 and the byte into D2
@@ -153,6 +174,16 @@ Second, moving or adding to an address register never changes the flags (you wil
 A7 is special: it is the stack pointer, used by the CPU itself (lesson 8). Leave it alone for now.
 @task
 Point A0 at $2000. Make A1 point $100 bytes after A0. Then load A2 using a MOVE.W of $9000, and see what sign extension does to it.
+@step Point A0 at $2000
+A MOVE.L into an address register sets all 32 bits, so A0 now holds the address $2000.
+>	move.l	#$2000,a0	; A0 = $2000
+@step Make A1 point further on
+Copy A0 into A1 so both point at the same place, then ADDA adds $100 to A1 only, leaving it at $2100.
+>	move.l	a0,a1		; A1 = A0
+>	adda.w	#$100,a1	; A1 = A0 + $100
+@step See sign extension
+A word moved into an address register is sign-extended. $9000 has its top bit set, so A2 becomes $FFFF9000.
+>	move.w	#$9000,a2	; A2 = $FFFF9000
 @start
 	; A0 = $2000, A1 = A0 + $100, A2 from move.w #$9000
 
@@ -189,6 +220,16 @@ The 68000 is big-endian: the most significant byte comes first, at the lower add
 Words and longs must start at an even address. Reading a word from an odd address makes the 68000 stop with an address error - one of the most common crashes on the Amiga. Bytes can be anywhere.
 @task
 Store $CAFE at $2000 and $BABE at $2002 (two word writes). Then read the long at $2000 into D0, and the byte at $2000 into D1.
+@step Store two words
+Without a # the number is an address: these write $CAFE at $2000 and $BABE at $2002, side by side in memory.
+>	move.w	#$CAFE,$2000	; word at $2000
+>	move.w	#$BABE,$2002	; word at $2002
+@step Read the long
+A long read at $2000 takes the four bytes $2000-$2003, high word first, so D0 gets $CAFEBABE.
+>	move.l	$2000,d0	; D0 = $CAFEBABE
+@step Read the first byte
+Big-endian means the high byte comes first: the byte at $2000 is $CA. MOVE.B only changes the lowest byte of D1.
+>	move.b	$2000,d1	; D1 low byte = $CA
 @start
 	; two words to $2000 and $2002, then read them back
 
@@ -231,6 +272,12 @@ This is address register indirect. The same code works on any data: change A0 an
 Any of A0 to A6 can be a pointer. (A7 can too, but it is the stack pointer.)
 @task
 A0 points at a word. Copy that word into D0, then overwrite it in memory with $1234.
+@step Read through the pointer
+The brackets mean "the memory A0 points at", so this copies that word into D0. Do it first, before the value is overwritten.
+>	move.w	(a0),d0		; D0 = word at A0
+@step Write through the pointer
+Now store $1234 at the same address. A0 itself does not change - only the memory it points at.
+>	move.w	#$1234,(a0)	; word at A0 = $1234
 @start
 	; read the word A0 points at, then write $1234 there
 
@@ -267,6 +314,13 @@ This is postincrement, and it is how lists of data are processed. With two point
 One exception: A7, the stack pointer, always steps by at least 2, even for a byte, so the stack stays word aligned.
 @task
 Copy three words from the list at A0 to the list at A1, using (An)+ on both. Both pointers end just after their lists.
+@step Copy the first word
+(a0)+ reads the word at A0 and then adds 2 to A0; (a1)+ stores at A1 and adds 2 to A1. One instruction copies a word and moves both pointers on.
+>	move.w	(a0)+,(a1)+	; word 1
+@step Copy the other two
+The pointers have already stepped on, so the same line again copies the second word, and once more the third.
+>	move.w	(a0)+,(a1)+	; word 2
+>	move.w	(a0)+,(a1)+	; word 3
 @start
 	; copy 3 words from (a0) to (a1)
 
@@ -304,6 +358,14 @@ The CPU uses the same stack for subroutine calls and exceptions, so every push m
 Because the last value pushed comes off first, pushing two values and popping them in the same order swaps them.
 @task
 Swap D0 and D1 using the stack: push both, then pop them back the other way round. Do not use EXG.
+@step Push both registers
+-(a7) first takes 4 from A7, then stores the long there. D0 goes on the stack first, D1 on top of it.
+>	move.l	d0,-(a7)	; push D0
+>	move.l	d1,-(a7)	; push D1
+@step Pop them swapped
+(a7)+ reads the top of the stack and adds 4 back to A7. The top is the old D1, so it goes into D0; the next one, the old D0, goes into D1.
+>	move.l	(a7)+,d0	; D0 = old D1
+>	move.l	(a7)+,d1	; D1 = old D0
 @start
 	; push D0 and D1, pop them swapped
 
@@ -345,6 +407,14 @@ Assembler programmers usually give the offsets names with EQU, so the code reads
 	move.w	OBJ_Y(a0),d1
 @task
 A0 points at a record: x (word) at offset 0, y at 2, old x at 4 and old y at 6. Save x and y into old x and old y, then set x to the word in D0 and y to the word in D1. A0 must not change.
+@step Save the old position
+0(a0) is x and 4(a0) is old x; 2(a0) is y and 6(a0) is old y. MOVE copies memory to memory directly, and A0 stays where it is.
+>	move.w	0(a0),4(a0)	; old x = x
+>	move.w	2(a0),6(a0)	; old y = y
+@step Store the new position
+Now that the old values are safe, overwrite x with the word in D0 and y with the word in D1.
+>	move.w	d0,0(a0)	; x = D0
+>	move.w	d1,2(a0)	; y = D1
 @start
 	; save x,y into old x,y - then x = D0, y = D1
 
@@ -387,6 +457,15 @@ SWAP exchanges the two halves of a data register: $12345678 becomes $56781234. I
 	swap	d3
 @task
 Clear D0 completely, exchange D1 and D2, and swap the two halves of D3.
+@step Clear D0
+CLR.L sets all 32 bits of D0 to zero, whatever was in it.
+>	clr.l	d0		; D0 = 0
+@step Exchange D1 and D2
+EXG swaps the whole of two registers in one go, no spare register needed.
+>	exg	d1,d2		; D1 <-> D2
+@step Swap the halves of D3
+SWAP exchanges the upper and lower words of D3, so $12345678 becomes $56781234.
+>	swap	d3		; halves of D3 swapped
 @start
 	; clear D0, exchange D1/D2, swap D3's halves
 
@@ -428,6 +507,13 @@ To compute D0 = D1 + D2 without changing D1, copy first, then add:
 	add.l	d2,d0
 @task
 Set D0 = D1 + D2 - D3 (all longs). D1, D2 and D3 must keep their values.
+@step Copy D1 into D0
+ADD and SUB change their destination, so start by copying D1 into D0. D1 itself keeps its value.
+>	move.l	d1,d0		; D0 = D1
+@step Add and subtract
+ADD.L adds D2 to D0, then SUB.L takes D3 away from D0. Only D0 changes; D2 and D3 are just read.
+>	add.l	d2,d0		; D0 = D1 + D2
+>	sub.l	d3,d0		; D0 = D1 + D2 - D3
 @start
 	; D0 = D1 + D2 - D3
 
@@ -473,6 +559,15 @@ All of them work directly on memory, without loading the value into a register f
 The assembler often turns ADD #n into ADDQ or ADDI for you, but it is good to know they exist.
 @task
 Add 1 to the word counter at $2000. Subtract 300 from the long at $2004. Add 8 to A0.
+@step Bump the counter
+ADDQ adds 1 to 8 quickly. Here it works straight on the word at address $2000 - no register needed.
+>	addq.w	#1,$2000	; counter + 1
+@step Subtract 300
+300 is too big for SUBQ, so SUBI takes the immediate value and subtracts it from the long at $2004.
+>	subi.l	#300,$2004	; long - 300
+@step Move the pointer on
+ADDQ works on address registers too: 8 is the largest it can add, and A0 now points 8 bytes further on.
+>	addq.l	#8,a0		; A0 + 8
 @start
 	; counter +1, long at $2004 - 300, A0 + 8
 
@@ -521,6 +616,17 @@ notzero:
 A label sits in the first column and names a place in the program. The branch jumps there.
 @task
 Set D0 to 1 if the word at (A0) is zero, otherwise to 2.
+@step Assume the answer is 2
+Put 2 in D0 first. MOVEQ sets the flags too, so it must come before the test, not after.
+>	moveq	#2,d0		; assume "not zero"
+@step Test the word
+TST.W sets Z if the word at A0 is zero. BNE jumps to done when it is not, leaving D0 at 2.
+>	tst.w	(a0)		; is the word zero?
+>	bne	done		; no: keep 2
+@step Set 1 for zero
+This line only runs when the branch was not taken, meaning the word was zero. The label done in the first column marks the end.
+>	moveq	#1,d0		; it was zero
+>done:
 @start
 	; D0 = 1 if the word at (a0) is 0, else 2
 
@@ -571,6 +677,17 @@ For signed numbers the branches are:
 The usual pattern for picking one of two values: assume one answer, test, and replace it if you were wrong.
 @task
 Set D2 to the larger of D0 and D1 (signed longs).
+@step Assume D0 is larger
+Copy D0 into D2 as the first guess for the maximum.
+>	move.l	d0,d2		; D2 = D0
+@step Compare the two
+CMP.L works out D0 - D1 and only sets the flags. BGE then jumps to done if D0 >= D1 (signed), so the guess stands.
+>	cmp.l	d1,d0		; compare D0 with D1
+>	bge	done		; D0 >= D1: keep it
+@step Otherwise take D1
+If we get here D1 was bigger, so it replaces the guess. The label done marks the end.
+>	move.l	d1,d2		; D2 = D1
+>done:
 @start
 	; D2 = max(D0, D1)
 
@@ -618,6 +735,17 @@ Branches test them: BCS ("carry set") and BCC ("carry clear"), BVS and BVC. The 
 Careful: MOVEQ, MOVE and many other instructions change the flags too. Test them straight after the instruction that set them.
 @task
 Add D1 to D0 (longs). Then set D2 to 1 if the addition carried, or to 0 if it did not.
+@step Clear D2 first
+MOVEQ changes the flags, so set D2 to 0 before the ADD rather than after it.
+>	moveq	#0,d2		; assume no carry
+@step Add and test the carry
+ADD.L sets C if the unsigned sum did not fit in 32 bits. BCC jumps to done when C is clear, leaving D2 at 0.
+>	add.l	d1,d0		; D0 = D0 + D1
+>	bcc	done		; no carry: D2 stays 0
+@step Record the carry
+This line only runs when the addition carried, so D2 becomes 1.
+>	moveq	#1,d2		; it carried
+>done:
 @start
 	; D0 = D0 + D1, D2 = 1 if it carried, else 0
 
@@ -664,6 +792,15 @@ SUBQ sets Z when the counter reaches zero, so no TST or CMP is needed - the last
 Make sure the loop always ends: a branch back that is always taken locks the machine up. In this course an endless loop shows up as a timeout.
 @task
 D0 holds a number N (at least 1). Put the sum 1 + 2 + ... + N into D1, using a loop.
+@step Clear the total
+D1 will collect the sum, so start it at 0.
+>	moveq	#0,d1		; total = 0
+@step Add in a loop
+The label marks the top of the loop. Each pass adds D0 to the total, then SUBQ counts D0 down; it sets Z at zero, so BNE goes round again until then.
+>loop:
+>	add.l	d0,d1		; total + N
+>	subq.l	#1,d0		; N - 1
+>	bne	loop		; until N = 0
 @start
 	; D1 = 1 + 2 + ... + D0
 
@@ -709,6 +846,14 @@ Because it stops at -1, not 0, start the counter at the count minus one. DBRA is
 (DBRA is DBF, "decrement and branch unless false": there are DBcc forms that also stop early on a condition, such as DBEQ.)
 @task
 Fill 16 words starting at (A0) with the word in D0, using DBRA.
+@step Set the counter
+DBRA stops when the counter goes past zero to -1, so for 16 words start it at 15.
+>	moveq	#15,d1		; 16 times
+@step Fill and loop
+Each pass stores the word in D0 at A0 and steps A0 on by 2. DBRA takes 1 from the low word of D1 and branches back to loop until it reaches -1.
+>loop:
+>	move.w	d0,(a0)+	; store a word, A0 + 2
+>	dbra	d1,loop		; 16 times in all
 @start
 	; 16 words at (a0) = D0
 
@@ -747,6 +892,19 @@ After a CMP, the signed branches are BGT, BGE, BLT, BLE (they look at N and V). 
 Use unsigned branches for addresses, sizes and counts; signed ones for positions, speeds and anything that can go below zero. Mixing them up is a classic bug: a sprite at x = -2 seems to be at x = 4 billion and vanishes.
 @task
 D0 is a signed long. Clamp it to the range -100 to 100: if it is below -100 make it -100, if above 100 make it 100, otherwise leave it.
+@step Check the low end
+CMP.L compares D0 with -100; BGE (signed) jumps to notlow if D0 is at least -100. Otherwise D0 becomes -100 and BRA skips to the end.
+>	cmp.l	#-100,d0	; D0 below -100?
+>	bge	notlow		; no
+>	moveq	#-100,d0	; yes: clamp
+>	bra	done
+@step Check the high end
+At notlow compare D0 with 100; BLE jumps to done if it is 100 or less. Otherwise D0 becomes 100.
+>notlow:
+>	cmp.l	#100,d0		; D0 above 100?
+>	ble	done		; no
+>	moveq	#100,d0		; yes: clamp
+>done:
 @start
 	; clamp D0 (signed) to -100..100
 
@@ -800,6 +958,14 @@ EXT sign-extends: EXT.W copies bit 7 of a byte into the rest of the low word, EX
 Together they make an absolute value: extend, and if the result is negative, negate it. EXT sets the N flag, so BPL can test it straight away.
 @task
 The low word of D0 is a signed number; the upper word is junk. Put its absolute value into D0 as a long.
+@step Widen the word
+EXT.L copies bit 15 into the upper word, so a negative word like $FFFE becomes the long -2 and the junk above it is gone. It also sets N.
+>	ext.l	d0		; sign-extend word to long
+@step Negate if negative
+BPL jumps to done if the number is already positive or zero. Otherwise NEG.L subtracts it from zero, turning -2 into 2.
+>	bpl	done		; positive: done
+>	neg.l	d0		; negative: flip the sign
+>done:
 @start
 	; D0 = |signed word in D0| as a long
 
@@ -847,6 +1013,14 @@ If the quotient does not fit in 16 bits, V is set and the destination is left al
 They are slow - up to 70 cycles to multiply and 140 or more to divide - so games use shifts and tables where they can (lesson 24).
 @task
 D0 and D1 hold a width and a height (unsigned words). Put the area, D0 * D1, into D2 as a long. Then put the area divided by 10 into D3 exactly as DIVU leaves it (remainder in the high word, quotient in the low word).
+@step Multiply
+MULU multiplies the low words of source and destination and replaces the whole destination with the 32-bit result. Copy the width into D2 first, then multiply it by the height in D1.
+>	move.w	d0,d2		; D2 = width
+>	mulu.w	d1,d2		; D2 = width * height
+@step Divide by 10
+Copy the area into D3, then DIVU divides it by 10: the quotient lands in the low word and the remainder in the high word.
+>	move.l	d2,d3		; D3 = area
+>	divu.w	#10,d3		; remainder:quotient
 @start
 	; D2 = D0 * D1, D3 = D2 / 10 (as DIVU gives it)
 

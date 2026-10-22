@@ -18,6 +18,21 @@ The main program must end before the subroutine starts, or it would fall into it
 Some tests in this lesson call your subroutine directly, by its label - as if another program did a BSR to it.
 @task
 Write a subroutine called triple that multiplies D0 by 3 (as a long) and returns. It may use D1 as scratch. Above it, write a main program that calls triple twice (so D0 ends up 9 times bigger) and ends with RTS.
+@step Call triple twice
+The main program is two BSRs and its own RTS. Each BSR pushes the address of the next line and jumps to triple; triple's RTS brings it straight back, so the second call multiplies the result of the first.
+<	rts
+>	bsr	triple		; D0 = D0 * 3
+>	bsr	triple		; and again: D0 * 9
+>	rts			; end of the main program
+@step Keep a copy of D0
+Inside triple, copy D0 into the scratch register D1 first, so the original value is still there after D0 has been doubled.
+^ triple:
+>	move.l	d0,d1		; D1 = the original D0
+@step Double and add
+ADD.L D0,D0 doubles D0, and adding the copy in D1 makes it three times the original: 5 becomes 10, then 15.
+^	move.l	d0,d1
+>	add.l	d0,d0		; D0 = 2 x D0
+>	add.l	d1,d0		; + D0 = 3 x D0
 @start
 	; main program: call triple twice
 	rts
@@ -67,6 +82,21 @@ A subroutine that changes registers its caller is using causes bugs that are ver
 The list uses - for a range and / to join. Whatever the order you write, MOVEM always stores them in the same order, so the push and the pop must use the same list. It also works for a single register.
 @task
 Write a subroutine mul10 that multiplies D0 by 10 using shifts and adds, with D1 as scratch - but D1 must be the same after the call as before it. Save and restore it with MOVEM.
+@step Save D1 on the stack
+MOVEM with -(a7) pushes the registers in its list onto the stack. Here the list is just D1, the register the caller wants back unchanged.
+^ mul10:
+>	movem.l	d1,-(a7)	; push D1
+@step Multiply by 10
+D0 x 10 is D0 x 8 plus D0 x 2. LSL.L #3 shifts D0 left three places (x 8), the copy in D1 is doubled with ADD.L, and the two are added together.
+^	movem.l	d1,-(a7)
+>	move.l	d0,d1		; D1 = D0
+>	lsl.l	#3,d0		; D0 = D0 x 8
+>	add.l	d1,d1		; D1 = D0 x 2
+>	add.l	d1,d0		; D0 = D0 x 10
+@step Restore D1
+MOVEM with (a7)+ pops the same list back off the stack, so D1 holds the caller's value again before the RTS. The push and the pop must name the same registers.
+^	add.l	d1,d0
+>	movem.l	(a7)+,d1	; pop D1
 @start
 mul10:
 	; D0 = D0 * 10, keep D1
@@ -112,6 +142,22 @@ To call each other's code, programs agree on a calling convention. The Amiga's o
 Parameters go in registers, chosen to suit the routine: a pointer in A0, a number in D0 and so on. Each routine should say in a comment what goes in, what comes out and what it changes. This lesson's routine is a little stricter than usual: it must also give A0 back unchanged.
 @task
 Write a subroutine strlen: A0 points at a null-terminated string; return its length in D0. Every other register, A0 included, must be unchanged when it returns.
+@step Save A0
+The counting loop moves A0 along the string, but this routine must give A0 back unchanged. MOVE.L with -(a7) pushes its value onto the stack.
+^ strlen:
+>	move.l	a0,-(a7)		; push A0
+@step Count the characters
+D0 starts at -1 because the loop adds 1 before it tests, so the zero byte at the end is not counted. TST.B (a0)+ checks each byte and steps on, and BNE goes round again until it finds the zero.
+^	move.l	a0,-(a7)
+>	moveq	#-1,d0		; count starts at -1
+>.loop:
+>	addq.l	#1,d0		; one more character
+>	tst.b	(a0)+		; is this byte zero?
+>	bne	.loop		; no: keep counting
+@step Restore A0
+MOVE.L (a7)+ pops the saved address back into A0, leaving the stack exactly as it was, so the RTS finds its return address.
+^	bne	.loop
+>	move.l	(a7)+,a0		; pop A0
 @start
 strlen:
 	; in: A0 = string, out: D0 = length, keep all other registers
@@ -162,6 +208,22 @@ Inside add2 the stack looks like this:
 The caller removes the parameters afterwards by adding their size to A7. Forget that and the stack creeps down with every call until something crashes.
 @task
 Write add2, which returns in D0 the sum of the two longs pushed before the call. Above it, write a main program that pushes D1 and D2, calls add2, removes the parameters and returns.
+@step Push the parameters
+The main program pushes D1 and then D2 onto the stack with -(a7), then calls add2. BSR pushes the return address on top of them.
+<	rts
+>	move.l	d1,-(a7)		; first parameter
+>	move.l	d2,-(a7)		; second parameter
+>	bsr	add2		; call
+@step Clean up and return
+The two parameters take 8 bytes, so ADDQ.L #8,A7 removes them after the call. The stack is then back where it started and the main program can end with RTS.
+^	bsr	add2
+>	addq.l	#8,a7		; remove the two longs
+>	rts			; end of the main program
+@step Add the parameters
+Inside add2, (a7) is the return address, 4(a7) the second parameter and 8(a7) the first. Load one into D0 and add the other.
+^ add2:
+>	move.l	4(a7),d0		; D0 = second parameter
+>	add.l	8(a7),d0		; + first parameter
 @start
 	; main: push D1 and D2, call add2, clean up
 	rts
@@ -209,6 +271,27 @@ A subroutine that needs memory of its own - local variables - can take it from t
 Locals are at negative offsets from A6, parameters at positive ones (8(a6) is the first above the return address). UNLK undoes everything in one go: A7 goes back to A6 and the old A6 is popped. Because A6 is saved and restored by the pair, the caller never sees it change.
 @task
 Write sumsq: return D0 = D0 x D0 + D1 x D1 (signed words in, a long out). Use LINK to make a 4-byte local variable and keep the first square in it. D2 may be used as scratch; A6 must come back unchanged.
+@step Make the stack frame
+LINK A6,#-4 saves A6 on the stack, points A6 at the stack and moves A7 down 4 bytes: that gap is the local variable, at -4(a6).
+^ sumsq:
+>	link	a6,#-4		; 4 bytes of locals
+@step Square D0 into the local
+MULS.W multiplies two signed words and gives a long, so MULS.W D2,D2 squares the word in D2. The first square is kept in the local variable at -4(a6).
+^	link	a6,#-4
+>	move.w	d0,d2		; D2 = D0
+>	muls.w	d2,d2		; D2 = D0 x D0
+>	move.l	d2,-4(a6)	; keep it in the local
+@step Square D1 and add
+The same again for D1, then ADD.L adds the saved first square from the local variable. The total goes into D0 as the result.
+^	move.l	d2,-4(a6)
+>	move.w	d1,d2		; D2 = D1
+>	muls.w	d2,d2		; D2 = D1 x D1
+>	add.l	-4(a6),d2	; + D0 x D0
+>	move.l	d2,d0		; result in D0
+@step Free the frame
+UNLK A6 puts A7 back to A6, which throws the local away, and pops the old A6. The caller then sees A6 unchanged.
+^	move.l	d2,d0
+>	unlk	a6		; free locals, restore A6
 @start
 sumsq:
 	; D0 = D0*D0 + D1*D1, with a local variable from LINK
@@ -255,6 +338,25 @@ Anything a level still needs after the inner call - here its own n - must be sav
 Recursion is elegant but every level costs stack space. On a 68000 with a small stack, deep recursion is a crash waiting to happen; loops are usually preferred.
 @task
 Write fact: return D0 = D0! for D0 from 0 to 9, recursively (fact must call itself). D1 may be used as scratch.
+@step Answer the easy case
+If D0 is 0 or 1 the answer is 1, with no need to call again. CMP.L #1,D0 then BHI jumps to .rec only when D0 is higher than 1 (unsigned); otherwise MOVEQ puts 1 in D0 and RTS returns.
+^ fact:
+>	cmp.l	#1,d0		; D0 <= 1?
+>	bhi	.rec		; no: recurse
+>	moveq	#1,d0		; 0! = 1! = 1
+>	rts
+@step Call fact for n - 1
+This level still needs its n afterwards, so it pushes D0 on the stack. Then it subtracts 1 and calls fact itself, which works out (n - 1)! in D0.
+^	rts
+>.rec:
+>	move.l	d0,-(a7)		; save n
+>	subq.l	#1,d0		; n - 1
+>	bsr	fact		; D0 = (n - 1)!
+@step Multiply by n
+Pop this level's n into D1 and multiply: MULU.W gives n x (n - 1)! in D0. The RTS already in your code then returns to the level above.
+^	bsr	fact
+>	move.l	(a7)+,d1		; D1 = n
+>	mulu.w	d1,d0		; D0 = n!
 @start
 fact:
 	; D0 = D0!  (0! = 1)
@@ -306,6 +408,18 @@ Scc sets a byte to $FF if the condition is true and to $00 if it is false, using
 A byte of all ones is -1, so EXT.W and EXT.L turn it into a word or long of -1 or 0 - a mask you can AND with. Branches are slow on the 68000 when taken (10 cycles), and code with no branches always takes the same time, which matters when timing code to the screen.
 @task
 Without any branches: set the low byte of D0 to $FF if D1 > D2 (signed words), else $00. Set D3 to -1 (all 32 bits) if D1 (as a long) is zero, else to 0.
+@step Compare and set D0
+CMP.W D2,D1 sets the flags as if it worked out D1 - D2. SGT then sets D0's low byte to $FF if D1 was greater (signed), or $00 if not - with no branch at all.
+>	cmp.w	d2,d1		; compare D1 with D2
+>	sgt	d0		; D0.b = $FF if D1 > D2
+@step Test D1 for zero
+TST.L D1 sets Z when the whole long is zero, and SEQ makes D3's low byte $FF when Z is set, $00 otherwise.
+>	tst.l	d1		; is D1 zero?
+>	seq	d3		; D3.b = $FF if so
+@step Make it a long
+SEQ only sets one byte. EXT.W copies the byte's top bit through the word, and EXT.L through the long, so $FF becomes -1 in all 32 bits and $00 becomes 0.
+>	ext.w	d3		; byte to word
+>	ext.l	d3		; word to long
 @start
 	; D0.b = $FF if D1.w > D2.w, D3 = -1 if D1.l = 0 - no branches
 
@@ -351,6 +465,14 @@ Storing distances rather than addresses keeps the code position-independent. JMP
 This lesson's table and its four commands are given after your code: 0 adds D2 to D1, 1 subtracts it, 2 negates D1, 3 clears D1.
 @task
 D0 holds a command number, 0 to 3. Jump to the matching command through the table at the label table. No compares.
+@step Point at the table
+LEA table(pc),A0 puts the table's address into A0 - it doesn't read memory. The entries are words, so ADD.W D0,D0 turns the command number into a byte offset.
+>	lea	table(pc),a0		; A0 = the table
+>	add.w	d0,d0		; command x 2
+@step Read the distance and jump
+MOVE.W reads the entry at A0 + D0: the distance from the table to the command's code. JMP 0(a0,d0.w) then jumps to table + distance; the command's RTS returns straight to the caller.
+>	move.w	0(a0,d0.w),d0		; D0 = the distance
+>	jmp	0(a0,d0.w)		; go to the command
 @start
 	; jump to command D0 through the table
 
@@ -418,6 +540,18 @@ loop:
 The simulator counts cycles like a real 68000 with no wait states, and the result panel shows the count for each test.
 @task
 Clear 64 longs (256 bytes) starting at A0, in under 1200 cycles. A simple CLR loop takes about 1900.
+@step Set up the zero and the count
+Keep a zero in D1 to MOVE into memory - faster than CLR, which reads before it writes. With four longs per pass, 64 longs need 16 passes, so DBRA's count is 15.
+<	moveq	#63,d0
+>	moveq	#0,d1		; D1 = 0 to store
+>	moveq	#15,d0		; 16 passes
+@step Store four longs per pass
+Replace the CLR with four MOVE.L D1,(a0)+: each writes a zero long and steps A0 on by 4. The DBRA overhead is now paid once for every 16 bytes.
+<	clr.l	(a0)+
+>	move.l	d1,(a0)+		; 4 bytes
+>	move.l	d1,(a0)+		; 8
+>	move.l	d1,(a0)+		; 12
+>	move.l	d1,(a0)+		; 16
 @start
 	moveq	#63,d0
 loop:
@@ -459,6 +593,20 @@ OBJ_SIZE rs.b	0		; 8: the size of the whole record
 Insert a field and every offset after it moves along by itself. The names go in the first column, like labels; they cost nothing in the program - they are only numbers for the assembler.
 @task
 A0 points at an object: x, y, dx and dy, words in that order. Define the offsets with RS, then add dx to x and dy to y.
+@step Name the fields
+Each RS.W 1 gives its name the current count and then adds 2 for one word, so OBJ_X is 0, OBJ_Y 2, OBJ_DX 4 and OBJ_DY 6. The names go in the first column, like labels.
+>OBJ_X	rs.w	1		; 0
+>OBJ_Y	rs.w	1		; 2
+>OBJ_DX	rs.w	1		; 4
+>OBJ_DY	rs.w	1		; 6
+@step Add dx to x
+OBJ_DX(a0) reads the word 4 bytes into the object. ADD.W D0,OBJ_X(a0) adds it straight into x in memory.
+>	move.w	OBJ_DX(a0),d0		; D0 = dx
+>	add.w	d0,OBJ_X(a0)		; x += dx
+@step Add dy to y
+The same again for the second pair of fields: dy is added to y.
+>	move.w	OBJ_DY(a0),d0		; D0 = dy
+>	add.w	d0,OBJ_Y(a0)		; y += dy
 @start
 	rsreset
 	; define OBJ_X, OBJ_Y, OBJ_DX, OBJ_DY with rs.w
@@ -506,6 +654,14 @@ Each long takes 20 cycles to move plus 10 for the DBRA. Unrolling (lesson 49) or
 (The blitter can copy memory too, in parallel with the CPU - lesson 81.)
 @task
 Copy D0 longs (1 or more) from A0 to A1.
+@step Adjust the count
+DBRA stops when its counter passes -1, so it runs one more time than the number in the register. Subtract 1 from D0 first so it copies exactly D0 longs.
+>	subq.w	#1,d0		; count - 1 for DBRA
+@step The copy loop
+MOVE.L (a0)+,(a1)+ copies one long and steps both pointers on by 4. DBRA counts D0 down and goes back to loop until it passes -1.
+>loop:
+>	move.l	(a0)+,(a1)+		; copy a long
+>	dbra	d0,loop		; and the rest
 @start
 	; copy D0 longs from (a0) to (a1)
 
@@ -542,6 +698,27 @@ loop:
 MOVEM.L to memory costs 8 + 8 cycles per register, so about 9 cycles per long against 12 or more for MOVE.L. Demo coders cleared whole screens like this, and used the same trick to copy, with MOVEM from memory into registers and back.
 @task
 Clear 32 longs (128 bytes) starting at A0, using MOVEM to store 8 registers at a time. Use D0 as the counter and D1-D7/A1 as the zeros.
+@step Clear the first registers
+MOVEQ #0 clears a whole data register in 4 cycles. These registers will be stored over and over as the zeros.
+>	moveq	#0,d1
+>	moveq	#0,d2
+>	moveq	#0,d3
+>	moveq	#0,d4
+@step Clear the rest
+D5 to D7 the same way. MOVEQ cannot write an address register, so A1 gets its zero copied from D1 with MOVE.L.
+>	moveq	#0,d5
+>	moveq	#0,d6
+>	moveq	#0,d7
+>	move.l	d1,a1		; A1 = 0 too
+@step Start at the end
+MOVEM with -(a0) fills downwards, so LEA 128(a0),A0 points A0 just past the 128 bytes. Four passes of 32 bytes cover them, so the DBRA count is 3.
+>	lea	128(a0),a0		; end of the block
+>	moveq	#3,d0		; 4 passes
+@step Store eight zeros at once
+Each MOVEM.L D1-D7/A1,-(a0) writes all eight registers - 32 bytes - and moves A0 down by 32.
+>loop:
+>	movem.l	d1-d7/a1,-(a0)	; 32 bytes of zeros
+>	dbra	d0,loop
 @start
 	; clear 128 bytes at A0 with MOVEM
 
@@ -589,6 +766,23 @@ found:
 Returning -1 for "not found" is a common convention: no real index is negative. A linear search takes time in proportion to the table size; the next lesson does better on sorted tables.
 @task
 A0 points at a table of D1 words (D1 at least 1). Find the word in D0. Put its index (0 for the first) into D2 as a long, or -1 if it is not in the table.
+@step Set up the index and count
+D2 is the index of the entry being looked at, starting at 0. DBRA needs the count minus one, so subtract 1 from D1.
+>	moveq	#0,d2		; index 0
+>	subq.w	#1,d1		; count - 1 for DBRA
+@step Compare each entry
+CMP.W (a0)+,D0 compares the table word with D0 and steps A0 on to the next one. If they are equal, BEQ leaves the loop with the index in D2.
+>loop:
+>	cmp.w	(a0)+,d0		; is this the one?
+>	beq	found		; yes: D2 is its index
+@step Move to the next entry
+Not this one: add 1 to the index and let DBRA go round for the next entry.
+>	addq.w	#1,d2		; next index
+>	dbra	d1,loop
+@step Not found
+If the loop runs out, the value is not in the table, so D2 becomes -1. The found label comes after it, so a match skips that line.
+>	moveq	#-1,d2		; not there
+>found:
 @start
 	; D2 = index of D0 in the word table at A0 (D1 entries), or -1
 
@@ -636,6 +830,47 @@ Keep two indexes, low and high, around the part still possible:
 Use ASR to halve and remember the table holds words, so the byte offset is mid x 2. The table here holds signed words in rising order.
 @task
 A0 points at a sorted table of D1 signed words. Find D0 with a binary search. Put its index into D2 as a long, or -1 if it is not there. Registers D3-D7 may be used freely.
+@step Set the range and test it
+Low (D3) starts at 0 and high (D4) at the last index, D1 - 1. Each time round, if high is less than low the range is empty and BLT gives up.
+>	moveq	#0,d3		; low = 0
+>	move.w	d1,d4
+>	subq.w	#1,d4		; high = count - 1
+>loop:
+>	cmp.w	d3,d4		; high < low?
+>	blt	notfound		; yes: not there
+@step Read the middle entry
+The middle index is (low + high) / 2: ASR.W #1 halves it, keeping the sign. Doubling a copy gives the byte offset of the word, and MOVE.W reads it into D7.
+>	move.w	d3,d5
+>	add.w	d4,d5
+>	asr.w	#1,d5		; mid = (low + high) / 2
+>	move.w	d5,d6
+>	add.w	d6,d6		; byte offset = mid x 2
+>	move.w	0(a0,d6.w),d7	; D7 = table[mid]
+@step Compare and go lower
+CMP.W D0,D7 compares the middle entry with the value. Equal means found; less means look higher. Otherwise the entry is too big, so high becomes mid - 1 and the loop goes round.
+>	cmp.w	d0,d7
+>	beq	found
+>	blt	higher		; table[mid] < value
+>	move.w	d5,d4
+>	subq.w	#1,d4		; high = mid - 1
+>	bra	loop
+@step Go higher
+The middle entry was too small, so the answer can only be above it: low becomes mid + 1.
+>higher:
+>	move.w	d5,d3
+>	addq.w	#1,d3		; low = mid + 1
+>	bra	loop
+@step Return the index
+Found: the index is mid, in D5. MOVEQ #0 clears D2 first so the word copied in becomes a clean long, then BRA skips the not-found code.
+>found:
+>	moveq	#0,d2
+>	move.w	d5,d2		; D2 = mid as a long
+>	bra	done
+@step Not found
+The range ran out without a match, so D2 is -1. Both ways end at done.
+>notfound:
+>	moveq	#-1,d2		; not there
+>done:
 @start
 	; binary search for D0 in the sorted word table at A0 (D1 entries)
 
@@ -703,6 +938,37 @@ Signed or unsigned matters again: for signed values use BGE and BLE (or BLT and 
 Be careful with the count: a table of one entry needs no loop at all, and DBRA wants the number of remaining entries minus one.
 @task
 A0 points at a table of D1 signed words (D1 at least 1). Put the smallest into D2 and the largest into D3, both sign-extended to longs.
+@step Start with the first entry
+The first word is both the smallest and the largest seen so far, so it goes into D2 and D3. (a0)+ steps A0 on to the second entry.
+>	move.w	(a0)+,d2		; min = first
+>	move.w	d2,d3		; max = first
+@step Count the rest
+Take 1 off D1 for the entry already read; if nothing is left, BEQ skips the loop. Then subtract 1 more because DBRA runs once more than its count.
+>	subq.w	#1,d1		; entries left
+>	beq	done		; only one entry
+>	subq.w	#1,d1		; - 1 for DBRA
+@step Read the next entry
+Each time round the loop, the next word goes into D4 and A0 steps on.
+>loop:
+>	move.w	(a0)+,d4		; D4 = next entry
+@step Check for a new minimum
+CMP.W D2,D4 compares the entry with the smallest so far. BGE (signed) skips when it is not smaller; otherwise it becomes the new minimum.
+>	cmp.w	d2,d4
+>	bge	notmin		; not smaller
+>	move.w	d4,d2		; new minimum
+>notmin:
+@step Check for a new maximum
+The same for the largest: BLE skips when the entry is not bigger. DBRA then goes round for the next entry.
+>	cmp.w	d3,d4
+>	ble	notmax		; not bigger
+>	move.w	d4,d3		; new maximum
+>notmax:
+>	dbra	d1,loop
+@step Extend to longs
+EXT.L copies the top bit of each word through the upper half, so -3 becomes $FFFFFFFD rather than $0000FFFD.
+>done:
+>	ext.l	d2
+>	ext.l	d3
 @start
 	; D2 = min, D3 = max of D1 signed words at A0
 
@@ -758,6 +1024,39 @@ Bubble sort walks along the table comparing each pair of neighbours and swapping
 It is slow for big tables, but short and simple, and fine for a high score table or a dozen sprites sorted by Y for drawing.
 @task
 Sort the D1 signed words at A0 (D1 at least 1) into rising order, in place. Registers D2-D7 and A1 may be used freely.
+@step Start a pass
+Each pass looks at D1 - 1 pairs, counted in D2. A table of one entry has no pairs, so BEQ goes straight to done.
+>outer:
+>	move.w	d1,d2
+>	subq.w	#1,d2		; pairs to compare
+>	beq	done		; one entry: sorted
+@step Reset the swap flag
+D3 records whether this pass swapped anything, starting at 0. A1 walks along the table from the start, leaving A0 pointing at it for the next pass.
+>	moveq	#0,d3		; nothing swapped yet
+>	move.l	a0,a1		; walk from the start
+@step Compare a pair
+Read the entry at (a1) and its neighbour at 2(a1). If the second is greater or equal (signed), BGE skips the swap.
+>inner:
+>	move.w	(a1),d4		; a
+>	move.w	2(a1),d5		; b
+>	cmp.w	d4,d5
+>	bge	noswap		; b >= a: in order
+@step Swap them
+Write the two words back the other way round and set D3 to 1, so another pass will follow.
+>	move.w	d5,(a1)
+>	move.w	d4,2(a1)
+>	moveq	#1,d3		; swapped
+@step Step to the next pair
+ADDQ.L #2 moves A1 on by one word. SUBQ counts the pairs down and BNE goes round until the pass is done.
+>noswap:
+>	addq.l	#2,a1		; next pair
+>	subq.w	#1,d2
+>	bne	inner
+@step Repeat while anything moved
+TST.W D3 checks the swap flag: if this pass swapped something, BNE starts another pass. A pass with no swaps means the table is sorted.
+>	tst.w	d3
+>	bne	outer		; swapped: another pass
+>done:
 @start
 	; sort D1 signed words at A0, smallest first
 
@@ -821,6 +1120,18 @@ ABCD adds two BCD bytes plus X, giving a BCD result and setting X when it carrie
 SBCD subtracts in the same way, and NBCD negates.
 @task
 A0 points at a 6-digit BCD score (3 bytes), A1 at 3 more BCD bytes to add to it. Add them into the score at A0. A score above 999999 wraps round.
+@step Point past the last bytes
+ABCD with -(An) steps back before each byte, so both pointers start just past their three bytes. LEA 3(a0),A0 adds 3 to the address without reading memory.
+>	lea	3(a0),a0		; end of the score
+>	lea	3(a1),a1		; end of the points
+@step Clear X
+ABCD adds X in as a carry, so it must be clear before the first pair of digits. MOVE.W #0,CCR clears all the condition codes, X included.
+>	move.w	#0,ccr		; X = 0
+@step Add the three bytes
+Each ABCD -(a1),-(a0) adds two BCD digits plus X into the score, and sets X if they carry past 99. Going from the last byte to the first, the carries move up the score.
+>	abcd	-(a1),-(a0)		; units and tens
+>	abcd	-(a1),-(a0)		; hundreds, thousands
+>	abcd	-(a1),-(a0)		; the top two digits
 @start
 	; score at (a0) += BCD at (a1), 3 bytes each
 
@@ -866,6 +1177,15 @@ Adding and subtracting work exactly as for ordinary numbers - ADD.L adds the fra
 Positions in 16.16 and speeds that change by tiny amounts give smooth movement, gravity and acceleration.
 @task
 A0 points at a 16.16 position (long) followed by a 16.16 speed (long at 4(a0)). Add the speed to the position in memory, then put the whole-number part of the new position into D0 as a signed long.
+@step Add the speed
+Load the speed from 4(a0) and ADD.L it into the position at (a0). The fractions add in the low word and carry into the whole part by themselves.
+>	move.l	4(a0),d1		; D1 = speed
+>	add.l	d1,(a0)		; position += speed
+@step Take the whole part
+Load the new position, SWAP brings the whole part down into the low word, and EXT.L sign-extends it so -1 stays -1.
+>	move.l	(a0),d0		; D0 = position
+>	swap	d0		; whole part in the low word
+>	ext.l	d0		; as a signed long
 @start
 	; (a0) += 4(a0), then D0 = whole part of (a0)
 
@@ -908,6 +1228,23 @@ Each call turns the current value into the next one. It never produces 0 (unless
 	lsl.l	d2,d1
 @task
 D0 holds the current xorshift value. Replace it with the next one: x ^= x << 13, x ^= x >> 17, x ^= x << 5 (logical shifts on longs). D1 and D2 may be used as scratch.
+@step x ^= x << 13
+Copy D0 to D1 and shift the copy left 13 places. Counts above 8 must come from a register, so D2 holds 13. EOR then mixes the shifted copy into D0.
+>	move.l	d0,d1
+>	moveq	#13,d2
+>	lsl.l	d2,d1		; D1 = x << 13
+>	eor.l	d1,d0		; x ^= D1
+@step x ^= x >> 17
+The same again with a logical shift right of 17 places, so zeros come in from the top.
+>	move.l	d0,d1
+>	moveq	#17,d2
+>	lsr.l	d2,d1		; D1 = x >> 17
+>	eor.l	d1,d0
+@step x ^= x << 5
+A count of 5 fits in the instruction itself, so no register is needed for the last shift.
+>	move.l	d0,d1
+>	lsl.l	#5,d1		; D1 = x << 5
+>	eor.l	d1,d0
 @start
 	; D0 = next xorshift32 value
 
@@ -953,6 +1290,23 @@ This lesson's table, sintab, has 256 signed bytes: one full circle in 256 steps,
 with the angle wrapped by AND #255. Multiply the result by a radius and shift right by 7 to get a position on a circle.
 @task
 D0 holds an angle, 0 to 255. Put sin(angle) into D1 and cos(angle) into D2, both sign-extended to longs, using the table at sintab.
+@step Point at the table
+LEA sintab(pc),A0 puts the table's address into A0 - it doesn't read memory.
+>	lea	sintab(pc),a0		; A0 = the sine table
+@step Read the sine
+The angle in D0 is the index: MOVE.B reads the byte at A0 + D0. EXT.W and EXT.L sign-extend it, so -127 stays negative as a long.
+>	move.b	0(a0,d0.w),d1	; D1 = sin(angle)
+>	ext.w	d1
+>	ext.l	d1
+@step Turn a quarter
+Cosine is sine 64 steps later. Add 64 to the angle and AND it with 255 so it wraps round past the end of the table.
+>	add.w	#64,d0		; a quarter turn on
+>	and.w	#255,d0		; wrap at 256
+@step Read the cosine
+Read the table again at the new angle and sign-extend it into D2.
+>	move.b	0(a0,d0.w),d2	; D2 = cos(angle)
+>	ext.w	d2
+>	ext.l	d2
 @start
 	; D1 = sin(D0), D2 = cos(D0), from the 256-byte table sintab
 
