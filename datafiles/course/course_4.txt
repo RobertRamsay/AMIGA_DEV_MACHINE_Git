@@ -1,0 +1,1072 @@
+=== UNIT 7: The 68000 system
+
+=== LESSON 61: The status register
+@summary Supervisor and user mode, the interrupt mask, and reading SR.
+@text
+The CCR flags you know are the low byte of a 16-bit status register, SR. The high byte controls the processor itself:
+
+	bit 15		T	trace: an exception after every instruction (debuggers)
+	bit 13		S	supervisor mode (1) or user mode (0)
+	bits 10-8	I2-I0	interrupt mask: interrupts at or below this level wait
+	bits 4-0	XNZVC	the condition codes
+
+In supervisor mode every instruction is allowed. In user mode, instructions that change the high byte of SR (and a few others) cause a privilege violation, and A7 is a separate user stack. The Amiga's operating system runs programs in user mode; games and demos that take over the machine usually switch to supervisor.
+
+MOVE SR,Dn reads the whole register (on a 68000 even in user mode). The interrupt mask is bits 8 to 10: shift right by 8 and keep three bits.
+@task
+Put the interrupt mask (0 to 7) from SR into D0 as a long, and set D1 to 1 in supervisor mode or 0 in user mode.
+@start
+	; D0 = interrupt mask, D1 = 1 if supervisor else 0
+
+@solution
+	move.w	sr,d0
+	moveq	#0,d1
+	btst	#13,d0
+	beq	user
+	moveq	#1,d1
+user:
+	lsr.w	#8,d0
+	and.l	#7,d0
+@hint
+move.w sr,d0. Test bit 13 for the supervisor flag. Then shift D0 right by 8 and AND with 7.
+@test Supervisor, mask 7
+setup: sr=2700 d0=FFFFFFFF d1=55
+expect: d0=7 d1=1
+@test Supervisor, mask 3
+setup: sr=2300 d0=0 d1=55
+expect: d0=3 d1=1
+@test User mode, mask 0
+setup: sr=0 d0=0 d1=55
+expect: d0=0 d1=0
+@quiz
+? What does the S bit of SR select?
++ Supervisor or user mode
+- Signed or unsigned arithmetic
+- The stack size
+? With the interrupt mask at 3, which interrupt levels are taken?
+- 1 to 3
++ 4 to 7
+- Only 3
+! Interrupts must be above the mask (level 7 always gets through).
+
+=== LESSON 62: Exceptions and the vector table
+@summary When things go wrong (or right): the CPU jumps through a table of addresses.
+@text
+An exception is the 68000 dropping what it is doing to run a handler: on an error, an interrupt or a TRAP. The handler's address comes from the vector table, 256 longs at the very start of memory:
+
+	$008	vector 2	bus error
+	$00C	vector 3	address error
+	$010	vector 4	illegal instruction
+	$014	vector 5	divide by zero
+	$020	vector 8	privilege violation
+	$064-$07C	vectors 25-31	interrupt levels 1-7
+	$080-$0BC	vectors 32-47	TRAP #0 to #15
+
+On an exception the CPU switches to supervisor mode, pushes the PC and SR on the supervisor stack and jumps to the handler. The handler ends with RTE, which pops them back.
+
+For an illegal instruction the stacked PC points at the bad instruction itself, so a handler that wants to carry on must step it past - the instruction ILLEGAL is two bytes long. In this course, an exception whose vector is still 0 stops your program with a message, much like a Guru Meditation.
+@task
+Install a handler for illegal instructions (vector 4, at address $10). The handler sets D7 to $DEAD (as a long), steps the stacked PC past the ILLEGAL instruction, and returns with RTE. The main program then runs ILLEGAL and carries on.
+@start
+	; install the handler in vector 4 ($10) here
+	illegal
+	moveq	#1,d0
+	rts
+
+handler:
+	; D7 = $DEAD, skip the ILLEGAL, return
+	rte
+@solution
+	lea	handler(pc),a0
+	move.l	a0,$10.w
+	illegal
+	moveq	#1,d0
+	rts
+
+handler:
+	move.l	#$DEAD,d7
+	addq.l	#2,2(a7)
+	rte
+@hint
+lea handler(pc),a0 and move.l a0,$10.w install it. On the stack the SR is at (a7) and the PC at 2(a7): add 2 to the PC.
+@test The handler runs and the program carries on
+setup: d0=0 d7=0
+expect: d0=1 d7=DEAD
+@test From other values
+setup: d0=55 d7=FFFFFFFF
+expect: d0=1 d7=DEAD
+@quiz
+? Where is the vector for TRAP #0?
+- $000
+- $010
++ $080
+- $0BC
+! Vector 32 x 4 bytes = $80.
+? What does RTE pop?
++ SR and PC
+- Only the PC
+- All the registers
+
+=== LESSON 63: TRAP: asking the supervisor
+@summary Calling a supervisor-mode routine from user mode with TRAP.
+@text
+User-mode code cannot change SR or touch protected things. TRAP #n is the way in: it raises exception 32 + n, so the CPU switches to supervisor mode and runs the handler from vector $80 + 4n. Operating systems use it for system calls; Amiga programs often use it to get into supervisor mode once at the start.
+
+Inside the handler the CPU is in supervisor mode with A7 the supervisor stack - even if the program was in user mode. RTE returns to the instruction after the TRAP, back in the mode the program was in, with its SR restored.
+@task
+Install a handler at the TRAP #0 vector ($80) that doubles D0, copies SR into D1 and returns. Then call TRAP #0 twice from the main program.
+@start
+	; install the handler, then call trap #0 twice
+	rts
+
+doubler:
+	; D0 = D0 * 2, D1 = SR, return
+	rte
+@solution
+	lea	doubler(pc),a0
+	move.l	a0,$80.w
+	trap	#0
+	trap	#0
+	rts
+
+doubler:
+	add.l	d0,d0
+	move.w	sr,d1
+	rte
+@hint
+Install it like the illegal-instruction handler, at $80. In the handler: add.l d0,d0, move.w sr,d1, rte.
+@test From user mode
+setup: sr=0 d0=2 d1=0
+expect: d0=8 d1=2000 sr=0
+@test From supervisor mode
+setup: sr=2700 d0=3 d1=0
+expect: d0=C d1=2700
+@quiz
+? Which vector does TRAP #3 use?
+- $0C
+- $83
++ $8C
+! $80 + 3 x 4.
+
+=== LESSON 64: Debugging an address error
+@summary The classic crash: a word read at an odd address - and how to read unaligned data.
+@text
+On the 68000 every word and long access must be at an even address. Breaking that rule raises an address error (vector 3); on an Amiga with nothing else set up, it ends in the famous Guru Meditation with error #00000003.
+
+The bug usually comes from a data structure where something has shifted by a byte, or from reading a file whose fields are not aligned. To read a word that starts at an odd address, read it a byte at a time and put it together:
+
+	move.b	1(a0),d0	; the high byte
+	lsl.w	#8,d0
+	move.b	2(a0),d0	; the low byte
+
+(The 68020 and later allow unaligned accesses, at a cost in speed - another reason old Amiga code sometimes only crashes on an A500.)
+@task
+The code in the editor crashes with an address error. It should read the big-endian word stored at A0+1 and A0+2 into the low word of D0. Fix it.
+@start
+	move.w	1(a0),d0
+@solution
+	move.b	1(a0),d0
+	lsl.w	#8,d0
+	move.b	2(a0),d0
+@hint
+Read the two bytes separately: the first one, shift it left by 8, then the second one into the low byte.
+@test $ABCD at $2001
+setup: a0=2000 m2000.l=ABCD00 d0=0
+expect: d0=ABCD
+@test $1234 at $3001, upper word kept
+setup: a0=3000 m3000.l=FF1234FF d0=FFFF0000
+expect: d0=FFFF1234
+@quiz
+? Which vector does an address error use?
+- 2
++ 3
+- 4
+? Which line causes an address error on a 68000 when A0 = $2000?
++ move.l 3(a0),d0
+- move.b 3(a0),d0
+- move.l 4(a0),d0
+
+=== LESSON 65: Divide by zero
+@summary Guarding against exceptions before they happen.
+@text
+DIVU and DIVS raise exception 5 when the divisor is zero. A handler could patch things up, but the usual answer is simply never to divide by zero: test the divisor first.
+
+	tst.w	d1
+	beq	nodivide
+
+A related instruction is CHK, which raises exception 6 if a register is below 0 or above a limit - a cheap array bounds check: chk.w #99,d0 traps if D0 is not between 0 and 99.
+
+Remember also that DIVU's result packs the remainder into the high word; to use the quotient as a plain long, clear the high word with AND.L #$FFFF.
+@task
+Divide D0 (unsigned long) by the word in D1. If D1 is zero, set D0 to $FFFFFFFF instead. Otherwise leave just the quotient in D0, with the upper word cleared.
+@start
+	divu.w	d1,d0
+@solution
+	tst.w	d1
+	bne	ok
+	moveq	#-1,d0
+	bra	done
+ok:
+	divu.w	d1,d0
+	and.l	#$0000FFFF,d0
+done:
+@hint
+TST.W D1 and branch round the divide when it is zero. After DIVU, AND.L #$FFFF clears the remainder.
+@test 10 / 3
+setup: d0=A d1=3
+expect: d0=3
+@test 7 / 0
+setup: d0=7 d1=0
+expect: d0=FFFFFFFF
+@test 100 / 7
+setup: d0=64 d1=7
+expect: d0=E
+@test Only the word of D1 counts
+setup: d0=64 d1=10000
+expect: d0=FFFFFFFF
+@quiz
+? What does chk.w #10,d0 do when D0.w = 12?
++ Raises a CHK exception
+- Sets D0 to 10
+- Nothing
+? Which exception vector is divide by zero?
+- 3
++ 5
+- 8
+
+=== LESSON 66: The Amiga memory map
+@summary Where things are: chip RAM, the custom chips, the CIAs and the ROM.
+@text
+The 68000 sees 16 MB of addresses. On the Amiga they are laid out like this:
+
+	$000000-$1FFFFF	chip RAM (up to 2 MB): the only memory the custom chips can reach
+	$200000-$9FFFFF	fast RAM, when fitted: only the CPU uses it
+	$BFD000	CIA-B (even bytes): disk control, serial and parallel lines
+	$BFE001	CIA-A (odd bytes): joystick fire buttons, keyboard, LED, timers
+	$C00000	"slow" RAM on A500 expansions
+	$DFF000	the custom chips: Agnus, Denise and Paula
+	$F80000	Kickstart ROM
+
+Everything the custom chips use - screens, sprites, sound samples, copper lists - must be in chip RAM. The ADM disks load your whole program into chip RAM, so that is always true here.
+@task
+Point A0 at the start of chip RAM, A1 at the custom chips, A2 at CIA-A's first register and A3 at CIA-B's.
+@start
+	; A0 = chip RAM, A1 = custom chips, A2 = CIA-A, A3 = CIA-B
+
+@solution
+	sub.l	a0,a0
+	lea	$DFF000,a1
+	lea	$BFE001,a2
+	lea	$BFD000,a3
+@hint
+lea $DFF000,a1 and so on. sub.l a0,a0 (or move.l #0,a0) makes A0 zero.
+@test The four addresses
+setup: a0=12345678 a1=0 a2=0 a3=0
+expect: a0=0 a1=DFF000 a2=BFE001 a3=BFD000
+@quiz
+? Which memory can the custom chips read?
++ Chip RAM only
+- Any RAM
+- Fast RAM only
+? At which address are the custom chip registers?
+- $BFE001
++ $DFF000
+- $F80000
+
+=== LESSON 67: Custom chip registers
+@summary CUSTOM and the register offsets: talking to Agnus, Denise and Paula.
+@text
+The custom chips have about 250 registers, each a word at $DFF000 plus an offset: COLOR00 (the background colour) is at $DFF180, DMACON at $DFF096. ADM's CODE blocks and lessons know them all by name as offsets, with CUSTOM = $DFF000, so you can write
+
+	move.w	#$0F00,CUSTOM+COLOR00
+
+or, much better when there are several, keep CUSTOM in an address register and use displacements:
+
+	lea	CUSTOM,a6
+	move.w	#$0F00,COLOR00(a6)
+	move.w	#$00F0,COLOR01(a6)
+
+Each displacement access is shorter and faster than an absolute address. Most registers are write-only: reading them gives rubbish. A few are read-only and have their own names, such as DMACONR and VPOSR.
+@task
+Set the background colour COLOR00 to red ($0F00) and COLOR01 to green ($00F0), using CUSTOM in an address register.
+@start
+	; COLOR00 = $0F00, COLOR01 = $00F0
+
+@solution
+	lea	CUSTOM,a6
+	move.w	#$0F00,COLOR00(a6)
+	move.w	#$00F0,COLOR01(a6)
+@hint
+lea CUSTOM,a6 and then move.w #$0F00,COLOR00(a6).
+@test The two colours
+setup: a6=0
+expect: hw180=F00 hw182=F0
+@quiz
+? What does reading a write-only custom register give?
+- Its last value
++ Rubbish: write-only registers cannot be read back
+- Always zero
+? COLOR01 is at offset $182. What is its address?
++ $DFF182
+- $0182
+- $BFE182
+
+=== LESSON 68: Set and clear: DMACON
+@summary Registers with a SET/CLR bit: switching single DMA channels on and off.
+@text
+DMACON switches the chips' DMA channels: bitplanes, copper, blitter, sprites, disk and the four audio channels. Several parts of a program share it, so you must be able to change one bit without knowing the others. Bit 15 makes that possible: it says whether the 1 bits in the rest of the word are to be set or cleared.
+
+	move.w	#$8380,DMACON(a6)	; SET DMAEN (9), BPLEN (8), COPEN (7)
+	move.w	#$0020,DMACON(a6)	; CLEAR SPREN (5)
+
+Bits that are 0 in the value are left alone either way. The current state is read from DMACONR. INTENA, INTREQ and ADKCON work in the same way.
+
+	bit 9	DMAEN	master switch
+	bit 8	BPLEN	bitplanes
+	bit 7	COPEN	copper
+	bit 6	BLTEN	blitter
+	bit 5	SPREN	sprites
+	bits 3-0	AUD3EN-AUD0EN	audio
+@task
+With one write, switch on DMAEN, BPLEN and COPEN. With a second write, switch off SPREN. Then read DMACONR and put its low 10 bits (AND $03FF) into the low word of D0.
+@start
+	lea	CUSTOM,a6
+	; set DMAEN+BPLEN+COPEN, clear SPREN, then D0 = DMACONR & $3FF
+
+@solution
+	lea	CUSTOM,a6
+	move.w	#$8380,DMACON(a6)
+	move.w	#$0020,DMACON(a6)
+	move.w	DMACONR(a6),d0
+	and.w	#$03FF,d0
+@hint
+$8380 sets bits 9, 8 and 7. $0020 (bit 15 clear) clears bit 5.
+@test Sprites were on
+setup: dmacon=20 d0=0
+expect: d0=380 dmacon=380 hwcount096=2
+@test Everything was on
+setup: dmacon=7FF d0=0
+expect: d0=3DF dmacon=7DF hwcount096=2
+@quiz
+? What does writing $0100 to DMACON do?
+- Sets bitplane DMA
++ Clears bitplane DMA
+- Clears everything except bitplanes
+! Bit 15 is 0, so the 1 bits are cleared.
+
+=== LESSON 69: Waiting for the vertical blank
+@summary Reading the beam position to sync with the display.
+@text
+The display is drawn line by line, 50 times a second on a PAL Amiga, by a beam sweeping down the screen. Games change the screen between frames, while the beam is in the vertical blank below the picture, to avoid tearing. The beam's line is in VPOSR and VHPOSR:
+
+	VPOSR	bit 0 = line bit 8
+	VHPOSR	bits 15-8 = line bits 7-0, bits 7-0 = horizontal position
+
+Read them together as a long from VPOSR and the line number sits in bits 16-8:
+
+wait:
+	move.l	VPOSR(a6),d0
+	and.l	#$1FF00,d0
+	cmp.l	#$12C00,d0	; line 300
+	bne	wait
+
+A PAL frame has 313 lines; the picture of a normal screen ends at line 300 ($12C), a good moment to start the next frame's work. In the simulator the beam moves with the cycle count, as on a real 68000.
+@task
+Wait until the beam reaches line 300 ($12C), by reading VPOSR in a loop.
+@start
+	lea	CUSTOM,a6
+	; wait for line 300
+
+@solution
+	lea	CUSTOM,a6
+wait:
+	move.l	VPOSR(a6),d0
+	and.l	#$1FF00,d0
+	cmp.l	#$12C00,d0
+	bne	wait
+@hint
+Read the long at VPOSR(a6), AND with $1FF00, compare with $12C00 and loop until equal.
+@test The beam is at line 300 when the program ends
+setup: d0=0
+expect: vpos=12C
+@quiz
+? How many lines does a PAL frame have?
+- 256
+- 262
++ 313
+- 625
+? Why wait for the vertical blank before changing the screen?
++ So the change does not tear the picture while it is being drawn
+- Because the CPU is faster then
+- The custom registers are locked otherwise
+
+=== LESSON 70: Interrupts
+@summary A level 3 handler on the vertical blank: VERTB, INTENA and INTREQ.
+@text
+Instead of waiting in a loop, the program can be told when a frame starts. Paula raises interrupts for the chips' events; the vertical blank (VERTB, bit 5) comes in at level 3, through the vector at $6C.
+
+Three things must be in place: the vector, the interrupt enabled in INTENA together with its master switch (INTEN, bit 14), and the CPU's interrupt mask below 3:
+
+	move.w	#$C020,INTENA(a6)	; SET + INTEN + VERTB
+	move.w	#$2000,sr		; supervisor, mask 0
+
+The handler must acknowledge the interrupt by clearing its bit in INTREQ, or it will be called again immediately, for ever:
+
+handler:
+	; ... work ...
+	move.w	#$0020,INTREQ(a6)
+	rte
+
+Interrupts can arrive between any two instructions, so a handler must save every register it changes (here it only uses D7, which the main program reads).
+@task
+Install a level 3 handler at $6C that adds 1 to the word in D7 and acknowledges VERTB. Enable the VERTB interrupt, lower the mask, wait until D7 reaches 3, then raise the mask to 7, switch the interrupt off again and return.
+@start
+	lea	CUSTOM,a6
+	moveq	#0,d7
+	; install the handler, enable VERTB, wait for D7 = 3, switch it off
+	rts
+
+handler:
+	; count and acknowledge
+	rte
+@solution
+	lea	CUSTOM,a6
+	moveq	#0,d7
+	lea	handler(pc),a0
+	move.l	a0,$6C.w
+	move.w	#$C020,INTENA(a6)
+	move.w	#$2000,sr
+wait:
+	cmp.w	#3,d7
+	bne	wait
+	move.w	#$2700,sr
+	move.w	#$0020,INTENA(a6)
+	rts
+
+handler:
+	addq.w	#1,d7
+	move.w	#$0020,INTREQ(a6)
+	rte
+@hint
+Vector at $6C, INTENA $C020, SR $2000. Wait with cmp.w #3,d7 / bne. Afterwards SR $2700 and INTENA $0020 (clear). The handler: addq.w #1,d7, INTREQ $0020, RTE.
+@test Three frames
+setup: d7=0
+expect: d7=3 hw09A=20 intena=4000
+@quiz
+? Why must a handler write to INTREQ?
++ To acknowledge the interrupt, or it is taken again at once
+- To enable the next frame
+- To restore the registers
+? Which level is the vertical blank interrupt?
+- 1
++ 3
+- 6
+
+=== UNIT 8: Agnus, Denise and the Copper
+
+=== LESSON 71: Taking over the machine
+@summary Saving the system's interrupts and DMA, switching them off, and putting them back.
+@text
+A game or demo that drives the hardware itself must stop the operating system getting in the way - and, when it exits, give back exactly what it found. The pattern:
+
+	move.w	INTENAR(a6),d6		; save the enabled interrupts
+	move.w	DMACONR(a6),d7		; and the DMA channels
+	move.w	#$7FFF,INTENA(a6)	; all interrupts off
+	move.w	#$7FFF,DMACON(a6)	; all DMA off
+	; ... the program ...
+	or.w	#$8000,d6
+	or.w	#$8000,d7
+	move.w	d7,DMACON(a6)		; SET exactly the saved bits
+	move.w	d6,INTENA(a6)
+
+Setting bit 15 turns the saved values into SET writes. The full version also stops multitasking with exec's Forbid, saves the system copper list from graphics.library and waits for the blitter, but this is the hardware heart of it. (The TAKE SYSTEM button in the CODE editor inserts a complete version.)
+@task
+Save INTENAR in D6 and DMACONR in D7, switch off all interrupts and all DMA, then switch back on exactly the ones that were on.
+@start
+	lea	CUSTOM,a6
+	; save, switch everything off, restore
+
+@solution
+	lea	CUSTOM,a6
+	move.w	INTENAR(a6),d6
+	move.w	DMACONR(a6),d7
+	move.w	#$7FFF,INTENA(a6)
+	move.w	#$7FFF,DMACON(a6)
+	or.w	#$8000,d6
+	or.w	#$8000,d7
+	move.w	d7,DMACON(a6)
+	move.w	d6,INTENA(a6)
+@hint
+Read INTENAR and DMACONR, write $7FFF to INTENA and DMACON, then OR the saved values with $8000 and write them back.
+@test The system's settings come back
+setup: intena=602C dmacon=3F0
+expect: intena=602C dmacon=3F0 hwcount09A=2 hwcount096=2
+@test Different settings
+setup: intena=4020 dmacon=380
+expect: intena=4020 dmacon=380 hwcount09A=2 hwcount096=2
+@quiz
+? Why OR the saved value with $8000 before writing it back?
++ So the write sets those bits (bit 15 = SET)
+- To switch the master switch off
+- To make it negative
+? What does writing $7FFF to INTENA do?
++ Clears every interrupt enable bit
+- Enables every interrupt
+- Nothing
+
+=== LESSON 72: The palette
+@summary COLOR00 to COLOR31: loading a whole palette from a table.
+@text
+The OCS and ECS Amiga have 32 colour registers, COLOR00 to COLOR31, at $DFF180 to $DFF1BE. Each holds a 12-bit $0RGB colour. The pixels on screen are colour numbers: with one bitplane a pixel is colour 0 or 1, with five it is 0 to 31. COLOR00 is also the background and border.
+
+They sit one after another, so a palette is loaded with a simple copy loop into CUSTOM+COLOR00. Changing a colour register changes every pixel of that colour at once, which is how colour cycling and fades work without touching the pixels.
+@task
+A0 points at a table of 16 colour words. Copy them into COLOR00 to COLOR15.
+@start
+	; 16 colours from (a0) into COLOR00-COLOR15
+
+@solution
+	lea	CUSTOM+COLOR00,a1
+	moveq	#15,d0
+loop:
+	move.w	(a0)+,(a1)+
+	dbra	d0,loop
+@hint
+Point A1 at CUSTOM+COLOR00 and copy 16 words with (a0)+ and (a1)+.
+@test 16 colours
+setup: a0=2000 m2000.w=0 m2002.w=F00 m2004.w=F0 m201E.w=FFF
+expect: hw180=0 hw182=F00 hw184=F0 hw19E=FFF hwcount1A0=0 hwcount180=1
+@quiz
+? How many colour registers does an OCS Amiga have?
+- 16
++ 32
+- 64
+- 256
+? With 3 bitplanes, how many colours can pixels have?
+- 3
++ 8
+- 16
+
+=== LESSON 73: Bitplanes: plotting a pixel
+@summary How the Amiga stores pixels: one bit per pixel in each plane.
+@text
+The Amiga's screens are planar. A bitplane is a block of memory with one bit for each pixel: for a 320 x 256 screen, 40 bytes per row and 10240 bytes in all. Bit 7 of a byte is the leftmost of its eight pixels. With several bitplanes, a pixel's colour number is made of one bit from each plane.
+
+To set pixel (x, y) in a plane:
+
+	byte	= y * 40 + x / 8
+	bit	= 7 - (x AND 7)
+
+7 - (x AND 7) is the same as (NOT x) AND 7, and BSET on memory only uses the low three bits of the bit number, so NOT on its own is enough. Planar graphics make some things fast (scrolling, fewer colours means less memory) and others awkward (plotting single pixels) - the blitter helps with the rest.
+@task
+A0 points at a 320 x 256 bitplane. Set the pixel at x = D0, y = D1 (words), leaving the other pixels alone. D2 and D3 may be used as scratch.
+@start
+	; set pixel (D0, D1) in the bitplane at A0
+
+@solution
+	move.w	d1,d2
+	mulu.w	#40,d2
+	move.w	d0,d3
+	lsr.w	#3,d3
+	add.w	d3,d2
+	move.w	d0,d3
+	not.w	d3
+	bset	d3,0(a0,d2.l)
+@hint
+Offset = y * 40 + x / 8 (MULU and LSR #3). Bit number = NOT x. Then bset d3,0(a0,d2.l).
+@test Top left, next to an existing pixel
+setup: a0=10000 d0=0 d1=0 m10000.b=1
+expect: m10000.b=81
+@test x = 9, y = 1
+setup: a0=10000 d0=9 d1=1
+expect: m10029.b=40 m10028.b=0
+@test Bottom right
+setup: a0=10000 d0=13F d1=FF
+expect: m127FF.b=1
+@quiz
+? Which bit of a byte is the leftmost pixel?
++ Bit 7
+- Bit 0
+- Bit 3
+? How many bytes is one 320 x 256 bitplane?
+- 8192
++ 10240
+- 40960
+
+=== LESSON 74: Setting up a screen
+@summary DIWSTRT, DIWSTOP, DDFSTRT, DDFSTOP and BPLCON0 for a PAL low-res screen.
+@text
+Five registers describe a normal screen:
+
+	DIWSTRT	$2C81	display window start: line $2C, horizontal $81
+	DIWSTOP	$2CC1	window stop: line $12C, horizontal $1C1 (the 9th bits are implied)
+	DDFSTRT	$0038	data fetch start
+	DDFSTOP	$00D0	data fetch stop: 20 words (320 pixels) per line
+	BPLCON0	$n200	n = the number of bitplanes, in bits 14-12; bit 9 = colour on
+
+That gives the standard 320 x 256 PAL low-res screen, which every ADM display macro uses. BPLCON1 holds the fine scroll (lesson 80) and BPLCON2 the sprite and playfield priorities. With BPLCON0's plane count you choose 2 to 32 colours.
+@task
+Write the four window registers for a 320 x 256 PAL screen, BPLCON0 for D0 bitplanes (1 to 5) with the colour bit on, and 0 into BPLCON1.
+@start
+	lea	CUSTOM,a6
+	; DIWSTRT, DIWSTOP, DDFSTRT, DDFSTOP, BPLCON0 for D0 planes, BPLCON1
+
+@solution
+	lea	CUSTOM,a6
+	move.w	#$2C81,DIWSTRT(a6)
+	move.w	#$2CC1,DIWSTOP(a6)
+	move.w	#$0038,DDFSTRT(a6)
+	move.w	#$00D0,DDFSTOP(a6)
+	move.w	d0,d1
+	moveq	#12,d2
+	lsl.w	d2,d1
+	or.w	#$0200,d1
+	move.w	d1,BPLCON0(a6)
+	move.w	#0,BPLCON1(a6)
+@hint
+Shift the plane count left by 12 (count in a register: moveq #12,d2 / lsl.w d2,d1) and OR in $0200.
+@test 3 bitplanes
+setup: d0=3
+expect: hw08E=2C81 hw090=2CC1 hw092=38 hw094=D0 hw100=3200 hwcount102=1
+@test 5 bitplanes
+setup: d0=5
+expect: hw100=5200 hw08E=2C81
+@quiz
+? BPLCON0 = $4200. How many bitplanes?
+- 2
++ 4
+- 42
+? How many colours do 5 bitplanes give?
+- 5
+- 16
++ 32
+
+=== LESSON 75: Bitplane pointers
+@summary BPLxPT: telling the hardware where each plane's pixels are.
+@text
+Each bitplane has a pointer register pair, BPL1PTH/BPL1PTL to BPL6PTH/BPL6PTL, at $0E0 to $0F6: a long for each plane, one after another. Write the address with a single MOVE.L (BPL1PT is the long name):
+
+	move.l	a0,BPL1PT(a6)
+
+The hardware moves the pointers on as it fetches each line, so they must be written again every frame - usually by the copper. After each line it adds the modulo (BPL1MOD for odd planes, BPL2MOD for even ones), the number of bytes to skip; for a plain 320-pixel-wide screen it is 0.
+
+Here the planes are stored one after another, 10240 bytes each. (Interleaved screens, with the lines of each plane alternating, use a modulo of 40 x (planes - 1) instead.)
+@task
+A0 points at a screen of D0 bitplanes (1 to 5), each 10240 bytes, one after another. Write each plane's address into BPL1PT, BPL2PT, ..., and set both modulos to 0.
+@start
+	; BPLxPT for D0 planes from A0, BPL1MOD = BPL2MOD = 0
+
+@solution
+	lea	CUSTOM+BPL1PT,a1
+	subq.w	#1,d0
+loop:
+	move.l	a0,(a1)+
+	add.l	#10240,a0
+	dbra	d0,loop
+	move.w	#0,CUSTOM+BPL1MOD
+	move.w	#0,CUSTOM+BPL2MOD
+@hint
+A1 = CUSTOM+BPL1PT; loop D0 times: move.l a0,(a1)+ and add 10240 to A0. Then clear the two modulos.
+@test Three planes at $20000
+setup: d0=3 a0=20000
+expect: hwlong0E0=20000 hwlong0E4=22800 hwlong0E8=25000 hwcount0EC=0 hwcount108=1 hwcount10A=1
+@test One plane at $30000
+setup: d0=1 a0=30000
+expect: hwlong0E0=30000 hwcount0E4=0 hwcount108=1
+@quiz
+? Why are the bitplane pointers rewritten every frame?
++ The hardware advances them while it draws, so they end up past the screen
+- They are cleared by the vertical blank
+- They are write-once
+? What does BPL1MOD hold?
++ The bytes to skip after each line of the odd planes
+- The number of planes
+- The scroll position
+
+=== LESSON 76: The Copper
+@summary The display co-processor: MOVE and WAIT instructions in a copper list.
+@text
+The Copper is a tiny processor in Agnus that runs in step with the beam. It has just three instructions, each two words:
+
+	MOVE	reg, value	first word = register offset (even, below $200), second = the value
+	WAIT	line, h		first word = line << 8 | h | 1, second = $FFFE
+	SKIP	(rarely used)
+
+The list ends with a WAIT that can never happen: $FFFF,$FFFE. So this copper list sets the background to red at the top, waits for line $80 and turns it blue:
+
+	dc.w	COLOR00,$0F00
+	dc.w	$8001,$FFFE
+	dc.w	COLOR00,$000F
+	dc.w	$FFFF,$FFFE
+
+It runs every frame, all by itself, with no work for the 68000. Most Amiga screens are set up by a copper list, which reloads the bitplane pointers and colours at the top of every frame.
+@task
+Write this copper list at A0, in chip RAM: COLOR00 = $0F00, wait for line $80, COLOR00 = $000F, end.
+@start
+	; build the copper list at A0
+
+@solution
+	move.l	#$01800F00,(a0)+
+	move.l	#$8001FFFE,(a0)+
+	move.l	#$0180000F,(a0)+
+	move.l	#$FFFFFFFE,(a0)+
+@hint
+Each instruction is two words - one MOVE.L. COLOR00 is $0180, so the first long is $01800F00.
+@test The list at $3000
+setup: a0=3000
+expect: m3000.l=1800F00 m3004.l=8001FFFE m3008.l=180000F m300C.l=FFFFFFFE
+@test The list at $4100
+setup: a0=4100
+expect: m4100.l=1800F00 m410C.l=FFFFFFFE
+@quiz
+? What does the copper instruction $0182,$0FFF do?
++ Sets COLOR01 to white
+- Waits for line $01
+- Ends the list
+? How does a copper list end?
++ With a WAIT for a position that never comes: $FFFF,$FFFE
+- With RTS
+- With a zero word
+
+=== LESSON 77: A copper gradient
+@summary Generating a copper list with a loop: a sky of 16 colours.
+@text
+Copper lists are often generated by code rather than typed in: a gradient with a band every 8 lines, a colour per line from a table, waves of colour that change every frame. Building one is just writing words in the right pattern:
+
+	for each band:
+		WAIT	line << 8 | 1, $FFFE
+		MOVE	COLOR00, colour
+		line = line + 8, colour = colour + 1
+
+Adding $0800 to the first word of the WAIT moves it 8 lines down. With 16 bands and the blue level going up by one each time, the screen fades from black to blue - with no pixels drawn at all.
+@task
+At A0, build a copper list of 16 bands: for n = 0 to 15, WAIT for line $40 + 8n, then set COLOR00 to n (blue levels 0 to 15). End it with $FFFF,$FFFE.
+@start
+	; 16 x (WAIT line $40 + 8n, COLOR00 = n), then the end
+
+@solution
+	moveq	#0,d0
+	move.w	#$4001,d1
+	moveq	#15,d2
+loop:
+	move.w	d1,(a0)+
+	move.w	#$FFFE,(a0)+
+	move.w	#COLOR00,(a0)+
+	move.w	d0,(a0)+
+	addq.w	#1,d0
+	add.w	#$0800,d1
+	dbra	d2,loop
+	move.l	#$FFFFFFFE,(a0)
+@hint
+Keep the WAIT word ($4001 to start) in one register and the colour in another. Each loop writes 4 words; add $0800 and 1.
+@test The gradient at $3000
+setup: a0=3000
+expect: m3000.l=4001FFFE m3004.l=1800000 m3008.l=4801FFFE m300C.l=1800001 m3078.l=B801FFFE m307C.l=180000F m3080.l=FFFFFFFE
+@quiz
+? Which first word waits for line $90?
++ $9001
+- $0090
+- $9000
+! Line in the high byte, bit 0 set for WAIT.
+
+=== LESSON 78: Starting the copper
+@summary COP1LC, COPJMP1 and copper DMA.
+@text
+To run your copper list, give the Copper its address and switch on its DMA:
+
+	move.l	a0,COP1LC(a6)		; the list's address
+	move.w	#0,COPJMP1(a6)		; jump there now (any value)
+	move.w	#$8280,DMACON(a6)	; SET DMAEN + COPEN
+
+The Copper restarts from COP1LC at the top of every frame, so the list runs again and again. Writing COPJMP1 makes it jump straight away rather than at the next frame. COP2LC and COPJMP2 hold a second list, which the first one can jump to.
+
+The copper list must be in chip RAM; a list the system was using should be saved before and restored after (graphics.library keeps it).
+@task
+Start the copper list at A0: set COP1LC, strobe COPJMP1, and switch on DMAEN and COPEN.
+@start
+	lea	CUSTOM,a6
+	; COP1LC = A0, strobe COPJMP1, enable copper DMA
+
+@solution
+	lea	CUSTOM,a6
+	move.l	a0,COP1LC(a6)
+	move.w	#0,COPJMP1(a6)
+	move.w	#$8280,DMACON(a6)
+@hint
+move.l a0,COP1LC(a6); move.w #0,COPJMP1(a6); move.w #$8280,DMACON(a6).
+@test List at $3000
+setup: a0=3000
+expect: hwlong080=3000 hwcount088=1 dmacon=280
+@test List at $12340
+setup: a0=12340 dmacon=100
+expect: hwlong080=12340 hwcount088=1 dmacon=380
+@quiz
+? When does the copper restart its list from COP1LC by itself?
++ At the start of every frame
+- After every WAIT
+- Only when COPJMP1 is written
+? Which DMACON bits does the copper need?
++ DMAEN and COPEN
+- BPLEN only
+- BLTEN
+
+=== LESSON 79: Drawing a line of bytes
+@summary Filling part of a row: addressing a span in a bitplane.
+@text
+A horizontal line is the easiest thing to draw in a bitplane: on one row, every byte between two columns is set to $FF. Find the row's start (y x 40), add the first byte column, and fill:
+
+	mulu.w	#40,d1
+	lea	0(a0,d1.l),a1
+	adda.w	d0,a1		; the first byte
+	; fill (last - first + 1) bytes with $FF
+
+Lines that start or end in the middle of a byte need masks for the first and last bytes - the same idea as the blitter's first and last word masks (lesson 82). Here, the ends are whole bytes.
+@task
+A0 points at a 320 x 256 bitplane. On row D1, set every byte from byte column D0 to byte column D2 (inclusive) to $FF. All three are words; D3 and A1 may be used as scratch.
+@start
+	; row D1, bytes D0 to D2 = $FF
+
+@solution
+	mulu.w	#40,d1
+	lea	0(a0,d1.l),a1
+	adda.w	d0,a1
+	move.w	d2,d3
+	sub.w	d0,d3
+loop:
+	move.b	#$FF,(a1)+
+	dbra	d3,loop
+@hint
+A1 = A0 + D1 * 40 + D0. The count for DBRA is D2 - D0.
+@test Row 3, bytes 2 to 5
+setup: a0=10000 d0=2 d1=3 d2=5 m10079.b=0 m1007E.b=0
+expect: m1007A.l=FFFFFFFF m10079.b=0 m1007E.b=0
+@test A single byte
+setup: a0=10000 d0=0 d1=0 d2=0 m10001.b=0
+expect: m10000.b=FF m10001.b=0
+@test A full row
+setup: a0=20000 d0=0 d1=FF d2=27 m227D7.b=0 m22800.b=0
+expect: m227D8.b=FF m227FF.b=FF m227D7.b=0 m22800.b=0
+@quiz
+? Which byte of a 40-byte-wide plane holds pixel x = 100 on row 2?
++ 2 x 40 + 12 = byte 92
+- byte 100
+- byte 2 x 100
+! 100 / 8 = 12 (remainder 4).
+
+=== LESSON 80: Smooth scrolling
+@summary BPLCON1 and the bitplane pointer: moving the picture a pixel at a time.
+@text
+To scroll a screen wider than the display sideways, two things change. The bitplane pointer moves by whole words (16 pixels) at a time, and BPLCON1's fine scroll delays the picture by 0 to 15 pixels: bits 3-0 for the odd planes, bits 7-4 for the even ones. Together they give single-pixel steps.
+
+For a scroll position x:
+
+	pointer	= start + (x / 16) x 2
+	delay	= 15 - (x AND 15), in both nibbles of BPLCON1
+
+15 - (x AND 15) is (NOT x) AND 15. The data fetch also starts one word earlier (DDFSTRT $0030) so there is a word to scroll in from. Hardware scrolling costs the CPU nothing per pixel - one of the Amiga's great tricks.
+@task
+The bitplane starts at A0; D0 is a scroll position, 0 to 319. Write BPL1PT (as a long) and BPLCON1 (the delay in both nibbles) for that position. D1 and A1 may be used as scratch.
+@start
+	; BPL1PT = A0 + (D0 / 16) * 2, BPLCON1 = (15 - (D0 AND 15)) * $11
+
+@solution
+	move.w	d0,d1
+	lsr.w	#4,d1
+	add.w	d1,d1
+	lea	0(a0,d1.w),a1
+	move.l	a1,CUSTOM+BPL1PT
+	not.w	d0
+	and.w	#15,d0
+	move.w	d0,d1
+	lsl.w	#4,d1
+	or.w	d1,d0
+	move.w	d0,CUSTOM+BPLCON1
+@hint
+Word offset: (D0 >> 4) * 2. Delay: NOT D0, AND 15, then copy it into the upper nibble with a shift and OR.
+@test Position 0
+setup: a0=20000 d0=0
+expect: hwlong0E0=20000 hw102=FF
+@test Position 17
+setup: a0=20000 d0=11
+expect: hwlong0E0=20002 hw102=EE
+@test Position 16
+setup: a0=20000 d0=10
+expect: hwlong0E0=20002 hw102=FF
+@test Position 319
+setup: a0=20000 d0=13F
+expect: hwlong0E0=20026 hw102=0
+@quiz
+? How many pixels can BPLCON1's fine scroll delay the picture?
++ 0 to 15
+- 0 to 7
+- 0 to 319
+? Why does the pointer move by 2 bytes at a time?
++ The display fetches whole 16-bit words
+- Addresses must be multiples of 4
+- Because of the modulo
+
+=== EXAM 4: The system, the custom chips and the Copper
+@summary Lessons 61-80: SR and modes, exceptions, TRAP, address errors, the memory map, custom registers, DMACON, the vertical blank, interrupts, taking over, the palette, bitplanes, the screen registers, the Copper and scrolling. 40 questions, pass mark 80%.
+@pass 80
+@quiz
+? Which SR bit selects supervisor mode?
+- Bit 15
++ Bit 13
+- Bit 10
+? Which instruction in user mode causes a privilege violation?
++ move.w #$2700,sr
+- move.w sr,d0 (on a 68000)
+- move.w #$1f,ccr
+? With the interrupt mask set to 7, which interrupts are taken?
++ Only level 7
+- None at all
+- All of them
+? What sits at addresses 0 to $3FF on a 68000 system?
++ The exception vector table
+- The custom chips
+- Kickstart
+? On an exception, what does the 68000 push?
++ The PC and the SR (on the supervisor stack)
+- All registers
+- Only the PC
+? An illegal instruction handler wants to carry on after a 2-byte ILLEGAL. What must it do?
++ Add 2 to the stacked PC before RTE
+- Nothing: the PC already points past it
+- Subtract 2 from A7
+? Where is the vector for TRAP #15?
+- $8F
++ $BC
+- $F0
+! $80 + 15 x 4 = $BC.
+? Why do programs use TRAP?
++ To enter supervisor mode or call a system routine from user mode
+- To multiply quickly
+- To wait for the vertical blank
+? Which access is an address error on a 68000?
++ move.w 1(a0),d0 with A0 even
+- move.b 1(a0),d0 with A0 even
+- move.l 2(a0),d0 with A0 even
+? Which Guru Meditation number means an address error?
+- #00000002
++ #00000003
+- #00000005
+? Which exception does DIVU raise when dividing by zero?
+- 3
++ 5
+- 6
+? What does CHK check?
++ That a register is between 0 and a limit
+- That memory is chip RAM
+- That a division has no remainder
+? Where are the custom chip registers?
++ $DFF000
+- $BFE001
+- $C00000
+? Where is CIA-A?
++ $BFE001 (odd bytes)
+- $BFD000 (even bytes)
+- $DFF000
+? Which memory can the copper, blitter and bitplane DMA use?
++ Chip RAM
+- Fast RAM
+- Both
+? lea CUSTOM,a6 then move.w #$0FFF,COLOR00(a6) sets...
++ the background to white
+- the first sprite colour
+- the copper list
+? What does writing $8020 to DMACON do?
++ Switches sprite DMA on
+- Switches sprite DMA off
+- Switches everything except sprites on
+? Which register do you read to find the current DMA channels?
+- DMACON
++ DMACONR
+- INTENA
+? Which register gives the beam's vertical position?
++ VPOSR / VHPOSR
+- INTREQR
+- BPLCON0
+? A PAL frame has how many lines?
++ 313
+- 262
+- 256
+? Which interrupt level is VERTB?
+- 1
+- 2
++ 3
+- 6
+? Which vector does a level 3 interrupt use?
+- $64
++ $6C
+- $78
+? What does move.w #$C020,INTENA(a6) do?
++ Enables the master interrupt switch and VERTB
+- Disables VERTB
+- Acknowledges VERTB
+? Why must an interrupt handler clear its bit in INTREQ?
++ Otherwise the same interrupt is taken again immediately
+- To enable DMA
+- So that RTE works
+? Taking over the machine, how do you restore saved INTENAR bits?
++ OR them with $8000 and write them to INTENA
+- Write them straight to INTENAR
+- Write $7FFF to INTENA
+? How many colour registers does OCS have?
+- 16
++ 32
+- 256
+? How many colours do 4 bitplanes give?
+- 4
++ 16
+- 32
+? In a bitplane, which bit of a byte is the leftmost pixel?
++ Bit 7
+- Bit 0
+? How many bytes per row does a 320-pixel-wide bitplane have?
++ 40
+- 80
+- 320
+? BPLCON0 = $3200. How many bitplanes and is colour on?
++ 3 planes, colour on
+- 32 planes
+- 2 planes, colour off
+? Which value of DIWSTRT starts a standard PAL screen?
++ $2C81
+- $0038
+- $00D0
+? What do BPL1MOD and BPL2MOD hold?
++ Bytes to skip at the end of each line
+- The number of planes
+- The fine scroll
+? Why are bitplane pointers usually set by the copper?
++ They must be reloaded every frame, and the copper does it for free
+- The CPU cannot write them
+- Only the copper can reach them
+? What is the copper instruction $0180,$0F00?
++ MOVE $0F00 into COLOR00
+- WAIT for line $01
+- END
+? Which first word makes a copper WAIT for line $2C?
++ $2C01
+- $002C
+- $2C00
+? How does a copper list end?
++ $FFFF,$FFFE
+- $0000,$0000
+- RTS
+? To start a copper list now, after writing COP1LC, you...
++ write any value to COPJMP1
+- read COPJMP1 twice
+- clear COPEN
+? Which DMACON value starts copper DMA?
++ $8280
+- $0280
+- $8100
+? What does BPLCON1 control?
++ The fine horizontal scroll of the playfields
+- The number of bitplanes
+- The sprite priorities
+? To scroll 1 pixel further when the delay is already 0, you...
++ move the bitplane pointer on one word and set the delay back to 15
+- set BPLCON1 to 16
+- change the modulo by 1

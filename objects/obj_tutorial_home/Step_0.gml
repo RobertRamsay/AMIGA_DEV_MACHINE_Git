@@ -46,6 +46,10 @@ if (mouse_check_button_pressed(mb_left) && home_hover >= 0) {
             home_close();
             scr_tour_open();
             break;
+        case "course":
+            home_close();
+            scr_course_open();
+            break;
         case "show_home": scr_tutorial_home_set_show_at_startup(!scr_tutorial_home_show_at_startup()); break;
         case "tutorial": home_action_tutorial(_hit.index); break;
         case "more_down": home_scroll += (home_card_h + home_card_gap_y) * 2; break;

@@ -225,6 +225,9 @@ top_ui_workspace_width = 150;
 top_ui_org_x = 1282;
 // Game Kit editor and the tutorials page.
 top_ui_tutorial_x = 1618;
+// 68K COURSE: a narrower third GAME KIT column, ending inside the room.
+top_ui_course_x = top_ui_tutorial_x + 208;
+top_ui_course_width = room_width - 4 - top_ui_course_x;
 
 var _org_palette_instance = instance_create_layer(
     top_ui_org_x,
@@ -729,6 +732,8 @@ global.tutorial_step = 0;
 global.tutorial_home_startup_pending = true;
 scr_tutorial_ui_init();
 scr_tour_init();
+// 68K course (obj_course): lessons, progress and the simulator test runner.
+scr_course_init();
 
 // Development self test (-admselftest <mod>), see scr_amiga_selftest.
 scr_amiga_selftest_init();

@@ -309,6 +309,10 @@ if ((_over_tour && mouse_check_button_pressed(mb_left)) || keyboard_check_presse
 var _over_tutorials = point_in_rectangle(mouse_x, mouse_y, top_ui_tutorial_x, top_ui_row_2_y, top_ui_tutorial_x + top_ui_button_width, top_ui_row_2_y + top_ui_button_height);
 if (_over_tutorials && mouse_check_button_pressed(mb_left)) scr_tutorial_home_open(false);
 
+// 68K COURSE: the lessons and exams (obj_course).
+var _over_course = point_in_rectangle(mouse_x, mouse_y, top_ui_course_x, top_ui_row_1_y, top_ui_course_x + top_ui_course_width, top_ui_row_1_y + top_ui_button_height);
+if (_over_course && mouse_check_button_pressed(mb_left)) scr_course_open();
+
 // WINDOWED / FULL SCREEN (or F11, at the top of this Step).
 var _over_window_mode = point_in_rectangle(mouse_x, mouse_y, top_ui_tutorial_x + 104, top_ui_row_2_y, top_ui_tutorial_x + 104 + top_ui_button_width, top_ui_row_2_y + top_ui_button_height);
 if (_over_window_mode && mouse_check_button_pressed(mb_left)) scr_window_toggle();

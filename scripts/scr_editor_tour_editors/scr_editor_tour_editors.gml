@@ -18,7 +18,9 @@ function scr_tour_close_except(_kind) {
         with (obj_tutorial_guide) instance_destroy();
         global.tutorial_current = -1;
     }
-    if (_kind != "code") with (obj_code_editor) ed_close(false);
+    if (_kind != "course") with (obj_course) instance_destroy();
+    // The course's lesson editor belongs to obj_course.
+    if (_kind != "code" && _kind != "course") with (obj_code_editor) ed_close(false);
     if (_kind != "audio") with (obj_audio_editor) instance_destroy();
     if (_kind != "tracker") with (obj_tracker_editor) instance_destroy();
     if (_kind != "tile") with (obj_tile_editor) instance_destroy();
@@ -136,6 +138,24 @@ function scr_tour_show(_view) {
                     cur_row = 8;
                     cur_inst = 1;
                 }
+            }
+            break;
+
+        case "course":
+            // map, lesson (lesson 1) or exam (exam 1), whatever the learner has passed.
+            if (!instance_exists(obj_course)) scr_course_open();
+            with (obj_course) {
+                if (_sub == "map" && view != "map") back_to_map();
+                if (_sub == "lesson" && view != "lesson") open_item(0, true);
+                if (_sub == "exam" && view != "exam") {
+                    for (var _ci = 0; _ci < array_length(items); _ci += 1) {
+                        if (items[_ci].kind == "exam") {
+                            open_item(_ci, true);
+                            break;
+                        }
+                    }
+                }
+                mouse_block = true;
             }
             break;
 
@@ -307,6 +327,19 @@ function scr_tour_tracker_rect(_part) {
         case "inst": return _l.inst;
         case "transport": return [_l.transport[0] - 4, _l.transport[1] - 4, _l.transport[2], _l.tools[3] + 4];
         case "pattern": return [_l.pattern[0], _l.pattern[1], _l.pattern[2], _l.pattern[3] + 40];
+    }
+    return undefined;
+}
+
+function scr_tour_course_rect(_part) {
+    var _e = scr_tour_inst(obj_course);
+    if (_e == noone) return undefined;
+    switch (_part) {
+        case "map": return [_e.map_x0 - 8, _e.map_y0 - 4, _e.map_x0 + 21 * (_e.tile_w + _e.tile_gap), _e.map_y0 + 5 * _e.map_row_h];
+        case "column": return [_e.col_x1, _e.panel_y1, _e.col_x2, _e.content_y2];
+        case "editor": return [_e.panel_x1, _e.panel_y1, _e.editor_x2, _e.panel_y2];
+        case "results": return [_e.col_x1, _e.results_y1, _e.col_x2, _e.panel_y2];
+        case "exam": return [_e.panel_x1, _e.panel_y1, _e.panel_x2, _e.panel_y2];
     }
     return undefined;
 }
@@ -583,6 +616,22 @@ function scr_tour_editor_categories() {
                   text : "One row per state: its RATE in frames per second, its frames, and a live preview facing right and (mirrored) left." },
                 { title : "Frames", show : "tile:ANIMATIONS", rect : function() { return scr_tour_tile_rect("anim_frames"); },
                   text : "ADD FRAME uses an existing sprite, NEW FRAME makes a blank one to draw in SPR-EDIT, REMOVE and < > reorder. Click a frame to select it." }
+            ]
+        },
+        {
+            id : "course", title : "68K course",
+            summary : "Learning 68000 assembler: 100 lessons and 5 exams, checked by a built-in 68000 simulator.",
+            steps : [
+                { title : "The course map", show : "course:map", rect : function() { return scr_tour_course_rect("map"); },
+                  text : "100 lessons in five rows of 20, from the first MOVE to the blitter, sprites, sound and the 68020. Each row ends with an exam. Only the next one is open: pass a lesson to unlock the one after it. Opened from 68K COURSE on the toolbar or the opening page." },
+                { title : "A lesson", show : "course:lesson", rect : function() { return scr_tour_course_rect("column"); },
+                  text : "Each lesson explains one idea with examples, then sets a task. Some add questions: click an answer - a wrong one turns red, the right one green with the reason." },
+                { title : "Write the code", show : "course:lesson", rect : function() { return scr_tour_course_rect("editor"); },
+                  text : "The CODE editor, with autocomplete, addressing forms and hover help. Your code is saved for each lesson." },
+                { title : "Run the tests", show : "course:lesson", rect : function() { return scr_tour_course_rect("results"); },
+                  text : "RUN TESTS (F5) assembles your code with vasm and runs it in ADM's own 68000 simulator - no emulator - several times with different starting values. Each test shows what was wrong and the registers at the end. HINT opens after a failed run, SOLUTION after three." },
+                { title : "Exams", show : "course:exam", rect : function() { return scr_tour_course_rect("exam"); },
+                  text : "Every 20 lessons: 30 to 50 multiple-choice questions on everything so far, in a new order each time. Pass with 80% to open the next row; the score page shows every answer you got wrong." }
             ]
         }
     ];

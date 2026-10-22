@@ -7,10 +7,13 @@ draw_set_halign(fa_left);
 draw_set_valign(fa_top);
 
 // ---- backdrop and panel ----
-draw_set_alpha(0.78);
-draw_set_colour(c_black);
-draw_rectangle(0, 0, room_width, room_height, false);
-draw_set_alpha(1);
+// (course mode: obj_course draws the screen behind and the lesson beside the editor)
+if (!course_mode) {
+    draw_set_alpha(0.78);
+    draw_set_colour(c_black);
+    draw_rectangle(0, 0, room_width, room_height, false);
+    draw_set_alpha(1);
+}
 
 scr_ui_box(panel_x1, panel_y1, panel_x2, panel_y2, col_bg, col_panel_edge);
 
@@ -20,10 +23,10 @@ scr_ui_box_fill(panel_x1 + 3, title_y1 + 3, panel_x2 - 3, title_y2, make_colour_
 draw_set_colour(c_white);
 scr_ui_text_mid(panel_x1 + 16, title_y1 + 3, title_y2, editor_title + (is_dirty ? "  *" : ""));
 draw_set_colour(make_colour_rgb(150, 165, 200));
-scr_ui_text_mid(name_field_rect[0] - 8 - string_width("NAME:"), title_y1 + 3, title_y2, "NAME:");
+if (!course_mode) scr_ui_text_mid(name_field_rect[0] - 8 - string_width("NAME:"), title_y1 + 3, title_y2, "NAME:");
 draw_set_colour(make_colour_rgb(120, 135, 170));
-var _hint_x = name_field_rect[2] + 20;
-var _hint = "Esc / Ctrl+Enter close   F5 build   Ctrl+Space complete   F12 definition   F8 next problem"
+var _hint_x = course_mode ? panel_x1 + 16 + string_width(editor_title + "  *") + 20 : name_field_rect[2] + 20;
+var _hint = (course_mode ? "F5 run tests   Esc map   Ctrl+Space complete   F8 next problem" : "Esc / Ctrl+Enter close   F5 build   Ctrl+Space complete   F12 definition   F8 next problem")
     + (font_is_mono ? "" : "   (no monospace font found)");
 var _hint_max = ((array_length(buttons) > 0) ? buttons[0].x1 : panel_x2) - 16 - _hint_x;
 if (string_width(_hint) > _hint_max) {
@@ -70,8 +73,8 @@ var _draw_field = function(_rect, _text, _focused) {
 };
 
 // The block's name (shown on the node, in the preview and in main.s).
-_draw_field(name_field_rect, name_text, focus == "name");
-if (name_text == "" && focus != "name") {
+if (!course_mode) _draw_field(name_field_rect, name_text, focus == "name");
+if (!course_mode && name_text == "" && focus != "name") {
     draw_set_colour(make_colour_rgb(95, 105, 135));
     scr_ui_text_mid(name_field_rect[0] + 10, name_field_rect[1], name_field_rect[3], "click to name this block");
 }

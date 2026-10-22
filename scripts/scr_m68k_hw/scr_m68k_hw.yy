@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_m68k_hw",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_m68k_hw",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/Extensions/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

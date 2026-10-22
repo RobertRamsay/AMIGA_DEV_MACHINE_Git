@@ -1,0 +1,1173 @@
+=== UNIT 5: Subroutines and the stack
+
+=== LESSON 41: Subroutines: BSR and RTS
+@summary Calling a piece of code from anywhere and coming back.
+@text
+A subroutine is a piece of code you can call from many places. BSR ("branch to subroutine") pushes the address of the next instruction onto the stack and jumps; RTS ("return from subroutine") pops that address and jumps back to it:
+
+	bsr	triple		; call
+	; ... carries on here after the RTS
+	rts			; end of the main program
+
+triple:
+	; ... the work ...
+	rts
+
+The main program must end before the subroutine starts, or it would fall into it: here the main program ends with its own RTS (your whole program is itself called as a subroutine).
+
+Some tests in this lesson call your subroutine directly, by its label - as if another program did a BSR to it.
+@task
+Write a subroutine called triple that multiplies D0 by 3 (as a long) and returns. It may use D1 as scratch. Above it, write a main program that calls triple twice (so D0 ends up 9 times bigger) and ends with RTS.
+@start
+	; main program: call triple twice
+	rts
+
+triple:
+	; D0 = D0 * 3
+	rts
+@solution
+	bsr	triple
+	bsr	triple
+	rts
+
+triple:
+	move.l	d0,d1
+	add.l	d0,d0
+	add.l	d1,d0
+	rts
+@hint
+In triple: copy D0 to D1, double D0 (add.l d0,d0), add D1. The main program is two BSRs and an RTS.
+@test triple: 5 x 3
+call: triple
+setup: d0=5
+expect: d0=F
+@test triple: -1 x 3
+call: triple
+setup: d0=FFFFFFFF
+expect: d0=FFFFFFFD
+@test The main program: 2 x 9
+setup: d0=2
+expect: d0=12 a7=80000
+@quiz
+? Where does BSR keep the return address?
+- In A6
++ On the stack
+- In D0
+! BSR pushes it with -(a7); RTS pops it.
+
+=== LESSON 42: Saving registers: MOVEM
+@summary Pushing and popping many registers at once, so a subroutine leaves no trace.
+@text
+A subroutine that changes registers its caller is using causes bugs that are very hard to find. The answer is to save the registers it uses on entry and restore them before returning. MOVEM ("move multiple") moves a whole list of registers to or from memory in one instruction:
+
+	movem.l	d1-d3/a0,-(a7)	; push D1, D2, D3 and A0
+	; ... use them ...
+	movem.l	(a7)+,d1-d3/a0	; pop them back
+
+The list uses - for a range and / to join. Whatever the order you write, MOVEM always stores them in the same order, so the push and the pop must use the same list. It also works for a single register.
+@task
+Write a subroutine mul10 that multiplies D0 by 10 using shifts and adds, with D1 as scratch - but D1 must be the same after the call as before it. Save and restore it with MOVEM.
+@start
+mul10:
+	; D0 = D0 * 10, keep D1
+	rts
+@solution
+mul10:
+	movem.l	d1,-(a7)
+	move.l	d0,d1
+	lsl.l	#3,d0
+	add.l	d1,d1
+	add.l	d1,d0
+	movem.l	(a7)+,d1
+	rts
+@hint
+D0 * 10 = D0 * 8 + D0 * 2. Push D1 first with movem.l d1,-(a7) and pop it before RTS.
+@test 7 x 10, D1 kept
+call: mul10
+setup: d0=7 d1=ABCD1234
+expect: d0=46 keep=d1 uses=movem
+@test 100 x 10
+call: mul10
+setup: d0=64 d1=0
+expect: d0=3E8 keep=d1
+@quiz
+? What is wrong with this?
+> 	movem.l	d1-d3,-(a7)
+> 	movem.l	(a7)+,d1-d2
++ Three registers pushed, two popped: the stack is left 4 bytes off
+- Nothing
+- MOVEM cannot push data registers
+! Pushes and pops must match.
+
+=== LESSON 43: Calling conventions
+@summary Agreeing which registers carry parameters, results and scratch values.
+@text
+To call each other's code, programs agree on a calling convention. The Amiga's operating system uses this one, and most assembler code follows it:
+
+	D0		result
+	D0-D1, A0-A1	scratch: the caller expects them to change
+	D2-D7, A2-A6	must be kept by the subroutine
+	A6		library base for system calls
+
+Parameters go in registers, chosen to suit the routine: a pointer in A0, a number in D0 and so on. Each routine should say in a comment what goes in, what comes out and what it changes. This lesson's routine is a little stricter than usual: it must also give A0 back unchanged.
+@task
+Write a subroutine strlen: A0 points at a null-terminated string; return its length in D0. Every other register, A0 included, must be unchanged when it returns.
+@start
+strlen:
+	; in: A0 = string, out: D0 = length, keep all other registers
+	rts
+@solution
+strlen:
+	move.l	a0,-(a7)
+	moveq	#-1,d0
+.loop:
+	addq.l	#1,d0
+	tst.b	(a0)+
+	bne	.loop
+	move.l	(a7)+,a0
+	rts
+@hint
+Push A0, count as in lesson 35, pop A0. A label starting with a dot (.loop) is local to the label above it.
+@test HELLO
+call: strlen
+setup: a0=2000 str2000=HELLO d1=1111 d2=2222
+expect: d0=5 keep=a0+a1+d1+d2+d7
+@test Empty
+call: strlen
+setup: a0=3000 m3000.b=0 d1=1111
+expect: d0=0 keep=a0+d1
+@quiz
+? In the Amiga convention, which registers may a subroutine change freely?
++ D0, D1, A0 and A1
+- D2 to D7
+- A6 and A7
+! D2-D7 and A2-A6 must be preserved.
+
+=== LESSON 44: Parameters on the stack
+@summary Passing values on the stack and cleaning up afterwards.
+@text
+When there are many parameters, or the code is generated by a C compiler, they are pushed onto the stack before the call. The subroutine finds them above its return address:
+
+	move.l	d1,-(a7)	; first parameter
+	move.l	d2,-(a7)	; second parameter
+	bsr	add2
+	addq.l	#8,a7		; remove the two parameters
+
+Inside add2 the stack looks like this:
+
+	(a7)	the return address (pushed by BSR)
+	4(a7)	the second parameter (pushed last)
+	8(a7)	the first parameter
+
+The caller removes the parameters afterwards by adding their size to A7. Forget that and the stack creeps down with every call until something crashes.
+@task
+Write add2, which returns in D0 the sum of the two longs pushed before the call. Above it, write a main program that pushes D1 and D2, calls add2, removes the parameters and returns.
+@start
+	; main: push D1 and D2, call add2, clean up
+	rts
+
+add2:
+	; D0 = the two longs on the stack, added
+	rts
+@solution
+	move.l	d1,-(a7)
+	move.l	d2,-(a7)
+	bsr	add2
+	addq.l	#8,a7
+	rts
+
+add2:
+	move.l	4(a7),d0
+	add.l	8(a7),d0
+	rts
+@hint
+In add2: move.l 4(a7),d0 and add.l 8(a7),d0. In the main program, addq.l #8,a7 after the BSR.
+@test add2 on its own
+call: add2
+setup: a7=3008 m3008.l=5 m300C.l=7 d0=0
+expect: d0=C
+@test The main program
+setup: d1=A d2=14 d0=0
+expect: d0=1E a7=80000
+@quiz
+? A subroutine is entered with three longs pushed before the BSR. Where is the one pushed first?
+- 4(a7)
+- 8(a7)
++ 12(a7)
+! (a7) is the return address, then the last pushed at 4(a7), and so on.
+
+=== LESSON 45: Stack frames: LINK and UNLK
+@summary Local variables on the stack, the way compilers do it.
+@text
+A subroutine that needs memory of its own - local variables - can take it from the stack. LINK sets up a frame: it pushes an address register (usually A6 or A5), points it at the stack and moves the stack pointer down by the space wanted:
+
+	link	a6,#-8		; 8 bytes of locals
+	move.l	d0,-4(a6)	; a local long at -4
+	move.l	-4(a6),d1
+	unlk	a6		; free the locals, restore A6
+
+Locals are at negative offsets from A6, parameters at positive ones (8(a6) is the first above the return address). UNLK undoes everything in one go: A7 goes back to A6 and the old A6 is popped. Because A6 is saved and restored by the pair, the caller never sees it change.
+@task
+Write sumsq: return D0 = D0 x D0 + D1 x D1 (signed words in, a long out). Use LINK to make a 4-byte local variable and keep the first square in it. D2 may be used as scratch; A6 must come back unchanged.
+@start
+sumsq:
+	; D0 = D0*D0 + D1*D1, with a local variable from LINK
+	rts
+@solution
+sumsq:
+	link	a6,#-4
+	move.w	d0,d2
+	muls.w	d2,d2
+	move.l	d2,-4(a6)
+	move.w	d1,d2
+	muls.w	d2,d2
+	add.l	-4(a6),d2
+	move.l	d2,d0
+	unlk	a6
+	rts
+@hint
+link a6,#-4 at the start, unlk a6 before RTS. muls.w d2,d2 squares the word in D2.
+@test 3 and 4
+call: sumsq
+setup: d0=3 d1=4 a6=ABCDEF00
+expect: d0=19 keep=a6 uses=link+unlk
+@test -5 and 12
+call: sumsq
+setup: d0=FFFB d1=C a6=0
+expect: d0=A9 keep=a6
+@quiz
+? After link a6,#-8, where is the old value of A6?
++ At (a6)
+- At -8(a6)
+- In A7
+! LINK pushes A6 and then copies A7 into A6, so the old A6 sits at (a6).
+
+=== LESSON 46: Recursion
+@summary A subroutine that calls itself, with the stack keeping each level apart.
+@text
+Because every BSR pushes its own return address, a subroutine can call itself. Each call works on a smaller problem until it reaches one it can answer directly; on the way back each level finishes its part. The factorial n! = n x (n-1) x ... x 1 is the classic example:
+
+	fact(n) = 1             if n <= 1
+	fact(n) = n x fact(n-1) otherwise
+
+Anything a level still needs after the inner call - here its own n - must be saved on the stack, because the inner call reuses the registers.
+
+Recursion is elegant but every level costs stack space. On a 68000 with a small stack, deep recursion is a crash waiting to happen; loops are usually preferred.
+@task
+Write fact: return D0 = D0! for D0 from 0 to 9, recursively (fact must call itself). D1 may be used as scratch.
+@start
+fact:
+	; D0 = D0!  (0! = 1)
+	rts
+@solution
+fact:
+	cmp.l	#1,d0
+	bhi	.rec
+	moveq	#1,d0
+	rts
+.rec:
+	move.l	d0,-(a7)
+	subq.l	#1,d0
+	bsr	fact
+	move.l	(a7)+,d1
+	mulu.w	d1,d0
+	rts
+@hint
+If D0 <= 1, return 1. Otherwise push D0, subtract 1, bsr fact, pop the old D0 into D1 and multiply. 9! = 362880 still fits: MULU of the word 40320 by 9.
+@test 5! = 120
+call: fact
+setup: d0=5
+expect: d0=78 uses=bsr
+@test 1! and 0! are 1
+call: fact
+setup: d0=0
+expect: d0=1
+@test 9! = 362880
+call: fact
+setup: d0=9
+expect: d0=58980
+@quiz
+? Why does each level push D0 before calling itself?
++ The inner call changes D0, and this level still needs its n
+- BSR needs D0 on the stack
+- To make the result negative
+! Registers are shared by every level; the stack keeps a copy for each.
+
+=== LESSON 47: Decisions without branches: Scc
+@summary Turning a condition into a value: Scc sets a byte to $FF or $00.
+@text
+Scc sets a byte to $FF if the condition is true and to $00 if it is false, using the same conditions as the branches:
+
+	cmp.w	d2,d1
+	sgt	d0		; D0.b = $FF if D1 > D2, else $00
+	tst.l	d1
+	seq	d3		; D3.b = $FF if D1 was zero
+
+A byte of all ones is -1, so EXT.W and EXT.L turn it into a word or long of -1 or 0 - a mask you can AND with. Branches are slow on the 68000 when taken (10 cycles), and code with no branches always takes the same time, which matters when timing code to the screen.
+@task
+Without any branches: set the low byte of D0 to $FF if D1 > D2 (signed words), else $00. Set D3 to -1 (all 32 bits) if D1 (as a long) is zero, else to 0.
+@start
+	; D0.b = $FF if D1.w > D2.w, D3 = -1 if D1.l = 0 - no branches
+
+@solution
+	cmp.w	d2,d1
+	sgt	d0
+	tst.l	d1
+	seq	d3
+	ext.w	d3
+	ext.l	d3
+@hint
+cmp.w d2,d1 and sgt d0. Then tst.l d1, seq d3, and extend D3 twice.
+@test 5 > 3
+setup: d0=12345600 d1=5 d2=3 d3=55
+expect: d0=123456FF d3=0 avoid=bgt+ble+blt+bge+beq+bne+bra+bmi+bpl
+@test D1 is zero
+setup: d0=FF d1=0 d2=3 d3=55
+expect: d0=0 d3=FFFFFFFF
+@test The word -1 is not greater than 0, but the long is not zero
+setup: d0=0 d1=FFFF d2=0 d3=7
+expect: d0=0 d3=0
+@quiz
+? What does sne d0 put in D0's low byte when Z is set?
++ $00
+- $FF
+- $01
+! NE is false when Z is set, so the byte becomes $00.
+
+=== LESSON 48: Jump tables
+@summary Choosing code by number: a table of offsets and an indexed JMP.
+@text
+When a value chooses between many pieces of code - a command number, a game state, a menu entry - a chain of CMPs gets long and slow. A jump table goes straight to the right code. Store, for each choice, the distance from the table to its code, then index the table and jump:
+
+	lea	table(pc),a0
+	add.w	d0,d0			; word entries
+	move.w	0(a0,d0.w),d0		; the distance
+	jmp	0(a0,d0.w)		; table + distance
+
+	table:	dc.w	first-table,second-table
+
+Storing distances rather than addresses keeps the code position-independent. JMP does not push a return address, so when the chosen code ends with RTS it returns straight to whoever called the dispatcher.
+
+This lesson's table and its four commands are given after your code: 0 adds D2 to D1, 1 subtracts it, 2 negates D1, 3 clears D1.
+@task
+D0 holds a command number, 0 to 3. Jump to the matching command through the table at the label table. No compares.
+@start
+	; jump to command D0 through the table
+
+@solution
+	lea	table(pc),a0
+	add.w	d0,d0
+	move.w	0(a0,d0.w),d0
+	jmp	0(a0,d0.w)
+@data
+table:
+	dc.w	do_add-table,do_sub-table,do_neg-table,do_clr-table
+do_add:
+	add.l	d2,d1
+	rts
+do_sub:
+	sub.l	d2,d1
+	rts
+do_neg:
+	neg.l	d1
+	rts
+do_clr:
+	moveq	#0,d1
+	rts
+@hint
+lea table(pc),a0; double D0; read the word distance with move.w 0(a0,d0.w),d0; then jmp 0(a0,d0.w).
+@test Command 0: add
+setup: d0=0 d1=5 d2=3
+expect: d1=8 avoid=cmp+beq+bne
+@test Command 1: subtract
+setup: d0=1 d1=5 d2=3
+expect: d1=2
+@test Command 2: negate
+setup: d0=2 d1=5 d2=3
+expect: d1=FFFFFFFB
+@test Command 3: clear
+setup: d0=3 d1=5 d2=3
+expect: d1=0
+@quiz
+? Why does the table hold distances (label-table) rather than addresses?
++ The code then works wherever it is loaded
+- Addresses do not fit in a word
+- JMP cannot use addresses
+! Distances do not change when the program is relocated.
+
+=== LESSON 49: Counting cycles
+@summary Making a loop fast: unrolling and cheaper instructions.
+@text
+Every instruction takes a number of clock cycles, and on a 7 MHz 68000 a frame has about 142,000 of them. Games live inside that budget, so the inner loops matter. Some timings:
+
+	moveq	#0,d1		4
+	clr.l	(a0)+		20
+	move.l	d1,(a0)+	12
+	dbra	d0,loop		10 (taken)
+
+Clearing memory with CLR.L (a0)+ in a DBRA loop costs 30 cycles per long. Two tricks make it much faster. Keep a zero in a register and MOVE it: CLR reads the memory before it writes (a 68000 quirk), MOVE only writes. And unroll the loop: do four moves per DBRA, so the loop overhead is paid a quarter as often:
+
+	moveq	#15,d0
+loop:
+	move.l	d1,(a0)+
+	move.l	d1,(a0)+
+	move.l	d1,(a0)+
+	move.l	d1,(a0)+
+	dbra	d0,loop
+
+The simulator counts cycles like a real 68000 with no wait states, and the result panel shows the count for each test.
+@task
+Clear 64 longs (256 bytes) starting at A0, in under 1200 cycles. A simple CLR loop takes about 1900.
+@start
+	moveq	#63,d0
+loop:
+	clr.l	(a0)+
+	dbra	d0,loop
+@solution
+	moveq	#0,d1
+	moveq	#15,d0
+loop:
+	move.l	d1,(a0)+
+	move.l	d1,(a0)+
+	move.l	d1,(a0)+
+	move.l	d1,(a0)+
+	dbra	d0,loop
+@hint
+Put 0 in D1 and MOVE it four times per loop; the loop then runs 16 times.
+@test 256 bytes cleared, fast
+setup: a0=2000 m2000.l=FFFFFFFF m2080.l=FFFFFFFF m20FC.l=FFFFFFFF m2100.l=FFFFFFFF
+expect: m2000.l=0 m2080.l=0 m20FC.l=0 m2100.l=FFFFFFFF maxcyc=1200
+@quiz
+? Why is move.l d1,(a0)+ faster than clr.l (a0)+ on a 68000?
++ CLR reads the memory before writing it; MOVE only writes
+- CLR is a longer instruction
+- MOVE does not change the flags
+! The 68000's CLR does a read-modify-write cycle.
+
+=== LESSON 50: Naming offsets: EQU and RS
+@summary Giving the fields of a structure names the assembler counts for you.
+@text
+Numbers like 4(a0) are hard to read and harder to change. EQU gives a value a name. For structures, the RS directives count the offsets for you:
+
+	rsreset			; start counting at 0
+OBJ_X	rs.w	1		; OBJ_X = 0, then the count goes up by 2
+OBJ_Y	rs.w	1		; 2
+OBJ_DX	rs.w	1		; 4
+OBJ_DY	rs.w	1		; 6
+OBJ_SIZE rs.b	0		; 8: the size of the whole record
+
+Insert a field and every offset after it moves along by itself. The names go in the first column, like labels; they cost nothing in the program - they are only numbers for the assembler.
+@task
+A0 points at an object: x, y, dx and dy, words in that order. Define the offsets with RS, then add dx to x and dy to y.
+@start
+	rsreset
+	; define OBJ_X, OBJ_Y, OBJ_DX, OBJ_DY with rs.w
+	; then x += dx and y += dy
+
+@solution
+	rsreset
+OBJ_X	rs.w	1
+OBJ_Y	rs.w	1
+OBJ_DX	rs.w	1
+OBJ_DY	rs.w	1
+	move.w	OBJ_DX(a0),d0
+	add.w	d0,OBJ_X(a0)
+	move.w	OBJ_DY(a0),d0
+	add.w	d0,OBJ_Y(a0)
+@hint
+Each field: NAME rs.w 1 in the first column. Then move.w OBJ_DX(a0),d0 and add.w d0,OBJ_X(a0), and the same for y.
+@test Moving right and down
+setup: a0=2000 m2000.w=A m2002.w=14 m2004.w=3 m2006.w=4
+expect: m2000.w=D m2002.w=18 m2004.w=3 m2006.w=4 uses=rs
+@test Moving left and up
+setup: a0=3000 m3000.w=64 m3002.w=64 m3004.w=FFFE m3006.w=FFFF
+expect: m3000.w=62 m3002.w=63
+@quiz
+? After rsreset, A rs.l 1 and B rs.w 2, what is B?
+- 2
++ 4
+- 8
+! A takes 4 bytes (one long), so B starts at 4.
+
+=== UNIT 6: Algorithms
+
+=== LESSON 51: Copying memory
+@summary A long-at-a-time copy loop with DBRA.
+@text
+Copying blocks of memory is everywhere: graphics, buffers, game state. On the 68000 the simple and fast way is to move longs with two postincrement pointers:
+
+	subq.w	#1,d0
+loop:
+	move.l	(a0)+,(a1)+
+	dbra	d0,loop
+
+Each long takes 20 cycles to move plus 10 for the DBRA. Unrolling (lesson 49) or MOVEM (next lesson) can do better. Remember the count minus one for DBRA.
+
+(The blitter can copy memory too, in parallel with the CPU - lesson 81.)
+@task
+Copy D0 longs (1 or more) from A0 to A1.
+@start
+	; copy D0 longs from (a0) to (a1)
+
+@solution
+	subq.w	#1,d0
+loop:
+	move.l	(a0)+,(a1)+
+	dbra	d0,loop
+@hint
+DBRA counts to -1, so subtract 1 from the count first.
+@test Three longs
+setup: a0=2000 a1=3000 d0=3 m2000.l=11111111 m2004.l=22222222 m2008.l=33333333 m300C.l=FFFFFFFF
+expect: m3000.l=11111111 m3004.l=22222222 m3008.l=33333333 m300C.l=FFFFFFFF
+@test One long
+setup: a0=2000 a1=4000 d0=1 m2000.l=CAFEBABE m4004.l=0
+expect: m4000.l=CAFEBABE m4004.l=0
+@quiz
+? D0 = 10 and the loop is "loop: move.l (a0)+,(a1)+ / dbra d0,loop" with no SUBQ first. How many longs are copied?
+- 10
++ 11
+- 9
+
+=== LESSON 52: Filling memory with MOVEM
+@summary Eight longs in one instruction: the fastest CPU fill.
+@text
+MOVEM can store up to 16 registers in one instruction, and that makes it the fastest way for the CPU to fill memory. Load eight registers with the fill value, then store them over and over. With predecrement, MOVEM fills downwards, so start from the end of the block:
+
+	lea	128(a0),a0		; the end of 128 bytes
+	moveq	#3,d0			; 4 x 32 bytes
+loop:
+	movem.l	d1-d7/a1,-(a0)		; 32 bytes at once
+	dbra	d0,loop
+
+MOVEM.L to memory costs 8 + 8 cycles per register, so about 9 cycles per long against 12 or more for MOVE.L. Demo coders cleared whole screens like this, and used the same trick to copy, with MOVEM from memory into registers and back.
+@task
+Clear 32 longs (128 bytes) starting at A0, using MOVEM to store 8 registers at a time. Use D0 as the counter and D1-D7/A1 as the zeros.
+@start
+	; clear 128 bytes at A0 with MOVEM
+
+@solution
+	moveq	#0,d1
+	moveq	#0,d2
+	moveq	#0,d3
+	moveq	#0,d4
+	moveq	#0,d5
+	moveq	#0,d6
+	moveq	#0,d7
+	move.l	d1,a1
+	lea	128(a0),a0
+	moveq	#3,d0
+loop:
+	movem.l	d1-d7/a1,-(a0)
+	dbra	d0,loop
+@hint
+Clear D1-D7 and A1, point A0 at the end with lea 128(a0),a0, then four times movem.l d1-d7/a1,-(a0).
+@test 128 bytes cleared
+setup: a0=2000 m1FFC.l=FFFFFFFF m2000.l=FFFFFFFF m2040.l=FFFFFFFF m207C.l=FFFFFFFF m2080.l=FFFFFFFF
+expect: m1FFC.l=FFFFFFFF m2000.l=0 m2040.l=0 m207C.l=0 m2080.l=FFFFFFFF uses=movem
+@quiz
+? In which order does MOVEM.L D1-D3,-(A7) store the registers in memory, lowest address first?
++ D1, D2, D3
+- D3, D2, D1
+- It depends on how the list is written
+! MOVEM always stores D0..D7 then A0..A7 from low to high addresses, whatever the mode.
+
+=== LESSON 53: Searching a table
+@summary Linear search: looking at each entry until the one you want turns up.
+@text
+To find a value in an unsorted table, look at each entry in turn. CMP with (a0)+ compares and steps on at once:
+
+	moveq	#0,d2			; index
+	subq.w	#1,d1			; count - 1 for DBRA
+loop:
+	cmp.w	(a0)+,d0
+	beq	found
+	addq.w	#1,d2
+	dbra	d1,loop
+	moveq	#-1,d2			; not there
+found:
+
+Returning -1 for "not found" is a common convention: no real index is negative. A linear search takes time in proportion to the table size; the next lesson does better on sorted tables.
+@task
+A0 points at a table of D1 words (D1 at least 1). Find the word in D0. Put its index (0 for the first) into D2 as a long, or -1 if it is not in the table.
+@start
+	; D2 = index of D0 in the word table at A0 (D1 entries), or -1
+
+@solution
+	moveq	#0,d2
+	subq.w	#1,d1
+loop:
+	cmp.w	(a0)+,d0
+	beq	found
+	addq.w	#1,d2
+	dbra	d1,loop
+	moveq	#-1,d2
+found:
+@hint
+Start D2 at 0, compare each word with CMP.W (a0)+,d0, count up, and set D2 to -1 if the loop ends without a match.
+@test Found at index 2
+setup: a0=2000 d1=5 d0=7 m2000.l=10002 m2004.l=70009 m2008.w=7 d2=55
+expect: d2=2
+@test Found first
+setup: a0=2000 d1=3 d0=1 m2000.l=10002 m2004.w=3 d2=55
+expect: d2=0
+@test Not there
+setup: a0=2000 d1=4 d0=63 m2000.l=10002 m2004.l=30004 m2008.w=63 d2=55
+expect: d2=FFFFFFFF
+@quiz
+? Why return -1 for "not found"?
++ No real index can be negative, so the caller can tell the difference
+- -1 is the last index
+- It is required by the 68000
+! A negative result is easy to test with BMI or TST.
+
+=== LESSON 54: Binary search
+@summary Halving the search each time in a sorted table.
+@text
+If the table is sorted, look at the middle entry first. If it is the one you want, stop. If it is too small, the answer can only be in the upper half; if too big, the lower half. Each step halves what is left, so a table of 1000 entries takes at most 10 looks instead of 1000.
+
+Keep two indexes, low and high, around the part still possible:
+
+	while low <= high:
+		mid = (low + high) / 2
+		if table[mid] == value: found
+		if table[mid] < value: low = mid + 1
+		else: high = mid - 1
+
+Use ASR to halve and remember the table holds words, so the byte offset is mid x 2. The table here holds signed words in rising order.
+@task
+A0 points at a sorted table of D1 signed words. Find D0 with a binary search. Put its index into D2 as a long, or -1 if it is not there. Registers D3-D7 may be used freely.
+@start
+	; binary search for D0 in the sorted word table at A0 (D1 entries)
+
+@solution
+	moveq	#0,d3
+	move.w	d1,d4
+	subq.w	#1,d4
+loop:
+	cmp.w	d3,d4
+	blt	notfound
+	move.w	d3,d5
+	add.w	d4,d5
+	asr.w	#1,d5
+	move.w	d5,d6
+	add.w	d6,d6
+	move.w	0(a0,d6.w),d7
+	cmp.w	d0,d7
+	beq	found
+	blt	higher
+	move.w	d5,d4
+	subq.w	#1,d4
+	bra	loop
+higher:
+	move.w	d5,d3
+	addq.w	#1,d3
+	bra	loop
+found:
+	moveq	#0,d2
+	move.w	d5,d2
+	bra	done
+notfound:
+	moveq	#-1,d2
+done:
+@hint
+Low in D3, high in D4. Each time round: if low > high, not found; mid = (low + high) / 2; compare the word at mid*2 with D0 and move low or high past mid.
+@test 12 is at index 4
+setup: a0=2000 d1=8 d0=C m2000.l=FFCEFFFD m2004.l=7 m2008.l=C0063 m200C.l=12C03E8 d2=55
+expect: d2=4
+@test -50 is first
+setup: a0=2000 d1=8 d0=FFCE m2000.l=FFCEFFFD m2004.l=7 m2008.l=C0063 m200C.l=12C03E8 d2=55
+expect: d2=0
+@test 1000 is last
+setup: a0=2000 d1=8 d0=3E8 m2000.l=FFCEFFFD m2004.l=7 m2008.l=C0063 m200C.l=12C03E8 d2=55
+expect: d2=7
+@test 5 is not there
+setup: a0=2000 d1=8 d0=5 m2000.l=FFCEFFFD m2004.l=7 m2008.l=C0063 m200C.l=12C03E8 d2=55
+expect: d2=FFFFFFFF
+@test 2000 is not there
+setup: a0=2000 d1=8 d0=7D0 m2000.l=FFCEFFFD m2004.l=7 m2008.l=C0063 m200C.l=12C03E8 d2=55
+expect: d2=FFFFFFFF
+@quiz
+? About how many looks does a binary search need in a sorted table of 1024 entries?
+- 512
+- 100
++ 10
+! Each look halves the range: 2 to the power 10 is 1024.
+
+=== LESSON 55: Minimum and maximum
+@summary One pass over a table, keeping the smallest and largest so far.
+@text
+To find the smallest and largest values, start with the first entry as both, then look at every other entry and replace either when you find something smaller or larger.
+
+Signed or unsigned matters again: for signed values use BGE and BLE (or BLT and BGT); for unsigned use BHS and BLS. Mixing them up gives wrong answers only for negative numbers - the kind of bug tests are made for.
+
+Be careful with the count: a table of one entry needs no loop at all, and DBRA wants the number of remaining entries minus one.
+@task
+A0 points at a table of D1 signed words (D1 at least 1). Put the smallest into D2 and the largest into D3, both sign-extended to longs.
+@start
+	; D2 = min, D3 = max of D1 signed words at A0
+
+@solution
+	move.w	(a0)+,d2
+	move.w	d2,d3
+	subq.w	#1,d1
+	beq	done
+	subq.w	#1,d1
+loop:
+	move.w	(a0)+,d4
+	cmp.w	d2,d4
+	bge	notmin
+	move.w	d4,d2
+notmin:
+	cmp.w	d3,d4
+	ble	notmax
+	move.w	d4,d3
+notmax:
+	dbra	d1,loop
+done:
+	ext.l	d2
+	ext.l	d3
+@hint
+Take the first word as both. Loop over the rest: cmp.w d2,d4 / bge skips a new minimum, cmp.w d3,d4 / ble skips a new maximum. EXT.L both at the end.
+@test 5, -3, 9, 0
+setup: a0=2000 d1=4 m2000.l=5FFFD m2004.l=90000 d2=0 d3=0
+expect: d2=FFFFFFFD d3=9
+@test One entry
+setup: a0=2000 d1=1 m2000.w=7 d2=0 d3=0
+expect: d2=7 d3=7
+@test All negative
+setup: a0=3000 d1=3 m3000.l=FFF0FF00 m3004.w=FFFF d2=0 d3=0
+expect: d2=FFFFFF00 d3=FFFFFFFF
+@quiz
+? Which branch skips "new minimum" for signed values after cmp.w d2,d4?
++ BGE
+- BHS
+- BCC
+! D4 >= D2 (signed) means D4 is not a new minimum.
+
+=== LESSON 56: Sorting
+@summary Bubble sort: swapping neighbours until nothing moves.
+@text
+Bubble sort walks along the table comparing each pair of neighbours and swapping them if they are in the wrong order. After one pass the largest value has "bubbled" to the end. Keep making passes until a whole pass swaps nothing - then the table is sorted.
+
+	repeat:
+		swapped = false
+		for each pair (a, b):
+			if b < a: swap them, swapped = true
+	until not swapped
+
+It is slow for big tables, but short and simple, and fine for a high score table or a dozen sprites sorted by Y for drawing.
+@task
+Sort the D1 signed words at A0 (D1 at least 1) into rising order, in place. Registers D2-D7 and A1 may be used freely.
+@start
+	; sort D1 signed words at A0, smallest first
+
+@solution
+outer:
+	move.w	d1,d2
+	subq.w	#1,d2
+	beq	done
+	moveq	#0,d3
+	move.l	a0,a1
+inner:
+	move.w	(a1),d4
+	move.w	2(a1),d5
+	cmp.w	d4,d5
+	bge	noswap
+	move.w	d5,(a1)
+	move.w	d4,2(a1)
+	moveq	#1,d3
+noswap:
+	addq.l	#2,a1
+	subq.w	#1,d2
+	bne	inner
+	tst.w	d3
+	bne	outer
+done:
+@hint
+An outer loop of passes and an inner loop over D1 - 1 pairs, using A1 to walk. Swap a pair when 2(a1) < (a1), and repeat while a pass swapped anything.
+@test 5, 3, 9, -1, 0
+setup: a0=2000 d1=5 m2000.l=50003 m2004.l=9FFFF m2008.l=0000AAAA
+expect: m2000.l=FFFF0000 m2004.l=30005 m2008.l=9AAAA
+@test Already sorted
+setup: a0=2000 d1=3 m2000.l=10002 m2004.l=3AAAA
+expect: m2000.l=10002 m2004.l=3AAAA
+@test Reversed
+setup: a0=3000 d1=4 m3000.l=40003 m3004.l=20001
+expect: m3000.l=10002 m3004.l=30004
+@test One entry
+setup: a0=2000 d1=1 m2000.l=7AAAA
+expect: m2000.l=7AAAA
+@quiz
+? When does bubble sort stop?
++ After a pass that swaps nothing
+- After one pass
+- When the first entry is the smallest
+! A pass with no swaps proves every neighbour is in order.
+
+=== LESSON 57: Scores in BCD: ABCD
+@summary Binary-coded decimal: adding scores digit by digit, ready to print.
+@text
+Printing a binary number means dividing by 10 again and again - slow. Many games keep the score in binary-coded decimal instead: each byte holds two decimal digits, one per nibble, so $12 means twelve and $99 ninety-nine. A six-digit score fits in three bytes: $00 $12 $34 is 1234, and each nibble can be drawn as a digit straight away.
+
+ABCD adds two BCD bytes plus X, giving a BCD result and setting X when it carries past 99. With predecrement on both operands, starting just past the last byte, a chain of ABCD adds whole multi-byte numbers:
+
+	lea	3(a0),a0
+	lea	3(a1),a1
+	move.w	#0,ccr			; X = 0 before the first digit pair
+	abcd	-(a1),-(a0)
+	abcd	-(a1),-(a0)
+	abcd	-(a1),-(a0)
+
+SBCD subtracts in the same way, and NBCD negates.
+@task
+A0 points at a 6-digit BCD score (3 bytes), A1 at 3 more BCD bytes to add to it. Add them into the score at A0. A score above 999999 wraps round.
+@start
+	; score at (a0) += BCD at (a1), 3 bytes each
+
+@solution
+	lea	3(a0),a0
+	lea	3(a1),a1
+	move.w	#0,ccr
+	abcd	-(a1),-(a0)
+	abcd	-(a1),-(a0)
+	abcd	-(a1),-(a0)
+@hint
+Point both registers just past their last byte, clear X with move.w #0,ccr, then three abcd -(a1),-(a0).
+@test 1234 + 99 = 1333
+setup: a0=2000 a1=3000 m2000.w=12 m2002.w=34AA m3000.w=0 m3002.b=99
+expect: m2000.w=13 m2002.w=33AA uses=abcd
+@test 9999 + 1 = 10000
+setup: a0=2000 a1=3000 m2000.w=99 m2002.b=99 m3000.w=0 m3002.b=1
+expect: m2000.w=100 m2002.b=0
+@test 999999 + 1 wraps to 0
+setup: a0=2000 a1=3000 m2000.w=9999 m2002.b=99 m3000.w=0 m3002.b=1
+expect: m2000.w=0 m2002.b=0
+@test The carry starts clear
+setup: a0=2000 a1=3000 m2000.w=0 m2002.b=1 m3000.w=0 m3002.b=1 ccr=X----
+expect: m2000.w=0 m2002.b=2
+@quiz
+? Which BCD byte means the number 45?
+- $2D
++ $45
+- $54
+! Each nibble holds one decimal digit.
+
+=== LESSON 58: Fixed-point numbers
+@summary Fractions without floating point: positions in 16.16 fixed point.
+@text
+The 68000 has no floating point, but games need fractions: a ship moving 1.5 pixels a frame. The answer is fixed point: treat the top 16 bits of a long as the whole part and the bottom 16 bits as the fraction. 1.5 is $00018000, 0.25 is $00004000, -0.5 is $FFFF8000.
+
+Adding and subtracting work exactly as for ordinary numbers - ADD.L adds the fractions and carries into the whole part for you. To get the pixel position, take the top word: SWAP brings it down, and EXT.L sign-extends it.
+
+	add.l	d1,d0		; position += speed
+	swap	d0		; whole part in the low word
+	ext.l	d0		; as a signed long
+
+Positions in 16.16 and speeds that change by tiny amounts give smooth movement, gravity and acceleration.
+@task
+A0 points at a 16.16 position (long) followed by a 16.16 speed (long at 4(a0)). Add the speed to the position in memory, then put the whole-number part of the new position into D0 as a signed long.
+@start
+	; (a0) += 4(a0), then D0 = whole part of (a0)
+
+@solution
+	move.l	4(a0),d1
+	add.l	d1,(a0)
+	move.l	(a0),d0
+	swap	d0
+	ext.l	d0
+@hint
+move.l 4(a0),d1 / add.l d1,(a0). Then load the position, SWAP and EXT.L.
+@test 5.0 + 1.5 = 6.5
+setup: a0=2000 m2000.l=50000 m2004.l=18000 d0=0
+expect: m2000.l=68000 d0=6
+@test 0 - 0.5 = -0.5, whole part -1
+setup: a0=2000 m2000.l=0 m2004.l=FFFF8000 d0=0
+expect: m2000.l=FFFF8000 d0=FFFFFFFF
+@test The fraction carries
+setup: a0=3000 m3000.l=2C000 m3004.l=4000 d0=0
+expect: m3000.l=30000 d0=3
+@quiz
+? In 16.16 fixed point, what is $00024000?
+- 2.4
++ 2.25
+- 36.0
+! $4000 is a quarter of $10000.
+
+=== LESSON 59: Random numbers
+@summary A xorshift generator: fast pseudo-random numbers from shifts and EOR.
+@text
+Games need randomness: where the next enemy appears, which way it turns. A pseudo-random generator makes a sequence that looks random from a starting value, the seed. Xorshift is one of the best small ones - three shifts and three EORs:
+
+	x = x EOR (x << 13)
+	x = x EOR (x >> 17)
+	x = x EOR (x << 5)
+
+Each call turns the current value into the next one. It never produces 0 (unless you seed it with 0), and it goes through every other 32-bit value before repeating. LSL and LSR take a count above 8 from a register:
+
+	moveq	#13,d2
+	lsl.l	d2,d1
+@task
+D0 holds the current xorshift value. Replace it with the next one: x ^= x << 13, x ^= x >> 17, x ^= x << 5 (logical shifts on longs). D1 and D2 may be used as scratch.
+@start
+	; D0 = next xorshift32 value
+
+@solution
+	move.l	d0,d1
+	moveq	#13,d2
+	lsl.l	d2,d1
+	eor.l	d1,d0
+	move.l	d0,d1
+	moveq	#17,d2
+	lsr.l	d2,d1
+	eor.l	d1,d0
+	move.l	d0,d1
+	lsl.l	#5,d1
+	eor.l	d1,d0
+@hint
+Each step: copy D0 to D1, shift D1, EOR it into D0. Counts above 8 go in a register.
+@test Seed 1
+setup: d0=1
+expect: d0=42021
+@test Seed $12345678
+setup: d0=12345678
+expect: d0=87985AA5
+@test Seed $DEADBEEF
+setup: d0=DEADBEEF
+expect: d0=477D20B7
+@quiz
+? Why must a xorshift generator not be seeded with 0?
++ 0 shifted and EORed with itself stays 0 for ever
+- The 68000 cannot shift 0
+- It would be too random
+! Every step of 0 gives 0.
+
+=== LESSON 60: Sine tables
+@summary Smooth curves from a table: sine and cosine lookups for circles and waves.
+@text
+Sine waves are everywhere in demos and games: bobbing sprites, circular paths, wobbling copper bars. Working out sines is far too slow on a 68000, so they come from a table made once by the assembler or another program.
+
+This lesson's table, sintab, has 256 signed bytes: one full circle in 256 steps, with values from -127 to 127. An angle is then just a byte, and it wraps round by itself: angle 256 is angle 0 again. Cosine is sine a quarter turn later, so
+
+	cos(a) = sin(a + 64)
+
+with the angle wrapped by AND #255. Multiply the result by a radius and shift right by 7 to get a position on a circle.
+@task
+D0 holds an angle, 0 to 255. Put sin(angle) into D1 and cos(angle) into D2, both sign-extended to longs, using the table at sintab.
+@start
+	; D1 = sin(D0), D2 = cos(D0), from the 256-byte table sintab
+
+@solution
+	lea	sintab(pc),a0
+	move.b	0(a0,d0.w),d1
+	ext.w	d1
+	ext.l	d1
+	add.w	#64,d0
+	and.w	#255,d0
+	move.b	0(a0,d0.w),d2
+	ext.w	d2
+	ext.l	d2
+@data
+sintab:
+	dc.b	0,3,6,9,12,16,19,22,25,28,31,34,37,40,43,46
+	dc.b	49,51,54,57,60,63,65,68,71,73,76,78,81,83,85,88
+	dc.b	90,92,94,96,98,100,102,104,106,107,109,111,112,113,115,116
+	dc.b	117,118,120,121,122,122,123,124,125,125,126,126,126,127,127,127
+	dc.b	127,127,127,127,126,126,126,125,125,124,123,122,122,121,120,118
+	dc.b	117,116,115,113,112,111,109,107,106,104,102,100,98,96,94,92
+	dc.b	90,88,85,83,81,78,76,73,71,68,65,63,60,57,54,51
+	dc.b	49,46,43,40,37,34,31,28,25,22,19,16,12,9,6,3
+	dc.b	0,-3,-6,-9,-12,-16,-19,-22,-25,-28,-31,-34,-37,-40,-43,-46
+	dc.b	-49,-51,-54,-57,-60,-63,-65,-68,-71,-73,-76,-78,-81,-83,-85,-88
+	dc.b	-90,-92,-94,-96,-98,-100,-102,-104,-106,-107,-109,-111,-112,-113,-115,-116
+	dc.b	-117,-118,-120,-121,-122,-122,-123,-124,-125,-125,-126,-126,-126,-127,-127,-127
+	dc.b	-127,-127,-127,-127,-126,-126,-126,-125,-125,-124,-123,-122,-122,-121,-120,-118
+	dc.b	-117,-116,-115,-113,-112,-111,-109,-107,-106,-104,-102,-100,-98,-96,-94,-92
+	dc.b	-90,-88,-85,-83,-81,-78,-76,-73,-71,-68,-65,-63,-60,-57,-54,-51
+	dc.b	-49,-46,-43,-40,-37,-34,-31,-28,-25,-22,-19,-16,-12,-9,-6,-3
+@hint
+lea sintab(pc),a0, read the byte at 0(a0,d0.w), extend it twice. For cosine add 64, AND with 255 and read again.
+@test Angle 0
+setup: d0=0 d1=55 d2=55
+expect: d1=0 d2=7F
+@test Angle 64 (a quarter turn)
+setup: d0=40 d1=0 d2=0
+expect: d1=7F d2=0
+@test Angle 128
+setup: d0=80 d1=0 d2=0
+expect: d1=0 d2=FFFFFF81
+@test Angle 224: cos wraps round
+setup: d0=E0 d1=0 d2=0
+expect: d1=FFFFFFA6 d2=5A
+@quiz
+? With a 256-step table, what is cos(200)?
++ sin(8)
+- sin(264)
+- sin(136)
+! 200 + 64 = 264, and 264 AND 255 = 8.
+
+=== EXAM 3: Subroutines, the stack and algorithms
+@summary Lessons 41-60: BSR / RTS, MOVEM, conventions, stack parameters, LINK, recursion, Scc, jump tables, cycles, RS, copying, searching, sorting, BCD, fixed point, random numbers and tables. 40 questions, pass mark 80%.
+@pass 80
+@quiz
+? What does BSR push?
++ The address of the instruction after the BSR
+- The address of the subroutine
+- The status register
+? What does RTS do?
+- Returns from an exception
++ Pops a return address and jumps to it
+- Restores the registers
+? Which instruction returns from an exception, restoring SR?
+- RTS
++ RTE
+- RTR
+? What does RTR restore along with the PC?
++ The condition codes (CCR)
+- All the registers
+- The supervisor stack
+? Which saves D2, D3 and A2 on the stack in one instruction?
+- move.l d2-d3/a2,-(a7)
++ movem.l d2-d3/a2,-(a7)
+- pea d2-d3/a2
+? Which registers must an Amiga subroutine preserve?
+- D0 and D1
++ D2-D7 and A2-A6
+- Only A7
+? In the Amiga convention, a function result goes in...
++ D0
+- A0
+- D7
+? Two longs were pushed before a BSR. Where is the first one pushed?
+- (a7)
+- 4(a7)
++ 8(a7)
+? After pushing two longs and calling, how does the caller clean up?
++ addq.l #8,a7
+- subq.l #8,a7
+- rts
+? What does link a6,#-12 do?
++ Pushes A6, copies A7 into A6 and reserves 12 bytes below it
+- Allocates 12 bytes of chip RAM
+- Jumps to A6 - 12
+? Where is the first local variable after link a6,#-4?
+- 4(a6)
++ -4(a6)
+- (a7)+
+? What does UNLK A6 do?
++ Sets A7 back to A6, then pops the old A6
+- Frees chip memory
+- Clears A6
+? Why does a recursive routine save its values on the stack?
++ Each call level needs its own copy; registers are shared
+- To make it faster
+- BSR requires it
+? What can go wrong with very deep recursion?
+- The CPU gets hot
++ The stack overflows into other memory
+- Nothing on a 68000
+? After cmp.w d1,d0 / slt d2, what is D2's low byte if D0 < D1?
++ $FF
+- $01
+- $00
+? What does Scc never change?
++ The flags
+- The destination byte
+- Bit 0 of the destination
+? In a jump table of word distances, entry D0 is at...
+- D0
++ D0 * 2
+- D0 * 4
+? Why store distances (label - table) instead of absolute addresses?
++ The code still works wherever it is loaded
+- Absolute addresses are slower to read
+- Distances use less memory on a 68020 only
+? Does JMP push a return address?
+- Yes
++ No
+? About how many CPU cycles are there in a PAL frame on a 7 MHz 68000?
+- 14,000
++ 142,000
+- 1,420,000
+? Why is unrolling a loop faster?
++ The loop overhead (DBRA) is paid less often
+- It uses fewer instructions overall
+- It makes the instructions shorter
+? Which is faster for clearing memory on a 68000?
++ move.l d1,(a0)+ with D1 = 0
+- clr.l (a0)+
+! CLR does a read before its write on the 68000.
+? After rsreset, X rs.w 1, Y rs.w 1, SIZE rs.b 0, what is SIZE?
+- 0
+- 2
++ 4
+? Where must names defined with EQU or RS be written?
++ In the first column, like labels
+- Indented, like instructions
+- After a semicolon
+? How many times does this copy run with D0 = 4?
+> 	subq.w	#1,d0
+> loop:	move.l	(a0)+,(a1)+
+> 	dbra	d0,loop
+- 3
++ 4
+- 5
+? Why fill memory with MOVEM?
++ It stores many registers per instruction, so fewer cycles per long
+- It is the only way to write longs
+- It clears the cache
+? With movem.l d1-d7/a1,-(a0), how many bytes are written?
+- 8
++ 32
+- 64
+? A linear search in a table of N entries takes at most...
++ N looks
+- log2(N) looks
+- 1 look
+? What does a binary search need?
++ A sorted table
+- A table of bytes
+- A power-of-two table size
+? Which instruction halves a signed word for a binary search midpoint?
++ asr.w #1
+- lsr.l #8
+- swap
+? When does bubble sort finish?
++ When a pass makes no swaps
+- After exactly N passes always
+- When the first pass ends
+? What does the BCD byte $37 stand for?
++ The number 37
+- The number 55
+- The letter 7
+? Before a chain of ABCD, X should be...
++ clear (0)
+- set (1)
+- anything
+? Why go from the last byte to the first in multi-byte ABCD?
++ Carries go from the low digits to the high digits
+- ABCD only works with -(An)
+- It is faster
+? In 16.16 fixed point, 1.75 is...
+- $00017500
++ $0001C000
+- $00000175
+? How do you get the whole part of a 16.16 long in D0 into the low word?
++ swap d0
+- lsr.l #8,d0
+- ext.l d0
+? Which value must never seed xorshift?
++ 0
+- 1
+- $FFFFFFFF
+? A sine table has 256 entries for a full circle. What angle is a quarter turn?
+- 90
++ 64
+- 128
+? cos(a) from a 256-step sine table is...
++ sin((a + 64) AND 255)
+- sin(a - 128)
+- -sin(a)
+? Why use tables for sines on the 68000?
++ Calculating them is far too slow
+- The 68000 has no MULU
+- Tables are more accurate than maths
