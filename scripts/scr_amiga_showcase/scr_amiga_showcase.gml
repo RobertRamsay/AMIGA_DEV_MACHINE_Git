@@ -21,6 +21,19 @@ function scr_amiga_showcase_shots() {
         { name : "11_copper_bar_editor", setup : function() { scr_tour_show("cprbar"); } },
         { name : "12_code_editor", setup : function() { scr_tour_show("code"); } },
         { name : "13_code_editor_find", setup : function() { scr_tour_show("code:find"); } },
+        { name : "13b_code_editor_forms", setup : function() {
+            scr_tour_show("code");
+            // A new line "move.w #0," with the destination forms open.
+            with (obj_code_editor) {
+                ed_close_bars();
+                var _at = min(6, array_length(lines));
+                array_insert(lines, _at, "        move.w  #0,");
+                ed_set_caret(_at, string_length(lines[_at]), false);
+                ed_ensure_caret_visible();
+                ed_form_open();
+                ac_index = 1;
+            }
+        } },
         { name : "14_sound_music_modules", setup : function() { scr_tour_show("audio:mod"); } },
         { name : "15_sound_samples_waveform", setup : function() { scr_tour_show("audio:sample"); } },
         { name : "15b_tracker", setup : function() { scr_tour_show("tracker"); } },

@@ -56,6 +56,45 @@ function scr_code_editor_selftest() {
         scr_code_editor_selftest_check(_fail, "uncomment *", lines[0], "old style");
         scr_code_editor_selftest_check(_fail, "uncomment ;", lines[1], "new style");
 
+        // Addressing forms: after move.w the source forms; picking one adds
+        // the comma and offers the destination forms.
+        lines = ["\tmove.w "];
+        ed_set_caret(0, 8, false);
+        if (!ed_form_open() || ac_context != "form") {
+            array_push(_fail, "forms did not open after move.w");
+        } else {
+            var _pick = function(_items, _text) {
+                var _i = 0;
+                while (_i < array_length(_items)) {
+                    if (_items[_i].text == _text) return _i;
+                    _i += 1;
+                }
+                return -1;
+            };
+            var _imm = _pick(ac_items, "#0");
+            if (_imm < 0 || _pick(ac_items, "(a0)+") < 0) array_push(_fail, "move.w source forms missing #0 or (a0)+");
+            ed_ac_accept(max(0, _imm));
+            scr_code_editor_selftest_check(_fail, "form source", lines[0], "\tmove.w #0,");
+            if (!ac_open || ac_context != "form") {
+                array_push(_fail, "destination forms did not open");
+            } else {
+                if (_pick(ac_items, "#0") >= 0) array_push(_fail, "destination offers #imm");
+                ed_ac_accept(max(0, _pick(ac_items, "$DFF180")));
+                scr_code_editor_selftest_check(_fail, "form destination", lines[0], "\tmove.w #0,$DFF180");
+            }
+        }
+        ac_close();
+
+        // No forms for an instruction without operands; labels for a branch.
+        lines = ["\trts "];
+        ed_set_caret(0, 5, false);
+        if (ed_form_open()) array_push(_fail, "forms opened for rts");
+        lines = ["main:", "\tbra "];
+        completion_locals = ["main"];
+        ed_set_caret(1, 5, false);
+        if (!ed_form_open() || ac_items[0].text != "main") array_push(_fail, "bra does not offer its label");
+        ac_close();
+
         // The name reaches the node, the preview title and main.s.
         name_text = "  Screen setup ";
         ed_commit_name();

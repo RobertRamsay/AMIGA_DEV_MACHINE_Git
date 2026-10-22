@@ -57,7 +57,8 @@ function scr_tutorial_defs() {
             features : ["CODE block editor", "hardware equates", "VBL wait", "live diagnostics"],
             steps : [
                 { title : "Open the editor", text : "Click EDIT CODE on the CODE BLOCK node (or double-click its code). The editor colours the syntax and checks every line as you type." },
-                { title : "Autocomplete", text : "Type a few letters of an instruction or a register name such as COL and press Ctrl+Space. Hover any word for help." },
+                { title : "Autocomplete", text : "Type a few letters of an instruction (mo) and press Tab: it completes, then offers the sizes (.B .W .L). Ctrl+Space shows the list any time. Hover any word for help." },
+                { title : "Pick the addressing", text : "After the instruction a MODE list shows every addressing form it accepts: Up / Down to choose (it appears faintly at the caret), Tab to type it. The comma follows and the second operand gets its own list." },
                 { title : "What it does", text : "The block waits for raster line 0, then changes COLOR00 at a moving line each frame, so a bar slides down the screen." },
                 { title : "Run it", text : "F5 builds without closing the editor. If vasm finds a mistake, the line is marked and the node turns red." }
             ]
