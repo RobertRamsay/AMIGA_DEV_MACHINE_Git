@@ -12,5 +12,6 @@ function scr_amiga_modal_open() {
         || instance_exists(obj_tracker_editor)
         || instance_exists(obj_tutorial_home)
         || instance_exists(obj_tile_editor)
+        || instance_exists(obj_course)
         || (instance_exists(obj_editor_tour) && !global.tour_settling);
 }

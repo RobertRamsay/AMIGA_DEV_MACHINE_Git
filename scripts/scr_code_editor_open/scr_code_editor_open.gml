@@ -114,3 +114,16 @@ function scr_code_editor_prefs_save() {
     ini_write_real("code_editor", "font_size", global.code_editor_font_pref_size);
     ini_close();
 }
+
+/// @desc scr_code_editor_open_course(_text, _title, _x2)
+/// Opens the code editor in course mode for a 68K course lesson: no node,
+/// the panel ends at _x2 and F5 / RUN TESTS calls obj_course.lesson_run_tests.
+function scr_code_editor_open_course(_text, _title, _x2) {
+    with (obj_code_editor) ed_close(true);
+    scr_code_editor_prefs_load();
+    var _editor = instance_create_depth(0, 0, -400000, obj_code_editor);
+    _editor.course_x2 = _x2;
+    _editor.ed_load_course(_text, _title);
+    with (_editor) ed_layout();
+    return _editor;
+}

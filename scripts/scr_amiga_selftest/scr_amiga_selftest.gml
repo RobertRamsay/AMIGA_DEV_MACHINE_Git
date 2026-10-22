@@ -30,6 +30,8 @@ function scr_amiga_selftest_init() {
     global.selftest_video = false;
     // -admsimtest: only the 68000 simulator self test (scr_m68k_selftest).
     global.selftest_sim = false;
+    // -admcourse: the 68K course content and every lesson's solution (scr_course_selftest_*).
+    global.selftest_course = false;
 
     var _p = 0;
     while (_p < parameter_count()) {
@@ -45,6 +47,10 @@ function scr_amiga_selftest_init() {
         if (parameter_string(_p) == "-admvideo") {
             global.selftest_active = true;
             global.selftest_video = true;
+        }
+        if (parameter_string(_p) == "-admcourse") {
+            global.selftest_active = true;
+            global.selftest_course = true;
         }
         if (parameter_string(_p) == "-admsimtest") {
             global.selftest_active = true;
@@ -116,6 +122,19 @@ function scr_amiga_selftest_step() {
     }
     if (global.selftest_showcase) {
         scr_amiga_selftest_showcase_step();
+        return;
+    }
+    if (global.selftest_course) {
+        if (global.selftest_timer < 30) return;
+        if (global.selftest_timer == 30) {
+            scr_course_selftest_begin();
+            return;
+        }
+        if (!scr_course_selftest_step()) return;
+        var _cst = global.course_selftest;
+        scr_amiga_selftest_note("scr_course: " + string(array_length(scr_course_items())) + " items, " + string(_cst.checked) + " lessons solved, " + string(array_length(_cst.fail)) + " failures, " + string(round((get_timer() - _cst.t0) / 1000000)) + " s");
+        for (var _cf = 0; _cf < array_length(_cst.fail); _cf += 1) scr_amiga_selftest_note("  " + _cst.fail[_cf]);
+        scr_amiga_selftest_finish(array_length(_cst.fail) == 0);
         return;
     }
     if (global.selftest_sim) {

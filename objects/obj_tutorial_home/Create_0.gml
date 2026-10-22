@@ -143,6 +143,7 @@ home_layout = function() {
     array_push(_start, { action : "new", label : "NEW EMPTY WORKSPACE", sub : "Start from a blank INIT block" });
     array_push(_start, { action : "open", label : "OPEN WORKSPACE...", sub : "Load a saved workspace (.json)" });
     array_push(_start, { action : "tour", label : "EDITOR TOUR", sub : "A guided walk through every panel and editor" });
+    array_push(_start, { action : "course", label : "68K COURSE", sub : "100 lessons and 5 exams: learn 68000 assembler" });
     var _s = 0;
     while (_s < array_length(_start)) {
         var _b = _start[_s];

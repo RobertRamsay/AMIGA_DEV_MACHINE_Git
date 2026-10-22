@@ -6,6 +6,11 @@
 depth = -400000;
 
 // ---- node binding ----
+// Course mode (scr_code_editor_open_course): no node; the text belongs to a
+// 68K course lesson, the panel ends at course_x2 (obj_course draws the lesson
+// beside it), F5 runs the lesson's tests and CLOSE goes back to the map.
+course_mode = false;
+course_x2 = room_width - 40;
 editor_node = noone;
 editor_node_uid = -1;
 editor_title = "CODE";
@@ -1370,7 +1375,7 @@ ed_refresh_build_errors = function() {
 };
 
 ed_run_analysis = function() {
-    global_symbol_list = scr_asm_global_symbols(editor_node);
+    global_symbol_list = course_mode ? [] : scr_asm_global_symbols(editor_node);
     analysis = scr_asm_analyse_lines(lines, global_symbol_list);
     analysed_revision = text_revision;
 
@@ -1736,6 +1741,14 @@ ed_ac_accept = function(_idx) {
 #region helpers: close / commit
 
 ed_commit = function() {
+    if (course_mode) {
+        var _ctext = ed_text();
+        if (_ctext == committed_text) return false;
+        committed_text = _ctext;
+        dirty_check_rev = -1;
+        with (obj_course) lesson_save_code(_ctext);
+        return true;
+    }
     if (!instance_exists(editor_node)) return false;
     var _text = ed_text();
     if (_text == committed_text) return false;
@@ -1749,7 +1762,7 @@ ed_commit = function() {
 
 /// Writes the title-bar name to the node (one undo step when it changed).
 ed_commit_name = function() {
-    if (!instance_exists(editor_node)) return false;
+    if (course_mode || !instance_exists(editor_node)) return false;
     var _name = string_trim(name_text);
     name_text = _name;
     if (_name == scr_code_block_name(editor_node)) return false;
@@ -1784,6 +1797,29 @@ ed_load = function(_node) {
     editor_title = "CODE BLOCK";
     name_text = scr_code_block_name(_node);
 
+    caret_line = 0;
+    caret_col = 0;
+    anchor_line = 0;
+    anchor_col = 0;
+    scroll_line = 0;
+    scroll_col = 0;
+    undo_stack = [];
+    redo_stack = [];
+    text_revision += 1;
+    analysis_due = 0;
+    ed_run_analysis();
+    keyboard_string = "";
+};
+
+/// Course mode: edits _text for a lesson (obj_course saves it and runs the tests).
+ed_load_course = function(_text, _title) {
+    course_mode = true;
+    editor_node = noone;
+    editor_node_uid = COURSE_EDITOR_UID;
+    lines = ed_text_to_lines(_text);
+    committed_text = ed_text();
+    editor_title = _title;
+    name_text = "";
     caret_line = 0;
     caret_col = 0;
     anchor_line = 0;
@@ -1837,7 +1873,7 @@ ed_add_button = function(_id, _label, _x1, _y1, _y2, _active) {
 ed_layout = function() {
     panel_x1 = 40;
     panel_y1 = 24;
-    panel_x2 = room_width - 40;
+    panel_x2 = course_mode ? course_x2 : room_width - 40;
     panel_y2 = room_height - 24;
     buttons = [];
 
@@ -1846,7 +1882,7 @@ ed_layout = function() {
 
     // title-bar buttons (right aligned): measure first
     draw_set_font(UI_FONT);
-    var _right_labels = ["FIND", "REPLACE", "GO TO", "BUILD (F5)", "CLOSE"];
+    var _right_labels = course_mode ? ["FIND", "REPLACE", "GO TO", "RUN TESTS (F5)", "MAP"] : ["FIND", "REPLACE", "GO TO", "BUILD (F5)", "CLOSE"];
     var _right_ids = ["find", "replace", "goto", "build", "close"];
     var _total = 0;
     var _i = 0;
@@ -1863,7 +1899,7 @@ ed_layout = function() {
 
     // NAME field after the title.
     var _nx = panel_x1 + 16 + string_width(editor_title + "  *") + 14 + string_width("NAME:") + 8;
-    name_field_rect = [_nx, title_y1 + 4, _nx + 300, title_y2 - 4];
+    name_field_rect = course_mode ? [0, 0, 0, 0] : [_nx, title_y1 + 4, _nx + 300, title_y2 - 4];
 
     toolbar_y1 = title_y2 + 6;
     toolbar_y2 = toolbar_y1 + ui_h + 8;
@@ -1993,6 +2029,11 @@ ed_button_action = function(_id) {
             field_fresh = false;
             break;
         case "build":
+            if (course_mode) {
+                ed_commit();
+                with (obj_course) lesson_run_tests();
+                break;
+            }
             ed_commit_name();
             ed_commit();
             scr_amiga_trigger_build();

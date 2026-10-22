@@ -2,16 +2,13 @@
 /// Run by -admselftest and on its own by -admsimtest. Returns an array of
 /// failure messages (empty = pass).
 ///
-/// Each case: [ name, source, machine code, setup, expected ]
+/// Each case: [ name, source, machine code, setup, expected ] (setup and
+/// expected strings: see scr_m68k_spec)
 ///   source   assembly lines separated by "|" ("label: instr" allowed)
 ///   code     hex bytes assembled at $1000 by vasm -no-opt; filled in by
 ///            tools/m68k_sim_hex.py (run it after editing a source)
-///   setup    "d0=7FFF a0=2000 sr=2000 ccr=X-Z-C ssp=4000 usp=3000
-///            m2000.w=1234 joy=left+fire max=1000" (hex; a7 = the active stack)
-///   expected "d0=8000 ccr=-N-V- m2000.l=1 a7=3000 sr=2700 pc=1000
-///            status=exception vector=3 hw180=0F00 hwlong080=20000 ciaa2=3
-///            vpos=12C cyc=22" (hex except vector and cyc; ccr letters
-///            XNZVC, - = clear, ? = don't care)
+///   setup    registers, memory and flags before the run
+///   expected registers, flags, memory, status and hardware after it
 /// The program runs from $1000 in supervisor mode (SR $2700) until the PC
 /// passes its last byte.
 
@@ -227,120 +224,11 @@ function scr_m68k_selftest() {
         }
         scr_m68k_reset(_cpu);
         var _len = scr_m68k_load_hex(_cpu, $1000, _t[2]);
-        var _max = scr_m68k_selftest_run(_cpu, _t[3], $1000 + _len);
+        var _max = scr_m68k_spec_setup(_cpu, _t[3], $1000, $1000 + _len, 200000);
         scr_m68k_run(_cpu, _max);
-        var _problems = scr_m68k_selftest_check(_cpu, _t[4]);
-        if (_problems != "") array_push(_fail, _name + ":" + _problems + " [" + _cpu.status + " " + _cpu.message + "]");
+        var _problems = scr_m68k_spec_check(_cpu, _t[4]);
+        if (array_length(_problems) > 0) array_push(_fail, _name + ": " + string_join_ext("; ", _problems) + " [" + _cpu.status + " " + _cpu.message + "]");
     }
     scr_m68k_free(_cpu);
     return _fail;
-}
-
-/// Applies a setup string and starts the CPU; returns the instruction limit.
-function scr_m68k_selftest_run(_cpu, _setup, _end) {
-    var _sr = $2700;
-    var _ccr = -1;
-    var _usp = -1;
-    var _ssp = -1;
-    var _max = 200000;
-    var _later = [];
-    var _tokens = string_split(_setup, " ", true);
-    for (var _i = 0; _i < array_length(_tokens); _i += 1) {
-        var _kv = string_split(_tokens[_i], "=");
-        var _key = string_lower(_kv[0]);
-        var _val = array_length(_kv) > 1 ? _kv[1] : "";
-        switch (_key) {
-            case "sr": _sr = scr_m68k_parse_hex(_val); break;
-            case "ccr": _ccr = scr_m68k_selftest_ccr_bits(_val); break;
-            case "usp": _usp = scr_m68k_parse_hex(_val); break;
-            case "ssp": _ssp = scr_m68k_parse_hex(_val); break;
-            case "max": _max = real(_val); break;
-            case "joy":
-                scr_m68k_set_joystick(_cpu, string_pos("up", _val) > 0, string_pos("down", _val) > 0,
-                    string_pos("left", _val) > 0, string_pos("right", _val) > 0, string_pos("fire", _val) > 0);
-                break;
-            default: array_push(_later, _kv); break;
-        }
-    }
-    if (_ccr >= 0) _sr = (_sr & $FF00) | _ccr;
-    scr_m68k_start(_cpu, $1000, _sr, _usp, _ssp, false);
-    _cpu.stop_pc = _end;
-    for (var _j = 0; _j < array_length(_later); _j += 1) {
-        var _k = string_lower(_later[_j][0]);
-        var _v = scr_m68k_parse_hex(_later[_j][1]);
-        var _c0 = string_char_at(_k, 1);
-        if (_c0 == "d") _cpu.d[real(string_char_at(_k, 2))] = _v;
-        else if (_c0 == "a") _cpu.a[real(string_char_at(_k, 2))] = _v;
-        else if (_c0 == "m") {
-            var _parts = string_split(string_delete(_k, 1, 1), ".");
-            var _size = _parts[1] == "b" ? 1 : (_parts[1] == "w" ? 2 : 4);
-            scr_m68k_poke(_cpu, scr_m68k_parse_hex(_parts[0]), _size, _v);
-        }
-    }
-    return _max;
-}
-
-/// "X-Z-C" -> the CCR bits (letters set, anything else clear).
-function scr_m68k_selftest_ccr_bits(_pattern) {
-    var _bits = 0;
-    for (var _i = 0; _i < 5; _i += 1) {
-        var _ch = string_char_at(_pattern, _i + 1);
-        if (_ch != "-" && _ch != "?" && _ch != "") _bits |= 1 << (4 - _i);
-    }
-    return _bits;
-}
-
-/// Compares the CPU with an expected string; returns "" or the differences.
-function scr_m68k_selftest_check(_cpu, _expect) {
-    var _out = "";
-    var _tokens = string_split(_expect, " ", true);
-    for (var _i = 0; _i < array_length(_tokens); _i += 1) {
-        var _kv = string_split(_tokens[_i], "=");
-        var _key = string_lower(_kv[0]);
-        var _want = _kv[1];
-        var _got = "";
-        var _ok = true;
-        var _c0 = string_char_at(_key, 1);
-        if (_key == "status") {
-            _got = _cpu.status;
-            _ok = _got == _want;
-        } else if (_key == "vector") {
-            _got = is_struct(_cpu.fault) ? string(_cpu.fault.vector) : "none";
-            _ok = _got == _want;
-        } else if (_key == "cyc") {
-            _got = string(_cpu.cycles);
-            _ok = _got == _want;
-        } else if (_key == "ccr") {
-            var _ccr = _cpu.sr & $1F;
-            _got = "";
-            for (var _b = 0; _b < 5; _b += 1) {
-                var _set = (_ccr & (1 << (4 - _b))) != 0;
-                _got += _set ? string_char_at("XNZVC", _b + 1) : "-";
-                var _w = string_char_at(_want, _b + 1);
-                if (_w != "?" && _set != (_w != "-")) _ok = false;
-            }
-        } else {
-            var _v = 0;
-            if (_key == "sr") _v = _cpu.sr;
-            else if (_key == "pc") _v = _cpu.pc;
-            else if (_key == "ssp") _v = (_cpu.sr & $2000) != 0 ? _cpu.a[7] : _cpu.ssp;
-            else if (_key == "usp") _v = (_cpu.sr & $2000) != 0 ? _cpu.usp : _cpu.a[7];
-            else if (_key == "vpos") _v = scr_m68k_hw_vpos(_cpu);
-            else if (string_copy(_key, 1, 6) == "hwlong") _v = scr_m68k_hw_long(_cpu, scr_m68k_parse_hex(string_delete(_key, 1, 6)));
-            else if (string_copy(_key, 1, 2) == "hw") _v = scr_m68k_hw_value(_cpu, scr_m68k_parse_hex(string_delete(_key, 1, 2)));
-            else if (string_copy(_key, 1, 4) == "ciaa") _v = _cpu.ciaa[real(string_delete(_key, 1, 4))];
-            else if (string_copy(_key, 1, 4) == "ciab") _v = _cpu.ciab[real(string_delete(_key, 1, 4))];
-            else if (_c0 == "d") _v = _cpu.d[real(string_char_at(_key, 2))];
-            else if (_c0 == "a") _v = _cpu.a[real(string_char_at(_key, 2))];
-            else if (_c0 == "m") {
-                var _parts = string_split(string_delete(_key, 1, 1), ".");
-                var _size = _parts[1] == "b" ? 1 : (_parts[1] == "w" ? 2 : 4);
-                _v = scr_m68k_peek(_cpu, scr_m68k_parse_hex(_parts[0]), _size);
-            }
-            _ok = (_v & $FFFFFFFF) == scr_m68k_parse_hex(_want);
-            _got = scr_m68k_hex(_v, 8);
-        }
-        if (!_ok) _out += " " + _key + " = " + _got + ", expected " + _want + ";";
-    }
-    return _out;
 }

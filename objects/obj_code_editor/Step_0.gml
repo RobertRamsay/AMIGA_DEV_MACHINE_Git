@@ -2,7 +2,7 @@
 
 if (closing) exit;
 
-if (!instance_exists(editor_node)) {
+if (!course_mode && !instance_exists(editor_node)) {
     scr_set_status_message("Code editor closed: its node no longer exists.", c_red);
     closing = true;
     keyboard_string = "";
@@ -83,7 +83,7 @@ if (ed_kp(vk_f5)) {
 
 if (_cmd && ed_kp(ord("S"))) {
     if (ed_commit()) {
-        ed_note("Code applied to the node", make_colour_rgb(120, 220, 120));
+        ed_note(course_mode ? "Code saved" : "Code applied to the node", make_colour_rgb(120, 220, 120));
     } else {
         ed_note("No changes to apply", c_ltgray);
     }
@@ -631,6 +631,8 @@ if (mouse_selecting) {
 
 // ---- wheel ----
 var _wheel = sim_mouse_active ? sim_wheel : (mouse_wheel_down() - mouse_wheel_up());
+// In course mode the wheel over the lesson column belongs to obj_course.
+if (course_mode && _mx >= panel_x2) _wheel = 0;
 if (_wheel != 0) {
     if (ac_open && ed_point_in(_mx, _my, ac_rect)) {
         ac_scroll = clamp(ac_scroll + _wheel, 0, max(0, array_length(ac_items) - ac_rows));

@@ -1,0 +1,148 @@
+=== UNIT 1: Foundations
+
+=== LESSON 1: Hello, 68000
+@summary The 68000's registers, and MOVEQ: your first instruction.
+@text
+The Motorola 68000 is the processor at the heart of every classic Amiga. Everything the machine does - games, demos, Workbench - is the 68000 running one instruction after another, millions of times a second.
+
+Inside the 68000 are sixteen registers: tiny, very fast storage slots of 32 bits each. Eight are data registers, D0 to D7, for numbers you calculate with. Eight are address registers, A0 to A7, for pointing at memory. Almost every instruction reads or writes a register.
+
+The quickest way to put a small number into a data register is MOVEQ, "move quick":
+
+	moveq	#42,d0
+
+Read it as "move the number 42 into D0". The # means "this exact number" - an immediate value. Without the #, a number means a memory address, which is a different thing entirely (lesson 5). The source comes first, the destination second, separated by a comma.
+
+MOVEQ only takes numbers from -128 to 127, but it always fills the whole 32-bit register, whatever was in it before. It is one of the fastest instructions there is: 4 clock cycles.
+
+## How your code runs
+Write your code in the editor on the left. Instructions are indented (the editor does it for you); a word in the first column is a label, a name for that place in the program. Anything after a semicolon is a comment.
+
+When you press RUN TESTS (F5), ADM assembles your code with vasm, the same assembler the Amiga builds use, and runs it in its own 68000 simulator. Your program starts at the top and ends when it runs off the end. Then each test looks at the registers. The tests run your code several times, starting with different values in the registers, so your code must not depend on what happens to be there.
+@task
+Put 42 into D0 and 7 into D1.
+@start
+	; write your code here
+
+@solution
+	moveq	#42,d0
+	moveq	#7,d1
+@hint
+Two MOVEQ instructions, one for each register. Remember the # in front of the number.
+@test D0 = 42 and D1 = 7 (registers start at 0)
+setup: d0=0 d1=0
+expect: d0=2A d1=7
+@test The same with junk already in the registers
+setup: d0=DEADBEEF d1=FFFFFFFF
+expect: d0=2A d1=7
+@quiz
+? How many data registers does the 68000 have?
+- 4
++ 8
+- 16
+- 32
+! D0 to D7: eight data registers, plus eight address registers A0 to A7.
+? What does the # in "moveq #42,d0" mean?
++ 42 is the number itself (an immediate value)
+- 42 is a memory address
+- 42 is a register number
+! Without the #, 42 would be read as the address of a memory location.
+
+=== LESSON 2: Hexadecimal and binary
+@summary Writing numbers in hex ($) and binary (%), and how negative numbers are stored.
+@text
+Computers count in binary: every value is a row of bits, each 0 or 1. Assembler lets you write numbers three ways:
+
+	moveq	#26,d0		; decimal
+	moveq	#$1A,d0		; hexadecimal: $ in front
+	moveq	#%11010,d0	; binary: % in front
+
+All three put the same number into D0. Hexadecimal (base 16, digits 0-9 and A-F) is what Amiga programmers use most, because each hex digit is exactly four bits. $1A is 0001 1010 in binary: 1 then A. A byte is two hex digits ($00-$FF), a word four ($0000-$FFFF) and a long eight ($00000000-$FFFFFFFF).
+
+## Negative numbers
+The 68000 stores negative numbers in two's complement: -1 is all ones, $FFFFFFFF; -2 is $FFFFFFFE, and so on. The top bit (bit 31 of a long) is set for every negative number, which is why it is called the sign bit. To negate a number, flip all its bits and add 1.
+
+So after
+
+	moveq	#-1,d0
+
+D0 holds $FFFFFFFF. The same bits mean 4,294,967,295 if you treat them as unsigned: whether a value is negative is up to the instructions you use on it, as you will see in later lessons.
+@task
+Put $40 (hex) into D0, %1100 (binary) into D1 and -2 into D2.
+@start
+	; D0 = $40, D1 = %1100, D2 = -2
+
+@solution
+	moveq	#$40,d0
+	moveq	#%1100,d1
+	moveq	#-2,d2
+@hint
+MOVEQ takes hex and binary numbers too: moveq #$40,d0. For -2, just write #-2.
+@test D0 = $40, D1 = 12, D2 = -2
+setup: d0=0 d1=0 d2=0
+expect: d0=40 d1=C d2=FFFFFFFE
+@test The same from junk values
+setup: d0=12345678 d1=FFFFFFFF d2=80000000
+expect: d0=40 d1=C d2=FFFFFFFE
+@quiz
+? What is $1F in decimal?
+- 15
++ 31
+- 16
+- 21
+! $1F = 1 x 16 + 15 = 31.
+? How is -1 stored in a 32-bit register?
+- $80000001
+- $00000001
++ $FFFFFFFF
+! Two's complement: -1 is all ones.
+
+=== LESSON 3: MOVE and the three sizes
+@summary MOVE.B, MOVE.W and MOVE.L: copying bytes, words and longs.
+@text
+MOVEQ is limited to -128..127. For anything else there is MOVE, which copies a value from a source to a destination. MOVE has a size: .B for a byte (8 bits), .W for a word (16 bits) or .L for a long (32 bits).
+
+	move.l	#$12345678,d0	; all 32 bits of D0
+	move.w	d0,d1		; the low 16 bits of D0 into D1
+	move.b	d0,d2		; the low 8 bits of D0 into D2
+
+The size matters a great deal. A .W or .B move only touches the low part of a data register and leaves the rest alone. If D1 held $FFFFFFFF, then after move.w d0,d1 it holds $FFFF5678: the top word is untouched. MOVEQ and MOVE.L replace all 32 bits.
+
+MOVE can copy from register to register, from an immediate value to a register, and - as you will see soon - to and from memory. The two operands can be almost anything, which makes MOVE the most used instruction on the 68000.
+@task
+Load $12345678 into D0 with MOVE.L. Then copy only the low word of D0 into D1, and only the low byte of D0 into D2, leaving the rest of D1 and D2 as they were.
+@start
+	move.l	#$12345678,d0
+	; now the word into D1 and the byte into D2
+
+@solution
+	move.l	#$12345678,d0
+	move.w	d0,d1
+	move.b	d0,d2
+@hint
+move.w d0,d1 copies the low word only. Use .B for the byte.
+@test D1 and D2 keep their upper bits
+setup: d1=FFFFFFFF d2=AAAAAAAA
+expect: d0=12345678 d1=FFFF5678 d2=AAAAAA78
+@test Starting from zero
+setup: d1=0 d2=0
+expect: d0=12345678 d1=5678 d2=78
+@quiz
+? D3 holds $AAAAAAAA. What does it hold after move.w #$1234,d3?
+- $00001234
++ $AAAA1234
+- $1234AAAA
+! A word move only replaces the low 16 bits of a data register.
+
+=== EXAM 1: Foundations, arithmetic and flags
+@summary Lessons 1-20: registers, sizes, memory and addressing, arithmetic, the flags, branches and loops.
+@pass 80
+@quiz
+? How many address registers does the 68000 have?
+- 4
++ 8
+- 16
+? What is $10 in decimal?
+- 10
++ 16
+- 20
