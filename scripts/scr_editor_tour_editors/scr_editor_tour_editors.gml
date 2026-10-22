@@ -490,7 +490,7 @@ function scr_tour_editor_categories() {
                 { title : "The code editor", show : "code", rect : function() { return scr_tour_code_rect("panel"); },
                   text : "A full-screen editor for a CODE block's 68000 assembly (Motorola syntax, assembled by vasm). Esc or Ctrl+Enter applies and closes." },
                 { title : "Editing", show : "code", rect : function() { return scr_tour_code_rect("text"); },
-                  text : "Syntax colouring, hover help on any instruction or register, Ctrl+Space autocompletes, F12 or Ctrl+click jumps to a label. Ctrl+D duplicates a line, Ctrl+/ comments, Alt+Up/Down moves lines, Ctrl+wheel resizes the font." },
+                  text : "Syntax colouring, hover help on any instruction or register, Tab or Ctrl+Space autocompletes; after an instruction a MODE list offers its addressing forms (Up / Down, Tab), F12 or Ctrl+click jumps to a label. Ctrl+D duplicates a line, Ctrl+/ comments, Alt+Up/Down moves lines, Ctrl+wheel resizes the font." },
                 { title : "Line numbers", show : "code", rect : function() { return scr_tour_code_rect("gutter"); },
                   text : "Lines with problems are marked here. Click a number to select the line." },
                 { title : "Snippets", show : "code", rect : function() { return scr_tour_code_rect("snippets"); },

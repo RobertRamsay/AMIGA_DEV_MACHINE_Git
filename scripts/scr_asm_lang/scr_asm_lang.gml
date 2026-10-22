@@ -1677,6 +1677,18 @@ function scr_asm_global_symbols(_exclude_node = noone) {
                 }
             }
         }
+        // Every SPR-EDIT sprite can be used by name (scr_amiga_code_sprites_text).
+        var _a = 0;
+        while (_a < array_length(global.asset_list)) {
+            if (global.asset_list[_a].type == "SPRITE") {
+                var _sl = "spr_" + scr_amiga_label_safe(global.asset_list[_a].name);
+                if (!variable_struct_exists(_seen, _sl)) {
+                    _seen[$ _sl] = true;
+                    array_push(_out, _sl, _sl + "_h", _sl + "_colours");
+                }
+            }
+            _a += 1;
+        }
     } catch (_err) {
         show_debug_message("scr_asm_global_symbols failed: " + string(_err));
     }

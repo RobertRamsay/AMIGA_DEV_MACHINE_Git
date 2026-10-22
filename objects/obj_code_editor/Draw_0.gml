@@ -298,6 +298,16 @@ while (_l <= _last) {
     _l += 1;
 }
 
+// The addressing form picked in the popup, as ghost text at the caret.
+if (ac_open && ac_context == "form" && ac_index < array_length(ac_items) && caret_line >= _first && caret_line <= _last) {
+    var _gx = text_x + (caret_col - scroll_col) * char_w;
+    var _gy = text_top + (caret_line - scroll_line) * line_h;
+    draw_set_alpha(0.55);
+    draw_set_colour(col_register);
+    ed_draw_code(_gx, _gy + 1, ac_items[ac_index].text);
+    draw_set_alpha(1);
+}
+
 // caret
 if (focus == "text" && (blink_timer div 30) mod 2 == 0 && caret_line >= _first && caret_line <= _last) {
     var _cx = text_x + (caret_col - scroll_col) * char_w;
@@ -413,7 +423,7 @@ if (ac_open) {
     }
     var _text_w = max(10, _tw + 2) * char_w;
     draw_set_font(UI_FONT);
-    var _badge_w = string_width("LVO") + 20;
+    var _badge_w = string_width("MODE") + 20;
     draw_set_font(code_font);
     var _detail_w = 560;
     var _pw = _badge_w + _text_w + _detail_w;
@@ -451,6 +461,7 @@ if (ac_open) {
             case "const": _kc = col_number; _badge = "EQU"; break;
             case "label": _kc = col_label; _badge = "LBL"; break;
             case "symbol": _kc = col_symbol_known; _badge = "SYM"; break;
+            case "form": _kc = col_register; _badge = "MODE"; break;
         }
         draw_set_font(UI_FONT);
         draw_set_colour(_kc);

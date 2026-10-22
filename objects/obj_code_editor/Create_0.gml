@@ -1494,6 +1494,15 @@ ed_ac_update = function(_force) {
         return;
     }
     var _ctx = _c.context;
+    // An empty operand (after the gap, a typed space or a comma): the
+    // addressing forms of this instruction.
+    if (_ctx == "operand" && _c.prefix == "" && (_force || global.code_editor_autocomplete)) {
+        if (ed_form_open()) return;
+        if (!_force) {
+            ac_close();
+            return;
+        }
+    }
     if (_ctx == "label") {
         if (!_force) {
             ac_close();
@@ -1543,6 +1552,123 @@ ed_insert_operand_gap = function() {
     ed_insert_raw(string_repeat(" ", _pad));
 };
 
+// ---- addressing forms ----
+// After an instruction (and after each comma) the popup lists the
+// addressing forms that operand accepts, each with a ready example: Up / Down
+// picks one (shown as ghost text at the caret), Tab or Enter types it in.
+// Forms come from the opcode table (global.opcode_map src_modes / dst_modes).
+
+// The instruction on the caret line and which operand the caret is in:
+// { mnemonic, index, lower } or undefined.
+ed_form_slot = function() {
+    var _line = lines[caret_line];
+    var _pre = string_copy(_line, 1, caret_col);
+    var _tk = scr_asm_tokenize_line(_pre);
+    var _mn = "";
+    var _op_end = -1;
+    var _i = 0;
+    while (_i < array_length(_tk)) {
+        var _t = _tk[_i];
+        if (_t.kind == "comment") return undefined;
+        if (_t.field == "op" && _t.kind != "whitespace") {
+            if (_t.kind == "mnemonic") _mn = _t.text;
+            _op_end = _t.start_col + string_length(_t.text);
+        }
+        _i += 1;
+    }
+    if (_mn == "" || _op_end < 0 || _op_end >= caret_col) return undefined;
+    // Commas outside brackets before the caret = the operand index.
+    var _index = 0;
+    var _depth = 0;
+    var _c = _op_end + 1;
+    while (_c <= caret_col) {
+        var _ch = string_char_at(_line, _c);
+        if (_ch == "(") _depth += 1;
+        if (_ch == ")") _depth = max(0, _depth - 1);
+        if (_ch == "," && _depth == 0) _index += 1;
+        _c += 1;
+    }
+    return { mnemonic : _mn, index : _index, lower : string_lower(_mn) == _mn };
+};
+
+// True when the caret sits at an empty operand: after the gap or a comma,
+// with nothing but spaces or a comment after it.
+ed_form_slot_empty = function() {
+    var _line = lines[caret_line];
+    if (caret_col == 0) return false;
+    var _before = string_char_at(_line, caret_col);
+    if (_before != " " && _before != "\t" && _before != ",") return false;
+    var _after = string_trim(string_delete(_line, 1, caret_col));
+    return _after == "" || string_char_at(_after, 1) == ";";
+};
+
+// The form items for operand _index of _mnemonic ({ text, kind : "form", detail }).
+ed_form_items = function(_mnemonic, _index, _lower) {
+    var _key = string_upper(_mnemonic);
+    if (_key == "DBF") _key = "DBRA";
+    var _entry = global.opcode_map[$ _key];
+    if (_entry == undefined || _index >= _entry.operand_count) return [];
+    var _modes = _index == 0 ? _entry.src_modes : _entry.dst_modes;
+    var _out = [];
+    var _r = function(_s, _lower) { return _lower ? string_lower(_s) : _s; };
+    var _label = array_length(completion_locals) > 0 ? completion_locals[0] : "loop";
+
+    // Branches and loop ends jump to a label: offer this block's labels.
+    if (_entry.category == "branch" && _modes == global.AM_CONTROL) {
+        var _l = 0;
+        while (_l < array_length(completion_locals)) {
+            array_push(_out, { text : completion_locals[_l], kind : "form", detail : "label: jump to " + completion_locals[_l] });
+            _l += 1;
+        }
+        if (array_length(_out) == 0) array_push(_out, { text : "loop", kind : "form", detail : "label: put the label's name here (a label: line marks the target)" });
+        return _out;
+    }
+
+    var _imm = (_key == "ADDQ" || _key == "SUBQ" || _key == "ASL" || _key == "ASR" || _key == "LSL" || _key == "LSR"
+        || _key == "ROL" || _key == "ROR" || _key == "ROXL" || _key == "ROXR") ? "#1" : "#0";
+    var _forms = [
+        [global.AM_DN, _r("D0", _lower), "Dn  data register: a 32-bit working register (fast)"],
+        [global.AM_IMM, _imm, "#imm  immediate: the number is stored in the instruction ($ = hex)"],
+        [global.AM_AN, _r("A0", _lower), "An  address register: holds a pointer"],
+        [global.AM_AN_IND, _r("(A0)", _lower), "(An)  the memory A0 points to"],
+        [global.AM_AN_POSTINC, _r("(A0)+", _lower), "(An)+  the memory at A0, then A0 moves on to the next item"],
+        [global.AM_AN_PREDEC, _r("-(A7)", _lower), "-(An)  A7 moves back first, then the memory there (push on the stack)"],
+        [global.AM_AN_DISP, _r("4(A0)", _lower), "d16(An)  the memory at A0 + 4 (a field of a structure)"],
+        [global.AM_AN_INDEX, _r("0(A0,D1.W)", _lower), "d8(An,Xn)  the memory at A0 + D1 (entry D1 of a table)"],
+        [global.AM_ABS_L, "$DFF180", "abs.L  a fixed address (here COLOR00, the background colour)"],
+        [global.AM_ABS_L, _label, "label  the address of a label in your code"],
+        [global.AM_ABS_W, "$0400.W", "abs.W  a fixed address in the first 32K, stored in one word"],
+        [global.AM_PC_DISP, _label + _r("(PC)", _lower), "d16(PC)  a label near this code, PC relative (works wherever it loads)"],
+        [global.AM_PC_INDEX, _label + _r("(PC,D0.W)", _lower), "d8(PC,Xn)  entry D0 of a table at a label, PC relative"],
+        [global.AM_REGLIST, _r("D0-D7/A0-A6", _lower), "register list: save or load many registers in one go"]
+    ];
+    var _f = 0;
+    while (_f < array_length(_forms)) {
+        if (_modes & _forms[_f][0]) array_push(_out, { text : _forms[_f][1], kind : "form", detail : _forms[_f][2] });
+        _f += 1;
+    }
+    return _out;
+};
+
+// Opens the addressing-form popup at the caret if this operand slot has forms.
+ed_form_open = function() {
+    if (!ed_form_slot_empty()) return false;
+    var _slot = ed_form_slot();
+    if (_slot == undefined) return false;
+    var _items = ed_form_items(_slot.mnemonic, _slot.index, _slot.lower);
+    if (array_length(_items) == 0) return false;
+    ac_open = true;
+    ac_items = _items;
+    ac_index = 0;
+    ac_scroll = 0;
+    ac_context = "form";
+    ac_prefix = "";
+    ac_start_col = caret_col;
+    ac_line = caret_line;
+    ac_mnemonic = _slot.mnemonic;
+    return true;
+};
+
 ed_ac_accept = function(_idx) {
     if (!ac_open || _idx < 0 || _idx >= array_length(ac_items)) return;
     var _item = ac_items[_idx];
@@ -1568,6 +1694,7 @@ ed_ac_accept = function(_idx) {
     var _lang = scr_asm_lang_data();
     var _next = (caret_col < string_length(lines[_line_i])) ? string_char_at(lines[_line_i], caret_col + 1) : "";
     var _reopen = false;
+    var _forms = false;
 
     if (_kind == "mnemonic" || _kind == "directive") {
         var _u = string_upper(_text);
@@ -1578,15 +1705,30 @@ ed_ac_accept = function(_idx) {
                 _reopen = true;
             } else if (_info.max_ops != 0 && _next != ".") {
                 ed_insert_operand_gap();
+                _forms = _kind == "mnemonic";
             }
         }
     } else if (_kind == "size") {
         ed_insert_operand_gap();
+        _forms = true;
+    } else if (_kind == "form") {
+        // The first of two operands: add the comma and offer the second.
+        var _slot = ed_form_slot();
+        if (_slot != undefined && _next != ",") {
+            var _key = string_upper(_slot.mnemonic);
+            if (_key == "DBF") _key = "DBRA";
+            var _entry = global.opcode_map[$ _key];
+            if (_entry != undefined && _slot.index + 1 < _entry.operand_count) {
+                ed_insert_raw(",");
+                _forms = true;
+            }
+        }
     }
 
     ed_modified();
     ed_undo_break();
     if (_reopen) ed_ac_update(true);
+    if (_forms) ed_form_open();
 };
 
 #endregion

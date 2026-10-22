@@ -30,12 +30,16 @@ function scr_amiga_label_safe(_name) {
 /// What the program needs beyond its nodes.
 /// Returns { uses_code, uses_audio, mods[], samples[], sfx_nodes[] } (asset names, unique).
 function scr_amiga_program_scan(_node_array) {
-    var _scan = { uses_code : false, uses_audio : false, mods : [], samples : [], sfx_nodes : [] };
+    var _scan = { uses_code : false, uses_audio : false, mods : [], samples : [], sfx_nodes : [], code_sprites : [] };
+    var _code_text = "";
     var _i = 0;
     while (_i < array_length(_node_array)) {
         var _node = _node_array[_i];
         if (_node.is_macro) {
-            if (_node.macro_type == "CODE") _scan.uses_code = true;
+            if (_node.macro_type == "CODE") {
+                _scan.uses_code = true;
+                _code_text += _node.macro_code_text + "\n";
+            }
             if (_node.macro_type == "PLAY_MOD" || _node.macro_type == "STOP_MOD" || _node.macro_type == "PLAY_SFX") _scan.uses_audio = true;
             if (_node.macro_type == "PLAY_MOD" && !array_contains(_scan.mods, _node.macro_asset_name)) array_push(_scan.mods, _node.macro_asset_name);
             if (_node.macro_type == "PLAY_SFX") {
@@ -44,6 +48,15 @@ function scr_amiga_program_scan(_node_array) {
             }
         }
         _i += 1;
+    }
+    // SPRITE assets the CODE blocks use as spr_<name>: the footer puts their data in chip RAM.
+    if (_code_text != "") {
+        var _a = 0;
+        while (_a < array_length(global.asset_list)) {
+            var _asset = global.asset_list[_a];
+            if (_asset.type == "SPRITE" && string_pos("spr_" + scr_amiga_label_safe(_asset.name), _code_text) > 0) array_push(_scan.code_sprites, _asset.name);
+            _a += 1;
+        }
     }
     scr_gk_scan(_node_array, _scan);
     return _scan;
@@ -144,7 +157,31 @@ function scr_amiga_build_footer_text(_scan, _build_dir) {
     var _gk = scr_gk_footer_text(_scan);
     if (!_gk.ok) return _gk;
     _result.text += _gk.text;
+    _result.text += scr_amiga_code_sprites_text(_scan);
     return _result;
+}
+
+/// The SPRITE assets CODE blocks use, in chip RAM: spr_<name> = two control
+/// words (zero), the DATA / DATB words of every row and a zero terminator,
+/// ready for a sprite pointer; spr_<name>_h = its height; spr_<name>_colours =
+/// its three 12-bit colours (sprite colours 1-3).
+function scr_amiga_code_sprites_text(_scan) {
+    if (array_length(_scan.code_sprites) == 0) return "";
+    var _t = "\n; ==== SPR-EDIT sprites used by CODE blocks ====\n\tSECTION adm_sprites,DATA_C\n";
+    var _i = 0;
+    while (_i < array_length(_scan.code_sprites)) {
+        var _sprite = scr_asset_find_by_name(_scan.code_sprites[_i]);
+        var _label = "spr_" + scr_amiga_label_safe(_sprite.name);
+        _t += "\tCNOP 0,4\n" + _label + ":\n\tDC.W 0,0\n";
+        _t += scr_gk_dc_lines("W", scr_gk_sprite_words(_sprite, _sprite.height, false), 16);
+        _t += "\tDC.W 0,0\n";
+        _t += _label + "_h\tEQU " + string(_sprite.height) + "\n";
+        _t += _label + "_colours:\n\tDC.W " + string(scr_gk_rgb12(_sprite.colour_r[0], _sprite.colour_g[0], _sprite.colour_b[0])) + ","
+            + string(scr_gk_rgb12(_sprite.colour_r[1], _sprite.colour_g[1], _sprite.colour_b[1])) + ","
+            + string(scr_gk_rgb12(_sprite.colour_r[2], _sprite.colour_g[2], _sprite.colour_b[2])) + "\n";
+        _i += 1;
+    }
+    return _t;
 }
 
 function scr_amiga_build_audio_footer_text(_scan, _build_dir) {

@@ -378,6 +378,8 @@ if (focus == "name") {
     if (!_skip_tab && !_cmd && ed_kp(vk_tab)) {
         ed_tab(_shift);
         ac_close();
+        // Tab after a typed instruction: offer its addressing forms.
+        if (!_shift && global.code_editor_autocomplete) ed_form_open();
     }
 
     if (_key(vk_backspace)) {
@@ -393,7 +395,8 @@ if (focus == "name") {
     if (_typed != "") {
         if (string_length(_typed) != 1 || !ed_type_autoclose(_typed)) ed_type_text(_typed);
         var _last_o = ord(string_char_at(_typed, string_length(_typed)));
-        if (ed_is_word_code(_last_o) || _last_o == 46) {
+        // A space or comma may start an empty operand: the addressing forms.
+        if (ed_is_word_code(_last_o) || _last_o == 46 || _last_o == 32 || _last_o == 44) {
             _ac_refresh = true;
         } else {
             ac_close();

@@ -21,6 +21,19 @@ function scr_amiga_showcase_shots() {
         { name : "11_copper_bar_editor", setup : function() { scr_tour_show("cprbar"); } },
         { name : "12_code_editor", setup : function() { scr_tour_show("code"); } },
         { name : "13_code_editor_find", setup : function() { scr_tour_show("code:find"); } },
+        { name : "13b_code_editor_forms", setup : function() {
+            scr_tour_show("code");
+            // A new line "move.w #0," with the destination forms open.
+            with (obj_code_editor) {
+                ed_close_bars();
+                var _at = min(6, array_length(lines));
+                array_insert(lines, _at, "        move.w  #0,");
+                ed_set_caret(_at, string_length(lines[_at]), false);
+                ed_ensure_caret_visible();
+                ed_form_open();
+                ac_index = 1;
+            }
+        } },
         { name : "14_sound_music_modules", setup : function() { scr_tour_show("audio:mod"); } },
         { name : "15_sound_samples_waveform", setup : function() { scr_tour_show("audio:sample"); } },
         { name : "15b_tracker", setup : function() { scr_tour_show("tracker"); } },
@@ -86,6 +99,19 @@ function scr_amiga_showcase_shots() {
         { name : "40_hover_move_to_colour00", setup : function() { scr_amiga_showcase_hover_opcode(2, "MOVE"); } },
         { name : "41_hover_addq", setup : function() { scr_amiga_showcase_hover_opcode(2, "ADDQ"); } },
         { name : "42_hover_bra_loop", setup : function() { scr_amiga_showcase_hover_opcode(2, "BRA"); } },
+        { name : "46_tutorial_17_star_blaster", setup : function() { scr_amiga_showcase_tutorial(17, ""); } },
+        { name : "47_star_blaster_sprite", setup : function() {
+            scr_amiga_showcase_tutorial(17, "");
+            with (obj_tutorial_guide) instance_destroy();
+            scr_sprite_editor_open_on("Ship");
+        } },
+        { name : "48_star_blaster_code", setup : function() {
+            scr_amiga_showcase_tutorial(17, "");
+            with (obj_tutorial_guide) instance_destroy();
+            var _node = noone;
+            with (obj_opcode_node) if (is_macro && macro_type == "CODE" && macro_code_name == "Draw sprites") _node = id;
+            if (_node != noone) scr_code_editor_open(_node);
+        } },
         { name : "43_palette_find_n", setup : function() { scr_amiga_showcase_palette_find("N"); } },
         { name : "44_palette_find_no", setup : function() { scr_amiga_showcase_palette_find("NO"); } },
         { name : "45_palette_find_mo", setup : function() { scr_amiga_showcase_palette_find("MO"); } },
@@ -109,6 +135,8 @@ function scr_amiga_showcase_tutorial(_number, _edit_type) {
     scr_tour_show("main");
     global.workspace_dirty = false;
     scr_tutorial_load(_number - 1);
+    // The mouse to an empty bit of workspace: no hover help left over.
+    window_mouse_set(1150 * window_get_width() / room_width, 150 * window_get_height() / room_height);
     global.tutorial_step = 0;
     global.tutorial_guide_collapsed = false;
     scr_tutorial_guide_open();
